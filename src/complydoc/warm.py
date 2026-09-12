@@ -1,10 +1,24 @@
-"""Load the local models once, so forked workers inherit them.
+"""Load what is cheap and safe to inherit, once, before the workers fork.
 
 Importing this module is a side effect on purpose: it pays for the tokenizer
-vocabulary, the language model and the entity model up front. On its own that
-saves nothing, but the process pool forks its workers from a server process that
-has imported this, so each worker starts with the models already in memory
-instead of spending a second and a half loading its own copy of each.
+vocabulary and the language identifier up front. On its own that saves nothing,
+but the process pool forks its workers from a server process that has imported
+this, so each worker starts with them already in memory.
+
+The entity model is deliberately **not** here, and that is the whole point of
+this note. Loading it pulls in torch, and a process that has initialised torch
+is not safe to fork from: on macOS it brings up Metal and Objective-C runtime
+state, and Apple's frameworks are explicit that they do not survive a fork.
+A worker forked from such a process was observed segfaulting inside pypdfium2,
+in code that has nothing to do with either library — the signature of an
+address space the child inherited in a bad state.
+
+That crash is intermittent and was not reproducible often enough to prove this
+removes it. What can be said is that the hazard is real and documented, that
+the same file's `_pool_context` already refuses to fork this process for the
+same reason, and that preloading the model was measured at about six per cent
+of a parallel scan — 4.18s against 4.43s over ninety documents on six workers.
+Six per cent is not worth a fork hazard, whatever the crash turns out to be.
 
 Nothing here reaches the network — every model is local, and the offline guard
 is armed before any of it runs.
@@ -33,12 +47,9 @@ def warm() -> None:
     except Exception:  # pragma: no cover
         pass
 
-    try:
-        from complydoc.sensitive.detectors.ner import _load
-
-        _load("en_core_web_sm")
-    except Exception:  # pragma: no cover - the NER extra is optional
-        pass
+    # The entity model is not warmed here. See the note at the top of the file:
+    # it pulls in torch, and forking a process that has initialised torch is
+    # unsafe. Each worker loads it on its first document instead.
 
 
 warm()

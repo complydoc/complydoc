@@ -8,6 +8,20 @@ branch on when reading reports programmatically.
 
 ## [Unreleased]
 
+### Fixed
+
+- The entity model is no longer loaded in the process the workers fork from.
+  Loading it pulls in torch, which on macOS brings up Metal and Objective-C
+  runtime state, and Apple's frameworks do not survive a fork. A worker forked
+  from such a process was caught segfaulting inside pypdfium2 — code unrelated
+  to either library, which is what an address space inherited in a bad state
+  looks like. The crash is intermittent and could not be reproduced often
+  enough to prove this removes it; what is certain is that the hazard is real,
+  that `_pool_context` already refuses to fork this process for the same
+  reason, and that the preload was worth about six per cent of a parallel scan.
+  Six per cent is not worth a fork hazard. Each worker now loads the model on
+  its first document instead.
+
 ### Added
 
 - `cd.extract_text()` hands back a folder's own words with the identifiers
