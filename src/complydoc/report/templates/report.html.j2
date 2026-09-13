@@ -223,6 +223,11 @@
         color: var(--muted); }
   .ev-confirmed { color: var(--ink); font-weight: 600; }
   .ev-model { color: var(--faint); font-style: italic; }
+  /* Listed but not alarming: a low-severity finding the name model made. */
+  tr.quiet td { color: var(--faint); }
+  .loaderrun { margin: 0 0 1.5rem; }
+  .loaderrun table th { text-align: left; font-weight: 500; color: var(--muted);
+                        width: 12rem; }
   .pv-tip b { display: block; font-weight: 600; }
   .pv-tip .found { display: block; margin: 0.1875rem 0 0.25rem;
                    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -576,6 +581,25 @@
 </div>
 {% endif %}
 
+{% if report.loader %}
+{# Only present when the documents came from another framework's loader. #}
+<div class="loaderrun">
+<h3>Loader</h3>
+<div class="scroll"><table>
+  <tbody>
+    <tr><th>Loader</th><td class="mono">{{ report.loader.name }}</td></tr>
+    <tr><th>Documents returned</th><td>{{ report.loader.documents_returned }}</td></tr>
+    <tr><th>Load time</th><td>{% if report.loader.seconds is none %}passed in already
+      loaded{% else %}{{ duration(report.loader.seconds) }}{% endif %}</td></tr>
+    <tr><th>Network attempts</th><td>{% if report.loader.network_attempts %}<span class="attn">{{
+      count(report.loader.network_attempts | length, "connection") }} refused</span>{% else %}none{% endif %}</td></tr>
+    <tr><th>Metadata keys</th><td class="mono">{{ report.loader.metadata_keys | join(", ") or "none" }}</td></tr>
+  </tbody>
+</table></div>
+{% if report.loader.error %}<p class="attn">{{ report.loader.error }}</p>{% endif %}
+</div>
+{% endif %}
+
 {% if quick_wins %}
 {# Ranked by how much of the folder each touches, and split by who has to act:
    a list that mixes "we can do this" with "you must rescan these" is a list
@@ -833,6 +857,46 @@ above for any other.</p>
 {% else %}
 <p class="note">Nothing detected in the text that could be read. Check the limitations
 before reading that as an all-clear.</p>
+{% endif %}
+
+{% set metadata_rows = [] %}
+{% for doc in report.documents %}{% for f in doc.metadata_findings %}{% set _ = metadata_rows.append((doc, f)) %}{% endfor %}{% endfor %}
+{% if metadata_rows %}
+<h3>In metadata</h3>
+<p class="note">Identifiers in the metadata the loader attached to each document, which is
+usually stored beside every chunk. Greyed rows are low-severity findings from the name
+model, listed but not counted towards limitations or quick wins.</p>
+<div class="scroll"><table data-sortable>
+  <thead><tr><th data-sort="text">Document</th><th data-sort="text">Key</th>
+    <th data-sort="text">Category</th><th data-sort="num" data-sort-default="desc">Severity</th>
+    <th data-sort="num">Evidence</th><th>Value</th></tr></thead>
+  <tbody>
+  {% for doc, f in metadata_rows %}
+    <tr{% if not f.significant %} class="quiet"{% endif %}>
+      <td class="mono">{{ doc.relative_path }}</td><td class="mono">{{ f.key }}</td>
+      <td>{{ f.label }}</td>
+      <td data-value="{{ severity_rank(f.severity) }}">{{ severity_badge(f.severity) | safe }}</td>
+      <td data-value="{{ evidence_rank(f.evidence) }}"><span class="ev ev-{{ f.evidence }}">{{ f.evidence }}</span></td>
+      <td class="mono">{{ f.revealed or f.masked }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% endif %}
+
+{% set path_docs = report.documents | selectattr("path_exposures") | list %}
+{% if path_docs %}
+<h3>File paths in metadata</h3>
+<p class="note">Metadata keys holding an absolute file path. A path includes the account
+name and directory layout it came from.</p>
+<div class="scroll"><table>
+  <thead><tr><th>Document</th><th>Keys</th></tr></thead>
+  <tbody>
+  {% for d in path_docs %}
+    <tr><td class="mono">{{ d.relative_path }}</td><td class="mono">{{ d.path_exposures | join(", ") }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table></div>
 {% endif %}
 
 {% if agg.categories_not_scanned %}

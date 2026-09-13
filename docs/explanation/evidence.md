@@ -35,7 +35,8 @@ stronger and put four digits of a card number back in the clear.
 
 ## Validators
 
-Most identifier formats carry one: Luhn for card numbers, mod-97 for IBAN and
+Most identifier formats carry one: Luhn plus the issuing network's prefix and
+length for card numbers, mod-97 for IBAN and
 VAT, and national schemes for the UK, US, Ireland, the Netherlands, Portugal,
 Spain, France and Germany. A passing checksum moves a finding from `pattern` to
 `confirmed`, which changes both its ranking and its weight in the exposure

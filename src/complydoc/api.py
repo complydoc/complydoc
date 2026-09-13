@@ -94,9 +94,11 @@ from complydoc.ingest.extractors.registry import all_extractors
 from complydoc.ingest.extractors.registry import register as register_extractor
 from complydoc.ingest.registry import register as register_loader
 from complydoc.ingest.registry import supported_extensions
+from complydoc.loaders import inspect_documents
 from complydoc.offline import NetworkAccessError
 from complydoc.report.html_writer import write_html as _write_html
 from complydoc.report.json_writer import write_json as _write_json
+from complydoc.report.models import LoaderRun, MetadataFinding
 
 if TYPE_CHECKING:
     from complydoc.config.schema import Config
@@ -115,6 +117,8 @@ __all__ = [
     "IngestOptions",
     "Loader",
     "LoaderError",
+    "LoaderRun",
+    "MetadataFinding",
     "NetworkAccessError",
     "Page",
     "PageSource",
@@ -128,6 +132,7 @@ __all__ = [
     "cost_audit",
     "extract_text",
     "full_audit",
+    "inspect_documents",
     "load_config",
     "readiness_audit",
     "register_engine",

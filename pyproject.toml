@@ -58,6 +58,12 @@ Changelog = "https://github.com/duartecaldascardoso/complydoc/blob/main/src/comp
 Issues = "https://github.com/duartecaldascardoso/complydoc/issues"
 
 [dependency-groups]
+# Loaders from other frameworks, for the tests that run them for real. Kept out
+# of `dev` because it is fifty-odd packages the tool itself never imports.
+integrations = [
+    "langchain-community>=0.3",
+    "docx2txt>=0.8",
+]
 # The documentation site. Separate from `dev` because building the docs needs
 # none of the test machinery and running the tests needs none of this.
 docs = [

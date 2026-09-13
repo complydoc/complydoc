@@ -31,6 +31,11 @@ def test_there_are_examples_to_check():
 @pytest.mark.parametrize("example", EXAMPLES, ids=lambda p: p.stem)
 def test_every_example_in_the_guides_runs(example: Path, tmp_path: Path):
     """Run it exactly as a reader would, from the root of a checkout."""
+    import importlib.util
+
+    source = example.read_text(encoding="utf-8")
+    if "langchain_community" in source and importlib.util.find_spec("langchain_community") is None:
+        pytest.skip("needs the integrations dependency group")
     result = subprocess.run(
         [sys.executable, str(example)],
         cwd=ROOT,

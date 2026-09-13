@@ -49,6 +49,50 @@ def luhn(value: str) -> bool:
     return total % 10 == 0
 
 
+_CARD_ISSUERS: tuple[tuple[str, str, frozenset[int]], ...] = (
+    # (lowest prefix, highest prefix, valid lengths) — prefixes compared as
+    # equal-length digit strings.
+    ("4", "4", frozenset({13, 16, 19})),  # Visa
+    ("51", "55", frozenset({16})),  # Mastercard
+    ("2221", "2720", frozenset({16})),  # Mastercard 2-series
+    ("34", "34", frozenset({15})),  # American Express
+    ("37", "37", frozenset({15})),  # American Express
+    ("6011", "6011", frozenset(range(16, 20))),  # Discover
+    ("644", "649", frozenset(range(16, 20))),  # Discover
+    ("65", "65", frozenset(range(16, 20))),  # Discover
+    ("300", "305", frozenset(range(14, 20))),  # Diners Club
+    ("36", "36", frozenset(range(14, 20))),  # Diners Club
+    ("38", "39", frozenset(range(14, 20))),  # Diners Club
+    ("3528", "3589", frozenset(range(16, 20))),  # JCB
+    ("62", "62", frozenset(range(16, 20))),  # UnionPay
+    ("50", "50", frozenset(range(12, 20))),  # Maestro
+    ("56", "69", frozenset(range(12, 20))),  # Maestro
+    ("2200", "2204", frozenset(range(16, 20))),  # Mir
+    ("60", "60", frozenset({16})),  # RuPay
+    ("81", "82", frozenset({16})),  # RuPay
+    ("508", "508", frozenset({16})),  # RuPay
+    ("1", "1", frozenset({15})),  # UATP
+)
+
+
+def card_issuer(value: str) -> bool:
+    """Whether the number starts with a card network's prefix and has its length.
+
+    Luhn alone passes one digit string in ten, so on its own it confirms far
+    more than card numbers: a PDF creation date, `D:20260909103836`, is fourteen
+    digits that satisfy it. Every card network assigns numbers from published
+    prefix ranges at fixed lengths, and a timestamp or an order number almost
+    never falls inside one, so the two checks together are what a confirmed
+    card number means.
+    """
+    digits = _digits(value)
+    for low, high, lengths in _CARD_ISSUERS:
+        prefix = digits[: len(low)]
+        if len(prefix) == len(low) and low <= prefix <= high and len(digits) in lengths:
+            return True
+    return False
+
+
 def iban_mod97(value: str) -> bool:
     """ISO 13616: move the first four characters to the end, then mod 97 must be 1."""
     cleaned = "".join(value.split()).upper()
@@ -280,6 +324,7 @@ def eu_vat(value: str) -> bool:
 
 VALIDATORS: dict[str, Callable[[str], bool]] = {
     "luhn": luhn,
+    "card_issuer": card_issuer,
     "iban_mod97": iban_mod97,
     "ni_prefix": ni_prefix,
     "vat_mod97": vat_mod97,

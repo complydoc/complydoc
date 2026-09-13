@@ -1,0 +1,509 @@
+"""Inspect what another loader produced.
+
+    import complydoc as cd
+    from langchain_community.document_loaders import PyPDFLoader
+
+    report = cd.inspect_documents(PyPDFLoader("contract.pdf"))
+    cd.write_html(report, "inspection.html")
+
+complydoc does not replace the loader. It runs it — or takes the documents it
+already returned — and reports on the output: the same identifier scan, the
+same readiness signals and the same cost estimate a folder audit produces, plus
+what only a loader's output has: the metadata attached to every document, and
+whether the loader tried to reach the network while it ran.
+
+Documents are duck-typed, so no framework is imported:
+
+- LangChain `Document`: `page_content` and `metadata`
+- LlamaIndex `Document`: `text` and `metadata`
+- a mapping with `page_content` or `text`, and optionally `metadata`
+- a plain string
+
+A loader is anything with `load()`, `load_data()` or `lazy_load()`, or a
+callable returning documents.
+
+Loader output carries text and metadata, not the page. Signals that need the
+page itself — text coverage, columns, tables, rotation, scan quality — are
+reported as not measured rather than inferred from text that cannot show them.
+
+Page numbers come from `page_number` if present, otherwise from `page` read as
+zero-based, which is what LangChain's PDF loaders emit. Several documents with
+the same page number — a loader returning one document per element — are
+merged into that page. A loader that returns no page numbers at all produces a
+document whose page count is marked unknown.
+"""
+
+from __future__ import annotations
+
+import datetime as dt
+import hashlib
+import json
+import os
+import platform
+import re
+import time
+from collections.abc import Callable, Iterable, Mapping, Sequence
+from pathlib import Path, PurePath
+from typing import Any
+
+from complydoc import __version__, offline
+from complydoc.audit import COMPONENTS, Work, assemble_report, build_entry, ner_available
+from complydoc.config.loader import load_config
+from complydoc.config.schema import Config
+from complydoc.cost.estimator import resolve_models
+from complydoc.ingest import ocr as ocr_module
+from complydoc.ingest.base import (
+    Document,
+    DocumentFormat,
+    ExtractionSummary,
+    IngestOptions,
+    Page,
+    sha256_of,
+)
+from complydoc.report.models import (
+    SCHEMA_VERSION,
+    AuditReport,
+    DocumentReport,
+    Limitation,
+    LoaderRun,
+    MetadataFinding,
+    RunMetadata,
+)
+from complydoc.sensitive.scanner import scan_text
+
+__all__ = ["inspect_documents"]
+
+_SOURCE_KEYS = ("source", "file_path", "filename", "file_name")
+"""Metadata keys loaders use to name the file a document came from, in order."""
+
+_FORMATS = {
+    ".pdf": DocumentFormat.PDF,
+    ".docx": DocumentFormat.DOCX,
+    ".xlsx": DocumentFormat.XLSX,
+    ".xlsm": DocumentFormat.XLSX,
+    ".png": DocumentFormat.IMAGE,
+    ".jpg": DocumentFormat.IMAGE,
+    ".jpeg": DocumentFormat.IMAGE,
+    ".tif": DocumentFormat.IMAGE,
+    ".tiff": DocumentFormat.IMAGE,
+    ".bmp": DocumentFormat.IMAGE,
+}
+
+_ABSOLUTE_PATH = re.compile(r"^(?:/[^/\s]+){2,}|^[A-Za-z]:[\\/]|^~[/\\]")
+
+_MIN_SCANNABLE = 4
+"""Metadata values with fewer alphanumeric characters than this are not scanned.
+
+No identifier category is that short, and loaders attach a page number and a
+page label to every page, which would otherwise mean running the name model
+over thousands of one- and two-digit strings.
+"""
+
+
+def inspect_documents(
+    source: Any,
+    *,
+    name: str | None = None,
+    config: Config | None = None,
+    components: Sequence[str] = COMPONENTS,
+    reveal: bool = False,
+    extracted_text: bool = True,
+    models: Sequence[str] | None = None,
+    offline_guard: bool = True,
+) -> AuditReport:
+    """Report on the documents a loader produced.
+
+    `source` is a loader, a callable returning documents, a list of documents,
+    or a single document. A loader is run inside the network guard, and any
+    connection it attempts is recorded in `report.loader.network_attempts`; a
+    loader that fails because a connection was refused produces a report with
+    no documents and the failure in `report.loader.error`. Any other exception
+    a loader raises is not caught.
+
+    `extracted_text` is on here, unlike `full_audit`, because seeing what the
+    loader extracted is usually the point.
+    """
+    if isinstance(source, (str, bytes, os.PathLike)):
+        raise TypeError(
+            "inspect_documents takes documents or a loader, not a path; "
+            "use full_audit to audit files on disk"
+        )
+
+    settings = config or load_config()
+    started = time.monotonic()
+    started_at = dt.datetime.now().astimezone()
+
+    with offline.guarded(offline_guard):
+        items, loader_run = _run_loader(source, name, offline_guard)
+        documents, findings, exposures = _documents_from(
+            items, loader_run.name, settings, components, reveal
+        )
+
+        root = _common_root([document.path for document in documents])
+        work = Work(
+            config=settings,
+            options=IngestOptions(),
+            target=root or Path(loader_run.name),
+            requested=tuple(components),
+            reveal=reveal,
+            previews=False,
+            page_images=False,
+            extracted_text=extracted_text,
+            models=(
+                tuple(resolve_models(settings.pricing, list(models) if models else None))
+                if "cost" in components
+                else None
+            ),
+            today=dt.date.today(),
+        )
+
+        entries: list[DocumentReport] = []
+        for document in documents:
+            relative = _relative_name(document.path, root)
+            entry = build_entry(document, work, 0.0, relative)
+            entry.metadata_findings = findings.get(str(document.path), [])
+            entry.path_exposures = exposures.get(str(document.path), [])
+            entries.append(entry)
+
+        run = RunMetadata(
+            tool_version=__version__,
+            schema_version=SCHEMA_VERSION,
+            started_at=started_at.isoformat(timespec="seconds"),
+            finished_at=dt.datetime.now().astimezone().isoformat(timespec="seconds"),
+            duration_seconds=round(time.monotonic() - started, 3),
+            target=str(root) if root else loader_run.name,
+            components_run=list(components),
+            config_dir=settings.source_dir,
+            config_digest=settings.digest,
+            offline_guard=offline.guard_status(),
+            reveal_used=reveal,
+            page_images_used=False,
+            extracted_text_used=extracted_text,
+            ocr_compare_used=False,
+            ocr_requested=False,
+            ocr_available=ocr_module.available(),
+            ner_available=ner_available(settings) if "sensitive" in components else False,
+            python_version=platform.python_version(),
+            monthly_volume=None,
+            extractor=loader_run.name,
+        )
+        report = assemble_report(settings, components, entries, [], run)
+
+    report.loader = loader_run
+    report.limitations[:0] = _loader_limitations(loader_run, entries)
+    return report
+
+
+def _run_loader(source: Any, name: str | None, guard: bool) -> tuple[list[Any], LoaderRun]:
+    """Call the loader, or take the documents as given, recording what happened."""
+    call = _loading_call(source)
+    loader_name = name or _name_of(source, call)
+    error: str | None = None
+    items: list[Any] = []
+
+    started = time.perf_counter()
+    with offline.guarded(guard) as attempts:
+        try:
+            if call is not None:
+                items = list(call())
+            elif _is_document_like(source):
+                items = [source]
+            else:
+                items = list(source)
+        except offline.NetworkAccessError as exc:
+            error = f"stopped when a network connection was refused: {exc}"
+    seconds = round(time.perf_counter() - started, 3) if call is not None else None
+
+    keys: set[str] = set()
+    for item in items:
+        keys.update(_content(item)[1])
+
+    return items, LoaderRun(
+        name=loader_name,
+        documents_returned=len(items),
+        seconds=seconds,
+        network_attempts=list(attempts),
+        error=error,
+        metadata_keys=sorted(keys),
+    )
+
+
+def _loading_call(source: Any) -> Callable[[], Iterable[Any]] | None:
+    if _is_document_like(source) or isinstance(source, (list, tuple)):
+        return None
+    for attribute in ("load", "load_data", "lazy_load"):
+        method = getattr(source, attribute, None)
+        if callable(method):
+            return method  # type: ignore[no-any-return]
+    if callable(source):
+        return source  # type: ignore[no-any-return]
+    return None
+
+
+def _name_of(source: Any, call: Callable[[], Iterable[Any]] | None) -> str:
+    if call is None:
+        return "documents"
+    if call is source:
+        return getattr(source, "__name__", type(source).__name__)
+    return type(source).__name__
+
+
+def _is_document_like(item: Any) -> bool:
+    if isinstance(item, str):
+        return True
+    if isinstance(item, Mapping):
+        return "page_content" in item or "text" in item
+    return hasattr(item, "page_content") or (hasattr(item, "text") and hasattr(item, "metadata"))
+
+
+def _content(item: Any) -> tuple[str, dict[str, Any]]:
+    """The text and metadata of one document, whatever framework produced it."""
+    if isinstance(item, str):
+        return item, {}
+    if isinstance(item, Mapping):
+        text = item.get("page_content", item.get("text"))
+        metadata = item.get("metadata") or {}
+    elif hasattr(item, "page_content"):
+        text = item.page_content
+        metadata = getattr(item, "metadata", None) or {}
+    elif hasattr(item, "text") and hasattr(item, "metadata"):
+        text = item.text
+        metadata = item.metadata or {}
+    else:
+        raise TypeError(
+            f"cannot read a document from {type(item).__name__}: expected "
+            f"page_content or text, and optionally metadata"
+        )
+    if not isinstance(text, str):
+        raise TypeError(f"document text must be a string, not {type(text).__name__}")
+    return text, dict(metadata)
+
+
+def _page_of(metadata: Mapping[str, Any]) -> int | None:
+    for key, offset in (("page_number", 0), ("page", 1)):
+        value = metadata.get(key)
+        if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
+            return max(1, value + offset)
+    return None
+
+
+def _documents_from(
+    items: list[Any],
+    loader_name: str,
+    settings: Config,
+    components: Sequence[str],
+    reveal: bool,
+) -> tuple[list[Document], dict[str, list[MetadataFinding]], dict[str, list[str]]]:
+    """Group loader output into documents, and scan the metadata once per value."""
+    groups: dict[str, list[tuple[str, dict[str, Any]]]] = {}
+    for item in items:
+        text, metadata = _content(item)
+        key = next(
+            (str(metadata[k]) for k in _SOURCE_KEYS if isinstance(metadata.get(k), str | PurePath)),
+            loader_name,
+        )
+        groups.setdefault(key, []).append((text, metadata))
+
+    documents: list[Document] = []
+    findings: dict[str, list[MetadataFinding]] = {}
+    exposures: dict[str, list[str]] = {}
+    scan_metadata = "sensitive" in components
+
+    for key, members in groups.items():
+        path = Path(key)
+        pages: dict[int, list[str]] = {}
+        numbered = False
+        for text, metadata in members:
+            number = _page_of(metadata)
+            if number is None:
+                number = max(pages, default=0) + 1
+            else:
+                numbered = True
+            pages.setdefault(number, []).append(text)
+
+        document = Document(
+            path=path,
+            sha256=_digest(path, members),
+            format=_FORMATS.get(path.suffix.lower(), DocumentFormat.OTHER),
+        )
+        document.page_count_known = numbered
+        for number in sorted(pages):
+            page = Page(number=number, width_pt=0.0, height_pt=0.0)
+            page.text = "\n\n".join(pages[number])
+            page.text_source = "loader"
+            page.extractions.append(
+                ExtractionSummary(
+                    extractor=loader_name,
+                    characters=len(page.text.strip()),
+                    coverage_pct=None,
+                    seconds=0.0,
+                    granularity="none",
+                    tables_found=None,
+                )
+            )
+            document.pages.append(page)
+        documents.append(document)
+
+        found, paths = _scan_metadata(members, settings, reveal) if scan_metadata else ([], [])
+        findings[str(path)] = found
+        exposures[str(path)] = paths if scan_metadata else _path_keys(members)
+
+    return documents, findings, exposures
+
+
+def _scan_metadata(
+    members: list[tuple[str, dict[str, Any]]], settings: Config, reveal: bool
+) -> tuple[list[MetadataFinding], list[str]]:
+    """Identifiers in metadata values, each distinct key and value reported once.
+
+    Loaders repeat the same metadata on every page, so a finding is attached to
+    the first page it appeared on rather than repeated for every page after.
+    """
+    seen: set[tuple[str, str]] = set()
+    found: list[MetadataFinding] = []
+    for _text, metadata in members:
+        page = _page_of(metadata)
+        for key, value in metadata.items():
+            rendered = _as_text(value)
+            if (key, rendered) in seen:
+                continue
+            seen.add((key, rendered))
+            if sum(c.isalnum() for c in rendered) < _MIN_SCANNABLE:
+                continue
+            matches, _unavailable = scan_text(rendered, settings.sensitive, reveal)
+            found.extend(
+                MetadataFinding(
+                    key=key,
+                    category=match.category,
+                    label=match.label,
+                    severity=match.severity,
+                    evidence=match.evidence,
+                    masked=match.masked,
+                    revealed=match.revealed,
+                    page=page,
+                )
+                for match in matches
+            )
+    return found, _path_keys(members)
+
+
+def _path_keys(members: list[tuple[str, dict[str, Any]]]) -> list[str]:
+    keys = {
+        key
+        for _text, metadata in members
+        for key, value in metadata.items()
+        if isinstance(value, str) and _ABSOLUTE_PATH.match(value)
+    }
+    return sorted(keys)
+
+
+def _as_text(value: Any) -> str:
+    if value is None or isinstance(value, bool):
+        return ""
+    if isinstance(value, str | int | float):
+        return str(value)
+    try:
+        return json.dumps(value, default=str, ensure_ascii=False)
+    except (TypeError, ValueError):
+        return str(value)
+
+
+def _digest(path: Path, members: list[tuple[str, dict[str, Any]]]) -> str:
+    """The file's hash where the file is readable here, the text's otherwise."""
+    try:
+        if path.is_file():
+            return sha256_of(path)
+    except OSError:
+        pass
+    return hashlib.sha256("\n".join(text for text, _ in members).encode("utf-8")).hexdigest()
+
+
+def _common_root(paths: list[Path]) -> Path | None:
+    absolute = [p for p in paths if p.is_absolute()]
+    if not absolute or len(absolute) != len(paths):
+        return None
+    if len(absolute) == 1:
+        return absolute[0].parent
+    return Path(os.path.commonpath([str(p.parent) for p in absolute]))
+
+
+def _relative_name(path: Path, root: Path | None) -> str:
+    if root is None:
+        return str(path)
+    try:
+        return str(path.relative_to(root))
+    except ValueError:
+        return str(path)
+
+
+def _loader_limitations(loader: LoaderRun, entries: list[DocumentReport]) -> list[Limitation]:
+    names = [entry.relative_path for entry in entries]
+    limitations: list[Limitation] = []
+
+    if loader.error:
+        limitations.append(
+            Limitation(
+                area="Loader",
+                statement=f"{loader.name} did not finish: {loader.error}.",
+                severity="important",
+            )
+        )
+    if loader.network_attempts:
+        limitations.append(
+            Limitation(
+                area="Loader",
+                statement=(
+                    f"{loader.name} attempted {len(loader.network_attempts)} network "
+                    f"connection(s) while loading, and complydoc refused them."
+                ),
+                affected=list(loader.network_attempts),
+                severity="important",
+            )
+        )
+
+    metadata_hits = [
+        e.relative_path for e in entries if any(f.significant for f in e.metadata_findings)
+    ]
+    if metadata_hits:
+        total = sum(1 for e in entries for f in e.metadata_findings if f.significant)
+        limitations.append(
+            Limitation(
+                area="Metadata",
+                statement=(
+                    f"{total} identifier(s) were found in metadata {loader.name} returned. "
+                    f"Metadata is usually stored beside each chunk."
+                ),
+                affected=metadata_hits,
+                severity="important",
+            )
+        )
+
+    path_keys = sorted({key for e in entries for key in e.path_exposures})
+    if path_keys:
+        limitations.append(
+            Limitation(
+                area="Metadata",
+                statement=(
+                    f"Metadata key(s) {', '.join(path_keys)} hold absolute file paths, which "
+                    f"include the account name and directory layout they came from."
+                ),
+                affected=[e.relative_path for e in entries if e.path_exposures],
+                severity="important",
+            )
+        )
+
+    if entries:
+        limitations.append(
+            Limitation(
+                area="Loader",
+                statement=(
+                    f"Text came from {loader.name}, not from the files. Signals that need "
+                    f"the page itself — text coverage, columns, tables, rotation and scan "
+                    f"quality — are reported as not measured, and vision cost is not "
+                    f"estimated."
+                ),
+                affected=names,
+                severity="info",
+            )
+        )
+    return limitations

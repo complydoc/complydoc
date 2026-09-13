@@ -101,6 +101,7 @@ nav:
   - Guides:
       - Audit a folder: guides/audit-a-folder.md
       - Extracting masked text: guides/extract-masked-text.md
+      - Inspecting a loader: guides/inspect-a-loader.md
   - Reference:
       - Command line: reference/cli.md
       - Python API: reference/api.md

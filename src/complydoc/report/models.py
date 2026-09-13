@@ -41,7 +41,7 @@ __all__ = [
     "RunMetadata",
 ]
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 
 def report_shape() -> dict[str, object]:
@@ -62,6 +62,7 @@ def report_shape() -> dict[str, object]:
             "aggregate",
             "overall",
             "quick_wins",
+            "loader",
             "limitations",
             "staleness_warnings",
             "signal_weights",
@@ -89,6 +90,8 @@ def report_shape() -> dict[str, object]:
             ),
             "sensitive.unreadable_pages": "pages that were not searched at all",
             "extractions[]": "one per reader asked for; the first is the one kept",
+            "metadata_findings[]": "key, category, severity, evidence, masked (from metadata)",
+            "path_exposures": "metadata keys holding an absolute filesystem path",
         },
         "overall": {
             "score": "global readiness 0-100, content and cost path and exposure",
@@ -96,9 +99,59 @@ def report_shape() -> dict[str, object]:
             "bands": "documents per band — the composition the mean hides",
         },
         "quick_wins[]": "id, title, detail, documents[], actor (complydoc | you), effect",
+        "loader": (
+            "null unless documents came from an external loader: name, "
+            "documents_returned, seconds, network_attempts[], error, metadata_keys[]"
+        ),
         "aggregate": "folder totals: cost, signal_distribution, sensitive_by_category",
         "limitations[]": "area, statement, affected[], severity (info | important)",
     }
+
+
+@dataclass(frozen=True, slots=True)
+class MetadataFinding:
+    """An identifier found in a document's metadata rather than its text.
+
+    Loaders attach metadata to every document they return, and it is usually
+    stored beside the content — in a vector store, next to each chunk — so an
+    identifier there travels exactly as far as one in the text.
+    """
+
+    key: str
+    category: str
+    label: str
+    severity: str
+    evidence: str
+    masked: str
+    revealed: str | None = None
+    page: int | None = None
+
+    @property
+    def significant(self) -> bool:
+        """Whether this finding should raise an alarm rather than only be listed.
+
+        A low-severity category found by the name model is excluded. Loaders put
+        the producing software in metadata — "ReportLab PDF Library", "Microsoft
+        Word" — and the model labels it an organisation, which would otherwise
+        flag every PDF. It stays in the list; it does not become a limitation or
+        a quick win on its own.
+        """
+        return not (self.severity == "low" and self.evidence == "model")
+
+
+@dataclass(frozen=True, slots=True)
+class LoaderRun:
+    """What an external loader did when complydoc ran it."""
+
+    name: str
+    documents_returned: int
+    seconds: float | None
+    """None when documents were passed in already loaded."""
+    network_attempts: list[str] = field(default_factory=list)
+    """Connections the loader tried to open and the guard refused."""
+    error: str | None = None
+    metadata_keys: list[str] = field(default_factory=list)
+    """Every metadata key the loader returned, across all documents."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -219,6 +272,14 @@ class DocumentReport:
     """The text itself. Only populated with --extracted-text: it is the document."""
     extractions: list[ExtractorReading] = field(default_factory=list)
     """One per extractor the run was asked for. The first is the one kept."""
+    metadata_findings: list[MetadataFinding] = field(default_factory=list)
+    """Identifiers in the metadata a loader returned. Empty for files read directly."""
+    path_exposures: list[str] = field(default_factory=list)
+    """Metadata keys whose value is an absolute filesystem path.
+
+    Not an identifier category, and no detector would flag it, but a home
+    directory path names the account it belongs to and the layout around it.
+    """
 
     @property
     def extractors_disagree(self) -> bool:
@@ -332,6 +393,8 @@ class AuditReport:
     """
     quick_wins: list[QuickWin] = field(default_factory=list)
     """What to do next, ranked. See `complydoc.quickwins`."""
+    loader: LoaderRun | None = None
+    """Set when the documents came from an external loader rather than from files."""
 
 
 def build_aggregate(

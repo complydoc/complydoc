@@ -50,7 +50,12 @@ class DocumentFormat(StrEnum):
     """
 
 
-TextSource = Literal["native", "ocr", "none"]
+TextSource = Literal["native", "ocr", "none", "loader"]
+"""Where a page's text came from.
+
+`loader` is text an external loader supplied — a LangChain `Document`, say.
+Its provenance is unknown: it may have come off a text layer or out of OCR, and
+nothing that depends on which reports as though it knew."""
 
 
 class LoaderError(RuntimeError):

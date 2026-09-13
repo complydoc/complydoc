@@ -10,6 +10,20 @@ branch on when reading reports programmatically.
 
 ### Added
 
+- `cd.inspect_documents()` reports on the output of another framework's
+  loader instead of complydoc's own readers: a LangChain or LlamaIndex loader, a
+  callable, or documents already loaded. It runs the same identifier scan,
+  readiness signals and cost estimate as an audit, and adds what only loader
+  output has — the metadata on each document and the network connections the
+  loader attempted. Documents are read by shape, so neither framework is a
+  dependency.
+- Metadata is scanned with the same detectors as page text. Findings are in
+  `document.metadata_findings`, keys holding absolute file paths in
+  `document.path_exposures`, and both appear on the report's security tab and
+  as a quick win.
+- The network guard records refused connections, and `offline.guarded()`
+  yields them. A loader that catches the refusal and continues is still
+  reported as having tried.
 - A documentation site, built with MkDocs Material and published to GitHub
   Pages. Everything under `reference/` is generated at build time — the command
   line from the Typer app, the Python API from the docstrings, the report shape
@@ -24,6 +38,11 @@ branch on when reading reports programmatically.
 
 ### Changed
 
+- Page text has a fourth source, `loader`, for text another framework supplied.
+  Signals that need the page itself report as not measured on it, including
+  whether the file has a text layer.
+- `schema_version` is 4. The report carries `loader`, and each document
+  `metadata_findings` and `path_exposures`.
 - `complydoc schema` reads the report shape from `report_shape()` in
   `report/models.py` rather than a dict inside the command, so the command line
   and the documentation cannot describe different JSON. Updating it revealed it
@@ -32,6 +51,11 @@ branch on when reading reports programmatically.
 
 ### Fixed
 
+- A number that happened to pass the Luhn checksum was reported as a
+  confirmed, high-severity card number. Luhn passes one digit string in ten;
+  PDFPlumber's `CreationDate` metadata, `D:20260909103836`, was one of them.
+  Card numbers now also have to match a card network's issuer prefix and
+  length.
 - The entity model is no longer loaded in the process the workers fork from.
   Loading it pulls in torch, which on macOS brings up Metal and Objective-C
   runtime state, and Apple's frameworks do not survive a fork. A worker forked

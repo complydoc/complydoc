@@ -97,8 +97,10 @@ def api_page() -> None:
     import complydoc
 
     names = [n for n in complydoc.__all__ if not n.startswith("_")]
-    entry_points = [n for n in names if n.endswith("_audit") or n == "extract_text"]
-    results = ["TextResult", "Chunk", "ExtractionWarning"]
+    entry_points = [
+        n for n in names if n.endswith("_audit") or n in {"extract_text", "inspect_documents"}
+    ]
+    results = ["TextResult", "Chunk", "ExtractionWarning", "LoaderRun", "MetadataFinding"]
     plugging = [
         n for n in names if n.startswith(("register_", "all_")) or n == "supported_extensions"
     ]

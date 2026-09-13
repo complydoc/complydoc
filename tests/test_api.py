@@ -44,6 +44,9 @@ def test_the_public_surface_is_exactly_what_was_promised():
         "readiness_audit",
         # text out, with the identifiers covered over
         "extract_text",
+        "inspect_documents",
+        "LoaderRun",
+        "MetadataFinding",
         "Chunk",
         "TextResult",
         "ExtractionWarning",

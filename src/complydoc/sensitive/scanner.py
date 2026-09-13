@@ -27,7 +27,7 @@ from complydoc.sensitive.masking import render
 from complydoc.sensitive.registry import DetectorUnavailableError, detector_by_id
 from complydoc.sensitive.validators import validate
 
-__all__ = ["ScanResult", "UnscannedCategory", "scan"]
+__all__ = ["ScanResult", "UnscannedCategory", "scan", "scan_text"]
 
 # Categories where one run of characters can only be one identifier. Within this
 # group overlapping matches are resolved longest-first, so a phone-number pattern
@@ -193,6 +193,22 @@ def _scan_page(
 
     matches.sort(key=lambda m: (m.page, m.line, m.column))
     return matches
+
+
+def scan_text(
+    text: str, config: SensitiveConfig, reveal: bool = False
+) -> tuple[list[SensitiveMatch], dict[str, str]]:
+    """Scan a piece of text that is not a page, such as a metadata value.
+
+    Returns the matches — located as line and column within `text`, on page 1 —
+    and the categories that could not run, with why. Same detectors, same
+    validators and the same masking as a page scan, so a finding in metadata is
+    judged exactly as it would be in the body of the document.
+    """
+    unavailable: dict[str, str] = {}
+    if not text.strip():
+        return [], unavailable
+    return _scan_page(1, text, config, reveal, unavailable), unavailable
 
 
 def scan(document: Document, config: SensitiveConfig, reveal: bool = False) -> ScanResult:

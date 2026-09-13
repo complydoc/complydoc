@@ -35,6 +35,20 @@ _ORIGINAL_GETADDRINFO: Final = socket.getaddrinfo
 
 _armed = False
 
+_attempts: list[str] = []
+"""Every refused connection, in order, for `guarded()` to hand back.
+
+A loader that catches the refusal and carries on — falling back to a bundled
+model, say — would otherwise leave no trace that it tried. That it tried is
+the finding.
+"""
+
+
+def _refuse(description: str) -> NetworkAccessError:
+    _attempts.append(description)
+    return NetworkAccessError(f"{_MESSAGE} ({description})")
+
+
 _MESSAGE = (
     "complydoc blocked an outbound network call. This tool is offline by design: "
     "no document content may leave the machine. If you are seeing this, a dependency "
@@ -55,21 +69,21 @@ def _blocked_connect(self: socket.socket, address: Any) -> None:
     if _is_local(self.family):
         _ORIGINAL_CONNECT(self, address)
         return
-    raise NetworkAccessError(f"{_MESSAGE} (attempted connect to {address!r})")
+    raise _refuse(f"attempted connect to {address!r}")
 
 
 def _blocked_connect_ex(self: socket.socket, address: Any) -> int:
     if _is_local(self.family):
         return int(_ORIGINAL_CONNECT_EX(self, address))
-    raise NetworkAccessError(f"{_MESSAGE} (attempted connect_ex to {address!r})")
+    raise _refuse(f"attempted connect_ex to {address!r}")
 
 
 def _blocked_create_connection(address: Any, *args: Any, **kwargs: Any) -> socket.socket:
-    raise NetworkAccessError(f"{_MESSAGE} (attempted create_connection to {address!r})")
+    raise _refuse(f"attempted create_connection to {address!r}")
 
 
 def _blocked_getaddrinfo(host: Any, port: Any, *args: Any, **kwargs: Any) -> Any:
-    raise NetworkAccessError(f"{_MESSAGE} (attempted DNS lookup of {host!r})")
+    raise _refuse(f"attempted DNS lookup of {host!r}")
 
 
 def arm() -> None:
@@ -101,7 +115,7 @@ def disarm() -> None:
 
 
 @contextlib.contextmanager
-def guarded(active: bool = True) -> Iterator[None]:
+def guarded(active: bool = True) -> Iterator[list[str]]:
     """Arm the guard for this block, then leave the process as it was found.
 
     The library entry points run inside this. Arming permanently would be
@@ -109,19 +123,30 @@ def guarded(active: bool = True) -> Iterator[None]:
     would start failing, with a message about documents that makes no sense
     where it appeared.
 
-    Restores on the way out whatever happens, and does nothing at all if the
-    caller has already armed the guard for themselves — in which case it is
-    theirs to disarm, not ours.
+    Restores on the way out whatever happens, and leaves the guard alone if the
+    caller had already armed it for themselves — theirs to disarm, not ours.
+
+    Yields a list that holds, once the block exits, every connection refused
+    inside it. Blocks nest: an inner block collects only its own attempts.
     """
-    if not active or _armed:
-        yield
+    seen: list[str] = []
+    if not active:
+        yield seen
         return
 
-    arm()
+    start = len(_attempts)
+    already_armed = _armed
+    if not already_armed:
+        arm()
     try:
-        yield
+        yield seen
     finally:
-        disarm()
+        # Filled on the way out, so a caller reading it after the block gets
+        # every attempt made inside it, including by code that swallowed the
+        # refusal and continued.
+        seen.extend(_attempts[start:])
+        if not already_armed:
+            disarm()
 
 
 def is_armed() -> bool:

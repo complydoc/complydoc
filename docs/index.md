@@ -44,7 +44,7 @@ complydoc audit ~/contracts --ocr
 ## Output
 
 Two files per run: a self-contained HTML report and a JSON file with the same
-data. The JSON carries `schema_version`, currently 3.
+data. The JSON carries `schema_version`, currently 4.
 
 ![The HTML report, summary tab](https://raw.githubusercontent.com/duartecaldascardoso/complydoc/main/.github/images/report-light.png#only-light)
 ![The HTML report, summary tab](https://raw.githubusercontent.com/duartecaldascardoso/complydoc/main/.github/images/report-dark.png#only-dark)
@@ -78,6 +78,7 @@ fetched. See [Network isolation](explanation/offline.md).
 | --- | --- |
 | [Audit a folder](guides/audit-a-folder.md) | Running it, and reading the report |
 | [Extracting masked text](guides/extract-masked-text.md) | Masked text, token counts, warnings |
+| [Inspecting a loader](guides/inspect-a-loader.md) | LangChain and LlamaIndex output, metadata, network attempts |
 | [Command line](reference/cli.md) | Every command and flag |
 | [Python API](reference/api.md) | `import complydoc as cd` |
 | [Report JSON](reference/report.md) | The shape a run writes |

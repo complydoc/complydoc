@@ -64,6 +64,19 @@ jobs:
       - name: tests
         run: uv run pytest -q
 
+  test-integrations:
+    name: tests with LangChain loaders
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: "3.12"
+      - run: uv sync --extra ocr --group dev --group integrations
+      - name: tests
+        run: uv run pytest -q
+
   fixtures:
     name: fixtures match their generator
     runs-on: ubuntu-latest

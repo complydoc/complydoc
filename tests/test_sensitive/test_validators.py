@@ -159,3 +159,48 @@ def test_categories_cover_more_than_one_jurisdiction(config):
     regions = {c.region for c in config.sensitive.enabled_categories.values()}
     assert {"UK", "US", "international"} <= regions
     assert len(regions) >= 6
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "4111 1111 1111 1111",  # Visa
+        "4222222222222",  # Visa, 13 digits
+        "5555 5555 5555 4444",  # Mastercard
+        "2223003122003222",  # Mastercard 2-series
+        "378282246310005",  # American Express
+        "6011111111111117",  # Discover
+        "3530111333300000",  # JCB
+        "30569309025904",  # Diners Club, 14 digits
+    ],
+)
+def test_card_issuer_accepts_numbers_from_card_networks(value):
+    from complydoc.sensitive.validators import card_issuer
+
+    assert card_issuer(value) is True
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "20260909103836",  # a PDF creation date, which passes Luhn
+        "12345678903",  # too short for any network
+        "9111111111111111",  # no network starts with 9
+    ],
+)
+def test_card_issuer_rejects_numbers_no_network_issues(value):
+    from complydoc.sensitive.validators import card_issuer
+
+    assert card_issuer(value) is False
+
+
+def test_a_pdf_timestamp_is_not_reported_as_a_card_number(config):
+    """PDFPlumberLoader puts `CreationDate` in raw PDF date syntax into metadata.
+
+    The fourteen digits in it satisfy Luhn, and before the issuer check they
+    were reported as a high-severity card number confirmed by a checksum.
+    """
+    from complydoc.sensitive.scanner import scan_text
+
+    matches, _ = scan_text("D:20260909103836+01'00'", config.sensitive)
+    assert not [m for m in matches if m.category == "card_number"]

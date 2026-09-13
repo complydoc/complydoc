@@ -54,13 +54,13 @@ from complydoc.sensitive.scanner import scan
 
 __all__ = ["COMPONENTS", "resolve_jobs", "run_audit"]
 
-COMPONENTS = ("cost", "readiness", "sensitive")
+COMPONENTS: tuple[str, ...] = ("cost", "readiness", "sensitive")
 
 _MAX_TEXT_CHARS = 20_000
 """Per page, so one enormous document cannot make the report unopenable."""
 
 
-def _ner_available(config: Config) -> bool:
+def ner_available(config: Config) -> bool:
     """Whether the local NER model can be loaded, checked once per run."""
     from complydoc.sensitive.detectors.ner import model_available
 
@@ -79,7 +79,7 @@ def _relative(path: Path, root: Path) -> str:
 
 
 @dataclass(frozen=True, slots=True)
-class _Work:
+class Work:
     """Everything analysing one document needs, and nothing that it does not.
 
     Kept picklable on purpose: with `--jobs` this is what crosses into each
@@ -163,28 +163,18 @@ def extractor_readings(document: Document) -> list[ExtractorReading]:
     return readings
 
 
-def _process(path: Path, work: _Work) -> _Outcome:
-    """Read one document and produce its report entry. Never raises."""
-    ocr_before = ocr_module.stats()
-    read_started = time.perf_counter()
-    try:
-        document = load_document(path, work.options)
-    except LoaderError as exc:
-        return _Outcome(None, SkipRecord(path=path, reason="could not be parsed", detail=str(exc)))
-    except Exception as exc:
-        return _Outcome(
-            None,
-            SkipRecord(
-                path=path,
-                reason="unexpected error while reading",
-                detail=f"{type(exc).__name__}: {exc}",
-            ),
-        )
-    read_seconds = time.perf_counter() - read_started
+def build_entry(
+    document: Document, work: Work, read_seconds: float, relative_path: str
+) -> DocumentReport:
+    """A report entry for a document that has already been read.
 
+    Separate from reading because documents do not only come from files: an
+    external loader hands over text it produced, and everything from here on
+    applies to it unchanged.
+    """
     entry = DocumentReport(
         path=document.path,
-        relative_path=_relative(document.path, work.target),
+        relative_path=relative_path,
         sha256=document.sha256,
         format=document.format,
         page_count=document.page_count,
@@ -237,11 +227,34 @@ def _process(path: Path, work: _Work) -> _Outcome:
             round(total_seconds / document.page_count, 3) if document.page_count else None
         ),
     )
+    return entry
+
+
+def _process(path: Path, work: Work) -> _Outcome:
+    """Read one document and produce its report entry. Never raises."""
+    ocr_before = ocr_module.stats()
+    read_started = time.perf_counter()
+    try:
+        document = load_document(path, work.options)
+    except LoaderError as exc:
+        return _Outcome(None, SkipRecord(path=path, reason="could not be parsed", detail=str(exc)))
+    except Exception as exc:
+        return _Outcome(
+            None,
+            SkipRecord(
+                path=path,
+                reason="unexpected error while reading",
+                detail=f"{type(exc).__name__}: {exc}",
+            ),
+        )
+    read_seconds = time.perf_counter() - read_started
+
+    entry = build_entry(document, work, read_seconds, _relative(document.path, work.target))
     ocr_after = ocr_module.stats()
     return _Outcome(entry, None, ocr_after[0] - ocr_before[0], ocr_after[1] - ocr_before[1])
 
 
-_WORKER_WORK: _Work | None = None
+_WORKER_WORK: Work | None = None
 
 
 def _pool_context() -> Any:
@@ -263,7 +276,7 @@ def _pool_context() -> Any:
     return get_context("spawn")
 
 
-def _worker_init(work: _Work) -> None:
+def _worker_init(work: Work) -> None:
     """Set up a worker process. The network guard is armed here too.
 
     A guard that only holds in the parent would be no guard at all, so every
@@ -288,7 +301,7 @@ def _worker(path: Path) -> _Outcome:
     return _process(path, _WORKER_WORK)
 
 
-def _outcomes(files: list[Path], work: _Work, jobs: int) -> Iterator[_Outcome]:
+def _outcomes(files: list[Path], work: Work, jobs: int) -> Iterator[_Outcome]:
     """Results in the order the files were discovered, serial or parallel."""
     if jobs <= 1 or len(files) < 2:
         for path in files:
@@ -380,7 +393,7 @@ def run_audit(
 
     ocr_module.reset_stats()
     jobs = resolve_jobs(jobs, len(files))
-    work = _Work(
+    work = Work(
         config=config,
         options=options,
         target=target,
@@ -404,15 +417,6 @@ def run_audit(
         if outcome.entry is not None:
             documents.append(outcome.entry)
 
-    folder_cost = None
-    if "cost" in requested:
-        folder_cost = folder_from_estimates(
-            [e.cost for e in documents if e.cost is not None],
-            config.pricing,
-            headline_resolution=resolution,
-            monthly_volume=monthly_volume,
-        )
-
     finished_at = dt.datetime.now().astimezone()
     run = RunMetadata(
         tool_version=__version__,
@@ -431,7 +435,7 @@ def run_audit(
         ocr_compare_used=ocr_compare,
         ocr_requested=ocr,
         ocr_available=ocr_module.available(),
-        ner_available=_ner_available(config) if "sensitive" in requested else False,
+        ner_available=ner_available(config) if "sensitive" in requested else False,
         python_version=platform.python_version(),
         monthly_volume=monthly_volume,
         jobs=jobs,
@@ -442,6 +446,41 @@ def run_audit(
         compare_extractors=list(compare_extractors),
         compare_engines=list(compare_engines),
     )
+
+    return assemble_report(
+        config,
+        requested,
+        documents,
+        skipped,
+        run,
+        resolution=resolution,
+        monthly_volume=monthly_volume,
+    )
+
+
+def assemble_report(
+    config: Config,
+    requested: Sequence[str],
+    documents: list[DocumentReport],
+    skipped: list[SkipRecord],
+    run: RunMetadata,
+    *,
+    resolution: str = "medium",
+    monthly_volume: int | None = None,
+) -> AuditReport:
+    """The report around a finished set of entries: totals, limitations, scores.
+
+    Shared by a folder audit and by an inspection of a loader's output, so the
+    two cannot drift into different ideas of what a report contains.
+    """
+    folder_cost = None
+    if "cost" in requested:
+        folder_cost = folder_from_estimates(
+            [e.cost for e in documents if e.cost is not None],
+            config.pricing,
+            headline_resolution=resolution,
+            monthly_volume=monthly_volume,
+        )
 
     staleness = check_staleness(config.pricing) if "cost" in requested else []
     report = AuditReport(

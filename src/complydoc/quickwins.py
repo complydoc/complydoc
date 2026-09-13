@@ -277,12 +277,35 @@ def _poor_ocr(context: _Context) -> None:
     )
 
 
+def _identifying_metadata(context: _Context) -> None:
+    """Metadata that carries identifiers or account names alongside every chunk."""
+    exposed = [
+        d.relative_path
+        for d in context.report.documents
+        if any(f.significant for f in d.metadata_findings) or d.path_exposures
+    ]
+    context.add(
+        id="strip_metadata",
+        title="Strip identifying metadata before indexing",
+        detail=(
+            "The loader returned metadata carrying identifiers or absolute file paths. "
+            "Metadata is attached to every document a loader returns and is usually "
+            "stored beside each chunk, so it goes wherever the text goes. Drop or "
+            "rewrite those keys before the documents are embedded."
+        ),
+        documents=exposed,
+        actor="you",
+        effect="identifiers and account names are no longer stored with every chunk",
+    )
+
+
 _BUILDERS = (
     _no_text_layer,
     _skipped_documents,
     _reader_disagreement,
     _high_severity_exposure,
     _poor_ocr,
+    _identifying_metadata,
 )
 
 

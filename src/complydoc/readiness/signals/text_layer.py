@@ -18,6 +18,11 @@ class TextLayerSignal:
     def measure(self, document: Document) -> Measurement:
         if not document.pages:
             return Measurement.na("the document could not be opened, so nothing was read")
+        if any(p.text_source == "loader" for p in document.pages):
+            return Measurement.na(
+                "the text was supplied by an external loader, so whether the file carries "
+                "a text layer was not determined"
+            )
         native = sum(1 for p in document.pages if p.text_source == "native" and p.text.strip())
         ocr = sum(1 for p in document.pages if p.text_source == "ocr" and p.text.strip())
         none = len(document.pages) - native - ocr

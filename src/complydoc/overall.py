@@ -33,8 +33,8 @@ from dataclasses import dataclass, field
 
 from complydoc.config.schema import OverallConfig
 from complydoc.readiness.scoring import band_label
-from complydoc.report.models import AuditReport, DocumentReport
-from complydoc.sensitive.base import EVIDENCE_ORDER, SEVERITY_WEIGHT
+from complydoc.report.models import AuditReport, DocumentReport, MetadataFinding
+from complydoc.sensitive.base import EVIDENCE_ORDER, SEVERITY_WEIGHT, SensitiveMatch
 
 __all__ = ["Factor", "OverallReadiness", "band_of", "overall_readiness"]
 
@@ -122,7 +122,9 @@ def _cost_score(document: DocumentReport, config: OverallConfig) -> float | None
         return None
 
     pages = document.cost.pages
-    native = sum(1 for p in pages if p.text_source == "native")
+    # Text a loader supplied reaches a model on the text path, which is what this
+    # factor asks about, whatever produced it.
+    native = sum(1 for p in pages if p.text_source in {"native", "loader"})
     recognised = sum(1 for p in pages if p.text_source == "ocr")
     blank = len(pages) - native - recognised
 
@@ -144,7 +146,13 @@ def _exposure_score(document: DocumentReport, config: OverallConfig) -> float | 
         return None
 
     exposure = 0.0
-    for match in scan.matches:
+    # Identifiers in metadata count the same as identifiers in the text: loaders
+    # store metadata alongside the content, so it leaves with it.
+    findings: list[SensitiveMatch | MetadataFinding] = [
+        *scan.matches,
+        *document.metadata_findings,
+    ]
+    for match in findings:
         # A severity nobody recognises is not free: it counts as the lowest
         # rather than as nothing, so a config that grows a level does not
         # quietly stop costing anything.
