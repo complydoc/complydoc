@@ -581,7 +581,64 @@
 </div>
 {% endif %}
 
-{% if report.loader %}
+{% if report.loader_comparison %}
+{% set lc = report.loader_comparison %}
+<div class="loaderrun">
+<h3>Loaders compared</h3>
+<p class="note">Findings, scores and cost on this report are built from {{ lc.baseline }}. The
+other loaders ran on the same input; where their text differs is marked on the Documents
+page, and identifiers only some of them returned are listed on the Security page.</p>
+<div class="scroll"><table>
+  <thead><tr><th>Loader</th><th class="n">Documents</th><th class="n">Pages</th>
+    <th class="n">Characters</th><th class="n">Load time</th><th>Network</th>
+    <th class="n">Metadata keys</th><th class="n">Identifiers in text</th>
+    <th class="n">In metadata</th><th class="n">Readiness</th><th class="n">Global</th></tr></thead>
+  <tbody>
+  {% for l in lc.loaders %}
+    <tr{% if loop.first %} class="d-head"{% endif %}>
+      <td class="mono">{{ l.name }}{% if loop.first %} <span class="flag">baseline</span>{% endif %}{% if l.error %}
+        <span class="attn">did not finish</span>{% endif %}</td>
+      <td class="n">{{ l.documents }}</td>
+      <td class="n">{{ l.pages }}</td>
+      <td class="n">{{ "{:,}".format(l.characters) }}</td>
+      <td class="n">{{ duration(l.seconds) }}</td>
+      <td>{% if l.network_allowed %}<span class="attn">allowed</span>, {{ l.network_attempts | length }} made{% elif l.network_attempts %}<span class="attn">{{ l.network_attempts | length }} refused</span>{% else %}none{% endif %}</td>
+      <td class="n">{{ l.metadata_keys | length }}</td>
+      <td class="n">{{ l.identifiers_in_text }}</td>
+      <td class="n">{{ l.identifiers_in_metadata }}</td>
+      <td class="n">{{ "—" if l.readiness_score is none else l.readiness_score }}</td>
+      <td class="n">{{ "—" if l.global_score is none else l.global_score }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% if lc.metadata_keys %}
+<h3>Metadata keys not returned by every loader</h3>
+<p class="note">Matched ignoring case, so <span class="mono">author</span> and
+<span class="mono">Author</span> count as the same key.</p>
+<div class="scroll"><table>
+  <thead><tr><th>Key</th><th>Returned by</th></tr></thead>
+  <tbody>
+  {% for key, names in lc.metadata_keys.items() %}
+    <tr><td class="mono">{{ key }}</td><td class="mono">{{ names | join(", ") }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% endif %}
+{% if lc.documents %}
+<h3>Documents not returned by every loader</h3>
+<div class="scroll"><table>
+  <thead><tr><th>Document</th><th>Returned by</th></tr></thead>
+  <tbody>
+  {% for document, names in lc.documents.items() %}
+    <tr><td class="mono">{{ document }}</td><td class="mono">{{ names | join(", ") }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% endif %}
+</div>
+{% endif %}
+{% if report.loader and not report.loader_comparison %}
 {# Only present when the documents came from another framework's loader. #}
 <div class="loaderrun">
 <h3>Loader</h3>
@@ -905,6 +962,33 @@ name and directory layout it came from.</p>
 </table></div>
 {% endif %}
 
+{% if report.loader_comparison and report.loader_comparison.identifier_differences %}
+<h3>Found by some loaders only</h3>
+<p class="note">Identifiers in one loader's output and not another's, matched by category and
+masked value. An identifier missing from a loader's text is missing for anything that reads
+that text afterwards. Greyed rows are low-severity findings from the name model.</p>
+<div class="scroll"><table data-sortable>
+  <thead><tr><th data-sort="text">Document</th><th data-sort="text">Category</th>
+    <th data-sort="num" data-sort-default="desc">Severity</th><th data-sort="num">Evidence</th>
+    <th data-sort="text">Where</th><th>Value</th><th data-sort="text">Found by</th>
+    <th data-sort="text">Missed by</th></tr></thead>
+  <tbody>
+  {% for d in report.loader_comparison.identifier_differences %}
+    <tr{% if not d.significant %} class="quiet"{% endif %}>
+      <td class="mono">{{ d.document }}</td>
+      <td>{{ d.label }}</td>
+      <td data-value="{{ severity_rank(d.severity) }}">{{ severity_badge(d.severity) | safe }}</td>
+      <td data-value="{{ evidence_rank(d.evidence) }}"><span class="ev ev-{{ d.evidence }}">{{ d.evidence }}</span></td>
+      <td class="mono">{% if d.location == "metadata" %}metadata: {{ d.keys | join(", ") }}{% else %}text{% endif %}</td>
+      <td class="mono">{{ d.value }}</td>
+      <td class="mono">{{ d.found_by | join(", ") }}</td>
+      <td class="mono attn">{{ d.missed_by | join(", ") }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% endif %}
+
 {% if agg.categories_not_scanned %}
 <h3>Categories not scanned</h3>
 <div class="scroll"><table>
@@ -1133,7 +1217,7 @@ name and directory layout it came from.</p>
         <h4 class="sec">How it was read
           <span class="tag">{{ doc.disagreement or "they agree" }}</span></h4>
         <div class="scroll"><table>
-          <thead><tr><th>Extractor</th><th class="n">Characters</th><th class="n">Coverage</th>
+          <thead><tr><th>{{ "Loader" if report.loader_comparison else "Extractor" }}</th><th class="n">Characters</th><th class="n">Coverage</th>
             <th class="n">Time</th><th class="n" title="How closely this reading matches the kept
               one, compared in order. Two readings can hold the same characters in a different
               order and this is what says so.">Matches kept</th><th>Reads</th></tr></thead>
@@ -1145,9 +1229,9 @@ name and directory layout it came from.</p>
               <td class="n">{% if r.mean_coverage_pct is none %}<span class="why"
                 title="This reader returns text without geometry, so there is nothing to
                   measure coverage from.">not measured</span>{% else %}{{ r.mean_coverage_pct }}%{% endif %}</td>
-              <td class="n">{{ duration(r.seconds) }}</td>
+              <td class="n">{% if report.loader_comparison %}—{% else %}{{ duration(r.seconds) }}{% endif %}</td>
               <td class="n">{% if loop.first %}—{% else %}{{ "{:.0f}%".format(r.similarity * 100) }}{% endif %}</td>
-              <td class="why">{{ r.granularity }} boxes{% if r.reads_tables %}, table structure{% endif %}</td>
+              <td class="why">{% if r.granularity == "none" %}text only{% else %}{{ r.granularity }} boxes{% endif %}{% if r.reads_tables %}, table structure{% endif %}</td>
             </tr>
           {% endfor %}
           </tbody>

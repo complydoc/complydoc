@@ -36,7 +36,9 @@ __all__ = [
     "DocumentReport",
     "DocumentTiming",
     "ExtractorReading",
+    "IdentifierDifference",
     "Limitation",
+    "LoaderComparison",
     "PageText",
     "RunMetadata",
 ]
@@ -63,6 +65,7 @@ def report_shape() -> dict[str, object]:
             "overall",
             "quick_wins",
             "loader",
+            "loader_comparison",
             "limitations",
             "staleness_warnings",
             "signal_weights",
@@ -103,6 +106,11 @@ def report_shape() -> dict[str, object]:
             "null unless documents came from an external loader: name, "
             "documents_returned, seconds, network_allowed, network_attempts[], error, "
             "metadata_keys[]"
+        ),
+        "loader_comparison": (
+            "null unless compare_loaders ran: baseline, loaders[] (per-loader totals, "
+            "network, scores), identifier_differences[] (found_by[], missed_by[]), "
+            "metadata_keys (key -> loaders returning it), documents (path -> loaders)"
         ),
         "aggregate": "folder totals: cost, signal_distribution, sensitive_by_category",
         "limitations[]": "area, statement, affected[], severity (info | important)",
@@ -157,6 +165,70 @@ class LoaderRun:
     network_allowed: bool = False
     """The caller passed `allow_network=True`, so the loader's connections went
     through. complydoc's own processing stays behind the guard either way."""
+
+
+@dataclass(frozen=True, slots=True)
+class LoaderSummary:
+    """One loader's totals, in a comparison of several."""
+
+    name: str
+    documents: int
+    pages: int
+    characters: int
+    seconds: float | None
+    network_allowed: bool
+    network_attempts: list[str]
+    error: str | None
+    metadata_keys: list[str]
+    identifiers_in_text: int
+    identifiers_in_metadata: int
+    documents_with_paths: int
+    """Documents with at least one metadata key holding an absolute path."""
+    readiness_score: float | None
+    global_score: float | None
+    text_path_usd: float | None
+
+
+@dataclass(frozen=True, slots=True)
+class IdentifierDifference:
+    """An identifier in some loaders' output and not in others'.
+
+    Matched by where it was found, its category and its masked value, so the
+    same identifier read by two loaders is one row. Metadata findings are
+    matched regardless of key name, because loaders spell the same field
+    differently: `producer` in one, `Producer` in another.
+    """
+
+    document: str
+    category: str
+    label: str
+    severity: str
+    evidence: str
+    value: str
+    """Masked, unless the run used `reveal`."""
+    location: str
+    """`text` or `metadata`."""
+    keys: list[str]
+    """The metadata keys it was found under. Empty for text."""
+    found_by: list[str]
+    missed_by: list[str]
+
+    @property
+    def significant(self) -> bool:
+        return not (self.severity == "low" and self.evidence == "model")
+
+
+@dataclass(frozen=True, slots=True)
+class LoaderComparison:
+    """Where several loaders' output differed, measured against the first."""
+
+    baseline: str
+    loaders: list[LoaderSummary]
+    identifier_differences: list[IdentifierDifference] = field(default_factory=list)
+    metadata_keys: dict[str, list[str]] = field(default_factory=dict)
+    """Keys not returned by every loader, matched ignoring case, and which returned them."""
+    documents: dict[str, list[str]] = field(default_factory=dict)
+    """Documents not returned by every loader, and which loaders returned them."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -400,6 +472,8 @@ class AuditReport:
     """What to do next, ranked. See `complydoc.quickwins`."""
     loader: LoaderRun | None = None
     """Set when the documents came from an external loader rather than from files."""
+    loader_comparison: LoaderComparison | None = None
+    """Set by `compare_loaders`. `loader` is then the baseline's run."""
 
 
 def build_aggregate(

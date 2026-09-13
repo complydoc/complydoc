@@ -98,9 +98,20 @@ def api_page() -> None:
 
     names = [n for n in complydoc.__all__ if not n.startswith("_")]
     entry_points = [
-        n for n in names if n.endswith("_audit") or n in {"extract_text", "inspect_documents"}
+        n
+        for n in names
+        if n.endswith("_audit") or n in {"extract_text", "inspect_documents", "compare_loaders"}
     ]
-    results = ["TextResult", "Chunk", "ExtractionWarning", "LoaderRun", "MetadataFinding"]
+    results = [
+        "TextResult",
+        "Chunk",
+        "ExtractionWarning",
+        "LoaderRun",
+        "MetadataFinding",
+        "LoaderComparison",
+        "LoaderSummary",
+        "IdentifierDifference",
+    ]
     plugging = [
         n for n in names if n.startswith(("register_", "all_")) or n == "supported_extensions"
     ]

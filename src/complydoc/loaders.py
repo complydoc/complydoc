@@ -43,6 +43,7 @@ import platform
 import re
 import time
 from collections.abc import Callable, Iterable, Mapping, Sequence
+from dataclasses import dataclass
 from pathlib import Path, PurePath
 from typing import Any
 
@@ -128,6 +129,47 @@ def inspect_documents(
     `extracted_text` is on here, unlike `full_audit`, because seeing what the
     loader extracted is usually the point.
     """
+    inspection = inspect_run(
+        source,
+        name=name,
+        config=config,
+        components=components,
+        reveal=reveal,
+        extracted_text=extracted_text,
+        models=models,
+        allow_network=allow_network,
+    )
+    return finish_report(inspection)
+
+
+@dataclass(slots=True)
+class Inspection:
+    """One loader's output, read and scanned, before the report is assembled.
+
+    Kept separate from the report so `compare_loaders` can attach the other
+    loaders' readings to the entries before scores and limitations are worked
+    out from them.
+    """
+
+    settings: Config
+    components: tuple[str, ...]
+    entries: list[DocumentReport]
+    run: RunMetadata
+    loader: LoaderRun
+
+
+def inspect_run(
+    source: Any,
+    *,
+    name: str | None,
+    config: Config | None,
+    components: Sequence[str],
+    reveal: bool,
+    extracted_text: bool,
+    models: Sequence[str] | None,
+    allow_network: bool,
+) -> Inspection:
+    """Run the loader and build a report entry for each document it returned."""
     if isinstance(source, (str, bytes, os.PathLike)):
         raise TypeError(
             "inspect_documents takes documents or a loader, not a path; "
@@ -192,11 +234,28 @@ def inspect_documents(
             monthly_volume=None,
             extractor=loader_run.name,
         )
-        report = assemble_report(settings, components, entries, [], run)
 
-    report.loader = loader_run
-    report.limitations[:0] = _loader_limitations(loader_run, entries)
+    return Inspection(settings, tuple(components), entries, run, loader_run)
+
+
+def finish_report(inspection: Inspection) -> AuditReport:
+    """Scores, limitations and quick wins, from entries that are complete."""
+    with offline.guarded():
+        report = assemble_report(
+            inspection.settings,
+            inspection.components,
+            inspection.entries,
+            [],
+            inspection.run,
+        )
+    report.loader = inspection.loader
+    report.limitations[:0] = _loader_limitations(inspection.loader, inspection.entries)
     return report
+
+
+def loader_name(source: Any) -> str:
+    """The name a loader is reported under when the caller gives none."""
+    return _name_of(source, _loading_call(source))
 
 
 def _run_loader(source: Any, name: str | None, allow_network: bool) -> tuple[list[Any], LoaderRun]:

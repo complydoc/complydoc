@@ -24,6 +24,12 @@ branch on when reading reports programmatically.
 - The network guard records refused connections, and `offline.guarded()`
   yields them. A loader that catches the refusal and continues is still
   reported as having tried.
+- `cd.compare_loaders()` runs several loaders on the same input and reports
+  where their output differs, measured against the first: text similarity per
+  document with the differing words marked per page, identifiers found by some
+  loaders and not others, metadata keys and documents not returned by all, and
+  each loader's network attempts and scores. The report is an ordinary report
+  built from the first loader, with the comparison in `loader_comparison`.
 - `inspect_documents(..., allow_network=True)` lets a loader that calls a
   hosted service reach the network. Its connections are recorded rather than
   refused, the report states that network access was allowed, and everything
@@ -45,7 +51,7 @@ branch on when reading reports programmatically.
 - Page text has a fourth source, `loader`, for text another framework supplied.
   Signals that need the page itself report as not measured on it, including
   whether the file has a text layer.
-- `schema_version` is 4. The report carries `loader`, and each document
+- `schema_version` is 4. The report carries `loader` and `loader_comparison`, and each document
   `metadata_findings` and `path_exposures`.
 - `complydoc schema` reads the report shape from `report_shape()` in
   `report/models.py` rather than a dict inside the command, so the command line

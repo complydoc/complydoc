@@ -66,3 +66,17 @@ def test_a_docx_loader_returns_no_page_numbers():
     document = report.documents[0]
     assert not document.page_count_known
     assert report.loader.metadata_keys == ["source"]
+
+
+def test_comparing_pypdf_and_pdfplumber():
+    path = str(SAMPLE / "employee-record.pdf")
+    report = cd.compare_loaders(
+        {"pypdf": loaders.PyPDFLoader(path), "pdfplumber": loaders.PDFPlumberLoader(path)}
+    )
+    comparison = report.loader_comparison
+    assert [row.name for row in comparison.loaders] == ["pypdf", "pdfplumber"]
+    assert comparison.documents == {}
+    assert "page_label" in comparison.metadata_keys
+    assert [r.extractor for r in report.documents[0].extractions] == ["pypdf", "pdfplumber"]
+    # The producer string is the same value under `producer` and `Producer`.
+    assert not [d for d in comparison.identifier_differences if d.location == "metadata"]

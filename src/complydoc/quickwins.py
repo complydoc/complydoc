@@ -199,8 +199,13 @@ def _reader_disagreement(context: _Context) -> None:
             "The readers this run compared returned the same words in a different "
             "order, which on a two-column page means one of them read straight "
             "across the columns and interleaved every sentence. Compare the "
-            "readings on the Documents page and set --extractor to the one that "
-            "got it right. It changes nothing in the files and costs nothing."
+            "readings on the Documents page and "
+            + (
+                "use the loader that got it right. "
+                if context.report.loader_comparison
+                else "set --extractor to the one that got it right. "
+            )
+            + "It changes nothing in the files and costs nothing."
         ),
         documents=scrambled,
         actor="you",
