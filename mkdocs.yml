@@ -106,7 +106,7 @@ nav:
       - Python API: reference/api.md
       - Report JSON: reference/report.md
       - Configuration: reference/configuration.md
-  - Why it works this way:
+  - Design notes:
       - Offline by construction: explanation/offline.md
       - Not measured is not zero: explanation/not-measured.md
       - How sure a finding is: explanation/evidence.md

@@ -1,11 +1,10 @@
 # Not measured is not zero
 
-If a document has no text layer, the number of words on its pages is not zero.
-Nobody looked. If a reader cannot find tables, the table count is not zero — it
-has no way to find one.
+A document with no text layer has no word count, not a word count of zero. A
+reader that cannot detect tables reports no table count, not a count of zero.
 
-Report either as zero and you get a folder average that is confidently wrong,
-and a reader with no way to tell.
+Recording either as zero puts an unmeasured value into every average computed
+from it, with nothing in the output to distinguish it from a measurement.
 
 So every measurement can say it was not taken:
 
@@ -21,21 +20,19 @@ So every measurement can say it was not taken:
 - A **token count** with no local encoding is marked `estimated`, because
   dividing by four is not measuring.
 
-## The one place this was violated
+## Exception, since corrected
 
-The entity model used to report a confidence of `1.0` on every name it found.
-spaCy's small English pipeline exposes no per-entity score, so that number was a
-placeholder wearing the clothes of a measurement — and it put a model's guess
-level with a checksum that passed.
+The entity detector previously reported `confidence: 1.0` for every name. The
+spaCy pipeline in use exposes no per-entity score, so the value was a constant,
+not a measurement, and it ranked model detections level with checksum-backed
+ones.
 
-It reports `null` now. The [evidence tier](evidence.md) says what a finding
-actually rests on instead.
+It now reports `null`, and the [evidence tier](evidence.md) carries the
+distinction instead.
 
-## Why this matters more than accuracy
+## Limitations in the report
 
-A number that is wrong in a knowable direction is recoverable. A number that is
-wrong while looking exactly like a measured one is not.
-
-Every limitation a run could not overcome is generated from the run itself and
-printed on the front page, so the report argues against its own conclusions
-where it should.
+Each run generates a list of limitations from its own execution — components
+that did not run, categories that could not be scanned, prices without a
+verification date, sampling — and prints them on the report's first page with a
+severity.

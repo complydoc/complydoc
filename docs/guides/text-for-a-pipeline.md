@@ -1,7 +1,7 @@
 # Text for a pipeline
 
-The audit says what a folder is like. This gives you its words, with the
-identifiers covered over, ready to send somewhere else.
+`extract_text` returns a folder's text with detected identifiers replaced by
+mask characters, split into chunks, each with a token count.
 
 ```python title="text_for_a_pipeline.py"
 --8<-- "examples/text_for_a_pipeline.py"
@@ -15,13 +15,13 @@ financial-summary.pdf p1: 74 tokens (approximate)
 
   [unreadable_page] invoice-scan.pdf p1: nothing could be read off this page; OCR was not run
   [masking_best_effort] run: organisation name, person name are recognised by a statistical
-  model rather than by a rule, so some will have been missed. The text is much safer than
-  the original and is not certified free of them
+  model rather than by a rule, so some will have been missed. The text is much safer
+  than the original and is not certified free of them
 ```
 
-## Read the warnings
+## Warnings
 
-Each is something you would otherwise find out later and worse.
+`result.warnings` is a list of `ExtractionWarning`. Five kinds:
 
 | Warning | Means |
 | --- | --- |
@@ -31,39 +31,38 @@ Each is something you would otherwise find out later and worse.
 | `unreadable_document` | A file would not open. None of its content is here |
 | `estimated_tokens` | No local encoding, so counts are a character estimate |
 
-!!! warning "Masked is not certified clean"
+!!! warning "Masking is best effort"
 
-    On the sample document, the model finds `John Smith` and misses `Jane Doe`
-    on the line above it.
+    Categories detected by the statistical model will be missed at some rate.
+    On the shipped sample the model finds `John Smith` and does not find
+    `Jane Doe` on the preceding line.
 
-    `chunk.masked` counts what was covered. `chunk.masked_confirmed` counts how
-    many of those passed a checksum. The difference is the part resting on a
-    model's judgement — and that is the part that will miss.
+    `chunk.masked` counts replacements. `chunk.masked_confirmed` counts the
+    subset that passed a checksum. The difference is the model-detected part.
 
 ## Chunks
 
-A chunk is a page, unless you set `max_tokens`. Then a page over budget is split
-at paragraph breaks, and a single paragraph longer than the budget goes through
-whole rather than being cut mid-sentence.
+One chunk per page, unless `max_tokens` is set. A page over the budget is split
+at paragraph breaks; a single paragraph exceeding the budget is emitted whole
+rather than split mid-sentence.
 
-`chunk.token_fidelity` is `exact` from the model's own encoding, `approximate`
-from another provider's, `estimated` from dividing by four. A number you can
-budget against should not look like one you can't.
+`chunk.token_fidelity` is `exact` when the count came from the model's own
+encoding, `approximate` from another provider's encoding, and `estimated` when
+no encoding was available and the count is characters divided by four.
 
-## It does not read the report
+## Text is not taken from the report
 
-A report truncates pages at 20,000 characters, because a person is going to read
-it. Dropping the end of a contract silently would be indefensible here, so this
-loads and scans documents directly and the text comes back whole.
+The report truncates page text at 20,000 characters. `extract_text` loads and
+scans documents directly, so the text it returns is not truncated.
 
-## Your own reader
+## Registering a loader
 
-If complydoc does not handle your format, teach it:
+For a format complydoc does not handle:
 
 ```python title="bring_your_own_loader.py"
 --8<-- "examples/bring_your_own_loader.py"
 ```
 
-Everything downstream then treats it as a document complydoc always knew about —
-the scan, the masking, the signals, the report. `register_extractor` does the
-same for a library that reads a PDF's text layer, `register_engine` for OCR.
+Discovery, the scan, masking, the signals and the report then treat it as any
+other document. `register_extractor` registers a reader for a PDF text layer;
+`register_engine` registers an OCR engine.

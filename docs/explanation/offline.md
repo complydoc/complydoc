@@ -1,6 +1,7 @@
 # Offline by construction
 
-complydoc never makes a network call. Enforced, not promised.
+complydoc makes no outbound network connections. This is enforced at runtime
+rather than stated as a policy.
 
 `complydoc/offline.py` replaces the standard library's outbound entry points —
 `socket.socket.connect`, `connect_ex`, `socket.create_connection` and
@@ -16,17 +17,15 @@ full audit with it armed.
 
 ## Why a mechanism rather than a policy
 
-The documents this gets pointed at are the ones nobody is allowed to upload.
-That is the whole reason it exists.
+The intended input is documents that cannot be uploaded to a third party.
 
-A policy is something you have to trust. A mechanism is something you can check,
-and something a dependency cannot quietly violate — a library that decides to
-phone home fails loudly instead of succeeding silently.
+A stated policy covers first-party code only. Replacing the socket entry points
+also covers transitive dependencies: a library that opens a connection during a
+run raises `NetworkAccessError` rather than succeeding silently.
 
-There is also no "send to an API for better results" option, not even opt-in. An
-opt-in that exists is one somebody enables by accident.
+There is no option to send content to a hosted API, including opt-in.
 
-## What that costs
+## Consequences
 
 The model catalogue and prices are **vendored** — data on disk, refreshed
 deliberately, never fetched at runtime. Each price carries its provenance: a
@@ -39,10 +38,10 @@ doctor` says what is installed and what its absence costs.
 
 ## As a library
 
-The command line arms the guard for the life of the process, which is right
-when it owns the process. Called as a library it is armed for the audit and the
-socket module is put back exactly as it was found — a library that permanently
-broke its host's networking would be indefensible, whatever its reasons.
+The command line arms the guard for the life of the process. The library entry
+points arm it for the duration of the audit and restore the socket module
+afterwards, including on exception, so unrelated network calls in the host
+process are unaffected.
 
 ```python
 import complydoc as cd

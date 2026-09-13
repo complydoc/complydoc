@@ -1,19 +1,28 @@
 # complydoc
 
-Point it at a folder of business documents. It tells you what they would cost to
-process with an LLM, how ready they are to extract data from, and what personal
-or financial information they hold.
+complydoc reads a folder of documents and reports three things: the token cost
+of processing them with an LLM, a set of measured signals describing how
+extractable they are, and the personal and financial identifiers they contain.
 
-It is a diagnostic you run **before** buying or building a document automation
-system. It is not a pipeline, and it does not extract your data for you.
+It runs entirely on the local machine. It produces a report; it does not modify
+documents or extract structured data from them.
+
+## Install
 
 ```bash
 uv tool install complydoc
+```
+
+OCR and name detection are optional extras. `complydoc doctor` reports which are
+installed and what their absence excludes from a run.
+
+## Run
+
+```bash
 complydoc demo
 ```
 
-`demo` audits six synthetic samples that ship with the tool, so you can see a
-report without finding a folder first.
+Audits six synthetic documents shipped with the package and writes a report:
 
 ```text
 Documents         6 (6 pages)
@@ -26,29 +35,50 @@ Sensitive items   20 in 4/6 docs
 2 important limitations — see the report before drawing conclusions.
 ```
 
-Then the report opens:
+Against your own documents:
 
-![The complydoc report](https://raw.githubusercontent.com/duartecaldascardoso/complydoc/main/.github/images/report-light.png#only-light)
-![The complydoc report](https://raw.githubusercontent.com/duartecaldascardoso/complydoc/main/.github/images/report-dark.png#only-dark)
+```bash
+complydoc audit ~/contracts --ocr
+```
 
-Next: [audit your own folder](guides/audit-a-folder.md), or
-[get masked text](guides/text-for-a-pipeline.md) for a pipeline.
+## Output
 
-## It makes no network calls
+Two files per run: a self-contained HTML report and a JSON file with the same
+data. The JSON carries `schema_version`, currently 3.
 
-Not as a policy — as a mechanism. The guard replaces the standard library's
-outbound socket and DNS entry points before any file is opened, and the test
-suite runs a full audit with it armed. Every report records whether it was
-active.
+![The HTML report, summary tab](https://raw.githubusercontent.com/duartecaldascardoso/complydoc/main/.github/images/report-light.png#only-light)
+![The HTML report, summary tab](https://raw.githubusercontent.com/duartecaldascardoso/complydoc/main/.github/images/report-dark.png#only-dark)
 
-So you can run this over the documents you are not allowed to upload. That is
-the point of it. → [Offline by construction](explanation/offline.md)
+## Network access
 
-## What it won't claim
+The process makes no outbound connections. Before any file is opened,
+`socket.socket.connect`, `connect_ex`, `socket.create_connection` and
+`socket.getaddrinfo` are replaced with functions that raise. `AF_UNIX` sockets
+are permitted; `AF_INET` and `AF_INET6` are not. Each report records whether the
+guard was active during the run.
 
-- **Masked text is not certified clean.** Names have no checksum to pass, so a
-  model finds them, and models miss. Every extraction says so.
-- **A signal that could not be measured is not a zero.** It says it was not
-  measured, with the reason, and stays out of the score.
-- **A price nobody checked says so.** Imported prices are kept apart from the
-  few verified against a provider's own page.
+Model prices and the model catalogue are vendored as data files rather than
+fetched. See [Offline by construction](explanation/offline.md).
+
+## Limits
+
+- **Masking is best effort.** Categories with a checksum (card numbers, IBAN,
+  VAT, national identifiers) are confirmed. Names and organisations are found by
+  a statistical model and will be missed at some rate. Every extraction reports
+  this.
+- **Unmeasured signals are reported as unmeasured**, with the reason, and are
+  excluded from the score rather than counted as zero.
+- **Prices carry provenance.** Entries verified against a provider's page are
+  marked separately from entries imported from a catalogue, and a run that
+  prices against an imported figure states so in its limitations.
+
+## Where things are
+
+| | |
+| --- | --- |
+| [Audit a folder](guides/audit-a-folder.md) | Running it, and reading the report |
+| [Text for a pipeline](guides/text-for-a-pipeline.md) | Masked text, token counts, warnings |
+| [Command line](reference/cli.md) | Every command and flag |
+| [Python API](reference/api.md) | `import complydoc as cd` |
+| [Report JSON](reference/report.md) | The shape a run writes |
+| [Configuration](reference/configuration.md) | `pricing.yaml`, `readiness.yaml`, `sensitive.yaml` |

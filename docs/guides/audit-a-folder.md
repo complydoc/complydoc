@@ -4,11 +4,11 @@
 complydoc audit ~/contracts
 ```
 
-Reads every document, writes an HTML report and a JSON file beside it, prints a
-summary. Nothing leaves the machine.
+Reads every document in the folder, writes an HTML report and a JSON file
+beside it, and prints a summary.
 
-Add `--ocr` if the folder holds scans. It is slower, and without it a scanned
-page contributes nothing — which the report says rather than passing over.
+`--ocr` recognises pages with no text layer. Without it such a page contributes
+no text, and the run reports it as unread.
 
 ## Reading the front page
 
@@ -21,17 +21,14 @@ pipeline at all*, from three factors, with the weights printed beside them:
 | Cost path | Does the document force the expensive path — an image rather than text |
 | Exposure | What it carries that should not leave |
 
-The ring beside it shows **composition, not the score**. A folder averaging 71
-can still hold two documents nothing can be read from, and those two are the
-ones somebody has to deal with.
+A factor the run did not measure is excluded and the remaining weights are
+renormalised. The ring shows the distribution of documents across bands, not the
+mean.
 
-**Quick wins** are what to do next, ranked by how much of the folder each
-touches. Each says who acts — `complydoc` where the tool can do it, `you` where
-it can't — and quotes the saving where it follows from prices already in the
-report.
-
-None of them predicts a score. Signals interact, and the honest way to find out
-is to fix the documents and run it again.
+**Quick wins** lists remediable findings, ordered by the number of documents
+affected. Each carries an `actor` of `complydoc` or `you`, and a saving where
+one follows from prices in the same report. No entry predicts a resulting
+score.
 
 ## From Python
 
@@ -47,15 +44,13 @@ Libraries read the same PDF differently, and the default is not always right:
 complydoc audit ~/contracts --compare-extractor pypdf
 ```
 
-Only the first reader reaches a finding. The rest are measured and never
-adopted, and the report marks the pages where they disagreed, with each
-reader's text and the differences highlighted.
+Findings come from the first reader only. The others are measured and reported;
+the page viewer shows each reader's text with the differences marked.
 
-The case worth catching does not change the size of the text. On a two-column
-page, pdfplumber walks the text layer in file order — straight across both
-columns, interleaving every sentence — and returns the same character count as
-the readers that get it right. The report calls that `same words, different
-order`.
+Readings are compared by word order, not by length. On a two-column page
+pdfplumber walks the text layer in file order, crossing both columns, and
+returns the same character count as a reader that follows the columns. The
+report labels this `same words, different order`.
 
 `complydoc compare ~/contracts` uses every reader and OCR engine you have
 installed.
