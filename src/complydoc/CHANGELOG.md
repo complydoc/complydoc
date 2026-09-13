@@ -8,6 +8,28 @@ branch on when reading reports programmatically.
 
 ## [Unreleased]
 
+### Added
+
+- A documentation site, built with MkDocs Material and published to GitHub
+  Pages. Everything under `reference/` is generated at build time — the command
+  line from the Typer app, the Python API from the docstrings, the report shape
+  from `report_shape()` beside the version it describes, and the configuration
+  from the models that validate it — so a renamed flag changes the
+  documentation in the same commit as the code.
+- Every example in a guide is a real file under `docs/examples`, included into
+  the page and executed by the test suite. A guide that stops working fails the
+  build rather than misleading somebody quietly.
+- `make docs` serves the site and rebuilds as you edit; `make docs-build`
+  builds it the way CI does, under `--strict`.
+
+### Changed
+
+- `complydoc schema` reads the report shape from `report_shape()` in
+  `report/models.py` rather than a dict inside the command, so the command line
+  and the documentation cannot describe different JSON. Updating it revealed it
+  had gone stale: it described neither `overall`, nor `quick_wins`, nor the
+  `evidence` on a match, nor `other` as a document format.
+
 ### Fixed
 
 - The entity model is no longer loaded in the process the workers fork from.

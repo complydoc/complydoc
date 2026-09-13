@@ -22,7 +22,7 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
-      - run: uv sync --extra ocr --extra ner --group dev
+      - run: uv sync --extra ocr --extra ner --group dev --group docs
       # The same commands `make lint` and `make types` run locally.
       - name: ruff
         run: uv run ruff check src/complydoc tests

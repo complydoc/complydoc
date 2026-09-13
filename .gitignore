@@ -25,8 +25,14 @@ models/
 # where a run writes when nobody passes --out.
 .complydoc/
 reports/
+# What the documentation examples write when they are run.
+/audit.html
 *.report.json
 *.report.html
+
+# The built documentation site. `mkdocs build` writes it; Pages serves it
+# from a workflow, so it is never committed.
+/site/
 
 # OS
 .DS_Store

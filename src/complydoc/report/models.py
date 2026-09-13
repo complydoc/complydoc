@@ -44,6 +44,63 @@ __all__ = [
 SCHEMA_VERSION = 3
 
 
+def report_shape() -> dict[str, object]:
+    """What a report's JSON holds, for somebody about to parse one.
+
+    Lives next to the version it describes, and is the single source for both
+    `complydoc schema` and the documentation. Written by hand because it is a
+    summary rather than a schema — a full JSON Schema of this shape is four
+    hundred lines and answers fewer questions than thirty do.
+    """
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "top_level_keys": [
+            "run",
+            "documents",
+            "skipped",
+            "cost",
+            "aggregate",
+            "overall",
+            "quick_wins",
+            "limitations",
+            "staleness_warnings",
+            "signal_weights",
+            "config_masking",
+        ],
+        "run": {
+            "components_run": "list of cost | readiness | sensitive",
+            "offline_guard": "armed | not_armed",
+            "reveal_used": "bool — true means values are NOT masked",
+            "page_images_used": "bool",
+            "extracted_text_used": "bool",
+            "jobs": "worker processes used",
+            "config_digest": "identifies the config that produced these numbers",
+        },
+        "documents[]": {
+            "relative_path": "str",
+            "sha256": "str",
+            "format": "pdf | image | docx | xlsx | other",
+            "cost.models[]": "per-model text and vision token counts and USD",
+            "readiness.signals[]": "id, value, rating, weight, why, status",
+            "readiness.score": "value 0-100, higher is better; label; low_confidence",
+            "sensitive.matches[]": (
+                "category, page, line, column, masked, severity, and evidence: "
+                "confirmed | corroborated | pattern | model"
+            ),
+            "sensitive.unreadable_pages": "pages that were not searched at all",
+            "extractions[]": "one per reader asked for; the first is the one kept",
+        },
+        "overall": {
+            "score": "global readiness 0-100, content and cost path and exposure",
+            "factors[]": "name, score (null when not measured), weight, why",
+            "bands": "documents per band — the composition the mean hides",
+        },
+        "quick_wins[]": "id, title, detail, documents[], actor (complydoc | you), effect",
+        "aggregate": "folder totals: cost, signal_distribution, sensitive_by_category",
+        "limitations[]": "area, statement, affected[], severity (info | important)",
+    }
+
+
 @dataclass(frozen=True, slots=True)
 class Limitation:
     """One thing this particular run did not or could not check."""

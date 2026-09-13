@@ -849,47 +849,9 @@ def schema() -> None:
     """Print the JSON schema of the report, for a caller that needs to parse it."""
     import json
 
-    from complydoc.report.models import SCHEMA_VERSION
+    from complydoc.report.models import report_shape
 
-    console.print(
-        json.dumps(
-            {
-                "schema_version": SCHEMA_VERSION,
-                "top_level_keys": [
-                    "run",
-                    "documents",
-                    "skipped",
-                    "cost",
-                    "aggregate",
-                    "limitations",
-                    "staleness_warnings",
-                    "signal_weights",
-                    "config_masking",
-                ],
-                "run": {
-                    "components_run": "list of cost | readiness | sensitive",
-                    "offline_guard": "armed | not_armed",
-                    "reveal_used": "bool — true means values are NOT masked",
-                    "page_images_used": "bool",
-                    "extracted_text_used": "bool",
-                    "config_digest": "identifies the config that produced these numbers",
-                },
-                "documents[]": {
-                    "relative_path": "str",
-                    "sha256": "str",
-                    "format": "pdf | image | docx | xlsx",
-                    "cost.models[]": "per-model text and vision token counts and USD",
-                    "readiness.signals[]": "id, value, rating, weight, why, status",
-                    "readiness.score": "value 0-100, higher is better; label; low_confidence",
-                    "sensitive.matches[]": "category, page, line, column, masked, severity",
-                    "sensitive.unreadable_pages": "pages that were not searched at all",
-                },
-                "aggregate": "folder totals: cost, signal_distribution, sensitive_by_category",
-                "limitations[]": "area, statement, affected[], severity (info | important)",
-            },
-            indent=2,
-        )
-    )
+    console.print(json.dumps(report_shape(), indent=2))
 
 
 @app.command()

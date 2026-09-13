@@ -58,6 +58,14 @@ Changelog = "https://github.com/duartecaldascardoso/complydoc/blob/main/src/comp
 Issues = "https://github.com/duartecaldascardoso/complydoc/issues"
 
 [dependency-groups]
+# The documentation site. Separate from `dev` because building the docs needs
+# none of the test machinery and running the tests needs none of this.
+docs = [
+    "mkdocs>=1.6",
+    "mkdocs-material>=9.5",
+    "mkdocstrings[python]>=0.26",
+    "mkdocs-gen-files>=0.5",
+]
 dev = [
     "pytest>=8.2",
     "pytest-cov>=5.0",
@@ -91,6 +99,13 @@ ignore_missing_imports = true
 
 [tool.ruff]
 line-length = 100
+# Ruff formats the Python inside Markdown code blocks, which is usually a gift
+# and is wrong here: the guides include their examples with a snippet directive
+# (`--8<-- "..."`) that sits inside a ```python fence so it renders highlighted.
+# Ruff reads that as an expression and rewrites it to `--8 < --"..."`, which is
+# valid Python and a broken include. The examples themselves are real .py files
+# and are linted; the fences only point at them.
+extend-exclude = ["*.md"]
 target-version = "py311"
 
 [tool.ruff.lint]

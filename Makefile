@@ -47,6 +47,14 @@ tool: ## Install (or update) complydoc on PATH, with OCR and name detection
 
 # ----------------------------------------------------------------- check ---
 
+.PHONY: docs
+docs: ## Serve the documentation site, rebuilding as you edit
+	$(UV) run --group docs mkdocs serve
+
+.PHONY: docs-build
+docs-build: ## Build the documentation site the way CI does
+	$(UV) run --group docs mkdocs build --strict
+
 .PHONY: test
 test: ## Run the test suite
 	$(PYTHON) pytest

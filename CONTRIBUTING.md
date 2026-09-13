@@ -17,6 +17,25 @@ change you want on your PATH**. Use the target rather than `uv tool install .` b
 rebuilding the environment drops the spaCy model, and `make tool` puts it back and then
 runs `complydoc doctor` so you can see what the new install can actually do.
 
+## Documentation
+
+`make docs` serves the site at `localhost:8000` and rebuilds as you edit;
+`make docs-build` builds it the way CI does, under `--strict`, so a broken link
+fails rather than shipping.
+
+The rule the site is built on: **generate everything that can be generated.**
+Nothing under `docs/reference/` is committed — the command line comes from the
+Typer app, the Python API from the docstrings, the report shape from
+`report_shape()` beside the version it describes, and the configuration from the
+Pydantic models. A renamed flag changes the documentation in the same commit as
+the code, without anybody remembering to.
+
+What is written by hand is what a machine cannot produce: the guides and the
+explanations. Every example in a guide is a real file under `docs/examples`,
+included with a snippet directive and executed by `tests/test_docs.py`. An
+example that stops working fails the test suite. Do not paste code into a guide
+that is not one of those files.
+
 ## The sample documents
 
 `src/complydoc/sample` holds six synthetic documents, shipped in the wheel so

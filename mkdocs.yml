@@ -1,0 +1,115 @@
+# The documentation site.
+#
+# The rule this is built on: generate everything that can be generated. The CLI
+# reference comes from the Typer app, the Python API from the docstrings, the
+# report shape from the code that defines it, and the configuration from the
+# models that validate it. Nothing in `reference/` is written by hand, so none
+# of it can drift from what the tool does.
+#
+# What is written by hand is the part a machine cannot produce: what to do, and
+# why it works the way it does. Every example in a guide is a real file under
+# `docs/examples`, included here and executed by the test suite, so a guide that
+# stops working fails the build rather than misleading somebody quietly.
+
+site_name: complydoc
+site_description: >-
+  Offline document audit: LLM cost, extraction readiness, and personal data.
+  Point it at a folder and it tells you what processing those documents would
+  cost, how ready they are, and what they carry that should not leave.
+site_url: https://duartecaldascardoso.github.io/complydoc/
+repo_url: https://github.com/duartecaldascardoso/complydoc
+repo_name: duartecaldascardoso/complydoc
+edit_uri: edit/main/docs/
+copyright: MIT licensed
+
+theme:
+  name: material
+  logo: assets/mark.svg
+  favicon: assets/mark.svg
+  font:
+    text: Inter
+    code: JetBrains Mono
+  icon:
+    repo: fontawesome/brands/github
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-night
+        name: Dark
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-sunny
+        name: Light
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.tracking
+    - navigation.instant
+    - content.code.copy
+    - content.action.edit
+    - search.suggest
+    - toc.follow
+
+extra_css:
+  - assets/complydoc.css
+
+plugins:
+  - search
+  - gen-files:
+      scripts:
+        - docs/generate.py
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            show_source: false
+            show_root_heading: true
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            heading_level: 2
+            members_order: source
+            docstring_style: google
+            separate_signature: true
+            signature_crossrefs: true
+            show_signature_annotations: true
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets:
+      base_path: [docs]
+      check_paths: true
+
+nav:
+  - Start here: index.md
+  - Guides:
+      - Audit a folder: guides/audit-a-folder.md
+      - Text for a pipeline: guides/text-for-a-pipeline.md
+  - Reference:
+      - Command line: reference/cli.md
+      - Python API: reference/api.md
+      - Report JSON: reference/report.md
+      - Configuration: reference/configuration.md
+  - Why it works this way:
+      - Offline by construction: explanation/offline.md
+      - Not measured is not zero: explanation/not-measured.md
+      - How sure a finding is: explanation/evidence.md
+
+not_in_nav: |
+  examples/

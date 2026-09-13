@@ -1,0 +1,25 @@
+/* The palette the report uses, so the documentation and the product it
+   documents look like the same thing. */
+:root {
+  --md-primary-fg-color: #1a7f4b;
+  --md-accent-fg-color: #1a7f4b;
+}
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color: #4cc38a;
+  --md-accent-fg-color: #4cc38a;
+  --md-typeset-a-color: #4cc38a;
+}
+[data-md-color-scheme="default"] {
+  --md-typeset-a-color: #1a7f4b;
+}
+.md-typeset table:not([class]) th {
+  font-weight: 600;
+}
+
+/* The mark is drawn with currentColor so it takes the header's ink, the same
+   way it does in the report. */
+.md-header__button.md-logo img {
+  color: var(--md-primary-bg-color);
+  height: 1.5rem;
+  width: auto;
+}

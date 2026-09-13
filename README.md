@@ -12,6 +12,7 @@
 
 <div align="center">
   <a href="https://pypi.org/project/complydoc/"><img src="https://img.shields.io/pypi/v/complydoc?color=1a7f4b" alt="PyPI"></a>
+  <a href="https://duartecaldascardoso.github.io/complydoc/"><img src="https://img.shields.io/badge/docs-complydoc-1a7f4b" alt="Documentation"></a>
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-1a7f4b" alt="License"></a>
   <img src="https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-4f5d75" alt="Python versions">
   <img src="https://img.shields.io/badge/network-none%20at%20runtime-1a7f4b" alt="No network at runtime">
@@ -48,6 +49,9 @@ that guard armed. Every report records whether it was active.
     <img alt="complydoc pipeline: documents pass through discovery and per-format loaders into three independent analysis components, which emit a JSON report and a self-contained HTML report, all inside a network guard boundary" src="https://raw.githubusercontent.com/duartecaldascardoso/complydoc/main/.github/images/complydoc-architecture.svg" width="100%">
   </picture>
 </div>
+
+**[Documentation](https://duartecaldascardoso.github.io/complydoc/)** — guides, the full
+command line and Python API reference, and why it works the way it does.
 
 ## Install
 

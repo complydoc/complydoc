@@ -1,0 +1,64 @@
+# Build the documentation site and publish it to GitHub Pages.
+#
+# Publishing happens from `main` only. Every pull request still builds the site
+# under `--strict`, so a broken link or a reference page that stops generating
+# fails the pull request rather than the deployment.
+#
+# The reference pages are generated from the code at build time, which means
+# this workflow installs the package rather than just the documentation
+# toolchain: it has to be able to import complydoc to document it.
+name: docs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - "mkdocs.yml"
+      - "src/complydoc/**"
+      - ".github/workflows/docs.yml"
+  pull_request:
+    paths:
+      - "docs/**"
+      - "mkdocs.yml"
+      - "src/complydoc/**"
+      - ".github/workflows/docs.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  UV_FROZEN: "1"
+
+jobs:
+  build:
+    name: build the site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --group docs
+      - name: build
+        run: uv run mkdocs build --strict
+      - uses: actions/upload-pages-artifact@v4
+        if: github.ref == 'refs/heads/main'
+        with:
+          path: site
+
+  publish:
+    name: publish to Pages
+    if: github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4
