@@ -79,5 +79,23 @@ the refusal and continues. A loader that fails because a connection was refused
 produces a report with no documents and the reason in `report.loader.error`.
 Any other exception from the loader is raised.
 
-`offline_guard=False` runs the loader without the guard. `report.run.offline_guard`
-records which was used.
+### Loaders that use the network
+
+A loader that calls a hosted service needs `allow_network=True`:
+
+```python
+report = cd.inspect_documents(loader, allow_network=True)
+```
+
+With the flag set:
+
+- the loader's connections go through, and each DNS lookup and connection is
+  recorded in `report.loader.network_attempts`
+- `report.loader.network_allowed` is `true`
+- the report's limitations state that network access was allowed, and, if the
+  loader connected, that document content may have left the machine
+- scanning, scoring and report assembly still run behind the guard, and
+  `report.run.offline_guard` is `armed`
+
+The flag applies to the loader call only. Documents passed in already loaded
+make no calls, so for them the flag records nothing.

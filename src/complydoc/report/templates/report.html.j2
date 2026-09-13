@@ -591,8 +591,14 @@
     <tr><th>Documents returned</th><td>{{ report.loader.documents_returned }}</td></tr>
     <tr><th>Load time</th><td>{% if report.loader.seconds is none %}passed in already
       loaded{% else %}{{ duration(report.loader.seconds) }}{% endif %}</td></tr>
-    <tr><th>Network attempts</th><td>{% if report.loader.network_attempts %}<span class="attn">{{
-      count(report.loader.network_attempts | length, "connection") }} refused</span>{% else %}none{% endif %}</td></tr>
+    {% set attempts = report.loader.network_attempts %}
+    <tr><th>Network</th><td>{% if report.loader.network_allowed %}<span class="attn">allowed</span>,
+      {{ plural(attempts | length, "connection") }} made{% elif attempts %}blocked,
+      <span class="attn">{{ plural(attempts | length, "connection") }} refused</span>{% else %}blocked,
+      none attempted{% endif %}</td></tr>
+    {% for attempt in attempts %}
+    <tr><th></th><td class="mono">{{ attempt }}</td></tr>
+    {% endfor %}
     <tr><th>Metadata keys</th><td class="mono">{{ report.loader.metadata_keys | join(", ") or "none" }}</td></tr>
   </tbody>
 </table></div>
@@ -1223,8 +1229,18 @@ name and directory layout it came from.</p>
   <div class="foot-main">
     <div>
       {{ logo_svg | safe }}
+      {% if report.loader and report.loader.network_allowed %}
+      <p class="foot-claim">{{ report.loader.name }} was allowed network access and made
+      {{ plural(report.loader.network_attempts | length, "connection") }}{% if report.loader.network_attempts %};
+      document content may have left this machine{% endif %}. complydoc's own processing ran
+      with outbound network access blocked.</p>
+      {% elif report.run.offline_guard == "armed" %}
       <p class="foot-claim">No document content left this machine. Outbound network access
       was blocked for the whole run.</p>
+      {% else %}
+      <p class="foot-claim">The network guard was not armed for this run, so outbound
+      connections were not blocked.</p>
+      {% endif %}
     </div>
     <dl class="foot-meta">
       <dt>Audited</dt><dd>{{ report.run.target }}</dd>

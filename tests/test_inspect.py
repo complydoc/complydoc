@@ -220,3 +220,54 @@ def test_metadata_leaks_become_a_quick_win():
         ]
     )
     assert any(w.id == "strip_metadata" for w in report.quick_wins)
+
+
+def test_an_allowed_loader_reaches_the_network_and_is_recorded(tmp_path):
+    server = socket.socket()
+    server.bind(("127.0.0.1", 0))
+    server.listen(1)
+    port = server.getsockname()[1]
+
+    class Fetches(Loader):
+        def load(self) -> list:
+            with socket.create_connection(("127.0.0.1", port), timeout=1):
+                pass
+            return super().load()
+
+    try:
+        report = cd.inspect_documents(Fetches([LangChainDocument("text")]), allow_network=True)
+    finally:
+        server.close()
+
+    assert report.loader.network_allowed
+    assert report.loader.error is None
+    assert any(str(port) in attempt for attempt in report.loader.network_attempts)
+    assert any(
+        limitation.area == "Loader" and "may have left this machine" in limitation.statement
+        for limitation in report.limitations
+    )
+    html = cd.write_html(report, tmp_path / "report.html").read_text(encoding="utf-8")
+    assert "document content may have left this machine" in html
+
+
+def test_allowing_the_network_is_stated_even_when_nothing_connects(tmp_path):
+    was_armed = offline.is_armed()
+    offline.disarm()
+    try:
+        original = socket.socket.connect
+        report = cd.inspect_documents([LangChainDocument("text")], allow_network=True)
+        assert socket.socket.connect is original
+        assert not offline.is_armed()
+    finally:
+        if was_armed:
+            offline.arm()
+
+    assert report.run.offline_guard == "armed", "complydoc's own processing stays guarded"
+    assert any("made no connections" in limitation.statement for limitation in report.limitations)
+    html = cd.write_html(report, tmp_path / "report.html").read_text(encoding="utf-8")
+    assert "was allowed network access" in html
+
+
+def test_the_network_is_blocked_unless_allowed():
+    report = cd.inspect_documents([LangChainDocument("text")])
+    assert not report.loader.network_allowed

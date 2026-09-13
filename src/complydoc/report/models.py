@@ -101,7 +101,8 @@ def report_shape() -> dict[str, object]:
         "quick_wins[]": "id, title, detail, documents[], actor (complydoc | you), effect",
         "loader": (
             "null unless documents came from an external loader: name, "
-            "documents_returned, seconds, network_attempts[], error, metadata_keys[]"
+            "documents_returned, seconds, network_allowed, network_attempts[], error, "
+            "metadata_keys[]"
         ),
         "aggregate": "folder totals: cost, signal_distribution, sensitive_by_category",
         "limitations[]": "area, statement, affected[], severity (info | important)",
@@ -148,10 +149,14 @@ class LoaderRun:
     seconds: float | None
     """None when documents were passed in already loaded."""
     network_attempts: list[str] = field(default_factory=list)
-    """Connections the loader tried to open and the guard refused."""
+    """Connections the loader tried to open: refused by the guard, or made, when
+    `network_allowed` is true."""
     error: str | None = None
     metadata_keys: list[str] = field(default_factory=list)
     """Every metadata key the loader returned, across all documents."""
+    network_allowed: bool = False
+    """The caller passed `allow_network=True`, so the loader's connections went
+    through. complydoc's own processing stays behind the guard either way."""
 
 
 @dataclass(frozen=True, slots=True)

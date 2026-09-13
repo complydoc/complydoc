@@ -109,7 +109,7 @@ def inspect_documents(
     reveal: bool = False,
     extracted_text: bool = True,
     models: Sequence[str] | None = None,
-    offline_guard: bool = True,
+    allow_network: bool = False,
 ) -> AuditReport:
     """Report on the documents a loader produced.
 
@@ -119,6 +119,11 @@ def inspect_documents(
     loader that fails because a connection was refused produces a report with
     no documents and the failure in `report.loader.error`. Any other exception
     a loader raises is not caught.
+
+    `allow_network=True` lets the loader's connections through, for loaders
+    that call a hosted service. Each lookup and connection is still recorded,
+    the report states that network access was allowed, and everything
+    complydoc does after loading stays behind the guard.
 
     `extracted_text` is on here, unlike `full_audit`, because seeing what the
     loader extracted is usually the point.
@@ -133,8 +138,8 @@ def inspect_documents(
     started = time.monotonic()
     started_at = dt.datetime.now().astimezone()
 
-    with offline.guarded(offline_guard):
-        items, loader_run = _run_loader(source, name, offline_guard)
+    with offline.guarded():
+        items, loader_run = _run_loader(source, name, allow_network)
         documents, findings, exposures = _documents_from(
             items, loader_run.name, settings, components, reveal
         )
@@ -194,7 +199,7 @@ def inspect_documents(
     return report
 
 
-def _run_loader(source: Any, name: str | None, guard: bool) -> tuple[list[Any], LoaderRun]:
+def _run_loader(source: Any, name: str | None, allow_network: bool) -> tuple[list[Any], LoaderRun]:
     """Call the loader, or take the documents as given, recording what happened."""
     call = _loading_call(source)
     loader_name = name or _name_of(source, call)
@@ -202,7 +207,7 @@ def _run_loader(source: Any, name: str | None, guard: bool) -> tuple[list[Any], 
     items: list[Any] = []
 
     started = time.perf_counter()
-    with offline.guarded(guard) as attempts:
+    with offline.permitted() if allow_network else offline.guarded() as attempts:
         try:
             if call is not None:
                 items = list(call())
@@ -225,6 +230,7 @@ def _run_loader(source: Any, name: str | None, guard: bool) -> tuple[list[Any], 
         network_attempts=list(attempts),
         error=error,
         metadata_keys=sorted(keys),
+        network_allowed=allow_network,
     )
 
 
@@ -448,7 +454,25 @@ def _loader_limitations(loader: LoaderRun, entries: list[DocumentReport]) -> lis
                 severity="important",
             )
         )
-    if loader.network_attempts:
+    if loader.network_allowed:
+        made = len(loader.network_attempts)
+        limitations.append(
+            Limitation(
+                area="Loader",
+                statement=(
+                    f"{loader.name} was allowed network access (allow_network=True) and "
+                    + (
+                        f"made {made} network connection(s). Document content may have "
+                        f"left this machine."
+                        if made
+                        else "made no connections."
+                    )
+                ),
+                affected=list(loader.network_attempts),
+                severity="important" if made else "info",
+            )
+        )
+    elif loader.network_attempts:
         limitations.append(
             Limitation(
                 area="Loader",

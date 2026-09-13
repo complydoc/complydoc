@@ -26,7 +26,7 @@ import socket
 from collections.abc import Iterator
 from typing import Any, Final
 
-__all__ = ["NetworkAccessError", "arm", "guard_status", "guarded", "is_armed"]
+__all__ = ["NetworkAccessError", "arm", "guard_status", "guarded", "is_armed", "permitted"]
 
 _ORIGINAL_CONNECT: Final = socket.socket.connect
 _ORIGINAL_CONNECT_EX: Final = socket.socket.connect_ex
@@ -147,6 +147,71 @@ def guarded(active: bool = True) -> Iterator[list[str]]:
         seen.extend(_attempts[start:])
         if not already_armed:
             disarm()
+
+
+_connections: list[str] = []
+"""Every connection made inside `permitted()`, in order."""
+
+
+def _recorded_connect(self: socket.socket, address: Any) -> None:
+    if not _is_local(self.family):
+        _connections.append(f"connect to {address!r}")
+    _ORIGINAL_CONNECT(self, address)
+
+
+def _recorded_connect_ex(self: socket.socket, address: Any) -> int:
+    if not _is_local(self.family):
+        _connections.append(f"connect_ex to {address!r}")
+    return int(_ORIGINAL_CONNECT_EX(self, address))
+
+
+def _recorded_getaddrinfo(host: Any, port: Any, *args: Any, **kwargs: Any) -> Any:
+    _connections.append(f"DNS lookup of {host!r}")
+    return _ORIGINAL_GETADDRINFO(host, port, *args, **kwargs)
+
+
+@contextlib.contextmanager
+def permitted() -> Iterator[list[str]]:
+    """Let connections through for this block, and record each one.
+
+    For code the caller has explicitly allowed to use the network, such as a
+    loader that sends documents to a hosted parser. Works inside `guarded()`:
+    the guard is lifted for the block and put back exactly as it was.
+
+    `create_connection` is left as the standard library's, which resolves and
+    connects through the recorded `getaddrinfo` and `connect`, so each
+    connection is recorded once per step rather than twice.
+
+    Yields a list that holds, once the block exits, every lookup and connection
+    made inside it, without repeats.
+    """
+    global _armed
+    saved = (
+        socket.socket.connect,
+        socket.socket.connect_ex,
+        socket.create_connection,
+        socket.getaddrinfo,
+    )
+    was_armed = _armed
+    start = len(_connections)
+    seen: list[str] = []
+
+    socket.socket.connect = _recorded_connect  # type: ignore[method-assign, assignment]
+    socket.socket.connect_ex = _recorded_connect_ex  # type: ignore[method-assign, assignment]
+    socket.create_connection = _ORIGINAL_CREATE_CONNECTION
+    socket.getaddrinfo = _recorded_getaddrinfo
+    _armed = False
+    try:
+        yield seen
+    finally:
+        seen.extend(dict.fromkeys(_connections[start:]))
+        (
+            socket.socket.connect,  # type: ignore[method-assign]
+            socket.socket.connect_ex,  # type: ignore[method-assign]
+            socket.create_connection,
+            socket.getaddrinfo,
+        ) = saved
+        _armed = was_armed
 
 
 def is_armed() -> bool:

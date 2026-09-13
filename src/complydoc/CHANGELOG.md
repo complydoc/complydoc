@@ -24,6 +24,10 @@ branch on when reading reports programmatically.
 - The network guard records refused connections, and `offline.guarded()`
   yields them. A loader that catches the refusal and continues is still
   reported as having tried.
+- `inspect_documents(..., allow_network=True)` lets a loader that calls a
+  hosted service reach the network. Its connections are recorded rather than
+  refused, the report states that network access was allowed, and everything
+  complydoc does after loading stays behind the guard.
 - A documentation site, built with MkDocs Material and published to GitHub
   Pages. Everything under `reference/` is generated at build time — the command
   line from the Typer app, the Python API from the docstrings, the report shape
