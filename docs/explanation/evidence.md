@@ -1,4 +1,4 @@
-# How sure a finding is
+# Evidence tiers
 
 Every sensitive finding carries an evidence tier. The detectors do not produce
 comparable probabilities, so the field records what was established instead of a
@@ -21,7 +21,7 @@ passed.
 The security table sorts on it within a severity, so checksum-backed findings
 precede model detections of the same severity.
 
-In [extracted text](../guides/text-for-a-pipeline.md), `chunk.masked_confirmed`
+In [extracted text](../guides/extract-masked-text.md), `chunk.masked_confirmed`
 counts the masks that passed a checksum. The difference from `chunk.masked` is
 the part of the masking resting on judgement, which is the part that will miss.
 

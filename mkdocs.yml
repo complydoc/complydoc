@@ -97,19 +97,19 @@ markdown_extensions:
       check_paths: true
 
 nav:
-  - Start here: index.md
+  - Overview: index.md
   - Guides:
       - Audit a folder: guides/audit-a-folder.md
-      - Text for a pipeline: guides/text-for-a-pipeline.md
+      - Extracting masked text: guides/extract-masked-text.md
   - Reference:
       - Command line: reference/cli.md
       - Python API: reference/api.md
       - Report JSON: reference/report.md
       - Configuration: reference/configuration.md
   - Design notes:
-      - Offline by construction: explanation/offline.md
-      - Not measured is not zero: explanation/not-measured.md
-      - How sure a finding is: explanation/evidence.md
+      - Network isolation: explanation/offline.md
+      - Unmeasured values: explanation/not-measured.md
+      - Evidence tiers: explanation/evidence.md
 
 not_in_nav: |
   examples/

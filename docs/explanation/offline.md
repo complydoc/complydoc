@@ -1,4 +1,4 @@
-# Offline by construction
+# Network isolation
 
 complydoc makes no outbound network connections. This is enforced at runtime
 rather than stated as a policy.
@@ -15,7 +15,7 @@ Every `AF_INET`/`AF_INET6` connection and every DNS lookup is refused.
 Every report records whether the guard was active, and the test suite runs a
 full audit with it armed.
 
-## Why a mechanism rather than a policy
+## Rationale
 
 The intended input is documents that cannot be uploaded to a third party.
 
@@ -36,7 +36,7 @@ OCR and name detection are local models, which is why they are optional extras.
 They are a large download and a run is still useful without them. `complydoc
 doctor` says what is installed and what its absence costs.
 
-## As a library
+## Library use
 
 The command line arms the guard for the life of the process. The library entry
 points arm it for the duration of the audit and restore the socket module

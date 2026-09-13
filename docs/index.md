@@ -58,7 +58,7 @@ are permitted; `AF_INET` and `AF_INET6` are not. Each report records whether the
 guard was active during the run.
 
 Model prices and the model catalogue are vendored as data files rather than
-fetched. See [Offline by construction](explanation/offline.md).
+fetched. See [Network isolation](explanation/offline.md).
 
 ## Limits
 
@@ -72,12 +72,12 @@ fetched. See [Offline by construction](explanation/offline.md).
   marked separately from entries imported from a catalogue, and a run that
   prices against an imported figure states so in its limitations.
 
-## Where things are
+## Contents
 
 | | |
 | --- | --- |
 | [Audit a folder](guides/audit-a-folder.md) | Running it, and reading the report |
-| [Text for a pipeline](guides/text-for-a-pipeline.md) | Masked text, token counts, warnings |
+| [Extracting masked text](guides/extract-masked-text.md) | Masked text, token counts, warnings |
 | [Command line](reference/cli.md) | Every command and flag |
 | [Python API](reference/api.md) | `import complydoc as cd` |
 | [Report JSON](reference/report.md) | The shape a run writes |

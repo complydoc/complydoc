@@ -10,7 +10,7 @@ beside it, and prints a summary.
 `--ocr` recognises pages with no text layer. Without it such a page contributes
 no text, and the run reports it as unread.
 
-## Reading the front page
+## Report summary
 
 **Global readiness** is one number for *can these documents go through a
 pipeline at all*, from three factors, with the weights printed beside them:
@@ -36,7 +36,7 @@ score.
 --8<-- "examples/audit_a_folder.py"
 ```
 
-## When the extraction looks wrong
+## Comparing readers
 
 Libraries read the same PDF differently, and the default is not always right:
 
@@ -55,7 +55,7 @@ report labels this `same words, different order`.
 `complydoc compare ~/contracts` uses every reader and OCR engine you have
 installed.
 
-## Large folders
+## Large folders and sampling
 
 `--jobs 0` picks a worker count from the size of the folder.
 

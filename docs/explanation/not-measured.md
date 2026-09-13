@@ -1,4 +1,4 @@
-# Not measured is not zero
+# Unmeasured values
 
 A document with no text layer has no word count, not a word count of zero. A
 reader that cannot detect tables reports no table count, not a count of zero.
@@ -13,14 +13,14 @@ So every measurement can say it was not taken:
   the signals that did produce a rating, so a document where six do not apply is
   not penalised for six missing contributions.
 - A **readiness factor** the run did not measure is dropped the same way.
-  `complydoc readiness` alone still gives you a score; it just says it came from
-  one factor instead of three.
+  `complydoc readiness` alone still produces a score, computed from one factor
+  instead of three, and the report states which.
 - **Coverage** from a reader that returns no geometry is `null`, not 0%. Nought
   per cent would read as a blank page, which is the opposite of what happened.
 - A **token count** with no local encoding is marked `estimated`, because
   dividing by four is not measuring.
 
-## Exception, since corrected
+## Previous exception
 
 The entity detector previously reported `confidence: 1.0` for every name. The
 spaCy pipeline in use exposes no per-entity score, so the value was a constant,
@@ -30,7 +30,7 @@ ones.
 It now reports `null`, and the [evidence tier](evidence.md) carries the
 distinction instead.
 
-## Limitations in the report
+## Reported limitations
 
 Each run generates a list of limitations from its own execution — components
 that did not run, categories that could not be scanned, prices without a

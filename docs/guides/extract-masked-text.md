@@ -1,4 +1,4 @@
-# Text for a pipeline
+# Extracting masked text
 
 `extract_text` returns a folder's text with detected identifiers replaced by
 mask characters, split into chunks, each with a token count.
@@ -50,7 +50,7 @@ rather than split mid-sentence.
 encoding, `approximate` from another provider's encoding, and `estimated` when
 no encoding was available and the count is characters divided by four.
 
-## Text is not taken from the report
+## Source of the text
 
 The report truncates page text at 20,000 characters. `extract_text` loads and
 scans documents directly, so the text it returns is not truncated.
