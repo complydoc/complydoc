@@ -45,7 +45,7 @@ __all__ = [
     "RunMetadata",
 ]
 
-SCHEMA_VERSION = 5
+SCHEMA_VERSION = 6
 
 
 def report_shape() -> dict[str, object]:

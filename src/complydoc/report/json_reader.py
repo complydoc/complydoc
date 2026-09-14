@@ -26,23 +26,28 @@ from pydantic import BaseModel
 
 from complydoc.report.models import SCHEMA_VERSION, AuditReport
 
-__all__ = ["from_jsonable", "load_report"]
+READABLE_SCHEMA_VERSIONS = (5, SCHEMA_VERSION)
+"""Schema versions `load_report` reads. Versions that only added fields are included."""
+
+__all__ = ["READABLE_SCHEMA_VERSIONS", "from_jsonable", "load_report"]
 
 
 def load_report(source: str | os.PathLike[str] | Mapping[str, Any]) -> AuditReport:
     """An `AuditReport` from a JSON file written by `write_json`, or from its parsed data.
 
-    Raises `ValueError` for a report written with a different `schema_version`.
+    Raises `ValueError` for a `schema_version` not in `READABLE_SCHEMA_VERSIONS`.
+    Fields missing from an older report take their default values.
     """
     if isinstance(source, Mapping):
         data = dict(source)
     else:
         data = json.loads(Path(source).expanduser().read_text(encoding="utf-8"))
     version = data.get("run", {}).get("schema_version")
-    if version != SCHEMA_VERSION:
+    if version not in READABLE_SCHEMA_VERSIONS:
+        readable = ", ".join(map(str, READABLE_SCHEMA_VERSIONS))
         raise ValueError(
             f"this report has schema_version {version}; this version of complydoc reads "
-            f"schema_version {SCHEMA_VERSION}"
+            f"schema_version {readable}"
         )
     report = from_jsonable(AuditReport, data)
     assert isinstance(report, AuditReport)

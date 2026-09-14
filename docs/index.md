@@ -9,6 +9,12 @@ complydoc reads documents, or the output of a document loader, and reports:
   that reads as an instruction to a model.
 - **Loaders**: what one or several loaders extracted, over a file or a folder,
   with expected facts, failures and parser cost.
+- **Chunks**: what a text splitter produces, including cut sentences and facts
+  split across chunks.
+
+The Python API also works on plain strings, compares and asserts on saved
+reports, streams audits, and provides pipeline steps for LangChain and
+LlamaIndex.
 
 It produces a report. It does not modify documents.
 
@@ -38,7 +44,7 @@ cd.write_html(report, "report.html")
 ## Output
 
 An HTML report and a JSON file with the same data. The JSON carries
-`schema_version`, currently 5.
+`schema_version`, currently 6.
 
 ## Network access
 

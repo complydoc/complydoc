@@ -6,6 +6,8 @@ versioned separately.
 
 ## [Unreleased]
 
+## [0.4.1] — 2026-09-14
+
 ### Added
 
 - `cd.scan_text`, `cd.mask_text`, `cd.find_hidden` and `cd.count_tokens` work on plain strings.
@@ -22,6 +24,12 @@ versioned separately.
 - `compare_loaders(..., cache_dir=...)` caches loader output per file.
 - Pipeline steps `cd.MaskIdentifiers`, `cd.DropHiddenPassages` and `cd.StripPathMetadata`,
   with adapters in `complydoc.integrations.langchain` and `complydoc.integrations.llamaindex`.
+
+### Changed
+
+- `schema_version` is 6: `cached_files` on each loader. `load_report` reads versions 5 and 6.
+- The Python API reference is grouped by task.
+- An existing report test no longer depends on test order for the network guard.
 
 ## [0.4.0] — 2026-09-14
 
@@ -230,7 +238,8 @@ First release.
 - `complydoc` audits the current directory; `--jobs`, `--sample`, `--password`.
 - Packaged agent skill.
 
-[Unreleased]: https://github.com/duartecaldascardoso/complydoc/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/duartecaldascardoso/complydoc/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/duartecaldascardoso/complydoc/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/duartecaldascardoso/complydoc/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/duartecaldascardoso/complydoc/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/duartecaldascardoso/complydoc/compare/v0.2.0...v0.3.0

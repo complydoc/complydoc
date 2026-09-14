@@ -10,8 +10,9 @@ report, and checked with assertions in a test suite or CI.
 ## Reading a report
 
 `cd.load_report(path)` returns the same `AuditReport` the run produced. It also
-accepts the parsed JSON as a dictionary. A report written with a different
-`schema_version` raises `ValueError`.
+accepts the parsed JSON as a dictionary. It reads `schema_version` 5 and 6; fields
+added since a report was written take their defaults. Any other version raises
+`ValueError`.
 
 ## Comparing reports
 

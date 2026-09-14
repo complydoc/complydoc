@@ -96,26 +96,30 @@ def api_page() -> None:
     import complydoc
 
     names = [n for n in complydoc.__all__ if not n.startswith("_")]
-    entry_points = [
-        n
-        for n in names
-        if n.endswith("_audit") or n in {"extract_text", "inspect_documents", "compare_loaders"}
-    ]
-    results = [
-        "TextResult",
-        "Chunk",
-        "ExtractionWarning",
-        "LoaderRun",
-        "MetadataFinding",
-        "LoaderComparison",
-        "LoaderSummary",
-        "IdentifierDifference",
-    ]
-    plugging = [
-        n for n in names if n.startswith(("register_", "all_")) or n == "supported_extensions"
-    ]
-    errors = [n for n in names if n.endswith("Error")]
-    rest = [n for n in names if n not in {*entry_points, *results, *plugging, *errors}]
+    groups: dict[str, set[str]] = {
+        "Audits and inspection": {
+            n for n in names if n.endswith("_audit")
+        } | {
+            "extract_text", "inspect_documents", "compare_loaders", "inspect_chunks",
+            "compare_chunkers", "check_facts",
+        },
+        "Strings": {"scan_text", "mask_text", "find_hidden", "count_tokens"},
+        "Reports and tests": {
+            "load_report", "write_html", "write_json", "diff_reports", "expect", "load_config",
+        },
+        "Pipeline steps": {
+            "Step", "StepChange", "MaskIdentifiers", "DropHiddenPassages", "StripPathMetadata",
+        },
+        "Extending": {
+            n for n in names if n.startswith(("register_", "all_"))
+        } | {
+            "supported_extensions", "Detector", "DetectorContext", "Finding", "Signal",
+            "Measurement", "Loader", "Extractor", "Engine", "LoaderSpec", "parsers",
+        },
+        "Errors": {n for n in names if n.endswith("Error")},
+    }  # fmt: skip
+    grouped = set().union(*groups.values())
+    groups["Results and types"] = {n for n in names if n not in grouped}
 
     lines = [
         "# Python API",
@@ -124,21 +128,16 @@ def api_page() -> None:
         "import complydoc as cd",
         "```",
         "",
-        "Everything on this page is public and will not be renamed without a major",
+        "Everything on this page is public. A breaking change to it changes the minor",
         "version. Anything in the package that is *not* on this page is internal.",
         "",
     ]
-    for heading, group in (
-        ("Entry points", entry_points),
-        ("What you get back", results),
-        ("Bringing your own reader", plugging),
-        ("Errors", errors),
-        ("Everything else", rest),
-    ):
-        if not group:
+    for heading, group in groups.items():
+        present = sorted(n for n in group if n in names)
+        if not present:
             continue
         lines += [f"## {heading}", ""]
-        for name in sorted(group):
+        for name in present:
             lines += [f"::: complydoc.{name}", "    options:", "      heading_level: 3", ""]
 
     with mkdocs_gen_files.open("reference/api.md", "w") as page:

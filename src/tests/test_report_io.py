@@ -135,3 +135,9 @@ def test_no_regressions_against_a_saved_baseline(tmp_path):
     cd.expect(inspected("The meeting is on Thursday.")).no_regressions(baseline)
     with pytest.raises(cd.ExpectationError, match="identifiers added"):
         cd.expect(inspected("Contact jane.doe@example.com.")).no_regressions(baseline)
+
+
+def test_a_schema_5_report_is_read(audit):
+    data = json.loads(json.dumps(to_dict(audit)))
+    data["run"]["schema_version"] = 5
+    assert cd.load_report(data).run.schema_version == 5
