@@ -15,6 +15,13 @@ corrections. `schema_version` in the JSON is versioned separately.
   `unmapped_glyphs` (`(cid:N)` codes, private-use and control characters),
   `hyphenated_line_breaks` and `repeated_page_lines` (running headers and footers).
 - `vendor-assessment.pdf` in the demo samples carries an instruction in white text.
+- `compare_loaders(..., paths=...)` runs each loader once per file in a folder or list of
+  files, taking loader classes or callables, and records files a loader failed on.
+- Expected facts: `cd.check_facts(report, facts)` and `compare_loaders(..., facts=...)`
+  check whether passages you expect appear in each loader's text, as exact or fuzzy matches.
+- `complydoc.parsers` presets for Docling, Unstructured, LlamaParse and Azure Document
+  Intelligence. Hosted presets need `allow_network=True`; per-page prices are under
+  `parsers` in `pricing.yaml` and a comparison reports each parser's estimated cost.
 
 ## [0.3.1] — 2026-09-14
 

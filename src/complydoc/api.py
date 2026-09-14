@@ -63,11 +63,12 @@ from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, TypedDict, Unpack
 
-from complydoc import offline
+from complydoc import offline, parsers
 from complydoc.audit import COMPONENTS, run_audit
 from complydoc.config.loader import ConfigError, load_config
 from complydoc.cost.estimator import UnknownModelError
 from complydoc.extract import Chunk, ExtractionWarning, TextResult, extract_text
+from complydoc.facts import Fact, check_facts
 from complydoc.hidden.instructions import register_instruction_classifier
 from complydoc.ingest.base import (
     Document,
@@ -91,10 +92,12 @@ from complydoc.ingest.registry import supported_extensions
 from complydoc.loader_comparison import compare_loaders
 from complydoc.loaders import inspect_documents
 from complydoc.offline import NetworkAccessError
+from complydoc.parsers import LoaderSpec
 from complydoc.report.html_writer import write_html as _write_html
 from complydoc.report.json_writer import write_json as _write_json
 from complydoc.report.models import (
     ContentFinding,
+    FactCheck,
     IdentifierDifference,
     LoaderComparison,
     LoaderRun,
@@ -117,12 +120,15 @@ __all__ = [
     "Extraction",
     "ExtractionWarning",
     "Extractor",
+    "Fact",
+    "FactCheck",
     "IdentifierDifference",
     "IngestOptions",
     "Loader",
     "LoaderComparison",
     "LoaderError",
     "LoaderRun",
+    "LoaderSpec",
     "LoaderSummary",
     "MetadataFinding",
     "NetworkAccessError",
@@ -135,12 +141,14 @@ __all__ = [
     "UnknownModelError",
     "all_engines",
     "all_extractors",
+    "check_facts",
     "compare_loaders",
     "cost_audit",
     "extract_text",
     "full_audit",
     "inspect_documents",
     "load_config",
+    "parsers",
     "readiness_audit",
     "register_engine",
     "register_extractor",

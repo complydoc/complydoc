@@ -154,6 +154,17 @@ class FxRate(_Base):
     source_url: str | None = None
 
 
+class ParserPricing(_Base):
+    """Per-page price of a document parser, for `complydoc.parsers` presets."""
+
+    display_name: str
+    usd_per_1000_pages: float | None = None
+    """None when no price is configured."""
+    last_verified: dt.date | None = None
+    source_url: str | None = None
+    notes: str | None = None
+
+
 class CurrencyConfig(_Base):
     report_in: str = "GBP"
     usd_to_gbp: FxRate
@@ -198,6 +209,7 @@ class PricingConfig(_Base):
     vision_formulas: dict[str, VisionFormula]
     resolution_presets: dict[str, ResolutionPreset]
     models: list[ModelPricing]
+    parsers: dict[str, ParserPricing] = Field(default_factory=dict)
 
     @model_validator(mode="after")
     def _formulas_resolve(self) -> PricingConfig:

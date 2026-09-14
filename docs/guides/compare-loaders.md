@@ -57,6 +57,53 @@ Values are masked unless `reveal=True`. A difference in extracted text can also
 change the masked form, for example when one loader drops the spaces inside a
 number; that is reported as two differences.
 
+## A folder of files
+
+With `paths`, each loader is a callable taking a file path, such as a LangChain
+loader class, and runs once per file:
+
+```python title="compare_loaders_over_folder.py"
+--8<-- "examples/compare_loaders_over_folder.py"
+```
+
+`paths` is a folder (searched as `complydoc audit` searches it), a file, or a list
+of files. A file a loader raises on is recorded in its row's `failures` and the
+report lists it as a limitation; the other files are still loaded.
+
+## Expected facts
+
+`facts` are passages the documents should contain, as strings or
+`cd.Fact(text, document=...)`. Each is checked in every loader's text:
+
+| Result | Meaning |
+| --- | --- |
+| `exact` | The passage appears, ignoring case, whitespace, invisible characters and words split at a line break |
+| `fuzzy` | The most similar run of words scores at least `fact_threshold` (0.9 by default) |
+| none | Not found |
+
+Results are in `report.loader_comparison.facts`, each loader's count in
+`facts_found`, and loaders that miss a fact are listed in the limitations.
+`cd.check_facts(report, facts)` runs the same check on any report produced with
+`extracted_text=True`.
+
+## Parser presets
+
+`complydoc.parsers` returns a `LoaderSpec` for each parser, used with `paths`:
+
+| Preset | Library | Hosted | Price entry |
+| --- | --- | --- | --- |
+| `parsers.docling(export="markdown")` | `langchain-docling` | no | `docling` |
+| `parsers.unstructured(api=False)` | `langchain-unstructured` | when `api=True` | `unstructured_api` |
+| `parsers.llamaparse(tier="cost_effective")` | `llama-parse` | yes | `llamaparse_<tier>` |
+| `parsers.azure_document_intelligence(endpoint=..., api_key=...)` | `langchain-community` | yes | `azure_read`, `azure_layout` |
+
+The libraries are not dependencies; a preset reports what to install when its
+library is missing. A hosted preset raises unless `allow_network=True`.
+
+A preset's price comes from `parsers` in `pricing.yaml`. The comparison reports
+`parser_usd`, the page count times the price per page. The shipped prices are not
+verified, and the report says so for each one used.
+
 ## Other differences
 
 | Field | Contents |

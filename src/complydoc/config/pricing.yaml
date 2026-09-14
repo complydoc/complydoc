@@ -258,3 +258,51 @@ models:
       serves an OpenAI-compatible API; confirm it before relying on the
       vision figures.
 
+# Per-page prices for the presets in complydoc.parsers. A null price is reported
+# as not estimated. None of these has been checked against the provider's own
+# pricing page, so every report that uses one says so.
+parsers:
+  docling:
+    display_name: Docling (local)
+    usd_per_1000_pages: 0.0
+    notes: Runs locally; machine time is not priced.
+  unstructured_api:
+    display_name: Unstructured API
+    usd_per_1000_pages: null
+    notes: Set this from your Unstructured plan.
+  llamaparse_fast:
+    display_name: LlamaParse (Fast)
+    usd_per_1000_pages: 1.25
+    last_verified: null
+    source_url: https://developers.llamaindex.ai/python/cloud/general/pricing/
+    notes: 1 credit per page, $1.25 per 1,000 credits on paid plans.
+  llamaparse_cost_effective:
+    display_name: LlamaParse (Cost Effective)
+    usd_per_1000_pages: 3.75
+    last_verified: null
+    source_url: https://developers.llamaindex.ai/python/cloud/general/pricing/
+    notes: 3 credits per page, $1.25 per 1,000 credits on paid plans.
+  llamaparse_agentic:
+    display_name: LlamaParse (Agentic)
+    usd_per_1000_pages: 12.5
+    last_verified: null
+    source_url: https://developers.llamaindex.ai/python/cloud/general/pricing/
+    notes: 10 credits per page, $1.25 per 1,000 credits on paid plans.
+  llamaparse_agentic_plus:
+    display_name: LlamaParse (Agentic Plus)
+    usd_per_1000_pages: 56.25
+    last_verified: null
+    source_url: https://developers.llamaindex.ai/python/cloud/general/pricing/
+    notes: 45 credits per page, $1.25 per 1,000 credits on paid plans.
+  azure_read:
+    display_name: Azure Document Intelligence (Read)
+    usd_per_1000_pages: 1.5
+    last_verified: null
+    source_url: https://azure.microsoft.com/pricing/details/ai-document-intelligence/
+    notes: Pay-as-you-go S0 tier.
+  azure_layout:
+    display_name: Azure Document Intelligence (Layout)
+    usd_per_1000_pages: 10.0
+    last_verified: null
+    source_url: https://azure.microsoft.com/pricing/details/ai-document-intelligence/
+    notes: Pay-as-you-go S0 tier.

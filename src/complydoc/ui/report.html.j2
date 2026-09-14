@@ -121,6 +121,8 @@
 
 {% if report.loader_comparison %}
 {% set lc = report.loader_comparison %}
+{% set lc_failures = lc.loaders | selectattr("failures") | list %}
+{% set lc_costs = lc.loaders | rejectattr("parser_usd", "none") | list %}
 <div class="loaderrun">
 <h3>Loaders compared</h3>
 <p class="note">Findings, scores and cost on this report are built from {{ lc.baseline }}. The
@@ -130,7 +132,7 @@ page, and identifiers only some of them returned are listed on the Security page
   <thead><tr><th>Loader</th><th class="n">Documents</th><th class="n">Pages</th>
     <th class="n">Characters</th><th class="n">Load time</th><th>Network</th>
     <th class="n">Metadata keys</th><th class="n">Identifiers in text</th>
-    <th class="n">In metadata</th><th class="n">Readiness</th><th class="n">Global</th></tr></thead>
+    <th class="n">In metadata</th><th class="n">Readiness</th><th class="n">Global</th>{% if lc.facts %}<th class="n">Facts found</th>{% endif %}{% if lc_failures %}<th class="n">Failed files</th>{% endif %}{% if lc_costs %}<th class="n">Parser cost</th>{% endif %}</tr></thead>
   <tbody>
   {% for l in lc.loaders %}
     <tr{% if loop.first %} class="d-head"{% endif %}>
@@ -146,10 +148,29 @@ page, and identifiers only some of them returned are listed on the Security page
       <td class="n">{{ l.identifiers_in_metadata }}</td>
       <td class="n">{{ "—" if l.readiness_score is none else l.readiness_score }}</td>
       <td class="n">{{ "—" if l.global_score is none else l.global_score }}</td>
+      {% if lc.facts %}<td class="n">{{ l.facts_found }} / {{ lc.facts | length }}</td>{% endif %}
+      {% if lc_failures %}<td class="n">{{ l.failures | length }}</td>{% endif %}
+      {% if lc_costs %}<td class="n">{{ "—" if l.parser_usd is none else "$%.2f" | format(l.parser_usd) }}</td>{% endif %}
     </tr>
   {% endfor %}
   </tbody>
 </table></div>
+{% if lc.facts %}
+<h3>Expected facts</h3>
+<p class="note">Whether each fact appears in each loader's text. Matching ignores case,
+whitespace and words split at line breaks; a fuzzy match shows its similarity.</p>
+<div class="scroll"><table>
+  <thead><tr><th>Fact</th><th>Document</th>{% for l in lc.loaders %}<th class="mono">{{ l.name }}</th>{% endfor %}</tr></thead>
+  <tbody>
+  {% for f in lc.facts %}
+    <tr><td>{{ f.fact }}</td><td class="mono">{{ f.document or "any" }}</td>
+    {% for l in lc.loaders %}{% set kind = f.found.get(l.name) %}
+      <td>{% if kind == "exact" %}found{% elif kind == "fuzzy" %}fuzzy, {{ "%.2f" | format(f.scores[l.name]) }}{% else %}<span class="attn">missing</span>{% endif %}{% if kind and f.pages.get(l.name) %} · p{{ f.pages[l.name] }}{% endif %}</td>
+    {% endfor %}</tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% endif %}
 {% if lc.metadata_keys %}
 <h3>Metadata keys not returned by every loader</h3>
 <p class="note">Matched ignoring case, so <span class="mono">author</span> and

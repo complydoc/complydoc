@@ -28,6 +28,7 @@ dictionaries and needs nothing installed.
 | `quick_wins` | Quick win |
 | `loaders` | Loader in a `compare_loaders` report |
 | `differences` | Identifier found by some loaders only |
+| `facts` | Expected fact per loader in a `compare_loaders` report |
 
 Column names are listed in `complydoc.notebook.COLUMNS`. An empty table keeps its
 columns.

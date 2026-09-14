@@ -162,6 +162,9 @@ def _loaders(report: AuditReport) -> Iterator[Row]:
             "identifiers_in_metadata": row.identifiers_in_metadata,
             "readiness_score": row.readiness_score,
             "global_score": row.global_score,
+            "failed_files": len(row.failures),
+            "facts_found": row.facts_found,
+            "parser_usd": row.parser_usd,
         }
 
 
@@ -183,6 +186,23 @@ def _differences(report: AuditReport) -> Iterator[Row]:
         }
 
 
+def _facts(report: AuditReport) -> Iterator[Row]:
+    comparison = report.loader_comparison
+    if comparison is None:
+        return
+    for check in comparison.facts:
+        for loader, kind in check.found.items():
+            yield {
+                "fact": check.fact,
+                "document": check.document,
+                "loader": loader,
+                "found": kind,
+                "score": check.scores.get(loader),
+                "page": check.pages.get(loader),
+                "matched_document": check.documents.get(loader),
+            }
+
+
 _BUILDERS: dict[str, Callable[[AuditReport], Iterator[Row]]] = {
     "documents": _documents,
     "pages": _pages,
@@ -194,6 +214,7 @@ _BUILDERS: dict[str, Callable[[AuditReport], Iterator[Row]]] = {
     "quick_wins": _quick_wins,
     "loaders": _loaders,
     "differences": _differences,
+    "facts": _facts,
 }
 
 COLUMNS: dict[str, tuple[str, ...]] = {
@@ -222,12 +243,14 @@ COLUMNS: dict[str, tuple[str, ...]] = {
     "loaders": (
         "loader", "baseline", "documents", "pages", "characters", "seconds", "network_allowed",
         "network_attempts", "error", "metadata_keys", "identifiers_in_text",
-        "identifiers_in_metadata", "readiness_score", "global_score",
+        "identifiers_in_metadata", "readiness_score", "global_score", "failed_files",
+        "facts_found", "parser_usd",
     ),
     "differences": (
         "document", "category", "severity", "evidence", "location", "keys", "value",
         "found_by", "missed_by",
     ),
+    "facts": ("fact", "document", "loader", "found", "score", "page", "matched_document"),
 }  # fmt: skip
 """Column names per table, in order. Used for empty tables and checked by tests."""
 

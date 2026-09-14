@@ -28,20 +28,26 @@ from __future__ import annotations
 
 import dataclasses
 import datetime as dt
+import os
 import time
 from collections import Counter
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
+from pathlib import Path
 from typing import Any
 
 from complydoc.audit import COMPONENTS
 from complydoc.config.loader import load_config
-from complydoc.config.schema import Config
-from complydoc.loaders import Inspection, finish_report, inspect_run, loader_name
+from complydoc.config.schema import Config, ParserPricing
+from complydoc.discovery import discover
+from complydoc.facts import FUZZY_THRESHOLD, Fact, as_facts, evaluate_facts
+from complydoc.loaders import FolderSource, Inspection, finish_report, inspect_run, loader_name
+from complydoc.parsers import LoaderSpec
 from complydoc.quickwins import quick_wins
 from complydoc.report.models import (
     AuditReport,
     DocumentReport,
     ExtractorReading,
+    FactCheck,
     IdentifierDifference,
     Limitation,
     LoaderComparison,
@@ -62,6 +68,9 @@ def compare_loaders(
     extracted_text: bool = True,
     models: Sequence[str] | None = None,
     allow_network: bool = False,
+    paths: str | os.PathLike[str] | Sequence[str | os.PathLike[str]] | None = None,
+    facts: Iterable[Fact | str] | None = None,
+    fact_threshold: float = FUZZY_THRESHOLD,
 ) -> AuditReport:
     """Run several loaders on the same input and report where their output differs.
 
@@ -77,6 +86,13 @@ def compare_loaders(
 
     `allow_network` applies to every loader. Each one's connections are
     recorded in its row of `report.loader_comparison.loaders`.
+
+    With `paths`, a folder, a file or a list of files, each loader is a callable
+    taking a file path, such as a loader class or a `complydoc.parsers` preset, and
+    runs once per file. Files a loader raises on are recorded in its row.
+
+    `facts` are passages the documents are expected to contain. Each is checked
+    against every loader's text; see `complydoc.facts`.
     """
     named = _named(loaders)
     if len(named) < 2:
@@ -85,6 +101,11 @@ def compare_loaders(
         )
 
     settings = config or load_config()
+    files = _files(paths) if paths is not None else None
+    sources = [_source(name, value, files) for name, value in named]
+    networks = [_network(name, value, allow_network) for name, value in named]
+    fact_list = as_facts(facts or ())
+    specs = {name: value for name, value in named if isinstance(value, LoaderSpec)}
     started = time.monotonic()
     inspections = [
         inspect_run(
@@ -97,9 +118,9 @@ def compare_loaders(
             # comparing and dropped afterwards if the caller did not ask for it.
             extracted_text=True,
             models=models,
-            allow_network=allow_network,
+            allow_network=network,
         )
-        for name, source in named
+        for (name, _value), source, network in zip(named, sources, networks, strict=True)
     ]
     baseline, others = inspections[0], inspections[1:]
     by_path = [{str(entry.path): entry for entry in i.entries} for i in inspections]
@@ -111,6 +132,9 @@ def compare_loaders(
     for entry in baseline.entries:
         entry.extractions = _readings(entry, baseline, list(zip(others, by_path[1:], strict=True)))
     differences = _identifier_differences(inspections, by_path, reveal)
+    fact_checks = evaluate_facts(
+        {i.loader.name: i.entries for i in inspections}, fact_list, fact_threshold
+    )
 
     if not extracted_text:
         for entry in baseline.entries:
@@ -130,14 +154,25 @@ def compare_loaders(
     comparison = LoaderComparison(
         baseline=baseline.loader.name,
         loaders=[
-            _summary(reports[i.loader.name], i, characters[i.loader.name]) for i in inspections
+            _summary(
+                reports[i.loader.name],
+                i,
+                characters[i.loader.name],
+                fact_checks if fact_list else None,
+                _parser_price(specs.get(i.loader.name), settings),
+            )
+            for i in inspections
         ],
         identifier_differences=differences,
         metadata_keys=_uneven_keys(inspections),
         documents=_uneven_documents(inspections, by_path),
+        facts=fact_checks,
     )
     report.loader_comparison = comparison
-    report.limitations[:0] = _comparison_limitations(comparison, report, other_reports)
+    report.limitations[:0] = [
+        *_comparison_limitations(comparison, report, other_reports),
+        *_price_limitations(specs, settings),
+    ]
     report.quick_wins = quick_wins(report)
     return report
 
@@ -150,10 +185,53 @@ def _named(loaders: Mapping[str, Any] | Sequence[Any]) -> list[tuple[str, Any]]:
     seen: Counter[str] = Counter()
     named: list[tuple[str, Any]] = []
     for source in loaders:
-        base = loader_name(source)
+        base = source.name if isinstance(source, LoaderSpec) else loader_name(source)
         seen[base] += 1
         named.append((base if seen[base] == 1 else f"{base} ({seen[base]})", source))
     return named
+
+
+def _files(paths: str | os.PathLike[str] | Sequence[str | os.PathLike[str]]) -> list[Path]:
+    if isinstance(paths, (str, os.PathLike)):
+        root = Path(paths).expanduser()
+        if not root.exists():
+            raise FileNotFoundError(f"no such file or folder: {root}")
+        files, _skipped = discover(root)
+    else:
+        files = [Path(path).expanduser() for path in paths]
+    if not files:
+        raise ValueError("paths contains no documents to load")
+    return files
+
+
+def _source(name: str, value: Any, files: list[Path] | None) -> Any:
+    """The loader to run: the value itself, or its factory run over `files`."""
+    if files is None:
+        if isinstance(value, LoaderSpec):
+            raise TypeError(
+                f"{name} is a parser preset, which loads one file at a time; pass paths="
+            )
+        return value
+    factory = value.factory if isinstance(value, LoaderSpec) else value
+    if not callable(factory):
+        raise TypeError(f"with paths, {name} must be a callable taking a file path")
+    return FolderSource(factory, files)
+
+
+def _network(name: str, value: Any, allow_network: bool) -> bool:
+    if not isinstance(value, LoaderSpec):
+        return allow_network
+    if value.network and not allow_network:
+        raise ValueError(
+            f"{name} sends documents to a hosted service; pass allow_network=True to run it"
+        )
+    return value.network
+
+
+def _parser_price(spec: LoaderSpec | None, settings: Config) -> ParserPricing | None:
+    if spec is None or spec.price_key is None:
+        return None
+    return settings.pricing.parsers.get(spec.price_key)
 
 
 def _pages(entry: DocumentReport) -> dict[int, str]:
@@ -327,13 +405,20 @@ def _uneven_documents(
     return uneven
 
 
-def _summary(report: AuditReport, inspection: Inspection, characters: int) -> LoaderSummary:
+def _summary(
+    report: AuditReport,
+    inspection: Inspection,
+    characters: int,
+    fact_checks: list[FactCheck] | None,
+    price: ParserPricing | None,
+) -> LoaderSummary:
     entries = report.documents
     loader = inspection.loader
+    pages = sum(entry.page_count for entry in entries)
     return LoaderSummary(
         name=loader.name,
         documents=len(entries),
-        pages=sum(entry.page_count for entry in entries),
+        pages=pages,
         characters=characters,
         seconds=loader.seconds,
         network_allowed=loader.network_allowed,
@@ -346,6 +431,17 @@ def _summary(report: AuditReport, inspection: Inspection, characters: int) -> Lo
         readiness_score=report.aggregate.mean_readiness_score if report.aggregate else None,
         global_score=report.overall.score if report.overall else None,
         text_path_usd=report.aggregate.total_text_path_usd if report.aggregate else None,
+        failures=dict(loader.failures),
+        facts_found=(
+            sum(1 for check in fact_checks if check.found.get(loader.name))
+            if fact_checks is not None
+            else None
+        ),
+        parser_usd=(
+            round(pages * price.usd_per_1000_pages / 1000, 4)
+            if price is not None and price.usd_per_1000_pages is not None
+            else None
+        ),
     )
 
 
@@ -381,6 +477,24 @@ def _comparison_limitations(
             )
         )
 
+    missing = [
+        (row.name, sum(1 for check in comparison.facts if not check.found.get(row.name)))
+        for row in comparison.loaders
+    ]
+    missing = [(name, number) for name, number in missing if number]
+    if missing:
+        listed = ", ".join(f"{name} ({count(number, 'fact')})" for name, number in missing)
+        limitations.append(
+            Limitation(
+                area="Loaders",
+                statement=f"Expected facts were not found in the text of {listed}.",
+                affected=sorted(
+                    {check.fact for check in comparison.facts if None in check.found.values()}
+                ),
+                severity="important",
+            )
+        )
+
     if comparison.documents:
         limitations.append(
             Limitation(
@@ -403,4 +517,28 @@ def _comparison_limitations(
             ):
                 stated.add(limitation.statement)
                 limitations.append(limitation)
+    return limitations
+
+
+def _price_limitations(specs: dict[str, LoaderSpec], settings: Config) -> list[Limitation]:
+    limitations: list[Limitation] = []
+    for name, spec in specs.items():
+        price = _parser_price(spec, settings)
+        if spec.price_key is not None and price is None:
+            statement = (
+                f"No price is configured for {name}; add {spec.price_key} under parsers in "
+                f"pricing.yaml to estimate its cost."
+            )
+        elif price is not None and price.usd_per_1000_pages is None:
+            statement = (
+                f"{price.display_name} has no price configured, so its cost is not estimated."
+            )
+        elif price is not None and price.last_verified is None and price.usd_per_1000_pages:
+            statement = (
+                f"The {price.display_name} price of ${price.usd_per_1000_pages:,.2f} per 1,000 "
+                f"pages has not been verified against the provider's pricing page."
+            )
+        else:
+            continue
+        limitations.append(Limitation(area="Parser prices", statement=statement, severity="info"))
     return limitations

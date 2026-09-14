@@ -71,10 +71,11 @@ from complydoc.report.models import (
     RunMetadata,
 )
 from complydoc.sensitive.scanner import scan_text
+from complydoc.text import count
 
-__all__ = ["inspect_documents"]
+__all__ = ["SOURCE_KEYS", "FolderSource", "inspect_documents"]
 
-_SOURCE_KEYS = ("source", "file_path", "filename", "file_name")
+SOURCE_KEYS = ("source", "file_path", "filename", "file_name")
 """Metadata keys loaders use to name the file a document came from, in order."""
 
 _FORMATS = {
@@ -266,12 +267,7 @@ def _run_loader(source: Any, name: str | None, allow_network: bool) -> tuple[lis
     started = time.perf_counter()
     with offline.permitted() if allow_network else offline.guarded() as attempts:
         try:
-            if call is not None:
-                items = list(call())
-            elif _is_document_like(source):
-                items = [source]
-            else:
-                items = list(source)
+            items = _load_items(source, call)
         except offline.NetworkAccessError as exc:
             error = f"stopped when a network connection was refused: {exc}"
     seconds = round(time.perf_counter() - started, 3) if call is not None else None
@@ -288,7 +284,39 @@ def _run_loader(source: Any, name: str | None, allow_network: bool) -> tuple[lis
         error=error,
         metadata_keys=sorted(keys),
         network_allowed=allow_network,
+        failures=dict(source.failures) if isinstance(source, FolderSource) else {},
     )
+
+
+class FolderSource:
+    """A loader factory run once per file.
+
+    `factory` is called with each file path and returns a loader or documents. A file
+    that raises is recorded in `failures` and loading continues with the next.
+    """
+
+    def __init__(self, factory: Callable[[str], Any], files: Iterable[Path]) -> None:
+        self.factory = factory
+        self.files = list(files)
+        self.failures: dict[str, str] = {}
+
+    def load(self) -> list[Any]:
+        items: list[Any] = []
+        for path in self.files:
+            try:
+                source = self.factory(str(path))
+                items.extend(_load_items(source, _loading_call(source)))
+            except Exception as exc:
+                self.failures[str(path)] = f"{type(exc).__name__}: {exc}"
+        return items
+
+
+def _load_items(source: Any, call: Callable[[], Iterable[Any]] | None) -> list[Any]:
+    if call is not None:
+        return list(call())
+    if _is_document_like(source):
+        return [source]
+    return list(source)
 
 
 def _loading_call(source: Any) -> Callable[[], Iterable[Any]] | None:
@@ -362,7 +390,7 @@ def _documents_from(
     for item in items:
         text, metadata = _content(item)
         key = next(
-            (str(metadata[k]) for k in _SOURCE_KEYS if isinstance(metadata.get(k), str | PurePath)),
+            (str(metadata[k]) for k in SOURCE_KEYS if isinstance(metadata.get(k), str | PurePath)),
             loader_name,
         )
         groups.setdefault(key, []).append((text, metadata))
@@ -508,6 +536,15 @@ def _loader_limitations(loader: LoaderRun, entries: list[DocumentReport]) -> lis
             Limitation(
                 area="Loader",
                 statement=f"{loader.name} did not finish: {loader.error}.",
+                severity="important",
+            )
+        )
+    if loader.failures:
+        limitations.append(
+            Limitation(
+                area="Loader",
+                statement=f"{loader.name} failed on {count(len(loader.failures), 'file')}.",
+                affected=[f"{path}: {reason}" for path, reason in loader.failures.items()],
                 severity="important",
             )
         )

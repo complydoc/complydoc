@@ -37,6 +37,7 @@ __all__ = [
     "DocumentReport",
     "DocumentTiming",
     "ExtractorReading",
+    "FactCheck",
     "IdentifierDifference",
     "Limitation",
     "LoaderComparison",
@@ -115,7 +116,8 @@ def report_shape() -> dict[str, object]:
         ),
         "loader_comparison": (
             "null unless compare_loaders ran: baseline, loaders[] (per-loader totals, "
-            "network, scores), identifier_differences[] (found_by[], missed_by[]), "
+            "network, scores, failures, facts_found, parser_usd), facts[], "
+            "identifier_differences[] (found_by[], missed_by[]), "
             "metadata_keys (key -> loaders returning it), documents (path -> loaders)"
         ),
         "aggregate": (
@@ -171,6 +173,8 @@ class LoaderRun:
     error: str | None = None
     metadata_keys: list[str] = field(default_factory=list)
     """Every metadata key the loader returned, across all documents."""
+    failures: dict[str, str] = field(default_factory=dict)
+    """Files the loader raised on, with the error, when it ran over several files."""
     network_allowed: bool = False
     """The caller passed `allow_network=True`, so the loader's connections went
     through. complydoc's own processing stays behind the guard either way."""
@@ -224,6 +228,12 @@ class LoaderSummary:
     readiness_score: float | None
     global_score: float | None
     text_path_usd: float | None
+    failures: dict[str, str] = field(default_factory=dict)
+    """Files the loader raised on, with the error."""
+    facts_found: int | None = None
+    """Expected facts found in this loader's text, when facts were given."""
+    parser_usd: float | None = None
+    """Estimated parser cost for these pages, from `parsers` in `pricing.yaml`."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -256,6 +266,22 @@ class IdentifierDifference:
 
 
 @dataclass(frozen=True, slots=True)
+class FactCheck:
+    """Whether one expected fact appears in the text of each loader."""
+
+    fact: str
+    document: str | None
+    """The document the fact was checked in, or None for every document."""
+    found: dict[str, str | None]
+    """Loader name to `exact`, `fuzzy`, or None."""
+    scores: dict[str, float]
+    """Loader name to the best similarity found, from 0 to 1."""
+    pages: dict[str, int | None]
+    documents: dict[str, str | None]
+    """Loader name to the document the fact was found in."""
+
+
+@dataclass(frozen=True, slots=True)
 class LoaderComparison:
     """Where several loaders' output differed, measured against the first."""
 
@@ -266,6 +292,8 @@ class LoaderComparison:
     """Keys not returned by every loader, matched ignoring case, and which returned them."""
     documents: dict[str, list[str]] = field(default_factory=dict)
     """Documents not returned by every loader, and which loaders returned them."""
+    facts: list[FactCheck] = field(default_factory=list)
+    """Expected facts, checked against every loader's text."""
 
 
 @dataclass(frozen=True, slots=True)
