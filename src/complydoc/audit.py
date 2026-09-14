@@ -344,6 +344,109 @@ def resolve_jobs(jobs: int, files: int) -> int:
     return max(1, min(jobs, max(1, files)))
 
 
+@dataclass(frozen=True, slots=True)
+class AuditPlan:
+    """The files an audit will read and how it will read them."""
+
+    files: list[Path]
+    skipped: list[SkipRecord]
+    work: Work
+    jobs: int
+    requested: list[str]
+    found: int
+    extractor: str
+
+
+def plan_audit(
+    target: Path,
+    config: Config,
+    components: Sequence[str] = COMPONENTS,
+    *,
+    ocr: bool = False,
+    reveal: bool = False,
+    select_models: Sequence[str] | None = None,
+    recurse: bool = True,
+    previews: bool = True,
+    page_images: bool = False,
+    extracted_text: bool = False,
+    ocr_compare: bool = False,
+    render_dpi: int = 150,
+    password: str = "",
+    extractor: str | None = None,
+    compare_extractors: Sequence[str] = (),
+    compare_engines: Sequence[str] = (),
+    jobs: int = 1,
+    sample: int | None = None,
+) -> AuditPlan:
+    """Discover the files and settle how each will be read, before opening any."""
+    requested = [c for c in COMPONENTS if c in set(components)]
+    target = target.expanduser().resolve()
+    files, skipped = discover(target, recurse=recurse)
+    found = len(files)
+    if sample is not None and sample < found:
+        files = sample_files(files, sample)
+
+    # Pages are rasterised only for OCR, page images, OCR comparison or the skew signal.
+    wants_raster = ocr or page_images or ocr_compare or "readiness" in requested
+    options = IngestOptions(
+        ocr=ocr,
+        render_dpi=render_dpi,
+        extract_tables="readiness" in requested,
+        render_all_pages=page_images or ocr_compare,
+        ocr_compare=ocr_compare,
+        max_render_pages=50 if (wants_raster or page_images) else 0,
+        password=password,
+        extractor=extractor or DEFAULT_EXTRACTOR,
+        compare_extractors=tuple(compare_extractors),
+        compare_engines=tuple(compare_engines),
+        # Several readings of every page are only kept when the run keeps text.
+        keep_readings=extracted_text and bool(compare_extractors or compare_engines),
+    )
+
+    ocr_module.reset_stats()
+    work = Work(
+        config=config,
+        options=options,
+        target=target,
+        requested=tuple(requested),
+        reveal=reveal,
+        previews=previews,
+        page_images=page_images,
+        extracted_text=extracted_text,
+        models=(
+            tuple(resolve_models(config.pricing, select_models)) if "cost" in requested else None
+        ),
+        today=dt.date.today(),
+    )
+    return AuditPlan(
+        files=files,
+        skipped=skipped,
+        work=work,
+        jobs=resolve_jobs(jobs, len(files)),
+        requested=requested,
+        found=found,
+        extractor=extractor or DEFAULT_EXTRACTOR,
+    )
+
+
+def iter_entries(plan: AuditPlan, *, guard: bool = True) -> Iterator[DocumentReport | SkipRecord]:
+    """Each skipped file, then each document's entry as it is read.
+
+    The network guard is armed only while a document is being read.
+    """
+    yield from plan.skipped
+    outcomes = _outcomes(plan.files, plan.work, plan.jobs)
+    while True:
+        with offline.guarded(guard):
+            outcome = next(outcomes, None)
+        if outcome is None:
+            return
+        if outcome.skipped is not None:
+            yield outcome.skipped
+        if outcome.entry is not None:
+            yield outcome.entry
+
+
 def run_audit(
     target: Path,
     config: Config,
@@ -370,50 +473,30 @@ def run_audit(
 ) -> AuditReport:
     started = time.monotonic()
     started_at = dt.datetime.now().astimezone()
-    requested = [c for c in COMPONENTS if c in set(components)]
-
-    target = target.expanduser().resolve()
-    files, skipped = discover(target, recurse=recurse)
-    found = len(files)
-    if sample is not None and sample < found:
-        files = sample_files(files, sample)
-    sampled = len(files) < found
-
-    # Pages are rasterised only for OCR, page images, OCR comparison or the skew signal.
-    wants_raster = ocr or page_images or ocr_compare or "readiness" in requested
-    options = IngestOptions(
+    plan = plan_audit(
+        target,
+        config,
+        components,
         ocr=ocr,
-        render_dpi=render_dpi,
-        extract_tables="readiness" in requested,
-        render_all_pages=page_images or ocr_compare,
-        ocr_compare=ocr_compare,
-        max_render_pages=50 if (wants_raster or page_images) else 0,
-        password=password,
-        extractor=extractor or DEFAULT_EXTRACTOR,
-        compare_extractors=tuple(compare_extractors),
-        compare_engines=tuple(compare_engines),
-        # Holding several readings of every page is the largest thing a
-        # comparison adds, so it is only done when the run keeps text at all.
-        keep_readings=extracted_text and bool(compare_extractors or compare_engines),
-    )
-    chosen_extractor = extractor or DEFAULT_EXTRACTOR
-
-    ocr_module.reset_stats()
-    jobs = resolve_jobs(jobs, len(files))
-    work = Work(
-        config=config,
-        options=options,
-        target=target,
-        requested=tuple(requested),
         reveal=reveal,
+        select_models=select_models,
+        recurse=recurse,
         previews=previews,
         page_images=page_images,
         extracted_text=extracted_text,
-        models=(
-            tuple(resolve_models(config.pricing, select_models)) if "cost" in requested else None
-        ),
-        today=dt.date.today(),
+        ocr_compare=ocr_compare,
+        render_dpi=render_dpi,
+        password=password,
+        extractor=extractor,
+        compare_extractors=compare_extractors,
+        compare_engines=compare_engines,
+        jobs=jobs,
+        sample=sample,
     )
+    files, skipped, work, jobs = plan.files, plan.skipped, plan.work, plan.jobs
+    requested, found, chosen_extractor = plan.requested, plan.found, plan.extractor
+    target = work.target
+    sampled = len(files) < found
 
     documents: list[DocumentReport] = []
     for index, outcome in enumerate(_outcomes(files, work, jobs), start=1):

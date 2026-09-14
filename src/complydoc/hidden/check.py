@@ -35,7 +35,7 @@ from complydoc.hidden.unicode import find_smuggled, strip_invisible
 from complydoc.hidden.visibility import HiddenRun, pdf_hidden_runs
 from complydoc.report.models import ContentFinding
 
-__all__ = ["ContentCheck", "check_content", "severity_of"]
+__all__ = ["ContentCheck", "check_content", "instruction_spans", "severity_of"]
 
 _EXCERPT = 240
 _PARAGRAPH = 2000
@@ -217,6 +217,12 @@ def check_content(
             )
 
     return ContentCheck(findings, checked, "; ".join(notes) or None)
+
+
+def instruction_spans(text: str, config: Config) -> list[tuple[int, int]]:
+    """Start and end of each sentence in `text` that matches an instruction pattern."""
+    matcher = matcher_for(config.hidden.instructions)
+    return [(start, end) for start, end, _labels, _parts in _grouped(matcher.find(text), text)]
 
 
 def _file_runs(

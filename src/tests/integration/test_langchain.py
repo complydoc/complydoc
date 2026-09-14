@@ -80,3 +80,16 @@ def test_comparing_pypdf_and_pdfplumber():
     assert [r.extractor for r in report.documents[0].extractions] == ["pypdf", "pdfplumber"]
     # The producer string is the same value under `producer` and `Producer`.
     assert not [d for d in comparison.identifier_differences if d.location == "metadata"]
+
+
+def test_a_langchain_splitter_can_be_inspected():
+    splitters = pytest.importorskip("langchain_text_splitters")
+    splitter = splitters.RecursiveCharacterTextSplitter(chunk_size=200, chunk_overlap=0)
+    report = cd.inspect_chunks(
+        splitter,
+        loaders.PyPDFLoader(str(SAMPLE / "vendor-assessment.pdf")),
+        facts=["Two administrator accounts have no multi-factor authentication"],
+    )
+    assert report.stats.count > 1
+    assert report.chunks[0].document.endswith("vendor-assessment.pdf")
+    assert report.facts[0].status in {"whole", "split"}

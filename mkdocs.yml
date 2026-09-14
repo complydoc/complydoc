@@ -105,6 +105,7 @@ nav:
       - Inspecting chunks: guides/inspect-chunks.md
       - Report tables: guides/report-tables.md
       - Baselines and tests: guides/baselines-and-tests.md
+      - Streaming and steps: guides/streaming-and-steps.md
   - Reference:
       - Command line: reference/cli.md
       - Python API: reference/api.md

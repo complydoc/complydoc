@@ -45,7 +45,7 @@ import time
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path, PurePath
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from complydoc import __version__, offline
 from complydoc.audit import COMPONENTS, Work, assemble_report, build_entry, ner_available
@@ -72,6 +72,9 @@ from complydoc.report.models import (
 )
 from complydoc.sensitive.scanner import scan_text
 from complydoc.text import count
+
+if TYPE_CHECKING:
+    from complydoc.loader_cache import LoaderCache
 
 __all__ = [
     "ABSOLUTE_PATH",
@@ -292,6 +295,7 @@ def _run_loader(source: Any, name: str | None, allow_network: bool) -> tuple[lis
         metadata_keys=sorted(keys),
         network_allowed=allow_network,
         failures=dict(source.failures) if isinstance(source, FolderSource) else {},
+        cached_files=source.cached_files if isinstance(source, FolderSource) else 0,
     )
 
 
@@ -299,22 +303,43 @@ class FolderSource:
     """A loader factory run once per file.
 
     `factory` is called with each file path and returns a loader or documents. A file
-    that raises is recorded in `failures` and loading continues with the next.
+    that raises is recorded in `failures` and loading continues with the next. With a
+    `cache`, output is stored per file under `name`, and a cached file is not parsed.
     """
 
-    def __init__(self, factory: Callable[[str], Any], files: Iterable[Path]) -> None:
+    def __init__(
+        self,
+        factory: Callable[[str], Any],
+        files: Iterable[Path],
+        *,
+        name: str = "",
+        cache: LoaderCache | None = None,
+    ) -> None:
         self.factory = factory
         self.files = list(files)
+        self.name = name
+        self.cache = cache
         self.failures: dict[str, str] = {}
+        self.cached_files = 0
 
     def load(self) -> list[Any]:
         items: list[Any] = []
         for path in self.files:
+            if self.cache is not None:
+                cached = self.cache.get(self.name, path)
+                if cached is not None:
+                    items.extend(cached)
+                    self.cached_files += 1
+                    continue
             try:
                 source = self.factory(str(path))
-                items.extend(_load_items(source, _loading_call(source)))
+                loaded = _load_items(source, _loading_call(source))
             except Exception as exc:
                 self.failures[str(path)] = f"{type(exc).__name__}: {exc}"
+                continue
+            if self.cache is not None:
+                self.cache.put(self.name, path, [document_content(item) for item in loaded])
+            items.extend(loaded)
         return items
 
 
@@ -549,6 +574,17 @@ def _loader_limitations(loader: LoaderRun, entries: list[DocumentReport]) -> lis
                 area="Loader",
                 statement=f"{loader.name} did not finish: {loader.error}.",
                 severity="important",
+            )
+        )
+    if loader.cached_files:
+        limitations.append(
+            Limitation(
+                area="Loader",
+                statement=(
+                    f"{loader.name} output for {count(loader.cached_files, 'file')} came from "
+                    f"the cache; load time and network attempts cover only the files parsed."
+                ),
+                severity="info",
             )
         )
     if loader.failures:

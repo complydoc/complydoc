@@ -24,6 +24,11 @@ want on your PATH. It also reinstalls the spaCy model and runs `complydoc doctor
 | `src/complydoc/facts.py` | Expected fact matching |
 | `src/complydoc/parsers.py` | Parser presets (`LoaderSpec`) |
 | `src/complydoc/notebook.py` | Report tables and Jupyter display |
+| `src/complydoc/strings.py` | Scanning, masking and token counts on strings |
+| `src/complydoc/chunks.py` | Chunk inspection |
+| `src/complydoc/report/json_reader.py`, `report_diff.py`, `expectations.py` | Loading, diffs and assertions |
+| `src/complydoc/loader_cache.py` | Cached loader output |
+| `src/complydoc/steps.py`, `integrations/` | Pipeline steps and framework adapters |
 | `src/complydoc/cost/` | Tokenizers, vision formulas, price catalogue |
 | `src/complydoc/report/` | JSON and HTML writers, previews, limitations |
 | `src/complydoc/ui/` | Report template, stylesheet and script |

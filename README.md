@@ -74,6 +74,9 @@ OCR and name detection are optional extras. `complydoc doctor` shows what is ins
 - **Parser presets**: Docling, Unstructured, LlamaParse and Azure Document Intelligence;
   hosted parsers run only with `allow_network=True`.
 - **Tables**: every part of a report as a pandas DataFrame, and a summary in Jupyter.
+- **Python API**: scanning and masking strings, chunk inspection, baselines with diffs and
+  assertions for tests, streaming audits, cached loader output, and pipeline steps for
+  LangChain and LlamaIndex.
 - **Masked text**: the documents' text with identifiers covered, chunked and counted in
   tokens.
 

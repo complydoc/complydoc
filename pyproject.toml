@@ -161,3 +161,7 @@ markers = [
 [[tool.mypy.overrides]]
 module = ["pandas"]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["langchain_core.*", "llama_index.*"]
+ignore_missing_imports = true

@@ -58,13 +58,14 @@ Two differences from the command line:
 
 from __future__ import annotations
 
+import asyncio
 import os
-from collections.abc import Callable, Sequence
+from collections.abc import AsyncIterator, Callable, Iterator, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, TypedDict, Unpack
 
 from complydoc import offline, parsers
-from complydoc.audit import COMPONENTS, run_audit
+from complydoc.audit import COMPONENTS, iter_entries, plan_audit, run_audit
 from complydoc.chunks import (
     ChunkComparison,
     ChunkReport,
@@ -88,6 +89,7 @@ from complydoc.ingest.base import (
     LoaderError,
     Page,
     Rect,
+    SkipRecord,
     TextBlock,
     sha256_of,
 )
@@ -111,6 +113,7 @@ from complydoc.report.json_writer import write_json as _write_json
 from complydoc.report.models import (
     AuditReport,
     ContentFinding,
+    DocumentReport,
     FactCheck,
     IdentifierDifference,
     LoaderComparison,
@@ -121,6 +124,13 @@ from complydoc.report.models import (
 from complydoc.report_diff import Change, ReportDiff, diff_reports
 from complydoc.sensitive.base import Detector, DetectorContext, Finding
 from complydoc.sensitive.registry import register as register_detector
+from complydoc.steps import (
+    DropHiddenPassages,
+    MaskIdentifiers,
+    Step,
+    StepChange,
+    StripPathMetadata,
+)
 from complydoc.strings import MaskedText, TextScan, count_tokens, find_hidden, mask_text, scan_text
 
 if TYPE_CHECKING:
@@ -140,6 +150,8 @@ __all__ = [
     "DetectorContext",
     "Document",
     "DocumentFormat",
+    "DocumentReport",
+    "DropHiddenPassages",
     "Engine",
     "Expectation",
     "ExpectationError",
@@ -159,6 +171,7 @@ __all__ = [
     "LoaderRun",
     "LoaderSpec",
     "LoaderSummary",
+    "MaskIdentifiers",
     "MaskedText",
     "Measurement",
     "MetadataFinding",
@@ -169,10 +182,15 @@ __all__ = [
     "Rect",
     "ReportDiff",
     "Signal",
+    "SkipRecord",
+    "Step",
+    "StepChange",
+    "StripPathMetadata",
     "TextBlock",
     "TextResult",
     "TextScan",
     "UnknownModelError",
+    "aiter_audit",
     "all_engines",
     "all_extractors",
     "check_facts",
@@ -187,6 +205,7 @@ __all__ = [
     "full_audit",
     "inspect_chunks",
     "inspect_documents",
+    "iter_audit",
     "load_config",
     "load_report",
     "mask_text",
@@ -332,3 +351,53 @@ def write_html(
 def write_json(report: AuditReport, path: str | os.PathLike[str]) -> Path:
     """Write the report as JSON, and return where. Same shape the CLI writes."""
     return _write_json(report, Path(path).expanduser())
+
+
+def iter_audit(
+    target: str | os.PathLike[str],
+    *,
+    components: Sequence[str] = COMPONENTS,
+    **options: Unpack[AuditOptions],
+) -> Iterator[DocumentReport | SkipRecord]:
+    """Yield each document's report entry as it is read, and each skipped file.
+
+    Takes the options of `full_audit`. The network guard is armed while a document
+    is read and released between documents. Raises `FileNotFoundError` for a missing
+    path when called.
+    """
+    folder = Path(target).expanduser()
+    if not folder.exists():
+        raise FileNotFoundError(f"no such file or folder: {folder}")
+    plan = plan_audit(
+        folder,
+        options.get("config") or load_config(),
+        components,
+        ocr=options.get("ocr", False),
+        reveal=options.get("reveal", False),
+        select_models=options.get("models"),
+        recurse=options.get("recurse", True),
+        page_images=options.get("page_images", False),
+        extracted_text=options.get("extracted_text", False),
+        password=options.get("password", ""),
+        extractor=options.get("extractor"),
+        compare_extractors=tuple(options.get("compare_extractors") or ()),
+        compare_engines=tuple(options.get("compare_engines") or ()),
+        jobs=options.get("jobs", 1),
+        sample=options.get("sample"),
+    )
+    return iter_entries(plan, guard=options.get("offline_guard", True))
+
+
+async def aiter_audit(
+    target: str | os.PathLike[str],
+    *,
+    components: Sequence[str] = COMPONENTS,
+    **options: Unpack[AuditOptions],
+) -> AsyncIterator[DocumentReport | SkipRecord]:
+    """`iter_audit` for asynchronous code, reading each document in a worker thread."""
+    iterator = iter_audit(target, components=components, **options)
+    while True:
+        item = await asyncio.to_thread(next, iterator, None)
+        if item is None:
+            return
+        yield item

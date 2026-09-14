@@ -40,6 +40,7 @@ from complydoc.config.loader import load_config
 from complydoc.config.schema import Config, ParserPricing
 from complydoc.discovery import discover
 from complydoc.facts import FUZZY_THRESHOLD, Fact, as_facts, evaluate_facts
+from complydoc.loader_cache import LoaderCache
 from complydoc.loaders import FolderSource, Inspection, finish_report, inspect_run, loader_name
 from complydoc.parsers import LoaderSpec
 from complydoc.quickwins import quick_wins
@@ -71,6 +72,7 @@ def compare_loaders(
     paths: str | os.PathLike[str] | Sequence[str | os.PathLike[str]] | None = None,
     facts: Iterable[Fact | str] | None = None,
     fact_threshold: float = FUZZY_THRESHOLD,
+    cache_dir: str | os.PathLike[str] | None = None,
 ) -> AuditReport:
     """Run several loaders on the same input and report where their output differs.
 
@@ -91,6 +93,9 @@ def compare_loaders(
     taking a file path, such as a loader class or a `complydoc.parsers` preset, and
     runs once per file. Files a loader raises on are recorded in its row.
 
+    `cache_dir` stores each loader's output per file when `paths` is given, so a later
+    run does not parse unchanged files again; see `complydoc.loader_cache`.
+
     `facts` are passages the documents are expected to contain. Each is checked
     against every loader's text; see `complydoc.facts`.
     """
@@ -102,7 +107,10 @@ def compare_loaders(
 
     settings = config or load_config()
     files = _files(paths) if paths is not None else None
-    sources = [_source(name, value, files) for name, value in named]
+    if cache_dir is not None and files is None:
+        raise TypeError("cache_dir caches output per file, so it needs paths=")
+    cache = LoaderCache(cache_dir) if cache_dir is not None else None
+    sources = [_source(name, value, files, cache) for name, value in named]
     networks = [_network(name, value, allow_network) for name, value in named]
     fact_list = as_facts(facts or ())
     specs = {name: value for name, value in named if isinstance(value, LoaderSpec)}
@@ -204,7 +212,7 @@ def _files(paths: str | os.PathLike[str] | Sequence[str | os.PathLike[str]]) -> 
     return files
 
 
-def _source(name: str, value: Any, files: list[Path] | None) -> Any:
+def _source(name: str, value: Any, files: list[Path] | None, cache: LoaderCache | None) -> Any:
     """The loader to run: the value itself, or its factory run over `files`."""
     if files is None:
         if isinstance(value, LoaderSpec):
@@ -215,7 +223,7 @@ def _source(name: str, value: Any, files: list[Path] | None) -> Any:
     factory = value.factory if isinstance(value, LoaderSpec) else value
     if not callable(factory):
         raise TypeError(f"with paths, {name} must be a callable taking a file path")
-    return FolderSource(factory, files)
+    return FolderSource(factory, files, name=name, cache=cache)
 
 
 def _network(name: str, value: Any, allow_network: bool) -> bool:
@@ -432,6 +440,7 @@ def _summary(
         global_score=report.overall.score if report.overall else None,
         text_path_usd=report.aggregate.total_text_path_usd if report.aggregate else None,
         failures=dict(loader.failures),
+        cached_files=loader.cached_files,
         facts_found=(
             sum(1 for check in fact_checks if check.found.get(loader.name))
             if fact_checks is not None

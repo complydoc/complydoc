@@ -175,6 +175,8 @@ class LoaderRun:
     """Every metadata key the loader returned, across all documents."""
     failures: dict[str, str] = field(default_factory=dict)
     """Files the loader raised on, with the error, when it ran over several files."""
+    cached_files: int = 0
+    """Files whose output came from the cache instead of the loader."""
     network_allowed: bool = False
     """The caller passed `allow_network=True`, so the loader's connections went
     through. complydoc's own processing stays behind the guard either way."""
@@ -230,6 +232,7 @@ class LoaderSummary:
     text_path_usd: float | None
     failures: dict[str, str] = field(default_factory=dict)
     """Files the loader raised on, with the error."""
+    cached_files: int = 0
     facts_found: int | None = None
     """Expected facts found in this loader's text, when facts were given."""
     parser_usd: float | None = None

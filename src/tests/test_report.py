@@ -24,7 +24,12 @@ SECRETS = (
 
 @pytest.fixture(scope="module")
 def report(config):
-    return run_audit(FIXTURES, config, COMPONENTS, monthly_volume=1000)
+    # Inside the guard, as the command line and the Python API run an audit, so the
+    # report records it whichever tests ran before.
+    from complydoc import offline
+
+    with offline.guarded():
+        return run_audit(FIXTURES, config, COMPONENTS, monthly_volume=1000)
 
 
 @pytest.fixture(scope="module")

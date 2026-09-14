@@ -163,6 +163,7 @@ def _loaders(report: AuditReport) -> Iterator[Row]:
             "readiness_score": row.readiness_score,
             "global_score": row.global_score,
             "failed_files": len(row.failures),
+            "cached_files": row.cached_files,
             "facts_found": row.facts_found,
             "parser_usd": row.parser_usd,
         }
@@ -244,6 +245,7 @@ COLUMNS: dict[str, tuple[str, ...]] = {
         "loader", "baseline", "documents", "pages", "characters", "seconds", "network_allowed",
         "network_attempts", "error", "metadata_keys", "identifiers_in_text",
         "identifiers_in_metadata", "readiness_score", "global_score", "failed_files",
+        "cached_files",
         "facts_found", "parser_usd",
     ),
     "differences": (

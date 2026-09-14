@@ -18,6 +18,10 @@ versioned separately.
 - `cd.inspect_chunks` and `cd.compare_chunkers` report on text splitter output: token
   statistics, cut sentences and tables, headings left at a chunk end, duplicates, identifiers
   repeated across chunks, and expected facts split across chunks.
+- `cd.iter_audit` and `cd.aiter_audit` yield each document's report entry as it is read.
+- `compare_loaders(..., cache_dir=...)` caches loader output per file.
+- Pipeline steps `cd.MaskIdentifiers`, `cd.DropHiddenPassages` and `cd.StripPathMetadata`,
+  with adapters in `complydoc.integrations.langchain` and `complydoc.integrations.llamaindex`.
 
 ## [0.4.0] — 2026-09-14
 
