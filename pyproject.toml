@@ -65,6 +65,7 @@ Issues = "https://github.com/duartecaldascardoso/complydoc/issues"
 integrations = [
     "langchain-community>=0.3",
     "docx2txt>=0.8",
+    "llama-index-core>=0.12",
 ]
 # The documentation site. Separate from `dev` because building the docs needs
 # none of the test machinery and running the tests needs none of this.
