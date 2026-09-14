@@ -29,7 +29,15 @@ from complydoc.report.models import ContentFinding
 from complydoc.sensitive.base import SensitiveMatch
 from complydoc.sensitive.scanner import scan_text as _scan_text
 
-__all__ = ["MaskedText", "TextScan", "count_tokens", "find_hidden", "mask_text", "scan_text"]
+__all__ = [
+    "MaskedText",
+    "TextScan",
+    "count_tokens",
+    "find_hidden",
+    "mask_text",
+    "resolve_config",
+    "scan_text",
+]
 
 
 @dataclass(frozen=True, slots=True)
@@ -67,13 +75,14 @@ def _shipped_config() -> Config:
     return load_config()
 
 
-def _settings(config: Config | None) -> Config:
+def resolve_config(config: Config | None) -> Config:
+    """`config`, or the shipped configuration loaded once."""
     return config if config is not None else _shipped_config()
 
 
 def scan_text(text: str, *, config: Config | None = None, reveal: bool = False) -> TextScan:
     """Personal and financial identifiers in `text`, masked unless `reveal`."""
-    settings = _settings(config)
+    settings = resolve_config(config)
     with offline.guarded():
         matches, unscanned = _scan_text(text, settings.sensitive, reveal)
     return TextScan(matches=matches, unscanned=unscanned)
@@ -96,7 +105,7 @@ def find_hidden(
     A string has no rendering to check, so visibility is `not_measured` except for
     characters that are invisible by definition, such as Unicode tag characters.
     """
-    settings = _settings(config)
+    settings = resolve_config(config)
     with offline.guarded():
         check = check_content(None, [(1, text)], settings, reveal=reveal)
     return [dataclasses.replace(finding, page=None) for finding in check.findings]
@@ -106,4 +115,4 @@ def count_tokens(
     text: str, model: str | None = None, *, config: Config | None = None
 ) -> TokenCount:
     """Tokens in `text` for `model`, or for the headline model when none is given."""
-    return _count_tokens(text, tokenizer_for(_settings(config), model))
+    return _count_tokens(text, tokenizer_for(resolve_config(config), model))

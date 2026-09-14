@@ -12,6 +12,12 @@ versioned separately.
 - `Config.override` returns a validated copy of a configuration with settings replaced.
 - `cd.register_signal` and `cd.register_detector` add readiness signals and identifier
   detectors. `Detector`, `DetectorContext`, `Finding`, `Signal` and `Measurement` are exported.
+- `cd.load_report` reads a report back from its JSON.
+- `cd.diff_reports(old, new)` lists changes between two reports and which of them are worse.
+- `cd.expect(report)` chains assertions for tests and CI, raising `cd.ExpectationError`.
+- `cd.inspect_chunks` and `cd.compare_chunkers` report on text splitter output: token
+  statistics, cut sentences and tables, headings left at a chunk end, duplicates, identifiers
+  repeated across chunks, and expected facts split across chunks.
 
 ## [0.4.0] — 2026-09-14
 

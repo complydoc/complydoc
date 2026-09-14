@@ -73,7 +73,14 @@ from complydoc.report.models import (
 from complydoc.sensitive.scanner import scan_text
 from complydoc.text import count
 
-__all__ = ["SOURCE_KEYS", "FolderSource", "inspect_documents"]
+__all__ = [
+    "ABSOLUTE_PATH",
+    "SOURCE_KEYS",
+    "FolderSource",
+    "document_content",
+    "inspect_documents",
+    "load_items",
+]
 
 SOURCE_KEYS = ("source", "file_path", "filename", "file_name")
 """Metadata keys loaders use to name the file a document came from, in order."""
@@ -91,7 +98,7 @@ _FORMATS = {
     ".bmp": DocumentFormat.IMAGE,
 }
 
-_ABSOLUTE_PATH = re.compile(r"^(?:/[^/\s]+){2,}|^[A-Za-z]:[\\/]|^~[/\\]")
+ABSOLUTE_PATH = re.compile(r"^(?:/[^/\s]+){2,}|^[A-Za-z]:[\\/]|^~[/\\]")
 
 _MIN_SCANNABLE = 4
 """Metadata values with fewer alphanumeric characters than this are not scanned.
@@ -274,7 +281,7 @@ def _run_loader(source: Any, name: str | None, allow_network: bool) -> tuple[lis
 
     keys: set[str] = set()
     for item in items:
-        keys.update(_content(item)[1])
+        keys.update(document_content(item)[1])
 
     return items, LoaderRun(
         name=loader_name,
@@ -309,6 +316,11 @@ class FolderSource:
             except Exception as exc:
                 self.failures[str(path)] = f"{type(exc).__name__}: {exc}"
         return items
+
+
+def load_items(source: Any) -> list[Any]:
+    """The documents a loader, a callable, a list or a single document provides."""
+    return _load_items(source, _loading_call(source))
 
 
 def _load_items(source: Any, call: Callable[[], Iterable[Any]] | None) -> list[Any]:
@@ -347,7 +359,7 @@ def _is_document_like(item: Any) -> bool:
     return hasattr(item, "page_content") or (hasattr(item, "text") and hasattr(item, "metadata"))
 
 
-def _content(item: Any) -> tuple[str, dict[str, Any]]:
+def document_content(item: Any) -> tuple[str, dict[str, Any]]:
     """The text and metadata of one document, whatever framework produced it."""
     if isinstance(item, str):
         return item, {}
@@ -388,7 +400,7 @@ def _documents_from(
     """Group loader output into documents, and scan the metadata once per value."""
     groups: dict[str, list[tuple[str, dict[str, Any]]]] = {}
     for item in items:
-        text, metadata = _content(item)
+        text, metadata = document_content(item)
         key = next(
             (str(metadata[k]) for k in SOURCE_KEYS if isinstance(metadata.get(k), str | PurePath)),
             loader_name,
@@ -483,7 +495,7 @@ def _path_keys(members: list[tuple[str, dict[str, Any]]]) -> list[str]:
         key
         for _text, metadata in members
         for key, value in metadata.items()
-        if isinstance(value, str) and _ABSOLUTE_PATH.match(value)
+        if isinstance(value, str) and ABSOLUTE_PATH.match(value)
     }
     return sorted(keys)
 

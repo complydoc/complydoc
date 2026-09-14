@@ -65,7 +65,9 @@ are vendored as data files. See [Network isolation](explanation/offline.md).
 | [Extracting masked text](guides/extract-masked-text.md) | Masked text, token counts, warnings |
 | [Inspecting a loader](guides/inspect-a-loader.md) | LangChain and LlamaIndex output, metadata, network attempts |
 | [Comparing loaders](guides/compare-loaders.md) | Several loaders on the same files |
+| [Inspecting chunks](guides/inspect-chunks.md) | Splitter output: sizes, cut sentences and tables, facts |
 | [Report tables](guides/report-tables.md) | Jupyter display and pandas tables |
+| [Baselines and tests](guides/baselines-and-tests.md) | Reading reports back, diffs and assertions |
 | [Hidden content](explanation/hidden-content.md) | Visibility and instruction evidence |
 | [Command line](reference/cli.md) | Every command and flag |
 | [Python API](reference/api.md) | `import complydoc as cd` |

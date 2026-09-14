@@ -65,8 +65,18 @@ from typing import TYPE_CHECKING, TypedDict, Unpack
 
 from complydoc import offline, parsers
 from complydoc.audit import COMPONENTS, run_audit
+from complydoc.chunks import (
+    ChunkComparison,
+    ChunkReport,
+    ChunkStats,
+    FactLocation,
+    InspectedChunk,
+    compare_chunkers,
+    inspect_chunks,
+)
 from complydoc.config.loader import ConfigError, load_config
 from complydoc.cost.estimator import UnknownModelError
+from complydoc.expectations import Expectation, ExpectationError, expect
 from complydoc.extract import Chunk, ExtractionWarning, TextResult, extract_text
 from complydoc.facts import Fact, check_facts
 from complydoc.hidden.instructions import register_instruction_classifier
@@ -96,8 +106,10 @@ from complydoc.parsers import LoaderSpec
 from complydoc.readiness.base import Measurement, Signal
 from complydoc.readiness.registry import register as register_signal
 from complydoc.report.html_writer import write_html as _write_html
+from complydoc.report.json_reader import load_report
 from complydoc.report.json_writer import write_json as _write_json
 from complydoc.report.models import (
+    AuditReport,
     ContentFinding,
     FactCheck,
     IdentifierDifference,
@@ -106,17 +118,22 @@ from complydoc.report.models import (
     LoaderSummary,
     MetadataFinding,
 )
+from complydoc.report_diff import Change, ReportDiff, diff_reports
 from complydoc.sensitive.base import Detector, DetectorContext, Finding
 from complydoc.sensitive.registry import register as register_detector
 from complydoc.strings import MaskedText, TextScan, count_tokens, find_hidden, mask_text, scan_text
 
 if TYPE_CHECKING:
     from complydoc.config.schema import Config
-    from complydoc.report.models import AuditReport
 
 __all__ = [
     "AuditOptions",
+    "AuditReport",
+    "Change",
     "Chunk",
+    "ChunkComparison",
+    "ChunkReport",
+    "ChunkStats",
     "ConfigError",
     "ContentFinding",
     "Detector",
@@ -124,14 +141,18 @@ __all__ = [
     "Document",
     "DocumentFormat",
     "Engine",
+    "Expectation",
+    "ExpectationError",
     "Extraction",
     "ExtractionWarning",
     "Extractor",
     "Fact",
     "FactCheck",
+    "FactLocation",
     "Finding",
     "IdentifierDifference",
     "IngestOptions",
+    "InspectedChunk",
     "Loader",
     "LoaderComparison",
     "LoaderError",
@@ -146,6 +167,7 @@ __all__ = [
     "PageSource",
     "Recognised",
     "Rect",
+    "ReportDiff",
     "Signal",
     "TextBlock",
     "TextResult",
@@ -154,14 +176,19 @@ __all__ = [
     "all_engines",
     "all_extractors",
     "check_facts",
+    "compare_chunkers",
     "compare_loaders",
     "cost_audit",
     "count_tokens",
+    "diff_reports",
+    "expect",
     "extract_text",
     "find_hidden",
     "full_audit",
+    "inspect_chunks",
     "inspect_documents",
     "load_config",
+    "load_report",
     "mask_text",
     "parsers",
     "readiness_audit",
