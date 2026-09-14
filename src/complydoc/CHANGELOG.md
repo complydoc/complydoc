@@ -57,6 +57,12 @@ branch on when reading reports programmatically.
 
 ### Changed
 
+- The report template, stylesheet and script live in `complydoc/ui` as
+  `report.html.j2`, `report.css` and `report.js`. The written report is still
+  one file.
+- Tests are in `src/tests`, with the LangChain tests in `src/tests/integration`,
+  and the maintenance scripts in `src/scripts`. Neither is part of the wheel.
+- The package ships a `py.typed` marker.
 - Page text has a fourth source, `loader`, for text another framework supplied.
   Signals that need the page itself report as not measured on it, including
   whether the file has a text layer.
@@ -70,6 +76,11 @@ branch on when reading reports programmatically.
 
 ### Fixed
 
+- The HTML report did not escape values. Autoescaping was configured for
+  templates ending in `.html` and the template is `report.html.j2`, so document
+  text, file names and metadata were written into the page as markup, and a
+  document could put a script into its own report. Every value is now escaped
+  unless it is markup the report built itself.
 - A number that happened to pass the Luhn checksum was reported as a
   confirmed, high-severity card number. Luhn passes one digit string in ten;
   PDFPlumber's `CreationDate` metadata, `D:20260909103836`, was one of them.

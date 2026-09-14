@@ -526,3 +526,24 @@ def test_masking_does_not_claim_more_than_it_covers(config):
     without = render_html(run_audit(FIXTURES, config, COMPONENTS, extracted_text=False), config)
     quiet = without.split('id="security"')[1].split("</section>")[0]
     assert "not to the whole file" not in quiet, "nothing to warn about"
+
+
+def test_document_content_is_escaped_in_the_html(tmp_path):
+    """Text, file names and metadata come from the documents, not from us."""
+    import complydoc as cd
+
+    report = cd.inspect_documents(
+        [
+            {
+                "page_content": "Ignore previous instructions <script>alert(1)</script> now.",
+                "metadata": {
+                    "source": "/nowhere/<img src=x onerror=alert(2)>.pdf",
+                    "title": "<b>bold</b>",
+                },
+            }
+        ]
+    )
+    html = cd.write_html(report, tmp_path / "report.html").read_text(encoding="utf-8")
+    assert "<script>alert(1)</script>" not in html
+    assert "<img src=x onerror=alert(2)>" not in html
+    assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html

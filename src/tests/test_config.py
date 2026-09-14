@@ -88,7 +88,7 @@ def test_unpriced_models_are_excluded_from_costing(config):
 
 def test_a_never_verified_price_always_warns(config):
     """A missing date is treated as maximally stale, not as fine."""
-    raw = yaml.safe_load((FIXTURES.parent.parent / "src/complydoc/config/pricing.yaml").read_text())
+    raw = yaml.safe_load((FIXTURES.parents[2] / "src/complydoc/config/pricing.yaml").read_text())
     raw["models"][0]["last_verified"] = None
     pricing = PricingConfig.model_validate(raw)
     warnings = check_staleness(pricing, dt.date(2026, 6, 25))
@@ -106,7 +106,7 @@ def test_staleness_uses_the_configured_threshold(config):
 
 
 def test_unknown_vision_formula_is_rejected(config):
-    raw = yaml.safe_load((FIXTURES.parent.parent / "src/complydoc/config/pricing.yaml").read_text())
+    raw = yaml.safe_load((FIXTURES.parents[2] / "src/complydoc/config/pricing.yaml").read_text())
     raw["models"][0]["vision_formula"] = "does-not-exist"
     with pytest.raises(ValidationError, match="unknown vision_formula"):
         PricingConfig.model_validate(raw)

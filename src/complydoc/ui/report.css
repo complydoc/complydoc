@@ -1,0 +1,476 @@
+  html { -webkit-text-size-adjust: 100%; }
+  :root {
+    color-scheme: light;
+    --paper: #fbfbfa; --panel: #fff; --ink: #111; --ink-2: #333;
+    --muted: #666; --faint: #999; --line: #e8e8e6; --line-2: #d8d8d4;
+    --accent: #1a7f4b;
+    --attn: #a4402f;
+    --good: #6b7280; --fair: #55606d; --poor: #a4402f;
+    --na: #8b939c; --na-bg: #f1f1ef;
+    --add-bg: #dff0e2; --gone-bg: #f3e2de;
+    --warn-mid: #b0740f;
+    --series-1: #2a78d6; --series-2: #4a3aa7; --series-3: #e87ba4;
+    --pv-page: #fff; --pv-edge: #bbb; --pv-text: #dcdcdc;
+    --pv-image: #f4dfae; --pv-gutter: #f4f4f2;
+  }
+  /* Dark is selected, not flipped: the chart steps were validated against the dark
+     surface on their own, and the middle series changes hue because violet and blue
+     are indistinguishable to a protanope there. */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --paper: #16181a; --panel: #1d2023; --ink: #e9e9e7; --ink-2: #c9c9c6;
+      --muted: #9aa0a6; --faint: #71767b; --line: #2b2f33; --line-2: #3a3f45;
+      --accent: #4cc38a;
+      --attn: #e08a72;
+      --good: #8b939c; --fair: #a7b0b8; --poor: #e08a72;
+      --na: #7d858d; --na-bg: #23272b;
+      --add-bg: #1e3a2a; --gone-bg: #3a2622;
+      --warn-mid: #d9a441;
+      --series-1: #3987e5; --series-2: #d55181; --series-3: #c98500;
+      --pv-page: #24282c; --pv-edge: #4a5058; --pv-text: #4d545c;
+      --pv-image: #6d5a2f; --pv-gutter: #1f2225;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --paper: #16181a; --panel: #1d2023; --ink: #e9e9e7; --ink-2: #c9c9c6;
+    --muted: #9aa0a6; --faint: #71767b; --line: #2b2f33; --line-2: #3a3f45;
+    --accent: #4cc38a;
+    --attn: #e08a72;
+    --good: #8b939c; --fair: #a7b0b8; --poor: #e08a72;
+    --na: #7d858d; --na-bg: #23272b;
+    --add-bg: #1e3a2a; --gone-bg: #3a2622;
+    --warn-mid: #d9a441;
+    --series-1: #3987e5; --series-2: #d55181; --series-3: #c98500;
+    --pv-page: #24282c; --pv-edge: #4a5058; --pv-text: #4d545c;
+    --pv-image: #6d5a2f; --pv-gutter: #1f2225;
+  }
+  body {
+    margin: 0 auto; padding: 2.5rem 1.5rem 6rem; max-width: 84rem;
+    background: var(--paper); color: var(--ink);
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    font-variant-numeric: tabular-nums;
+  }
+  .logo { display: block; margin: 0 0 1.25rem -4px; }
+  .head { border-bottom: 2px solid var(--accent); padding-bottom: 0.875rem; margin-bottom: 0.5rem; }
+  h1 { font-size: 1.375rem; font-weight: 600; margin: 0; }
+  h1 .of { color: var(--muted); font-weight: 400; }
+  h1 .of::before { content: " \2014 "; color: var(--faint); }
+  h2 { font-size: 1rem; font-weight: 600; margin: 2.75rem 0 0.75rem;
+       padding-top: 0.75rem; border-top: 1px solid var(--line-2); }
+  h3 { font-size: 0.9375rem; font-weight: 600; margin: 1.75rem 0 0.5rem; }
+  h4 { font-size: 0.8125rem; font-weight: 600; margin: 1.5rem 0 0.375rem; color: var(--ink-2); }
+  p  { margin: 0 0 0.75rem; }
+  .meta { color: var(--muted); font-size: 0.8125rem; margin: 0; }
+  .note { color: var(--muted); font-size: 0.8125rem; max-width: 46rem; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.875em; }
+
+  table { border-collapse: collapse; width: 100%; margin: 0.5rem 0 1rem; font-size: 0.875rem; }
+  th, td { text-align: left; padding: 0.375rem 0.75rem 0.375rem 0; vertical-align: top;
+           border-bottom: 1px solid var(--line); }
+  th { font-weight: 600; border-bottom: 1px solid var(--line-2); white-space: nowrap; }
+  td.n, th.n { text-align: right; white-space: nowrap; padding-right: 1.25rem; }
+  .scroll { overflow-x: auto; }
+  /* Ratings and severities are the two things a reader scans for, so they get
+     the colour. Everything else stays monochrome. */
+  /* Colour marks the exception. A rating that needs nothing from the reader is
+     set in a lighter ink; only the ones that do are coloured. */
+  .r { font-size: 0.8125rem; white-space: nowrap; }
+  .r-good { color: var(--good); }
+  .r-fair { color: var(--fair); }
+  .r-poor { color: var(--attn); font-weight: 600; }
+  .r-na   { color: var(--na); }
+  .poor { color: var(--attn); font-weight: 600; }
+  .fair { color: var(--fair); }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: nowrap; }
+  .why { color: var(--muted); font-size: 0.8125rem; }
+
+  .box { border: 1px solid var(--line-2); border-left: 3px solid var(--accent);
+         background: var(--panel); padding: 0.75rem 1rem; margin: 1rem 0; font-size: 0.875rem; }
+  .box p:last-child { margin-bottom: 0; }
+  .box strong { display: block; }
+
+  details { margin: 0; border-bottom: 1px solid var(--line); }
+  summary { cursor: pointer; padding: 0.625rem 0; font-weight: 600; font-size: 0.9375rem; }
+  summary span { font-weight: 400; color: var(--muted); font-size: 0.8125rem; }
+  details > div { padding: 0 0 1.5rem; }
+
+  ul { margin: 0.25rem 0 0.75rem; padding-left: 1.125rem; }
+  li { margin-bottom: 0.25rem; }
+  .lim { margin: 0 0 1.125rem; max-width: 46rem; padding-left: 0.75rem;
+         border-left: 3px solid var(--line); }
+  .lim.important { border-left-color: var(--fair); }
+  .lim .h { font-weight: 600; font-size: 0.8125rem; }
+  .ok { color: var(--accent); }
+  .lim .files { color: var(--muted); font-size: 0.75rem; margin-top: 0.25rem;
+                font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+                word-break: break-all; }
+  /* --- the page viewer: one page, the page beside what was read off it -- */
+  /* One segmented control: step, jump, step. Everything in it is the same
+     height and shares one border, so it reads as a single thing rather than
+     three controls that happen to sit near each other. */
+  .pagebar { display: flex; align-items: center; gap: 0.75rem; margin: 0 0 0.875rem;
+             font-size: 0.8125rem; color: var(--muted); }
+  .pnav { display: inline-flex; align-items: stretch; border: 1px solid var(--line-2);
+          border-radius: 4px; overflow: hidden; background: var(--panel); height: 1.875rem; }
+  .pnav > * { border: none; background: none; }
+  .pstep { font: inherit; font-size: 1rem; line-height: 1; width: 2rem; color: var(--muted);
+           cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .pstep:hover:not(:disabled) { background: var(--na-bg); color: var(--ink); }
+  .pstep:disabled { color: var(--faint); cursor: default; }
+  /* The counter is one centred segment between the arrows. Sizing the input to
+     a fixed width and right-aligning it left a hole on its left instead. */
+  .pmid { display: flex; align-items: center; justify-content: center; gap: 0.25rem;
+          min-width: 5rem; padding: 0 0.5rem; font-variant-numeric: tabular-nums;
+          border-left: 1px solid var(--line-2); border-right: 1px solid var(--line-2); }
+  .pjump { font: inherit; font-size: 0.8125rem; width: 2.25rem; text-align: right;
+           color: var(--ink); padding: 0;
+           -moz-appearance: textfield; appearance: textfield; }
+  .pjump::-webkit-outer-spin-button, .pjump::-webkit-inner-spin-button {
+    -webkit-appearance: none; margin: 0; }
+  .pjump:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-radius: 2px; }
+  .pof { color: var(--faint); }
+  .pmiss { color: var(--attn); }
+  /* Jumping between the pages where the readers parted company. On a long
+     document those are a handful of pages among hundreds, and stepping through
+     every page to find them is the whole difficulty. */
+  .pdiff { font: inherit; font-size: 0.75rem; color: var(--muted); cursor: pointer;
+           background: var(--panel); border: 1px solid var(--line-2); border-radius: 4px;
+           height: 1.875rem; padding: 0 0.625rem; }
+  .pdiff:hover { background: var(--na-bg); color: var(--ink); }
+  .pdiff .dot { display: inline-block; width: 0.4375rem; height: 0.4375rem; border-radius: 50%;
+                background: var(--attn); margin-right: 0.375rem; vertical-align: middle; }
+  /* Two readings side by side, with the words that only one of them found.
+     Underlines rather than colour alone: this is read on paper and in print,
+     and the two marks must stay apart without it. */
+  pre.dif mark { background: none; color: inherit; padding: 0; }
+  pre.dif mark.added { background: var(--add-bg); text-decoration: underline;
+                       text-decoration-thickness: 2px; text-underline-offset: 2px; }
+  pre.dif mark.missing { background: var(--gone-bg); text-decoration: line-through;
+                         text-decoration-thickness: 1px; color: var(--muted); }
+  .pcap mark { padding: 0 0.25rem; border-radius: 2px; font-size: 0.6875rem; }
+  .pcap mark.added { background: var(--add-bg); }
+  .pcap mark.missing { background: var(--gone-bg); color: var(--muted); }
+  /* One fixed frame, the same on every document and every page. Letting the
+     page image set the height meant the whole workspace resized every time you
+     stepped a page or picked another file. Content that does not fill it
+     scrolls or sits inside it; nothing moves. */
+  .spread { display: flex; gap: 1.25rem; align-items: stretch;
+            --frame: clamp(26rem, 70vh, 54rem); }
+  .spread[hidden] { display: none; }
+  .spread .side { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; }
+  /* A fixed label row, so the two frames start on the same line whether the
+     label is a word or a pair of switch buttons. */
+  .spread .side > .lbl { flex: 0 0 auto; display: flex; align-items: center; height: 1.625rem;
+                         font-size: 0.625rem; color: var(--faint); text-transform: uppercase;
+                         letter-spacing: 0.06em; margin-bottom: 0.375rem; }
+  .spread .face { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column;
+                  position: relative; }
+  .spread .face[hidden] { display: none; }
+  .spread .body { flex: 0 0 auto; height: var(--frame); overflow: auto;
+                  background: var(--panel); border: 1px solid var(--line-2); }
+  .spread .body > .note { margin: 0; padding: 0.75rem; }
+  /* Reserved whether or not there is anything to say, so a page with no flags
+     and a page with two does not shift what is underneath it. */
+  .spread .pcap { flex: 0 0 auto; margin: 0.25rem 0 0; min-height: 1.5rem; }
+  .swap { display: inline-flex; border: 1px solid var(--line-2); border-radius: 3px;
+          overflow: hidden; }
+  .swap button { font: inherit; font-size: 0.625rem; text-transform: uppercase;
+                 letter-spacing: 0.06em; padding: 0.1875rem 0.5rem; border: none;
+                 background: var(--panel); color: var(--faint); cursor: pointer; }
+  .swap button + button { border-left: 1px solid var(--line-2); }
+  .swap button[aria-selected="true"] { background: var(--na-bg); color: var(--ink); }
+  .face[hidden] { display: none; }
+  /* The page renders at the width of its half and scrolls if it is taller,
+     rather than being shrunk until nothing on it can be read. */
+  .pv, .pg { display: block; width: 100%; height: auto; background: var(--pv-page); }
+  .spread pre { margin: 0; padding: 0.75rem; background: none; border: none;
+                font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+                font-size: 0.75rem; line-height: 1.5; white-space: pre-wrap;
+                word-break: break-word; }
+  @media (max-width: 720px) { .spread { flex-direction: column; } }
+  .key { display: flex; flex-wrap: wrap; gap: 0.875rem; font-size: 0.6875rem;
+         color: var(--faint); margin: 0.375rem 0 0; align-items: center; }
+  .key span { display: inline-flex; align-items: center; gap: 0.3125rem; }
+  .sw { width: 11px; height: 11px; display: inline-block; border: 1px solid var(--line-2); }
+  /* The marks carry their own explanation, so say they are worth pointing at. */
+  /* The mark is an outline, and an SVG shape with no fill only answers the
+     pointer along its stroke — on a mark six pixels tall that is two hairlines,
+     which is why pointing at one did nothing. */
+  .pv-mark { cursor: help; }
+  .pv-mark rect { pointer-events: all; }
+  .pv-mark:hover rect { stroke-width: 2.4; }
+  /* The explanation follows the mark rather than sitting under the page. Under
+     the page it was a line of text away from the thing it described, and it
+     moved the caption every time the pointer crossed a mark. */
+  .pv-tip { position: absolute; z-index: 5; max-width: 20rem; padding: 0.375rem 0.5rem;
+            background: var(--panel); border: 1px solid var(--line-2); border-radius: 4px;
+            font-size: 0.75rem; line-height: 1.4; color: var(--ink);
+            pointer-events: none; }
+  /* The tier is a word, not a colour: four colours here would compete with the
+     severity badges beside them, which are the thing to scan for. Only the
+     weakest is marked, because it is the one that changes what you do. */
+  .ev { font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.04em;
+        color: var(--muted); }
+  .ev-confirmed { color: var(--ink); font-weight: 600; }
+  .ev-model { color: var(--faint); font-style: italic; }
+  /* Listed but not alarming: a low-severity finding the name model made. */
+  tr.quiet td { color: var(--faint); }
+  /* Hidden content: instruction evidence down, visibility across. */
+  .cmatrix { display: grid; grid-template-columns: 8.5rem repeat(4, minmax(4.5rem, 1fr));
+             gap: 4px; max-width: 40rem; margin: .5rem 0 1rem; font-size: .85rem; }
+  .cm-h { color: var(--muted); padding: .35rem .25rem; line-height: 1.25; }
+  .cm-h span { display: block; color: var(--faint); font-size: .75rem; }
+  .cm-cell { border: 1px solid var(--line); border-radius: 6px; background: var(--panel);
+             padding: .45rem .5rem; text-align: left; font: inherit; color: var(--ink);
+             min-height: 3.1rem; cursor: pointer; }
+  .cm-cell strong { display: block; font-size: 1.05rem; font-weight: 600; }
+  .cm-cell span { font-size: .72rem; color: var(--muted); }
+  .cm-cell[disabled] { cursor: default; color: var(--faint); background: transparent; }
+  .cm-na { border-style: dashed; }
+  .cm-high { border-color: var(--poor); }
+  .cm-high strong, .cm-high span { color: var(--poor); }
+  .cm-medium { border-color: var(--warn-mid); }
+  .cm-medium strong, .cm-medium span { color: var(--warn-mid); }
+  .cm-empty { color: var(--faint); padding: .45rem .5rem; border: 1px dashed var(--line);
+              border-radius: 6px; }
+  .cm-cell.sel { outline: 2px solid var(--ink); outline-offset: 1px; }
+  .loaderrun { margin: 0 0 1.5rem; }
+  .loaderrun table th { text-align: left; font-weight: 500; color: var(--muted);
+                        width: 12rem; }
+  .pv-tip b { display: block; font-weight: 600; }
+  .pv-tip .found { display: block; margin: 0.1875rem 0 0.25rem;
+                   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+                   font-size: 0.8125rem; letter-spacing: 0.02em; color: var(--ink); }
+  .pv-tip .why { display: block; color: var(--muted); }
+  .filter { display: flex; gap: 0.5rem; align-items: baseline; margin: 0 0 0.75rem; }
+  .filter input { font: inherit; font-size: 0.875rem; padding: 0.3125rem 0.5rem;
+                  border: 1px solid var(--line-2); background: var(--panel); color: inherit;
+                  border-radius: 4px; width: 100%; min-width: 0; }
+  .filter input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .filter .count { font-size: 0.8125rem; color: var(--muted); }
+  th[data-sort] { cursor: pointer; user-select: none; white-space: nowrap; }
+  th[data-sort]:hover { color: var(--ink); }
+  th[data-sort]::after { content: "\2195"; color: var(--faint); margin-left: 0.3125rem;
+                         font-size: 0.75em; }
+  th[aria-sort="ascending"]::after { content: "\2191"; color: var(--ink); }
+  th[aria-sort="descending"]::after { content: "\2193"; color: var(--ink); }
+  .pager { display: flex; gap: 0.5rem; align-items: baseline; margin: -0.5rem 0 1rem;
+           font-size: 0.8125rem; color: var(--muted); }
+  .pager button { font: inherit; padding: 0.125rem 0.5rem; border: 1px solid var(--line-2);
+                  background: var(--panel); color: inherit; cursor: pointer; }
+  .pager button:disabled { color: var(--faint); cursor: default; }
+  @media print { .filter, .pager { display: none; } }
+  h4.sec { display: flex; align-items: baseline; gap: 0.5rem; font-size: 0.9375rem;
+           color: var(--ink); margin: 1.75rem 0 0.5rem; padding-top: 0.75rem;
+           border-top: 1px solid var(--line); }
+  h4.sec .tag { font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.07em;
+                font-weight: 600; padding: 0.125rem 0.375rem; border-radius: 2px; }
+  /* The eyebrow names the subject; it is not a status, so it takes no colour. */
+  h4.sec .tag { background: var(--na-bg); color: var(--na); }
+  details.text { border-bottom: 1px solid var(--line); }
+  details.text > summary { font-weight: 400; font-size: 0.8125rem; color: var(--muted);
+                           padding: 0.375rem 0; }
+  details.text pre { margin: 0 0 0.75rem; padding: 0.75rem; background: var(--panel);
+                     border: 1px solid var(--line); max-height: 26rem; overflow: auto;
+                     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+                     font-size: 0.75rem; line-height: 1.45; white-space: pre-wrap;
+                     word-break: break-word; }
+  .tiles { display: flex; flex-wrap: wrap; gap: 1rem; margin: 1rem 0 1.75rem; }
+  .tile { flex: 1 1 15rem; background: var(--panel); border: 1px solid var(--line);
+          border-radius: 5px; padding: 0.875rem 1rem; }
+  .tile .k { font-size: 0.75rem; color: var(--muted); }
+  .tile .v { font-size: 1.875rem; font-weight: 600; letter-spacing: -0.02em;
+             margin: 0.1875rem 0 0.25rem; }
+  .tile .v .u { font-size: 0.9375rem; font-weight: 400; color: var(--faint); }
+  .tile .s { font-size: 0.75rem; color: var(--muted); line-height: 1.4; }
+  .topline { display: flex; align-items: center; justify-content: space-between;
+             gap: 1rem; margin-bottom: 1.25rem; }
+  .logo { display: block; margin: 0 0 0 -6px; }
+  #theme { font: inherit; font-size: 0.75rem; padding: 0.25rem 0.625rem;
+           border: 1px solid var(--line-2); background: var(--panel); color: var(--muted);
+           cursor: pointer; border-radius: 3px; }
+  #theme:hover { color: var(--ink); }
+
+  /* --- documents explorer -------------------------------------------- */
+  /* The list is centred on the panels, not on the column that holds them —
+     the filename and the page bar sit above those, so centring on the column
+     leaves the list riding high. Script sets the offset; without it the list
+     starts at the top, which is correct if plainer. */
+  .explorer { display: flex; gap: 1.5rem; align-items: flex-start; margin-top: 0.75rem; }
+  .files { flex: 0 0 15rem; max-width: 15rem; }
+  .files ul { list-style: none; margin: 0.5rem 0 0; padding: 0;
+              border: 1px solid var(--line); border-radius: 4px; overflow: hidden;
+              max-height: 34rem; overflow-y: auto; background: var(--panel); }
+  .files li { border-bottom: 1px solid var(--line); }
+  .files li:last-child { border-bottom: none; }
+  .files button { display: flex; width: 100%; gap: 0.5rem; align-items: baseline;
+                  text-align: left; font: inherit; font-size: 0.8125rem;
+                  padding: 0.5rem 0.625rem; background: none; border: none;
+                  color: inherit; cursor: pointer; }
+  .files button:hover { background: var(--na-bg); }
+  .files button[aria-current="true"] { background: var(--na-bg); font-weight: 600;
+                                       box-shadow: inset 3px 0 0 var(--accent); }
+  .files .nm { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+               white-space: nowrap; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .files .sc { flex: 0 0 auto; font-size: 0.6875rem; }
+  .viewer { flex: 1 1 0; min-width: 0; }
+  .viewer > .doc[hidden] { display: none; }
+  .docbar { display: flex; align-items: baseline; justify-content: space-between;
+            gap: 1.5rem; border-bottom: 1px solid var(--line); margin-bottom: 0.875rem; }
+  .doc h3 { margin: 0 0 0.5rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-size: 0.9375rem; }
+  .doc-meta { font-size: 0.8125rem; color: var(--muted); margin: 0.25rem 0 0.375rem; }
+  .doc-meta .attn { color: var(--attn); font-weight: 600; }
+  .concerns { font-size: 0.8125rem; color: var(--attn); margin: 0 0 1.25rem;
+              line-height: 1.6; max-width: 68ch; }
+  .concerns span { cursor: help; border-bottom: 1px dotted currentColor; }
+  .flag { font-size: 0.6875rem; color: var(--na); }
+  .flag.bad { color: var(--attn); }
+  .flag.warn { color: var(--fair); }
+  .flag.ok { color: var(--good); }
+  .subtabs { display: flex; gap: 0.25rem; margin: 0; }
+  .subtabs button { font: inherit; font-size: 0.8125rem; font-weight: 600;
+                    padding: 0.375rem 0.75rem; background: none; border: none;
+                    border-bottom: 2px solid transparent; color: var(--muted);
+                    cursor: pointer; margin-bottom: -1px; }
+  .subtabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+  .pcap { font-size: 0.6875rem; color: var(--na); margin-top: 0.25rem; line-height: 1.5; }
+  @media (max-width: 860px) {
+    .explorer { flex-direction: column; }
+    .files { flex: 1 1 auto; max-width: none; width: 100%; margin-top: 0 !important; }
+  }
+  .drivers { display: flex; flex-wrap: wrap; gap: 2rem; margin: 0.25rem 0 1.25rem; }
+  .driver { flex: 1 1 22rem; min-width: 0; }
+  .driver > .lbl { font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.06em;
+                   color: var(--faint); margin-bottom: 0.375rem;
+                   border-bottom: 1px solid var(--line); padding-bottom: 0.25rem; }
+  table.bare { margin: 0; table-layout: fixed; }
+  table.bare td { border-bottom: none; padding: 0.25rem 0.5rem 0 0; }
+  table.bare tr.d-head td { font-weight: 600; font-size: 0.8125rem; padding-top: 0.5rem; }
+  table.bare tr.d-why td { padding: 0 0 0.5rem; border-bottom: 1px solid var(--line); }
+  table.bare td.v { white-space: normal; font-weight: 400; color: var(--ink-2);
+                    font-size: 0.8125rem; text-align: right; width: 42%; }
+  table.bare td.n { width: 3rem; }
+  .wt { font-size: 0.6875rem; color: var(--faint); }
+  /* Named for what it is, not how it feels: ".warn" collided with the ".flag warn"
+     level and gave every page caption a border and 14px of padding. */
+  .notice { border: 1px solid var(--line-2); border-left: 3px solid var(--attn);
+            background: var(--panel); padding: 0.625rem 0.875rem; margin: 0.75rem 0;
+            font-size: 0.8125rem; }
+  .notice ul { margin: 0.25rem 0 0; }
+  details.more { border: none; margin: 0.5rem 0 0; }
+  details.more > summary { font-weight: 400; font-size: 0.8125rem; color: var(--muted);
+                           padding: 0.375rem 0; }
+  details.more > summary::marker { color: var(--faint); }
+  footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 2px solid var(--accent); }
+  .foot-main { display: flex; flex-wrap: wrap; gap: 2.5rem; align-items: flex-start; }
+  .foot-main > div:first-child { flex: 1 1 18rem; }
+  footer .logo { width: 170px; height: auto; margin: 0 0 0.5rem -5px; }
+  .foot-claim { font-size: 0.8125rem; color: var(--muted); max-width: 32ch; margin: 0; }
+  .foot-meta { flex: 1 1 22rem; display: grid; grid-template-columns: auto 1fr;
+               gap: 0.25rem 1rem; margin: 0; font-size: 0.75rem; }
+  .foot-meta dt { color: var(--faint); white-space: nowrap; }
+  .foot-meta dd { margin: 0; color: var(--ink-2); overflow-wrap: anywhere; }
+  .foot-rule { margin-top: 1.5rem; padding-top: 0.75rem; border-top: 1px solid var(--line);
+               color: var(--faint); font-size: 0.6875rem; }
+  @media print {
+    body { padding: 0; max-width: none; font-size: 10.5pt; background: #fff; color: #000; }
+    details > div { display: block !important; }
+    summary { list-style: none; }
+    h2 { break-after: avoid; }
+    tr, .lim { break-inside: avoid; }
+  }
+
+  /* --- page chrome --------------------------------------------------- */
+  nav.tabs { display: flex; gap: 0.25rem; margin: 1.25rem 0 0; border-bottom: 1px solid var(--line-2);
+             flex-wrap: wrap; }
+  nav.tabs a { padding: 0.5rem 0.875rem; font-size: 0.875rem; font-weight: 600;
+               color: var(--muted); text-decoration: none; border: 1px solid transparent;
+               border-bottom: none; margin-bottom: -1px; border-radius: 3px 3px 0 0; }
+  nav.tabs a:hover { color: var(--ink); }
+  nav.tabs a[aria-current="page"] { color: var(--ink); background: var(--paper);
+                                    border-color: var(--line-2); }
+  nav.tabs .n { font-weight: 400; color: var(--faint); margin-left: 0.3125rem; }
+  section[data-page] > h2:first-child { border-top: none; padding-top: 0; }
+  /* Two of the four pages open on a heading and two do not, so the spacing
+     below the tab bar is set on whatever comes first. */
+  section[data-page] > :first-child { margin-top: 2rem; }
+  .legend { display: flex; flex-wrap: wrap; gap: 1rem; font-size: 0.75rem; color: var(--muted);
+            margin: 0 0 0.5rem; }
+  .legend span { display: inline-flex; align-items: center; gap: 0.375rem; }
+  .legend i { width: 11px; height: 11px; border-radius: 2px; display: inline-block; }
+  .legend .why { font-size: 0.6875rem; color: var(--faint); }
+
+  /* Global readiness: the ring and what it is made of, side by side. The ring
+     is the composition; the list beside it is the arithmetic, because a score
+     whose weights are not shown is what this tool refuses to emit. */
+  .global { display: flex; gap: 1.75rem; align-items: flex-start; flex-wrap: wrap;
+            margin: 0 0 1.5rem; padding: 1.125rem 1.25rem; background: var(--panel);
+            border: 1px solid var(--line); border-radius: 6px; }
+  .global .ring { flex: 0 0 auto; }
+  .global .gtext { flex: 1 1 20rem; min-width: 0; }
+  .global h3 { margin: 0 0 0.25rem; }
+  .global .lede { margin: 0 0 0.75rem; font-size: 0.8125rem; color: var(--muted); }
+  .donut { display: block; }
+  .factors { list-style: none; margin: 0 0 0.875rem; padding: 0; }
+  .factors li { display: grid; grid-template-columns: 7.5rem 3rem 5rem 1fr; gap: 0.5rem;
+                align-items: baseline; padding: 0.3125rem 0; font-size: 0.8125rem;
+                border-top: 1px solid var(--line); }
+  .factors li.na { color: var(--faint); }
+  .factors .fname { font-weight: 600; }
+  .factors .fscore { font-variant-numeric: tabular-nums; font-size: 0.9375rem; }
+  .factors li.na .fscore { font-size: 0.75rem; color: var(--faint); }
+  .factors .fweight { font-size: 0.6875rem; color: var(--faint); }
+  .factors .why { font-size: 0.75rem; }
+  .bandkey { display: flex; flex-wrap: wrap; gap: 0.875rem; font-size: 0.75rem;
+             color: var(--muted); }
+  .bandkey span { display: inline-flex; align-items: center; gap: 0.375rem; }
+  .bandkey i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+  .bandkey b { color: var(--ink); font-variant-numeric: tabular-nums; }
+
+  /* Quick wins. Closed by default: the row is the decision, and the paragraph
+     under it is for the one row somebody chooses to act on. */
+  .wins { margin: 0 0 1.5rem; border: 1px solid var(--line); border-radius: 6px;
+          overflow: hidden; }
+  .win + .win { border-top: 1px solid var(--line); }
+  .win > summary { display: flex; align-items: baseline; gap: 0.75rem; cursor: pointer;
+                   padding: 0.625rem 0.875rem; background: var(--panel);
+                   font-size: 0.875rem; }
+  .win > summary::-webkit-details-marker { display: none; }
+  .win > summary::marker { content: ""; }
+  .win[open] > summary { border-bottom: 1px solid var(--line); }
+  .wact { flex: 0 0 auto; font-size: 0.625rem; text-transform: uppercase;
+          letter-spacing: 0.05em; padding: 0.125rem 0.375rem; border-radius: 3px;
+          border: 1px solid var(--line-2); color: var(--muted); }
+  .wact-complydoc { border-color: var(--accent); color: var(--accent); }
+  .wtitle { flex: 1 1 auto; min-width: 0; }
+  .wcount, .wsave { flex: 0 0 auto; font-size: 0.75rem; color: var(--muted);
+                    font-variant-numeric: tabular-nums; }
+  .wsave { color: var(--accent); }
+  .wdetail, .weffect, .wfiles { margin: 0.5rem 0.875rem; font-size: 0.8125rem; }
+  .weffect { color: var(--ink-2); }
+  .wfiles { font-size: 0.6875rem; color: var(--faint); word-break: break-word; }
+  .chart { display: block; max-width: 100%; margin: 0.25rem 0 1rem; }
+  .chart .grp { transition: transform 0.26s cubic-bezier(0.4, 0, 0.2, 1),
+                             opacity 0.16s ease; }
+  .chart .grp.out { opacity: 0; pointer-events: none; }
+  @media (prefers-reduced-motion: reduce) {
+    .chart .grp { transition: none; }
+  }
+  .providers { display: flex; flex-wrap: wrap; gap: 0.375rem; margin: 0 0 1rem; }
+  .providers button { font: inherit; font-size: 0.75rem; padding: 0.1875rem 0.625rem;
+                      border: 1px solid var(--line-2); background: var(--panel);
+                      color: var(--muted); border-radius: 3px; cursor: pointer; }
+  .providers button:hover { color: var(--ink); }
+  .providers button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent);
+                                           color: #fff; }
+  .foot-meta dd.opts { font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+                       font-size: 0.6875rem; }
+  .lims { max-height: none; }
+  .pair-text { display: flex; gap: 0.75rem; }
+  .pair-text .half-text { flex: 1 1 0; min-width: 0; }
+  .pair-text .lbl { font-size: 0.625rem; color: var(--faint); text-transform: uppercase;
+                    letter-spacing: 0.06em; margin: 0 0 0.25rem; }
+  @media print { nav.tabs { display: none; } section[data-page] { display: block !important; } }

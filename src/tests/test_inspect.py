@@ -2,7 +2,7 @@
 
 The stand-ins here have the shapes real frameworks use — `page_content` and
 `metadata` for LangChain, `text` and `metadata` for LlamaIndex — so these run
-without either installed. `tests/test_langchain.py` runs real loaders.
+without either installed. `src/tests/integration/test_langchain.py` runs real loaders.
 """
 
 from __future__ import annotations

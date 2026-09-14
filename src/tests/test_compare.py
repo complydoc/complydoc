@@ -1,7 +1,7 @@
 """Comparing several loaders on the same input.
 
 Stand-in loaders with the LangChain document shape, so this runs without it
-installed. `tests/test_langchain.py` compares real ones.
+installed. `src/tests/integration/test_langchain.py` compares real ones.
 """
 
 from __future__ import annotations

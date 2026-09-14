@@ -234,7 +234,7 @@ def test_a_sensitive_mark_answers_the_pointer_across_its_whole_area():
     """
     from complydoc.report import html_writer
 
-    styles = (html_writer._TEMPLATE_DIR / "report.html.j2").read_text()
+    styles = (html_writer._TEMPLATE_DIR / "report.css").read_text()
     assert ".pv-mark rect { pointer-events: all; }" in styles
 
 
@@ -242,7 +242,7 @@ def test_the_explanation_is_reachable_without_a_pointer():
     """A tooltip nobody can tab to is a tooltip some readers never get."""
     from complydoc.report import html_writer
 
-    template = (html_writer._TEMPLATE_DIR / "report.html.j2").read_text()
+    template = (html_writer._TEMPLATE_DIR / "report.js").read_text()
     assert 'mark.setAttribute("tabindex", "0")' in template
     assert 'mark.addEventListener("focus", show)' in template
 

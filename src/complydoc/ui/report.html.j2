@@ -1,0 +1,949 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>complydoc — {{ report.run.target }}</title>
+<link rel="icon" href="{{ favicon_uri }}">
+<style>
+{% include "report.css" %}
+</style>
+</head>
+<body>
+
+{% macro plural(n, word, suffix="s") %}{{ n }} {{ word }}{{ "" if n == 1 else suffix }}{% endmacro %}
+
+{% macro matches_table(rows, show_doc) %}
+{# Sorted most serious first, and re-sortable by any column: on a security page
+   the question is almost always "what is the worst of it", not "what came
+   first in the folder". #}
+<div class="scroll"><table data-paginate="25" data-sortable>
+  <thead><tr>
+    {% if show_doc %}<th data-sort="text">Document</th>{% endif %}
+    <th class="n" data-sort="num">Page</th><th class="n" data-sort="num">Line</th>
+    <th data-sort="text">Category</th><th data-sort="num" data-sort-default="desc">Severity</th>
+    <th data-sort="num" title="How strong the case for this finding is. A passed
+      checksum is near-certain; a model naming a person is the best available
+      evidence for a category no checksum can confirm, and the weakest here.">Evidence</th>
+    <th>Value</th>{% if report.run.reveal_used %}<th>Revealed</th>{% endif %}<th>Matched because</th>
+  </tr></thead>
+  <tbody>
+  {% for doc, m in rows %}
+    <tr>
+      {% if show_doc %}<td class="mono">{{ doc.relative_path }}</td>{% endif %}
+      <td class="n">{{ m.page }}</td><td class="n">{{ m.line }}</td>
+      <td>{{ m.label }}</td>
+      <td data-value="{{ severity_rank(m.severity) }}">{{ severity_badge(m.severity) | safe }}</td>
+      <td data-value="{{ evidence_rank(m.evidence) }}"><span
+        class="ev ev-{{ m.evidence }}">{{ m.evidence }}</span></td>
+      <td class="mono">{{ m.masked }}</td>
+      {% if report.run.reveal_used %}<td class="mono">{{ m.revealed if m.revealed else "—" }}</td>{% endif %}
+      <td class="why">
+        {%- if m.validators_passed %}passed {{ m.validators_passed | join(", ") }}{% endif -%}
+        {%- if m.context_term %}{% if m.validators_passed %}; {% endif %}near "{{ m.context_term }}"{% endif -%}
+        {%- if not m.validators_passed and not m.context_term %}pattern match{% endif -%}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% endmacro %}
+
+<div class="topline">
+  {{ logo_svg | safe }}
+  <button type="button" id="theme" hidden aria-pressed="false">Dark</button>
+</div>
+{# No page heading: the mark says what this is, and the folder, the timestamp
+   and the version are provenance that belongs in the footer. #}
+
+{% if report.run.reveal_used %}
+<div class="box"><strong>This report contains unmasked sensitive values.</strong>
+  <p>Generated with <code>--reveal</code>. Handle it with the same care as the documents it
+  describes.</p></div>
+{% endif %}
+
+{% set agg = report.aggregate %}
+<nav class="tabs" id="tabs">
+  <a href="#summary" data-tab="summary">Summary</a>
+  <a href="#cost" data-tab="cost">Cost</a>
+  <a href="#security" data-tab="security">Security<span class="n">{{ agg.sensitive_total }}</span></a>
+  <a href="#documents" data-tab="documents">Documents<span class="n">{{ agg.documents_audited }}</span></a>
+</nav>
+<main>
+
+{# How many documents each architecture could actually be used on, said once
+   per architecture rather than on all ninety bars. It has to be said: read on
+   price alone the text layer always wins, and the reason it is cheapest is
+   that it does not work on the scans. #}
+{% macro legend() %}
+<div class="legend">
+  {% for key, label, colour in series %}
+    {% set reached = headline.by_key(key) if headline else none %}
+    <span><i style="background:{{ colour }}"></i>{{ label }}{% if reached
+      %}<span class="why">{{ reached.documents_served }}/{{ reached.documents_total }}
+      documents</span>{% endif %}</span>
+  {% endfor %}
+</div>
+{% endmacro %}
+
+{# ============================================================ SUMMARY #}
+<section data-page id="summary">
+<h2>What this folder looks like</h2>
+
+{% if readiness_donut %}
+{# The lead. Not a pie of one number — that is the number with a circle round
+   it — but what the folder is made of. A mean of 71 reads as fine and can be
+   hiding two documents nothing can be read from. #}
+<div class="global">
+  <div class="ring">{{ readiness_donut | safe }}</div>
+  <div class="gtext">
+    <h3>Global readiness</h3>
+    <p class="lede">{{ count(overall.scored_documents, "document") }} scored on
+      {{ overall.measured_factors | length }} of {{ overall.factors | length }} factors.
+      {%- if overall.partial %} The rest were not part of this run, so they are left out
+      of the score rather than counted as nought.{% endif %}</p>
+    <ul class="factors">
+      {% for f in overall.factors %}
+      <li{% if not f.measured %} class="na"{% endif %}>
+        <span class="fname">{{ f.name }}</span>
+        <span class="fscore">{% if f.measured %}{{ f.score | round | int }}{% else %}not
+          measured{% endif %}</span>
+        <span class="fweight">weight {{ "%.0f"|format(f.weight * 100) }}%</span>
+        <span class="why">{{ f.why }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    <div class="bandkey">
+      {% for key, name, colour in band_series %}
+        {% if overall.bands.get(key) %}
+        <span><i style="background:{{ colour }}"></i>{{ name }}
+          <b>{{ overall.bands.get(key) }}</b></span>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if report.loader_comparison %}
+{% set lc = report.loader_comparison %}
+<div class="loaderrun">
+<h3>Loaders compared</h3>
+<p class="note">Findings, scores and cost on this report are built from {{ lc.baseline }}. The
+other loaders ran on the same input; where their text differs is marked on the Documents
+page, and identifiers only some of them returned are listed on the Security page.</p>
+<div class="scroll"><table>
+  <thead><tr><th>Loader</th><th class="n">Documents</th><th class="n">Pages</th>
+    <th class="n">Characters</th><th class="n">Load time</th><th>Network</th>
+    <th class="n">Metadata keys</th><th class="n">Identifiers in text</th>
+    <th class="n">In metadata</th><th class="n">Readiness</th><th class="n">Global</th></tr></thead>
+  <tbody>
+  {% for l in lc.loaders %}
+    <tr{% if loop.first %} class="d-head"{% endif %}>
+      <td class="mono">{{ l.name }}{% if loop.first %} <span class="flag">baseline</span>{% endif %}{% if l.error %}
+        <span class="attn">did not finish</span>{% endif %}</td>
+      <td class="n">{{ l.documents }}</td>
+      <td class="n">{{ l.pages }}</td>
+      <td class="n">{{ "{:,}".format(l.characters) }}</td>
+      <td class="n">{{ duration(l.seconds) }}</td>
+      <td>{% if l.network_allowed %}<span class="attn">allowed</span>, {{ l.network_attempts | length }} made{% elif l.network_attempts %}<span class="attn">{{ l.network_attempts | length }} refused</span>{% else %}none{% endif %}</td>
+      <td class="n">{{ l.metadata_keys | length }}</td>
+      <td class="n">{{ l.identifiers_in_text }}</td>
+      <td class="n">{{ l.identifiers_in_metadata }}</td>
+      <td class="n">{{ "—" if l.readiness_score is none else l.readiness_score }}</td>
+      <td class="n">{{ "—" if l.global_score is none else l.global_score }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% if lc.metadata_keys %}
+<h3>Metadata keys not returned by every loader</h3>
+<p class="note">Matched ignoring case, so <span class="mono">author</span> and
+<span class="mono">Author</span> count as the same key.</p>
+<div class="scroll"><table>
+  <thead><tr><th>Key</th><th>Returned by</th></tr></thead>
+  <tbody>
+  {% for key, names in lc.metadata_keys.items() %}
+    <tr><td class="mono">{{ key }}</td><td class="mono">{{ names | join(", ") }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% endif %}
+{% if lc.documents %}
+<h3>Documents not returned by every loader</h3>
+<div class="scroll"><table>
+  <thead><tr><th>Document</th><th>Returned by</th></tr></thead>
+  <tbody>
+  {% for document, names in lc.documents.items() %}
+    <tr><td class="mono">{{ document }}</td><td class="mono">{{ names | join(", ") }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% endif %}
+</div>
+{% endif %}
+{% if report.loader and not report.loader_comparison %}
+{# Only present when the documents came from another framework's loader. #}
+<div class="loaderrun">
+<h3>Loader</h3>
+<div class="scroll"><table>
+  <tbody>
+    <tr><th>Loader</th><td class="mono">{{ report.loader.name }}</td></tr>
+    <tr><th>Documents returned</th><td>{{ report.loader.documents_returned }}</td></tr>
+    <tr><th>Load time</th><td>{% if report.loader.seconds is none %}passed in already
+      loaded{% else %}{{ duration(report.loader.seconds) }}{% endif %}</td></tr>
+    {% set attempts = report.loader.network_attempts %}
+    <tr><th>Network</th><td>{% if report.loader.network_allowed %}<span class="attn">allowed</span>,
+      {{ plural(attempts | length, "connection") }} made{% elif attempts %}blocked,
+      <span class="attn">{{ plural(attempts | length, "connection") }} refused</span>{% else %}blocked,
+      none attempted{% endif %}</td></tr>
+    {% for attempt in attempts %}
+    <tr><th></th><td class="mono">{{ attempt }}</td></tr>
+    {% endfor %}
+    <tr><th>Metadata keys</th><td class="mono">{{ report.loader.metadata_keys | join(", ") or "none" }}</td></tr>
+  </tbody>
+</table></div>
+{% if report.loader.error %}<p class="attn">{{ report.loader.error }}</p>{% endif %}
+</div>
+{% endif %}
+
+{% if quick_wins %}
+{# Ranked by how much of the folder each touches, and split by who has to act:
+   a list that mixes "we can do this" with "you must rescan these" is a list
+   nobody works through. #}
+<h3>Quick wins</h3>
+<div class="wins">
+  {% for w in quick_wins %}
+  <details class="win">
+    <summary>
+      <span class="wact wact-{{ w.actor }}">{{ "complydoc" if w.actor == "complydoc"
+        else "you" }}</span>
+      <span class="wtitle">{{ w.title }}</span>
+      <span class="wcount">{{ count(w.affected, "document") }}</span>
+      {% if w.saving_usd_per_1000 %}<span class="wsave">~{{ money(w.saving_usd_per_1000)
+        }} / 1,000</span>{% endif %}
+    </summary>
+    <p class="wdetail">{{ w.detail }}</p>
+    {% if w.effect %}<p class="weffect">{{ w.effect }}</p>{% endif %}
+    <p class="wfiles mono">{{ w.documents | join(" · ") }}</p>
+  </details>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% set cheapest = comparisons | map(attribute="architectures") | map("first") | list %}
+<div class="tiles">
+  <div class="tile">
+    <div class="k">AI readiness</div>
+    {% if agg.mean_readiness_score is not none %}
+      <div class="v">{{ agg.mean_readiness_score | round | int }}<span class="u">/100</span></div>
+      {# "Higher is better" is what the name now says; it was there when this
+         read "difficulty" and meant the opposite. #}
+      <div class="s">
+        {% set bands = agg.readiness_bands %}
+        {{ bands.get("ready", 0) + bands.get("workable", 0) }} of
+        {{ agg.documents_audited }} workable or better · content only</div>
+    {% else %}<div class="v">—</div><div class="s">readiness was not part of this run</div>{% endif %}
+  </div>
+
+  <div class="tile">
+    <div class="k">Local preparation</div>
+    {% if agg.hours_per_1000_documents is not none %}
+      <div class="v">{{ duration(agg.hours_per_1000_documents * 3600) }}<span class="u"> / 1,000</span></div>
+      {# The OCR rate and the caveat about what this excludes are both on the
+         timing table, where someone reading about time will find them. #}
+      <div class="s">on this machine, {{ duration(agg.seconds_per_document) }} a document</div>
+    {% else %}<div class="v">—</div><div class="s">nothing was timed</div>{% endif %}
+  </div>
+
+  <div class="tile">
+    <div class="k">Sensitive items per document</div>
+    {% if "sensitive" in report.run.components_run %}
+      <div class="v">{{ "%.1f"|format(agg.sensitive_total / agg.documents_audited) if agg.documents_audited else 0 }}</div>
+      {% set high = agg.sensitive_by_severity.get("high", 0) %}
+      <div class="s">{{ agg.sensitive_total }} in
+        {{ agg.documents_with_sensitive_data }} of {{ agg.documents_audited }} documents,
+        {{ high }} high severity</div>
+    {% else %}<div class="v">—</div><div class="s">the sensitive scan was not part of this run</div>{% endif %}
+  </div>
+</div>
+
+{% if report.staleness_warnings %}
+<div class="box"><strong>Unverified prices</strong>
+  <ul>{% for w in report.staleness_warnings %}<li>{{ w }}</li>{% endfor %}</ul></div>
+{% endif %}
+
+<details class="more">
+  <summary>Run detail — {{ plural(agg.documents_audited, "document") }},
+    {{ plural(agg.pages_total, "page") }}{% if agg.documents_skipped %},
+    {{ agg.documents_skipped }} skipped{% endif %}</summary>
+  <div>
+  <table><tbody>
+    <tr><td>Documents audited</td><td class="n">{{ agg.documents_audited }}</td>
+        <td class="why">{{ plural(agg.pages_total, "page") }}</td></tr>
+    {% if agg.pages_unreadable %}
+    <tr><td>Pages not read</td><td class="n">{{ agg.pages_unreadable }}</td>
+        <td class="why">not searched for sensitive data</td></tr>{% endif %}
+    <tr><td>Network guard</td>
+        <td class="n">{% if report.run.offline_guard == "armed" %}<span class="ok">armed</span>{% else %}<span class="poor">{{ report.run.offline_guard }}</span>{% endif %}</td>
+        <td class="why">no document content left this machine</td></tr>
+  </tbody></table>
+  {% if report.skipped %}
+  <div class="scroll"><table data-paginate="15">
+    <thead><tr><th>File not examined</th><th>Reason</th></tr></thead>
+    <tbody>{% for sk in report.skipped %}
+      <tr><td class="mono">{{ sk.path.name }}</td><td class="why">{{ sk.reason }}</td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% endif %}
+  </div>
+</details>
+
+{% if agg.projected_seconds %}
+<h3>How long this takes</h3>
+<p class="note">Measured on this machine, reading and analysing the documents. This is the
+work before anything reaches a model; time on the model itself is not estimated unless a
+throughput is configured for it.</p>
+<div class="scroll"><table>
+  <thead><tr><th>Stage</th><th class="n">This folder</th><th>What it covers</th></tr></thead>
+  <tbody>
+    <tr><td>Reading</td><td class="n">{{ duration(agg.read_seconds) }}</td>
+      <td class="why">Opening each file and pulling out its text, words and geometry.</td></tr>
+    {% if agg.ocr_seconds %}
+    <tr><td>OCR</td><td class="n">{{ duration(agg.ocr_seconds) }}</td>
+      <td class="why">Reading {{ plural(agg.ocr_pages, "page") }} that carried no text layer,
+        at {{ agg.ocr_pages_per_second }} a second.</td></tr>
+    {% endif %}
+    <tr><td>Readiness signals</td><td class="n">{{ duration(agg.analyse_seconds) }}</td>
+      <td class="why">Measuring the signals on every page.</td></tr>
+    <tr><td>Identifier scan</td><td class="n">{{ duration(agg.scan_seconds) }}</td>
+      <td class="why">Searching the text for personal and financial identifiers.</td></tr>
+    <tr class="d-head"><td>Total</td><td class="n">{{ duration(agg.total_seconds) }}</td>
+      <td class="why">{{ duration(agg.seconds_per_document) }} a document,
+        {{ duration(agg.seconds_per_page) }} a page{% if report.run.jobs > 1 %}, measured
+        across {{ report.run.jobs }} processes{% endif %}.</td></tr>
+  </tbody>
+</table></div>
+
+<h4 class="sec">At other volumes <span class="tag">projected</span></h4>
+<p class="note">The measured rate applied to a larger backlog — documents like these ones.
+A folder of longer or heavier scans takes longer.</p>
+<div class="scroll"><table>
+  <thead><tr><th class="n">Documents</th><th class="n">Preparation time</th></tr></thead>
+  <tbody>
+  {% for size, seconds in agg.projected_seconds.items() %}
+    <tr><td class="n">{{ "{:,}".format(size | int) }}</td>
+      <td class="n">{{ duration(seconds) }}</td></tr>
+  {% endfor %}
+  {% if report.run.monthly_volume %}
+    <tr class="d-head"><td class="n">{{ "{:,}".format(report.run.monthly_volume) }} a month</td>
+      <td class="n">{{ duration(agg.seconds_per_document * report.run.monthly_volume) }}</td></tr>
+  {% endif %}
+  </tbody>
+</table></div>
+{% endif %}
+</section>
+
+{# =============================================================== COST #}
+<section data-page id="cost" hidden>
+{% if comparisons %}
+{{ legend() }}
+{% set providers = comparisons | map(attribute="provider") | unique | sort | list %}
+{% if providers | length > 1 %}
+<div class="providers" id="providers">
+  <button type="button" data-provider="" aria-pressed="true">All providers</button>
+  {% for provider in providers %}
+    <button type="button" data-provider="{{ provider }}" aria-pressed="false">{{ provider }}</button>
+  {% endfor %}
+</div>
+{% endif %}
+{% if per_1000_chart %}
+{# The most quotable figure in the report, and the one somebody arrives at this
+   tab wanting. It used to lead the home page, which made the front of an
+   audit about the bill rather than about whether the documents can be used. #}
+<h3>Cost per 1,000 documents</h3>
+{{ per_1000_chart | safe }}
+{% endif %}
+<h3>Cost for this folder</h3>
+{{ folder_chart | safe }}
+{% if annual_chart %}
+<h3>Annual cost at {{ "{:,}".format(report.run.monthly_volume) }} documents a month</h3>
+{{ annual_chart | safe }}
+{% endif %}
+
+{% set batched = comparisons | selectattr("batch_per_1000_usd") | list %}
+{% if batched %}
+<h3>Through a batch endpoint</h3>
+<p class="note">The same text tokens, sent to the provider's batch API instead of its
+interactive one. Shown only for models that publish a batch price — a discount that is
+customary but unpublished is not a number this report will put in a budget.</p>
+<div class="scroll"><table data-sortable>
+  <thead><tr><th data-sort="text">Model</th>
+    <th class="n" data-sort="num">Interactive / 1,000</th>
+    <th class="n" data-sort="num" data-sort-default="desc">Batch / 1,000</th>
+    <th class="n" data-sort="num">Saving</th></tr></thead>
+  <tbody>
+  {% for c in batched %}
+    {% set standard = c.by_key("text_ocr") %}
+    {% if standard and standard.per_1000_usd %}
+    <tr><td>{{ c.display_name }}</td>
+      <td class="n">{{ money(standard.per_1000_usd) }}</td>
+      <td class="n">{{ money(c.batch_per_1000_usd) }}</td>
+      <td class="n" data-value="{{ (1 - c.batch_per_1000_usd / standard.per_1000_usd) * 100 }}">
+        {{ "%.0f%%"|format((1 - c.batch_per_1000_usd / standard.per_1000_usd) * 100) }}</td></tr>
+    {% endif %}
+  {% endfor %}
+  </tbody>
+</table></div>
+{% endif %}
+
+<h3>Per document</h3>
+{% set cheapest = headline or comparisons | last %}
+<div class="scroll"><table data-paginate="20">
+  <thead><tr><th>Document</th><th class="n">Pages</th>
+    <th class="n">Text</th><th class="n">Vision</th></tr></thead>
+  <tbody>
+  {% for doc in report.documents %}{% if doc.cost %}
+    {% set m = doc.cost.models | selectattr("model_id", "equalto", cheapest.model_id) | first %}
+    <tr><td class="mono">{{ doc.relative_path }}</td><td class="n">{{ doc.page_count }}</td>
+      <td class="n">{{ money(m.text_path_input_usd) if m and m.text_path_input_usd is not none else "n/a" }}</td>
+      <td class="n">{{ money(m.vision_input_usd_by_resolution.get(report.cost.headline_resolution)) if m and m.vision_input_usd_by_resolution.get(report.cost.headline_resolution) is not none else "n/a" }}</td>
+    </tr>
+  {% endif %}{% endfor %}
+  </tbody>
+</table></div>
+<p class="note">Priced on {{ cheapest.display_name }}. Multiply by the ratio in the chart
+above for any other.</p>
+{% else %}
+<p class="note">Cost was not part of this run.</p>
+{% endif %}
+</section>
+
+{# =========================================================== SECURITY #}
+<section data-page id="security" hidden>
+<h2>Sensitive information</h2>
+{% if "sensitive" not in report.run.components_run %}
+<p class="note">The sensitive data scan was not part of this run.</p>
+{% else %}
+<p class="note">Masked to the last {{ report.config_masking.reveal_tail_chars }} characters{% if report.config_masking.never_reveal %};
+{{ report.config_masking.never_reveal | join(" and ") }} never shown in full{% endif %}.</p>
+{# Saying "masked" and nothing else would be a half-truth in a report that also
+   carries the pages these values were read off. #}
+{% if report.run.extracted_text_used or report.run.page_images_used %}
+<div class="notice"><strong>The masking applies to this table, not to the whole file.</strong>
+  <p>This report also carries
+  {%- if report.run.extracted_text_used %} the text read off each page{% endif %}
+  {%- if report.run.extracted_text_used and report.run.page_images_used %} and{% endif %}
+  {%- if report.run.page_images_used %} a picture of each page{% endif %}, on the Documents
+  page, where these values appear as they do in the document. Treat the file as you would
+  treat the documents themselves. Run with
+  {%- if report.run.extracted_text_used %} <code>--no-extracted-text</code>{% endif %}
+  {%- if report.run.extracted_text_used and report.run.page_images_used %} and{% endif %}
+  {%- if report.run.page_images_used %} without <code>--page-images</code>{% endif %}
+  for a report that carries no document content.</p></div>
+{% endif %}
+
+<h3>Hidden content and instructions</h3>
+{% set cm = agg.content_matrix %}
+<p class="note">Each passage is placed by two kinds of evidence: whether a person reading the
+document would see it, and whether it reads as an instruction to a model. The levels are
+strength of evidence, not probabilities. Select a cell to filter the table.</p>
+<div class="cmatrix">
+  <div></div>
+  <div class="cm-h">Visible</div>
+  <div class="cm-h">Not measured<span>no file to check</span></div>
+  <div class="cm-h">Hidden<span>one signal</span></div>
+  <div class="cm-h">Hidden<span>confirmed</span></div>
+  {% for row, label, sub in [("confirmed", "Confirmed", "decoded hidden text"), ("pattern", "Pattern", "instruction phrasing"), ("model", "Model", "classifier score"), ("none", "None", "")] %}
+  <div class="cm-h">{{ label }}{% if sub %}<span>{{ sub }}</span>{% endif %}</div>
+  {% for column in ["visible", "not_measured", "suspected", "confirmed"] %}
+    {% set n = cm.get(row, {}).get(column, 0) %}
+    {% set sev = content_severity(column, row) %}
+    {% if row == "none" and column in ("visible", "not_measured") %}
+  <div class="cm-empty">—</div>
+    {% else %}
+  <button type="button" class="cm-cell{% if column == 'not_measured' %} cm-na{% endif %}{% if n %} cm-{{ sev }}{% endif %}"
+    data-cm-cell="{{ row }}:{{ column }}"{% if not n %} disabled{% endif %}
+    aria-label="{{ label }} instruction evidence, {{ column | replace('_', ' ') }}: {{ n }}">
+    <strong>{{ n if n else "·" }}</strong>{% if n %}<span>{{ sev }}</span>{% endif %}</button>
+    {% endif %}
+  {% endfor %}
+  {% endfor %}
+</div>
+{% set crows = content_rows(report) %}
+{% if crows %}
+<p><button type="button" id="cm-reset" hidden>Show all passages</button></p>
+<div class="scroll"><table data-sortable id="content-findings">
+  <thead><tr><th data-sort="text">Document</th><th data-sort="num">Page</th>
+    <th data-sort="num" data-sort-default="desc">Severity</th><th data-sort="text">Hidden</th>
+    <th data-sort="text">Instruction</th><th>Passage</th>
+    {% if report.loader %}<th data-sort="text">In loader output</th>{% endif %}</tr></thead>
+  <tbody>
+  {% for doc, f in crows %}
+    <tr data-cm="{{ f.instruction }}:{{ f.visibility }}"{% if f.severity == "low" %} class="quiet"{% endif %}>
+      <td class="mono">{{ doc.relative_path }}</td>
+      <td class="n" data-value="{{ f.page or 0 }}">{{ f.page or "—" }}</td>
+      <td data-value="{{ severity_rank(f.severity) }}">{{ severity_badge(f.severity) | safe }}</td>
+      <td>{{ f.visibility | replace("_", " ") }}{% if f.hidden_reasons %}<br><span class="why">{{ f.hidden_reasons | join("; ") }}</span>{% endif %}</td>
+      <td>{{ f.instruction }}{% if f.instruction_reasons %}<br><span class="why">{{ f.instruction_reasons | join("; ") }}</span>{% endif %}</td>
+      <td class="mono">{{ f.excerpt }}</td>
+      {% if report.loader %}<td>{% if f.in_loader_output is none %}—{% elif f.in_loader_output %}<span class="attn">yes</span>{% else %}no{% endif %}</td>{% endif %}
+    </tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% else %}
+<p class="note">No hidden text or instruction-like passages were found{% if agg.documents_visibility_unchecked %}; hidden text was not checked in {{ plural(agg.documents_visibility_unchecked, "document") }}{% endif %}.</p>
+{% endif %}
+
+{% if agg.sensitive_by_category %}
+<h3>By category</h3>
+<div class="scroll"><table data-sortable>
+  <thead><tr><th data-sort="text">Category</th><th data-sort="text">Region</th>
+    <th data-sort="num">Severity</th><th class="n" data-sort="num" data-sort-default="desc">Count</th>
+    <th>Note</th></tr></thead>
+  <tbody>
+  {% for cat, count in agg.sensitive_by_category | dictsort(by='value', reverse=true) %}
+    {% set m = category_meta(cat) %}
+    <tr><td>{{ m.label }}</td><td><span class="flag">{{ m.region }}</span></td>
+        <td data-value="{{ severity_rank(m.severity) }}">{{ severity_badge(m.severity) | safe }}</td>
+        <td class="n">{{ count }}</td><td class="why">{{ m.note }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+
+<h3>Every occurrence</h3>
+{{ matches_table(sensitive_rows(report), true) }}
+{% else %}
+<p class="note">Nothing detected in the text that could be read. Check the limitations
+before reading that as an all-clear.</p>
+{% endif %}
+
+{% set metadata_rows = [] %}
+{% for doc in report.documents %}{% for f in doc.metadata_findings %}{% set _ = metadata_rows.append((doc, f)) %}{% endfor %}{% endfor %}
+{% if metadata_rows %}
+<h3>In metadata</h3>
+<p class="note">Identifiers in the metadata the loader attached to each document, which is
+usually stored beside every chunk. Greyed rows are low-severity findings from the name
+model, listed but not counted towards limitations or quick wins.</p>
+<div class="scroll"><table data-sortable>
+  <thead><tr><th data-sort="text">Document</th><th data-sort="text">Key</th>
+    <th data-sort="text">Category</th><th data-sort="num" data-sort-default="desc">Severity</th>
+    <th data-sort="num">Evidence</th><th>Value</th></tr></thead>
+  <tbody>
+  {% for doc, f in metadata_rows %}
+    <tr{% if not f.significant %} class="quiet"{% endif %}>
+      <td class="mono">{{ doc.relative_path }}</td><td class="mono">{{ f.key }}</td>
+      <td>{{ f.label }}</td>
+      <td data-value="{{ severity_rank(f.severity) }}">{{ severity_badge(f.severity) | safe }}</td>
+      <td data-value="{{ evidence_rank(f.evidence) }}"><span class="ev ev-{{ f.evidence }}">{{ f.evidence }}</span></td>
+      <td class="mono">{{ f.revealed or f.masked }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% endif %}
+
+{% set path_docs = report.documents | selectattr("path_exposures") | list %}
+{% if path_docs %}
+<h3>File paths in metadata</h3>
+<p class="note">Metadata keys holding an absolute file path. A path includes the account
+name and directory layout it came from.</p>
+<div class="scroll"><table>
+  <thead><tr><th>Document</th><th>Keys</th></tr></thead>
+  <tbody>
+  {% for d in path_docs %}
+    <tr><td class="mono">{{ d.relative_path }}</td><td class="mono">{{ d.path_exposures | join(", ") }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% endif %}
+
+{% if report.loader_comparison and report.loader_comparison.identifier_differences %}
+<h3>Found by some loaders only</h3>
+<p class="note">Identifiers in one loader's output and not another's, matched by category and
+masked value. An identifier missing from a loader's text is missing for anything that reads
+that text afterwards. Greyed rows are low-severity findings from the name model.</p>
+<div class="scroll"><table data-sortable>
+  <thead><tr><th data-sort="text">Document</th><th data-sort="text">Category</th>
+    <th data-sort="num" data-sort-default="desc">Severity</th><th data-sort="num">Evidence</th>
+    <th data-sort="text">Where</th><th>Value</th><th data-sort="text">Found by</th>
+    <th data-sort="text">Missed by</th></tr></thead>
+  <tbody>
+  {% for d in report.loader_comparison.identifier_differences %}
+    <tr{% if not d.significant %} class="quiet"{% endif %}>
+      <td class="mono">{{ d.document }}</td>
+      <td>{{ d.label }}</td>
+      <td data-value="{{ severity_rank(d.severity) }}">{{ severity_badge(d.severity) | safe }}</td>
+      <td data-value="{{ evidence_rank(d.evidence) }}"><span class="ev ev-{{ d.evidence }}">{{ d.evidence }}</span></td>
+      <td class="mono">{% if d.location == "metadata" %}metadata: {{ d.keys | join(", ") }}{% else %}text{% endif %}</td>
+      <td class="mono">{{ d.value }}</td>
+      <td class="mono">{{ d.found_by | join(", ") }}</td>
+      <td class="mono attn">{{ d.missed_by | join(", ") }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% endif %}
+
+{% if agg.categories_not_scanned %}
+<h3>Categories not scanned</h3>
+<div class="scroll"><table>
+  <thead><tr><th>Category</th><th>Why not</th></tr></thead>
+  <tbody>{% for cat, reason in agg.categories_not_scanned | dictsort %}
+    <tr><td>{{ category_meta(cat).label }}</td><td class="why">{{ reason }}</td></tr>
+  {% endfor %}</tbody>
+</table></div>
+<p class="note">These count zero because nothing looked, not because nothing is there.</p>
+{% endif %}
+{% endif %}
+</section>
+
+{# ========================================================== DOCUMENTS #}
+<section data-page id="documents" hidden>
+
+<div class="explorer" id="explorer">
+  <aside class="files">
+    <div class="filter">
+      <input type="search" id="docfilter" placeholder="Filter files" aria-label="Filter files">
+    </div>
+    <div class="count" id="doccount"></div>
+    <ul id="filelist">
+    {% for doc in report.documents %}
+      {%- set poor = doc.readiness.signals | selectattr("rating", "equalto", "poor") | list if doc.readiness else [] -%}
+      {%- set sources = doc.extracted_text | map(attribute="source") | list -%}
+      {%- set haystack = [doc.relative_path, doc.format]
+            + (poor | map(attribute="name") | list)
+            + sources
+            + ([doc.readiness.score.label] if doc.readiness and doc.readiness.score else []) -%}
+      <li data-search="{{ haystack | join(' ') | lower }}">
+        <button type="button" data-doc="{{ loop.index0 }}">
+          <span class="nm">{{ doc.relative_path }}</span>
+          {% if doc.readiness and doc.readiness.score %}
+            <span class="sc r r-{{ score_band(doc.readiness.score.value) }}">{{ doc.readiness.score.value | round | int }}</span>
+          {% else %}<span class="sc r r-na">—</span>{% endif %}
+        </button>
+      </li>
+    {% endfor %}
+    </ul>
+  </aside>
+
+  <div class="viewer" id="viewer">
+  {% for doc in report.documents %}
+    <div class="doc" data-doc="{{ loop.index0 }}" hidden>
+      {# The page is the subject. What kind of file it is, how long it took and
+         which signals rated poor are all answers to questions asked on the
+         signals tab, so they are asked there. #}
+      <div class="docbar">
+        <h3>{{ doc.relative_path }}</h3>
+        <div class="subtabs" role="tablist">
+          <button type="button" data-view="pages" aria-selected="true">Pages</button>
+          <button type="button" data-view="signals" aria-selected="false">Signals</button>
+        </div>
+      </div>
+
+      <div data-view="pages">
+        {# The workspace is the same shape for every document, including one
+           nobody could open: same bar, same two frames, and the reason said
+           inside them rather than in place of them. #}
+        {% set rows = page_rows(doc) %}
+        <div class="pagebar">
+          <div class="pnav">
+            <button type="button" class="pstep" data-step="-1" aria-label="Previous page"
+                    {% if not rows %}disabled{% endif %}>&lsaquo;</button>
+            <span class="pmid">
+              <input type="number" class="pjump" min="{{ rows[0].number if rows else 0 }}"
+                     max="{{ rows[-1].number if rows else 0 }}"
+                     value="{{ rows[0].number if rows else 0 }}"
+                     aria-label="Go to page number" {% if not rows %}disabled{% endif %}>
+              <span class="pof">/ {{ rows[-1].number if rows else 0 }}</span>
+            </span>
+            <button type="button" class="pstep" data-step="1" aria-label="Next page"
+                    {% if not rows %}disabled{% endif %}>&rsaquo;</button>
+          </div>
+          <span class="pmiss" hidden>no page with that number</span>
+          {% if rows | selectattr("readers_differ") | first is defined %}
+          <button type="button" class="pdiff"><span class="dot"></span>next page the readers
+            read differently</button>
+          {% endif %}
+        </div>
+
+        <div class="pageview">
+        {% if not rows %}
+          <div class="spread" data-page="0">
+            <div class="side">
+              <div class="lbl">page</div>
+              <div class="body"><p class="note">No page of this document could be read.
+                {% if doc.load_warnings %}{{ doc.load_warnings[0] }}{% endif %}</p></div>
+              <div class="pcap"></div>
+            </div>
+            <div class="side">
+              <div class="lbl">content</div>
+              <div class="body"><p class="note">Nothing was extracted, so there is nothing
+                to show here. The Signals tab says what could still be measured.</p></div>
+              <div class="pcap"></div>
+            </div>
+          </div>
+        {% endif %}
+        {% for row in rows %}
+          <div class="spread" data-page="{{ row.number }}"
+               {% if row.readers_differ %}data-differs="1"{% endif %} hidden>
+            <div class="side">
+              <div class="lbl">
+                {% if row.image_data_uri %}
+                <span class="swap" role="group">
+                  <button type="button" data-face="img" aria-selected="true">page</button>
+                  <button type="button" data-face="svg" aria-selected="false">layout</button>
+                </span>
+                {% else %}layout{% endif %}
+              </div>
+              {% if row.image_data_uri %}
+                {# The size is declared so the frame is the right height before the
+                   image decodes; without it the panel beside it jumps on arrival. #}
+                <div class="face" data-face="img"><div class="body">
+                  <img class="pg" src="{{ row.image_data_uri }}" alt="Page {{ row.number }}"
+                       {% if row.image_width_px %}width="{{ row.image_width_px }}"
+                       height="{{ row.image_height_px }}"{% endif %}
+                       loading="lazy"></div></div>
+              {% endif %}
+              {% if row.preview %}
+                <div class="face" data-face="svg" {% if row.image_data_uri %}hidden{% endif %}>
+                  <div class="body">{{ page_preview_svg(row.preview) | safe }}</div>
+                </div>
+              {% else %}
+                <div class="body"><p class="note">This page could not be read.</p></div>
+              {% endif %}
+              <div class="pcap">
+                <span class="flags">
+                  {%- for level, label in row.flags %}<span class="flag {{ level }}">{{ label }}</span>{% if not loop.last %} · {% endif %}{% endfor -%}
+                </span>
+                {# Filled in while the reader points at a mark on the layout.
+                   The browser's own tooltip says the same thing, after its own
+                   delay; this says it at once and without covering the page. #}
+
+              </div>
+            </div>
+
+            <div class="side">
+              {# One pane per reader that was asked to read this page, so what
+                 each made of it can be put side by side. Comparing a page with
+                 no text layer against its own OCR output would be comparing a
+                 thing to itself; --ocr-compare is what makes that one real,
+                 and --compare-extractor or --compare-ocr-engine the rest. #}
+              {% set compare = row.source == "native" and row.ocr_text %}
+              {% set panes = [] %}
+              {# When several readers are being compared, the first pane is named
+                 after the one whose reading the report was built from, so the
+                 switch reads as a list of readers rather than one odd one out. #}
+              {%- set kept_label = (report.run.extractor if row.readings and row.source != "ocr"
+                                    else ("what OCR read" if row.source == "ocr" else "text layer")) -%}
+              {%- if row.text or row.ocr_text -%}
+                {%- set _ = panes.append(("text", kept_label, row.text or row.ocr_text)) -%}
+              {%- endif -%}
+              {%- if compare -%}{%- set _ = panes.append(("ocr", "what OCR sees", row.ocr_text)) -%}{%- endif -%}
+              {#- Each other reader's pane carries its differences from the kept
+                  reading in place. Two plain panes to flip between would leave
+                  someone to find the difference by reading both. -#}
+              {%- for d in row.diffs -%}
+                {%- set _ = panes.append(("read-" ~ loop.index0, d.reader, d)) -%}
+              {%- endfor -%}
+              <div class="lbl">
+                {% if panes | length > 1 %}
+                <span class="swap" role="group">
+                  {% for key, label, _text in panes %}
+                  <button type="button" data-face="{{ key }}"
+                          aria-selected="{{ "true" if loop.first else "false" }}">{{ label }}</button>
+                  {% endfor %}
+                </span>
+                {% elif panes %}{{ panes[0][1] }} from this page
+                {% else %}content{% endif %}
+              </div>
+              {% if panes %}
+                {% for key, label, body in panes %}
+                <div class="face" data-face="{{ key }}" {% if not loop.first %}hidden{% endif %}>
+                {% if body is string %}
+                  <div class="body"><pre>{{ body }}</pre></div>
+                  <p class="pcap">{{ "{:,}".format(body | length) }} characters, {{ label }}
+                    {%- if loop.first and row.truncated %}, truncated for the report{% endif %}</p>
+                {% else %}
+                  <div class="body"><pre class="dif">{% for seg in body.segments -%}
+{%- if seg.kind == "same" %}{{ seg.text }}{% else %}<mark
+                    class="{{ seg.kind }}">{{ seg.text }}</mark>{% endif %}
+{%- endfor %}</pre></div>
+                  <p class="pcap">
+                    {% if body.differs %}<mark class="added">only {{ label }}</mark>
+                      <mark class="missing">only {{ kept_label }}</mark>
+                      · {{ body.added_words }} added, {{ body.missing_words }} missing ·
+                      {{ "{:.0f}%".format(body.similarity * 100) }} the same
+                    {% else %}the same words as {{ kept_label }}, differently spaced{% endif %}
+                    {%- if body.truncated %} · compared up to the first few thousand words
+                    {%- endif %}</p>
+                {% endif %}
+                </div>
+                {% endfor %}
+              {% elif row.preview and row.preview.unreadable %}
+                <div class="body"><p class="note">Nothing was read from this page. It carries no
+                text layer, and {% if report.run.ocr_requested %}OCR found nothing on it
+                {%- else %}OCR was not run — pass <code>--ocr</code>{% endif %}.</p></div>
+              {% else %}
+                <div class="body"><p class="note">This run was asked not to keep the text
+                (<code>--no-extracted-text</code>), so there is nothing to show beside the
+                page.</p></div>
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+        </div>
+
+        <div class="key">
+          <span><i class="sw" style="background:var(--pv-text);border-color:var(--pv-text)"></i> text</span>
+          <span><i class="sw" style="background:var(--pv-image);border-color:var(--pv-image)"></i> image</span>
+          <span><i class="sw" style="background:transparent;border-color:var(--poor)"></i> sensitive, high</span>
+          <span><i class="sw" style="background:transparent;border-color:var(--fair)"></i> sensitive, other</span>
+        </div>
+        {% set imaged = rows | selectattr("image_data_uri") | list | length %}
+        {% if report.run.page_images_used and imaged and imaged < rows | length %}
+          <p class="note">{{ imaged }} of {{ rows | length }} pages were rendered as pictures;
+          the rest are shown as layout. Only so many pages of one document are rasterised, so
+          that a long scan cannot exhaust memory or make the report too large to send.</p>
+        {% endif %}
+      </div>
+
+      <div data-view="signals" hidden>
+        {% if doc.extractions | length > 1 %}
+        <h4 class="sec">How it was read
+          <span class="tag">{{ doc.disagreement or "they agree" }}</span></h4>
+        <div class="scroll"><table>
+          <thead><tr><th>{{ "Loader" if report.loader_comparison else "Extractor" }}</th><th class="n">Characters</th><th class="n">Coverage</th>
+            <th class="n">Time</th><th class="n" title="How closely this reading matches the kept
+              one, compared in order. Two readings can hold the same characters in a different
+              order and this is what says so.">Matches kept</th><th>Reads</th></tr></thead>
+          <tbody>
+          {% for r in doc.extractions %}
+            <tr{% if loop.first %} class="d-head"{% endif %}>
+              <td>{{ r.extractor }}{% if loop.first %} <span class="flag">kept</span>{% endif %}</td>
+              <td class="n">{{ "{:,}".format(r.characters) }}</td>
+              <td class="n">{% if r.mean_coverage_pct is none %}<span class="why"
+                title="This reader returns text without geometry, so there is nothing to
+                  measure coverage from.">not measured</span>{% else %}{{ r.mean_coverage_pct }}%{% endif %}</td>
+              <td class="n">{% if report.loader_comparison %}—{% else %}{{ duration(r.seconds) }}{% endif %}</td>
+              <td class="n">{% if loop.first %}—{% else %}{{ "{:.0f}%".format(r.similarity * 100) }}{% endif %}</td>
+              <td class="why">{% if r.granularity == "none" %}text only{% else %}{{ r.granularity }} boxes{% endif %}{% if r.reads_tables %}, table structure{% endif %}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table></div>
+        <p class="note">Only the first was used. The others read the same pages so the two
+        can be compared here and now, on one machine, rather than across two runs that would
+        differ for reasons of their own.</p>
+        {% endif %}
+        {% if doc.load_warnings %}
+          <div class="notice"><strong>Reading this document was incomplete.</strong>
+            <ul>{% for w in doc.load_warnings %}<li>{{ w }}</li>{% endfor %}</ul></div>
+        {% endif %}
+        <p class="doc-meta">{{ doc.format }} · {{ plural(doc.page_count, "page") }}{% if not doc.page_count_known %}, not fixed{% endif %}{% if doc.readiness and doc.readiness.score %} ·
+          <span class="{{ 'attn' if score_band(doc.readiness.score.value) == 'poor' else '' }}">{{ doc.readiness.score.label }}, {{ doc.readiness.score.value }}/100</span>{% endif %}{% if doc.timing %} ·
+          {{ duration(doc.timing.total_seconds) }} to read and analyse{% endif %}</p>
+        {% set concerns = doc.readiness.signals | selectattr("rating", "equalto", "poor") | list if doc.readiness else [] %}
+        {% if concerns or (doc.sensitive and doc.sensitive.unreadable_pages) %}
+        <p class="concerns">
+          {%- for s in concerns %}<span title="{{ s.why }}">{{ s.name | lower }} — {{ s.display }}</span>{% if not loop.last %} · {% endif %}{% endfor -%}
+          {%- if doc.sensitive and doc.sensitive.unreadable_pages %}{% if concerns %} · {% endif %}<span>{{ plural(doc.sensitive.unreadable_pages | length, "page") }} not read</span>{% endif -%}
+        </p>
+        {% endif %}
+        {% if doc.sensitive and doc.sensitive.unreadable_pages %}
+          <p class="note">Page {{ doc.sensitive.unreadable_pages | join(", ") }} carried no readable
+          text and {{ "was" if doc.sensitive.unreadable_pages | length == 1 else "were" }} not
+          searched. Nothing was found there because nothing looked.</p>
+        {% endif %}
+        {% if doc.readiness %}
+        <div class="scroll"><table>
+          <thead><tr><th>Signal</th><th>Measured</th><th>Rating</th>
+            {% if report.signal_weights %}<th class="n">Weight</th>{% endif %}<th>Why it matters</th></tr></thead>
+          <tbody>
+          {% for s in doc.readiness.signals %}
+            <tr><td>{{ s.name }}</td>
+              <td>{{ s.display }}{% if s.reason %}<div class="why">{{ s.reason }}</div>{% endif %}</td>
+              <td>{% if s.rating %}<span class="r r-{{ s.rating }}">{{ s.rating }}</span>{% else %}<span class="r r-na">{{ s.status.replace("_", " ") }}</span>{% endif %}</td>
+              {% if report.signal_weights %}<td class="n">{{ "%.2f"|format(s.weight) }}</td>{% endif %}
+              <td class="why">{{ s.why }}</td></tr>
+          {% endfor %}
+          </tbody>
+        </table></div>
+        {% set skipped = doc.readiness.signals | rejectattr("rating") | list %}
+        {% if skipped %}
+        <details class="more">
+          <summary>{{ plural(skipped | length, "signal") }} not measured for this document</summary>
+          <div class="scroll"><table>
+            <thead><tr><th>Signal</th><th>Why not</th></tr></thead>
+            <tbody>{% for sg in skipped %}
+              <tr><td>{{ sg.name }}</td><td class="why">{{ sg.reason or sg.status }}</td></tr>
+            {% endfor %}</tbody>
+          </table></div>
+        </details>
+        {% endif %}
+        {% endif %}
+        {% if doc.cost %}
+        <div class="scroll"><table data-paginate="15">
+          <thead><tr><th class="n">Page</th><th>Size</th><th class="n">Scan DPI</th><th>Text</th>
+            <th class="n">Text coverage</th></tr></thead>
+          <tbody>{% for pg in doc.cost.pages %}
+            <tr><td class="n">{{ pg.number }}</td><td>{{ pg.size_label }}</td>
+              <td class="n">{{ pg.dpi if pg.dpi else "—" }}</td><td>{{ pg.text_source }}</td>
+              <td class="n">{{ "%.1f"|format(pg.text_coverage_pct) }}%</td></tr>
+          {% endfor %}</tbody>
+        </table></div>
+        {% endif %}
+        <p class="note">SHA-256 <code>{{ doc.sha256 }}</code></p>
+      </div>
+    </div>
+  {% else %}
+    <p class="note">No documents were audited.</p>
+  {% endfor %}
+  </div>
+</div>
+</section>
+
+</main>
+
+<footer>
+  <div class="foot-main">
+    <div>
+      {{ logo_svg | safe }}
+      {% if report.loader and report.loader.network_allowed %}
+      <p class="foot-claim">{{ report.loader.name }} was allowed network access and made
+      {{ plural(report.loader.network_attempts | length, "connection") }}{% if report.loader.network_attempts %};
+      document content may have left this machine{% endif %}. complydoc's own processing ran
+      with outbound network access blocked.</p>
+      {% elif report.run.offline_guard == "armed" %}
+      <p class="foot-claim">No document content left this machine. Outbound network access
+      was blocked for the whole run.</p>
+      {% else %}
+      <p class="foot-claim">The network guard was not armed for this run, so outbound
+      connections were not blocked.</p>
+      {% endif %}
+    </div>
+    <dl class="foot-meta">
+      <dt>Audited</dt><dd>{{ report.run.target }}</dd>
+      <dt>Finished</dt><dd>{{ report.run.finished_at }} in {{ "%.1f"|format(report.run.duration_seconds) }}s</dd>
+      <dt>Documents</dt><dd>{{ agg.documents_audited }} across {{ agg.pages_total }} page{{ "" if agg.pages_total == 1 else "s" }}{% if agg.documents_skipped %}, {{ agg.documents_skipped }} skipped{% endif %}</dd>
+      <dt>Read by</dt><dd>text layer{% if report.run.ocr_available and report.run.ocr_requested %}, local OCR{% endif %}{% if report.run.ner_available %}, local name detection{% endif %}</dd>
+      <dt>Priced against</dt><dd>{{ plural(comparisons | length, "model") }}</dd>
+      <dt>Took</dt><dd>{{ duration(agg.total_seconds) }} of work,
+        {{ duration(agg.seconds_per_page) }} a page{% if agg.ocr_pages %},
+        {{ agg.ocr_pages_per_second }} pages a second through OCR{% endif %}</dd>
+      <dt>Options</dt><dd class="opts">{{ run_options }}</dd>
+    </dl>
+  </div>
+  <div class="foot-rule">
+    complydoc {{ report.run.tool_version }} · report schema v{{ report.run.schema_version }} ·
+    config {{ report.run.config_digest }} · Python {{ report.run.python_version }} ·
+    network guard {{ report.run.offline_guard }}
+  </div>
+</footer>
+
+<script>
+{% include "report.js" %}
+</script>
+</body>
+</html>

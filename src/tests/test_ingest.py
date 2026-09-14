@@ -107,7 +107,7 @@ def test_docx_merges_count_the_same_in_a_fresh_process():
         "from pathlib import Path;"
         "from complydoc.ingest.base import IngestOptions;"
         "from complydoc.ingest.registry import load_document;"
-        "d = load_document(Path('tests/fixtures/sample.docx'), IngestOptions());"
+        "d = load_document(Path('src/tests/fixtures/sample.docx'), IngestOptions());"
         "print([t.merged_cells for p in d.pages for t in p.tables])"
     )
     runs = {

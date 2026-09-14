@@ -11,6 +11,7 @@ keywords = ["pdf", "ocr", "gdpr", "pii", "document-automation", "offline"]
 # How the package is filed and found on PyPI. Kept to the ones that are true:
 # a long list of aspirational classifiers is noise on the page.
 classifiers = [
+    "Typing :: Typed",
     "Development Status :: 4 - Beta",
     "Environment :: Console",
     "Intended Audience :: Information Technology",
@@ -119,7 +120,7 @@ select = ["E", "F", "I", "N", "UP", "B", "SIM", "RUF"]
 
 [tool.ruff.lint.per-file-ignores]
 # The diagram generator emits SVG markup; long lines are inherent to it.
-"scripts/build_diagram.py" = ["E501"]
+"src/scripts/build_diagram.py" = ["E501"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["complydoc", "tests"]
@@ -147,7 +148,8 @@ module = [
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["src/tests"]
+pythonpath = ["src"]
 addopts = "-q --strict-markers"
 markers = [
     "requires_ocr: needs the optional [ocr] extra installed",

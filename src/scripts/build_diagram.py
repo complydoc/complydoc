@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-OUT = Path(__file__).resolve().parent.parent / ".github" / "images"
+OUT = Path(__file__).resolve().parents[2] / ".github" / "images"
 
 LIGHT = dict(
     slug="complydoc-architecture",

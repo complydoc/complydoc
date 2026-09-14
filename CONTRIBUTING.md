@@ -32,7 +32,7 @@ the code, without anybody remembering to.
 
 What is written by hand is what a machine cannot produce: the guides and the
 explanations. Every example in a guide is a real file under `docs/examples`,
-included with a snippet directive and executed by `tests/test_docs.py`. An
+included with a snippet directive and executed by `src/tests/test_docs.py`. An
 example that stops working fails the test suite. Do not paste code into a guide
 that is not one of those files.
 
@@ -46,7 +46,7 @@ invented, and none of them describes a person.
 Between them they carry the problems the tool exists to find — a scan with no
 text layer, a two-column page the readers disagree about, a table held together
 by whitespace, and identifiers of several kinds. They are copies of the
-fixtures under `tests/fixtures`, renamed to look like documents somebody would
+fixtures under `src/tests/fixtures`, renamed to look like documents somebody would
 actually point this at, and `make sample` refreshes them.
 
 Nothing but a document belongs in that folder: discovery reports anything else
@@ -69,7 +69,7 @@ and computes no cost.
 | `config/` | Every number that appears in a report |
 
 `offline.py` replaces the standard library's outbound socket and DNS entry points before any
-file is opened. `tests/test_offline_guard.py` runs a full audit with the guard armed. Nothing
+file is opened. `src/tests/test_offline_guard.py` runs a full audit with the guard armed. Nothing
 may reach the network at run time, and a dependency that tries fails the run loudly rather
 than succeeding quietly.
 
@@ -111,7 +111,7 @@ two apart.
 
 ```bash
 make test
-make fixtures   # rebuild the committed fixtures from tests/generate_fixtures.py
+make fixtures   # rebuild the committed fixtures from src/tests/generate_fixtures.py
 ```
 
 The fixtures are committed so the suite does not depend on a PDF writer's output staying

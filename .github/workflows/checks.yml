@@ -25,9 +25,9 @@ jobs:
       - run: uv sync --extra ocr --extra ner --group dev --group docs
       # The same commands `make lint` and `make types` run locally.
       - name: ruff
-        run: uv run ruff check src/complydoc tests
+        run: uv run ruff check src/complydoc src/tests
       - name: format
-        run: uv run ruff format --check src/complydoc tests
+        run: uv run ruff format --check src/complydoc src/tests
       - name: mypy
         run: uv run mypy src/complydoc
 
@@ -87,7 +87,7 @@ jobs:
           enable-cache: true
       - run: uv sync --group dev
       - name: regenerate into a scratch directory
-        run: uv run python tests/generate_fixtures.py --out "${RUNNER_TEMP}/fixtures"
+        run: uv run python src/tests/generate_fixtures.py --out "${RUNNER_TEMP}/fixtures"
       # The fixtures are committed so the suite does not depend on a PDF
       # writer's output staying byte-stable. This checks the generator still
       # produces every document the suite expects to find.
@@ -96,7 +96,7 @@ jobs:
           uv run python - "${RUNNER_TEMP}/fixtures" <<'PY'
           import pathlib, sys
           made = {p.name for p in pathlib.Path(sys.argv[1]).iterdir()}
-          want = {p.name for p in pathlib.Path("tests/fixtures").iterdir()}
+          want = {p.name for p in pathlib.Path("src/tests/fixtures").iterdir()}
           missing = sorted(want - made)
           if missing:
               sys.exit(f"the generator no longer produces: {missing}")

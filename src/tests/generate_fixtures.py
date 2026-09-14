@@ -1,6 +1,6 @@
 """Rebuild the committed test fixtures.
 
-Run with: uv run python tests/fixtures/generate_fixtures.py
+Run with: uv run python src/tests/generate_fixtures.py
 
 The generated PDFs are committed to the repository so the test suite does not
 depend on this script or on any system font. Everything here uses the Vera font

@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from jinja2 import Environment, FileSystemLoader, select_autoescape
+from jinja2 import Environment, FileSystemLoader
 from markupsafe import escape
 
 from complydoc.config.schema import Config
@@ -205,7 +205,7 @@ def _diffs_for(text: object) -> list[ReadingDiff]:
     return compare_readings(kept, others)
 
 
-_TEMPLATE_DIR = Path(__file__).parent / "templates"
+_TEMPLATE_DIR = Path(__file__).resolve().parents[1] / "ui"
 
 
 def _money(value: float | None, currency: str = "USD") -> str:
@@ -291,7 +291,11 @@ def page_preview_svg(preview: PagePreview, width: int = _PREVIEW_WIDTH) -> str:
 def render_html(report: AuditReport, config: Config) -> str:
     environment = Environment(
         loader=FileSystemLoader(_TEMPLATE_DIR),
-        autoescape=select_autoescape(["html"]),
+        # Every value is escaped unless marked safe. Document text, file names and
+        # metadata come from the documents, and a report must not run markup a
+        # document put there. `select_autoescape(["html"])` matched nothing, since
+        # the template is named `.html.j2`.
+        autoescape=True,
         trim_blocks=True,
         lstrip_blocks=True,
     )

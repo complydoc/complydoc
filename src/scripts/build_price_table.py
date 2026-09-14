@@ -32,7 +32,7 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "src" / "complydoc" / "config" / "model_prices.json"
 
 CATALOGUE_URL = "https://models.dev/api.json"

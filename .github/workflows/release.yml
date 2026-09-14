@@ -53,8 +53,8 @@ jobs:
         with:
           enable-cache: true
       - run: uv sync --extra ocr --extra ner --group dev
-      - run: uv run ruff check src/complydoc tests
-      - run: uv run ruff format --check src/complydoc tests
+      - run: uv run ruff check src/complydoc src/tests
+      - run: uv run ruff format --check src/complydoc src/tests
       - run: uv run mypy src/complydoc
       - run: uv run pytest -q
 
@@ -79,7 +79,7 @@ jobs:
         run: uv build
 
       - name: build the SBOM
-        run: uv run python scripts/build_sbom.py --out dist/complydoc-sbom.json
+        run: uv run python src/scripts/build_sbom.py --out dist/complydoc-sbom.json
 
       - name: checksums
         working-directory: dist

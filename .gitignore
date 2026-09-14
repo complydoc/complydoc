@@ -28,6 +28,7 @@ reports/
 # What the documentation examples write when they are run.
 /audit.html
 /inspection.html
+/loaders.html
 *.report.json
 *.report.html
 
