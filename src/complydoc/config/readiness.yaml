@@ -215,6 +215,33 @@ signals:
       fair: { lt: 3 }
       poor: { gte: 3 }
 
+  unmapped_glyphs:
+    enabled: true
+    weight: 0.03
+    direction: lower_is_better
+    thresholds:
+      good: { lt: 0.5 }
+      fair: { lt: 5.0 }
+      poor: { gte: 5.0 }
+
+  hyphenated_line_breaks:
+    enabled: true
+    weight: 0.02
+    direction: lower_is_better
+    thresholds:
+      good: { lt: 2.0 }
+      fair: { lt: 10.0 }
+      poor: { gte: 10.0 }
+
+  repeated_page_lines:
+    enabled: true
+    weight: 0.02
+    direction: lower_is_better
+    thresholds:
+      good: { lt: 5.0 }
+      fair: { lt: 15.0 }
+      poor: { gte: 15.0 }
+
   acroform_fields:
     enabled: true
     weight: 0.02

@@ -101,6 +101,7 @@ nav:
       - Extracting masked text: guides/extract-masked-text.md
       - Inspecting a loader: guides/inspect-a-loader.md
       - Comparing loaders: guides/compare-loaders.md
+      - Report tables: guides/report-tables.md
   - Reference:
       - Command line: reference/cli.md
       - Python API: reference/api.md

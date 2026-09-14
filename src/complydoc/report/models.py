@@ -520,6 +520,20 @@ class AuditReport:
     loader_comparison: LoaderComparison | None = None
     """Set by `compare_loaders`. `loader` is then the baseline's run."""
 
+    def to_pandas(self, table: str = "documents") -> Any:
+        """One table of this report as a pandas DataFrame.
+
+        Table names are in `complydoc.notebook.TABLES`. Requires the `notebook` extra.
+        """
+        from complydoc.notebook import to_pandas
+
+        return to_pandas(self, table)
+
+    def _repr_html_(self) -> str:
+        from complydoc.notebook import summary_html
+
+        return summary_html(self)
+
 
 def build_aggregate(
     documents: list[DocumentReport],

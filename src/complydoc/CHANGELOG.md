@@ -6,6 +6,16 @@ corrections. `schema_version` in the JSON is versioned separately.
 
 ## [Unreleased]
 
+### Added
+
+- `report.to_pandas(table)` returns a report table as a DataFrame (`notebook` extra), and a
+  report renders as a summary in Jupyter. Tables: documents, pages, identifiers, signals,
+  hidden, metadata, limitations, quick_wins, loaders, differences.
+- Readiness signals measured on text alone, so they also apply to loader output:
+  `unmapped_glyphs` (`(cid:N)` codes, private-use and control characters),
+  `hyphenated_line_breaks` and `repeated_page_lines` (running headers and footers).
+- `vendor-assessment.pdf` in the demo samples carries an instruction in white text.
+
 ## [0.3.1] — 2026-09-14
 
 ### Added
