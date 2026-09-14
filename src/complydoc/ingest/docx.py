@@ -1,8 +1,7 @@
 """Word document loader.
 
 A DOCX has no fixed pagination until it is laid out, so the whole body is
-presented as a single logical page and `page_count_known` is set to False. The
-report says so rather than quoting a page count that came from nowhere.
+presented as a single logical page and `page_count_known` is set to False.
 """
 
 from __future__ import annotations

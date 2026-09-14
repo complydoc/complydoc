@@ -40,7 +40,7 @@ class DocumentFormat(StrEnum):
     DOCX = "docx"
     XLSX = "xlsx"
     OTHER = "other"
-    """For a loader somebody else wrote, of a format this does not know about.
+    """For a third-party loader of a format complydoc does not know.
 
     The registry is public, so a third party can teach complydoc a format
     without changing it. They need a name for what they are loading, and
@@ -113,25 +113,21 @@ class ExtractionSummary:
     extractor: str
     characters: int
     coverage_pct: float | None
-    """None when the reader returns no geometry, which is not nought coverage."""
+    """None when the reader returns no geometry."""
     seconds: float
     granularity: str
     tables_found: int | None
-    """None when the extractor cannot look for tables, which is not zero tables."""
+    """None when the extractor cannot look for tables."""
     reordered: bool = False
     """True when this reading holds the same words as the kept one in another order.
 
-    A reader that scrambled a page it could otherwise read is a different
-    problem from one that read different words, and the report should not call
-    them the same thing.
+    Reported separately from a reading with different words.
     """
     similarity: float = 1.0
     """How closely this reading matches the one that was kept, 0 to 1.
 
-    Compared in order, not as a bag of characters. Two extractors reading a
-    two-column page can return the same characters and the same count while one
-    reads straight across the columns and scrambles the sentences — which a
-    count cannot see and this can.
+    Compared in word order, so a reading that scrambles a two-column page scores
+    low even when its character count matches.
     """
 
     @property
@@ -182,7 +178,7 @@ class Page:
     is the largest thing a comparison adds to a report.
     """
     raster: Image | None = None
-    """Populated only for pages a signal actually needs to look at as pixels."""
+    """Populated only for pages that need to be looked at as pixels."""
     notes: list[str] = field(default_factory=list)
 
     @property
@@ -247,7 +243,7 @@ class Document:
 
 @dataclass(frozen=True, slots=True)
 class SkipRecord:
-    """A file complydoc could not open. Reported, never fatal."""
+    """A file complydoc could not open. It is reported and the run continues."""
 
     path: Path
     reason: str
@@ -272,17 +268,17 @@ class IngestOptions:
     compare_engines: tuple[str, ...] = ()
     """OCR engines to read every rasterised page with, beside the one in use."""
     keep_readings: bool = False
-    """Whether to hold on to what each reader made of the page, not just how much."""
+    """Whether to keep each reader's text for the page."""
     password: str = ""
     """Tried on encrypted files before falling back to an empty password."""
     ocr_compare: bool = False
     """Also OCR pages that already have a text layer, so the two can be compared."""
     render_all_pages: bool = False
-    """Rasterise every page, not only the ones a signal needs to look at.
+    """Rasterise every page, including pages no signal needs.
 
     Set when the report is going to show the page next to what was extracted
     from it. Off by default: rasterising costs time and memory, and the default
-    report deliberately carries no page images.
+    report carries no page images.
     """
 
 

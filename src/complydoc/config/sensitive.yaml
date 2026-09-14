@@ -4,12 +4,9 @@
 # UK; the US and other identifiers here fall under their own regimes. Nothing in
 # this file assumes a single jurisdiction.
 #
-# MASKING IS THE DEFAULT AND IT IS THE POINT. complydoc reports counts and
-# locations, never values. A report that flags a leaked bank account number by
-# printing it has made the problem worse, not better. `--reveal` exists for the
-# case where someone genuinely needs the values; any report produced with it says
-# so prominently, and categories listed under masking.never_reveal stay masked
-# even then.
+# Values are masked by default. `--reveal` prints them in full and the report
+# records that it was used. Categories under masking.never_reveal stay masked
+# even with --reveal.
 #
 # `patterns` are distinctive enough to report on their own.
 # `context_patterns` are too generic to stand alone (a bare run of digits) and
@@ -24,7 +21,7 @@ masking:
   reveal_tail_chars: 4
   mask_char: "•"
   never_reveal:
-    # Even --reveal will not print these. Nobody needs a full PAN in a diagnostic.
+    # Masked even with --reveal.
     - card_number
     - ni_number
 
@@ -182,8 +179,7 @@ categories:
     validators: [vat_mod97]
     context_terms: ["vat", "vat no", "vat number", "vat reg"]
     gdpr_note: >
-      Business identifier rather than personal data, unless the business is a sole
-      trader, in which case it is personal data.
+      Business identifier. Personal data when the business is a sole trader.
 
   utr:
     enabled: true
@@ -208,8 +204,8 @@ categories:
       name: en_core_web_sm
       entity_labels: [PERSON]
     gdpr_note: >
-      Found by a local statistical model, not a rule. Expect both misses and false
-      positives; treat the count as an indication of scale, not an inventory.
+      Found by a local statistical model. Expect misses and false positives; the
+      count indicates scale.
 
   organisation_name:
     enabled: true

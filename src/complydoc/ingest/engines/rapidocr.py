@@ -38,9 +38,8 @@ def _pipeline() -> Any | None:
     except Exception as exc:  # pragma: no cover - engine init is environment-specific
         _IMPORT_ERROR = f"RapidOCR failed to initialise: {exc}"
         return None
-    # Registered here, where the native threads are actually created, rather
-    # than from a module that would have to import this one during interpreter
-    # shutdown — by which point the import machinery may already be gone.
+    # Registered where the native threads are created, so no import is needed
+    # during interpreter shutdown.
     atexit.register(release)
     return built
 

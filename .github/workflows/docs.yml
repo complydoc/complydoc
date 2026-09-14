@@ -2,11 +2,10 @@
 #
 # Publishing happens from `main` only. Every pull request still builds the site
 # under `--strict`, so a broken link or a reference page that stops generating
-# fails the pull request rather than the deployment.
+# fails the pull request.
 #
-# The reference pages are generated from the code at build time, which means
-# this workflow installs the package rather than just the documentation
-# toolchain: it has to be able to import complydoc to document it.
+# The reference pages are generated from the code at build time, so this
+# workflow installs the package as well as the documentation toolchain.
 name: docs
 
 on:

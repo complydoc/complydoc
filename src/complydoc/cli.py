@@ -1,8 +1,7 @@
 """Command line interface.
 
 Four commands. `audit` runs everything; `cost`, `readiness` and `sensitive` run
-one component each, so someone who only wants the sensitive data scan can have
-exactly that and nothing else.
+one component each.
 
 The network guard is armed before any document is opened, on every path.
 """
@@ -313,10 +312,7 @@ def _summary(report: AuditReport) -> None:
 def _watching(quiet: bool) -> Iterator[Callable[[int, int, Path], None] | None]:
     """A live count, a bar and a clock while the folder is read.
 
-    A run over a few hundred documents takes minutes, and a terminal that says
-    nothing for minutes is indistinguishable from one that has hung. The clock
-    is the part people actually want: not how far along it is, but whether it
-    is worth waiting for.
+    Shows a bar, a count and elapsed time while documents are read.
 
     Nothing is drawn when the run was asked to be quiet, and a line per
     document is printed instead of a bar when the output is not a terminal —
@@ -350,8 +346,7 @@ def _watching(quiet: bool) -> Iterator[Callable[[int, int, Path], None] | None]:
     )
     with bar:
         # The total is unknown until the folder has been walked, which on a
-        # large tree is itself a wait. An indeterminate bar says the tool is
-        # working during it rather than leaving the terminal blank.
+        # large tree takes a while, so an indeterminate bar is shown meanwhile.
         task = bar.add_task("", total=None, name="finding documents")
 
         def report(index: int, total: int, path: Path) -> None:
@@ -562,8 +557,7 @@ def _sample_folder() -> Path | None:
 
     `importlib.resources.as_file` only learned to hand back a directory in
     3.12, and this supports 3.11. Resolving the package directory works on
-    every version for a normal install, which is the only kind there is: the
-    wheel is unpacked, never imported from a zip.
+    every version for a normal install, where the wheel is unpacked.
     """
     from importlib.resources import files
 
@@ -619,7 +613,7 @@ def compare(
     kept_engine = ocr_engine or DEFAULT_ENGINE
     readers = [e.id for e in all_extractors() if e.available() and e.id != kept_reader]
     # Comparing OCR engines means running OCR. With --no-ocr there is nothing
-    # for them to read, and offering the comparison anyway would be a lie.
+    # for them to read.
     engines = [e.id for e in all_engines() if ocr and e.available() and e.id != kept_engine]
 
     if not quiet and not print_json:
@@ -920,9 +914,8 @@ def models(
 ) -> None:
     """List the models available to price against, and where each price came from.
 
-    The compared-by-default set is short on purpose: those are the prices someone
-    has checked against the provider's own page. Behind them sits a table of
-    several hundred more, any of which can be named with --model.
+    The default comparison uses prices verified against the provider's own page.
+    Several hundred more from the vendored table can be named with --model.
     """
     import datetime as dt
 
@@ -1028,8 +1021,7 @@ def extractors() -> None:
     console.print(
         "\n[dim]Pick one with [/][bold]--extractor <id>[/][dim], or read every page with a "
         "second and report where they differ: [/][bold]--compare-extractor <id>[/][dim].\n"
-        "A signal needing what an extractor does not provide reports that it could not "
-        "measure, rather than a number that means something else.[/]"
+        "A signal needing what an extractor does not provide is reported as not measured.[/]"
     )
 
 

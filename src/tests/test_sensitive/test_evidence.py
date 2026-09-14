@@ -1,12 +1,7 @@
 """How strong the case for a finding is.
 
-A number here would claim a precision nobody has: the detectors do not produce
-comparable probabilities, and the one that produces none at all used to report
-1.0, which put a model's guess level with a passed checksum.
-
-These four tiers say what was actually established. The line they hold is that
-a tier is earned by what happened to a finding, not declared by whatever found
-it.
+The detectors do not produce comparable probabilities, so findings carry one of
+four tiers, computed from the checks each finding passed.
 """
 
 from __future__ import annotations

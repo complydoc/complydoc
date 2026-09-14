@@ -11,7 +11,7 @@ score.
 | `pattern` | The pattern matched; nothing else corroborates it |
 | `model` | A statistical model produced it. No checksum exists for the category |
 
-The tier is derived, not declared by the detector: it is computed from the
+The tier is computed from the
 validators that passed, the presence of a context term, and the detector in use.
 A detector cannot assign its own findings a higher tier than the checks they
 passed.
@@ -42,5 +42,4 @@ Spain, France and Germany. A passing checksum moves a finding from `pattern` to
 `confirmed`, which changes both its ranking and its weight in the exposure
 score.
 
-Names and organisations have no checksum, which is why they sit in `model` and
-why everything that touches them says so.
+Names and organisations have no checksum, so their findings are always `model`.

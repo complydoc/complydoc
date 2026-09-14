@@ -89,8 +89,8 @@ jobs:
       # commit and this workflow. Check one with:
       #   gh attestation verify <file> --repo duartecaldascardoso/complydoc
       # GitHub will not store attestations for a user-owned private repository,
-      # so this step waits for the repository to be public rather than failing a
-      # release that is otherwise complete. The release notes say which it was.
+      # so this step is skipped while the repository is private. The release
+      # notes say which it was.
       - id: attest
         if: ${{ !github.event.repository.private }}
         uses: actions/attest-build-provenance@v3

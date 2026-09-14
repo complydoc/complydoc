@@ -1,4 +1,4 @@
-"""How much of the page area the text layer actually covers."""
+"""How much of the page area the text layer covers."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ class TextCoverageSignal:
     id = "text_layer_coverage_pct"
     name = "Text layer coverage"
     unit = "%"
-    why = "Almost no text on the page means the content is an image, not text."
+    why = "A page with almost no text layer is an image of its content."
     applies_to = frozenset({DocumentFormat.PDF, DocumentFormat.IMAGE})
 
     def measure(self, document: Document) -> Measurement:

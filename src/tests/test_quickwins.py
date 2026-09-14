@@ -19,7 +19,7 @@ def wins(config, ocr=False):
 
 
 def test_every_win_names_the_documents_it_applies_to(config):
-    """Advice with no files attached is advice nobody can act on."""
+    """Every quick win lists its documents."""
     found = wins(config)
     assert found
     assert all(w.documents for w in found)
@@ -27,8 +27,7 @@ def test_every_win_names_the_documents_it_applies_to(config):
 
 
 def test_every_win_says_who_has_to_do_it(config):
-    """A list mixing "we can do this" with "you must rescan these" is
-    a list nobody works through."""
+    """Every quick win states who acts."""
     assert all(w.actor in {"complydoc", "you"} for w in wins(config))
 
 
@@ -52,11 +51,7 @@ def test_running_ocr_removes_the_reason_to_run_ocr(config):
 
 
 def test_a_win_never_predicts_a_score(config):
-    """Signals interact; the only honest way to know is to fix and re-run.
-
-    Anything of the shape "this would take you to 84" is a fabrication, so the
-    text says what concretely changes instead.
-    """
+    """Quick win text contains no predicted score."""
     for win in wins(config):
         assert "/100" not in (win.effect or "")
         assert "/100" not in win.detail
@@ -72,7 +67,7 @@ def test_an_unsupported_file_is_not_called_broken(config):
 
 
 def test_the_saving_matches_the_price_the_report_shows(config):
-    """A number quoted here that the cost page contradicts is worse than none."""
+    """The quoted saving matches the cost page."""
     from complydoc.report.charts import build_comparison, headline_comparison
 
     report = run_audit(FIXTURES, config, ALL, ocr=False)

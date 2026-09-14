@@ -1,7 +1,6 @@
 """Hidden text, and text addressed to a model.
 
-Documents are built here rather than committed: each one exists to show one way
-of hiding text, and reading the builder is the clearest description of it.
+Documents are built in the tests, with one hiding technique per passage.
 """
 
 from __future__ import annotations
@@ -58,7 +57,7 @@ def hidden_pdf(path: Path) -> Path:
         fill=(1, 1, 1),
     )
     _text(c, 60, 720, "Reference kept for the audit trail only.", mode=3)
-    _text(c, 60, 700, "Small print nobody can read at this size.", size=0.5)
+    _text(c, 60, 700, "Small print too small to read at this size.", size=0.5)
     _text(c, -500, 680, "Outside the page where no reader looks.")
     _text(c, 60, 660, "Covered wording underneath a filled box.")
     c.saveState()
@@ -202,7 +201,7 @@ def test_spreadsheet_features_that_hide_values(tmp_path, config):
     sheet["A1"] = "Standard rate card"
     sheet["A2"] = "Value in a hidden row"
     sheet.row_dimensions[2].hidden = True
-    sheet["B1"] = "Value nobody sees"
+    sheet["B1"] = "Value with a blank format"
     sheet["B1"].number_format = ";;;"
     notes = workbook.create_sheet("Notes")
     notes["A1"] = "Instructions for the model live here"
@@ -213,7 +212,10 @@ def test_spreadsheet_features_that_hide_values(tmp_path, config):
     check = check_content(path, [(1, "")], config)
     reasons = {f.hidden_reasons[0]: f.excerpt for f in check.findings}
     assert reasons["hidden row in sheet 'Rates'"] == "Value in a hidden row"
-    assert reasons["number format that displays nothing, in sheet 'Rates'"] == "Value nobody sees"
+    assert (
+        reasons["number format that displays nothing, in sheet 'Rates'"]
+        == "Value with a blank format"
+    )
     assert reasons["hidden sheet 'Notes'"] == "Instructions for the model live here"
     assert not any("Standard rate card" in excerpt for excerpt in reasons.values())
 

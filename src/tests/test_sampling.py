@@ -1,4 +1,4 @@
-"""Choosing a subset of a large folder without skewing what the reader sees."""
+"""Choosing a subset of a large folder that keeps each file type's share."""
 
 from __future__ import annotations
 
@@ -40,7 +40,7 @@ def test_file_types_keep_their_share_of_the_folder():
 
 
 def test_a_rare_file_type_still_appears():
-    """One spreadsheet among ten thousand PDFs is exactly what someone needs to see."""
+    """One spreadsheet among ten thousand PDFs is still sampled."""
     files = [Path(f"{i:05d}.pdf") for i in range(10_000)] + [Path("odd.xlsx")]
     chosen = sample_files(files, 50)
     assert Path("odd.xlsx") in chosen

@@ -47,7 +47,7 @@ def test_every_page_is_reachable(html):
 
 
 def test_the_page_and_its_text_sit_in_one_panel(html):
-    """Side by side is the whole point: the same panel holds both halves."""
+    """The page and its text are in the same panel."""
     block = document_section(html).split(f"<h3>{MULTIPAGE}</h3>")[1].split("<h3>")[0]
     first = block.split('data-page="1"')[1].split('data-page="2"')[0]
     assert first.count('class="side"') == 2
@@ -63,7 +63,7 @@ def test_the_page_number_box_is_bounded_by_the_document(html):
 
 
 def test_one_page_is_shown_and_the_rest_are_hidden(html):
-    """The viewer is a viewer, not the old grid: JS reveals exactly one."""
+    """All pages are rendered and the script shows one."""
     block = document_section(html).split(f"<h3>{MULTIPAGE}</h3>")[1].split("<h3>")[0]
     panels = re.findall(r'<div class="spread"[^>]*>', block)
     assert len(panels) == 3
@@ -78,7 +78,7 @@ def test_a_page_read_by_ocr_offers_no_comparison(html):
 
 
 def test_ocr_compare_offers_both_readings(config):
-    """With --ocr-compare the two are genuinely different and worth switching between."""
+    """With --ocr-compare both readings can be switched between."""
     # --ocr-compare implies --extracted-text on the command line; a library
     # caller has to ask for both, which is what the CLI does on its behalf.
     report = run_audit(
@@ -138,9 +138,7 @@ def test_both_halves_share_one_framed_row(html):
 def test_provenance_lives_in_the_footer_only(html, report):
     """The page carried a heading repeating the path, the time and the version.
 
-    None of it told a reader anything they had not just decided for themselves,
-    and it pushed the actual content down the screen. It is recorded once, in
-    the footer, where provenance belongs.
+    It is recorded once, in the footer.
     """
     # The <title> still names the folder — that is how a browser tab is
     # identified — so only what is drawn on the page is checked here.
@@ -191,12 +189,7 @@ def test_the_page_bar_is_one_control(html):
 
 
 def test_the_page_is_the_first_thing_on_the_page(html):
-    """A pile of prose between the filename and the page defeated the point.
-
-    Everything the preamble said — the format, the score, how long it took, the
-    signals rated poor — is a question the readiness tab answers, so it is asked
-    there instead.
-    """
+    """Nothing sits between the filename and the page; details are on the Signals tab."""
     documents = document_section(html)
     assert "Readiness signals across the whole folder" not in documents
     block = documents.split(f"<h3>{MULTIPAGE}</h3>")[1].split("<h3>")[0]
@@ -226,11 +219,7 @@ def test_the_layout_key_sits_outside_the_panels(html):
 
 
 def test_the_workspace_is_the_same_shape_with_nothing_to_show(html):
-    """A document nobody could open used to render a different block entirely.
-
-    Switching to it resized the whole page. It gets the same bar and the same
-    two frames now, with the reason inside them.
-    """
+    """A document that could not be opened gets the same bar and frames."""
     block = document_section(html).split("<h3>encrypted.pdf</h3>")[1].split("<h3>")[0]
     pages = block.split('<div data-view="pages">')[1].split('<div data-view="signals"')[0]
     assert 'class="pagebar"' in pages
@@ -241,7 +230,7 @@ def test_the_workspace_is_the_same_shape_with_nothing_to_show(html):
 
 
 def test_nothing_to_page_through_disables_the_arrows(html):
-    """A bar you can press that does nothing is worse than one you cannot."""
+    """With nothing to page through, the navigation controls are disabled."""
     block = document_section(html).split("<h3>encrypted.pdf</h3>")[1].split("<h3>")[0]
     nav = block.split('class="pnav"')[1].split("</div>")[0]
     assert nav.count("disabled") == 3, "both arrows and the number box"
@@ -249,7 +238,7 @@ def test_nothing_to_page_through_disables_the_arrows(html):
 
 
 def test_why_it_could_not_be_read_is_not_only_in_the_panel(html):
-    """The loader's own words belong with the measurements, not above the page."""
+    """Load warnings appear on the Signals tab."""
     block = document_section(html).split("<h3>encrypted.pdf</h3>")[1].split("<h3>")[0]
     signals = block.split('<div data-view="signals"')[1]
     assert "Reading this document was incomplete" in signals

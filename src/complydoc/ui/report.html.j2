@@ -14,9 +14,7 @@
 {% macro plural(n, word, suffix="s") %}{{ n }} {{ word }}{{ "" if n == 1 else suffix }}{% endmacro %}
 
 {% macro matches_table(rows, show_doc) %}
-{# Sorted most serious first, and re-sortable by any column: on a security page
-   the question is almost always "what is the worst of it", not "what came
-   first in the folder". #}
+{# Sorted most serious first, and re-sortable by any column. #}
 <div class="scroll"><table data-paginate="25" data-sortable>
   <thead><tr>
     {% if show_doc %}<th data-sort="text">Document</th>{% endif %}
@@ -71,10 +69,8 @@
 </nav>
 <main>
 
-{# How many documents each architecture could actually be used on, said once
-   per architecture rather than on all ninety bars. It has to be said: read on
-   price alone the text layer always wins, and the reason it is cheapest is
-   that it does not work on the scans. #}
+{# How many documents each architecture can be used on, once per architecture.
+   The text layer is cheapest and does not work on scans. #}
 {% macro legend() %}
 <div class="legend">
   {% for key, label, colour in series %}
@@ -91,17 +87,15 @@
 <h2>What this folder looks like</h2>
 
 {% if readiness_donut %}
-{# The lead. Not a pie of one number — that is the number with a circle round
-   it — but what the folder is made of. A mean of 71 reads as fine and can be
-   hiding two documents nothing can be read from. #}
+{# The ring shows how many documents fall in each band. #}
 <div class="global">
   <div class="ring">{{ readiness_donut | safe }}</div>
   <div class="gtext">
     <h3>Global readiness</h3>
     <p class="lede">{{ count(overall.scored_documents, "document") }} scored on
       {{ overall.measured_factors | length }} of {{ overall.factors | length }} factors.
-      {%- if overall.partial %} The rest were not part of this run, so they are left out
-      of the score rather than counted as nought.{% endif %}</p>
+      {%- if overall.partial %} The rest were not part of this run and are left out of
+      the score.{% endif %}</p>
     <ul class="factors">
       {% for f in overall.factors %}
       <li{% if not f.measured %} class="na"{% endif %}>
@@ -208,9 +202,7 @@ page, and identifiers only some of them returned are listed on the Security page
 {% endif %}
 
 {% if quick_wins %}
-{# Ranked by how much of the folder each touches, and split by who has to act:
-   a list that mixes "we can do this" with "you must rescan these" is a list
-   nobody works through. #}
+{# Ranked by how many documents each touches, with who has to act. #}
 <h3>Quick wins</h3>
 <div class="wins">
   {% for w in quick_wins %}
@@ -250,8 +242,7 @@ page, and identifiers only some of them returned are listed on the Security page
     <div class="k">Local preparation</div>
     {% if agg.hours_per_1000_documents is not none %}
       <div class="v">{{ duration(agg.hours_per_1000_documents * 3600) }}<span class="u"> / 1,000</span></div>
-      {# The OCR rate and the caveat about what this excludes are both on the
-         timing table, where someone reading about time will find them. #}
+      {# The OCR rate and what this excludes are on the timing table. #}
       <div class="s">on this machine, {{ duration(agg.seconds_per_document) }} a document</div>
     {% else %}<div class="v">—</div><div class="s">nothing was timed</div>{% endif %}
   </div>
@@ -358,9 +349,6 @@ A folder of longer or heavier scans takes longer.</p>
 </div>
 {% endif %}
 {% if per_1000_chart %}
-{# The most quotable figure in the report, and the one somebody arrives at this
-   tab wanting. It used to lead the home page, which made the front of an
-   audit about the bill rather than about whether the documents can be used. #}
 <h3>Cost per 1,000 documents</h3>
 {{ per_1000_chart | safe }}
 {% endif %}
@@ -427,10 +415,9 @@ above for any other.</p>
 {% else %}
 <p class="note">Masked to the last {{ report.config_masking.reveal_tail_chars }} characters{% if report.config_masking.never_reveal %};
 {{ report.config_masking.never_reveal | join(" and ") }} never shown in full{% endif %}.</p>
-{# Saying "masked" and nothing else would be a half-truth in a report that also
-   carries the pages these values were read off. #}
+{# The report also carries page text and images, where values are unmasked. #}
 {% if report.run.extracted_text_used or report.run.page_images_used %}
-<div class="notice"><strong>The masking applies to this table, not to the whole file.</strong>
+<div class="notice"><strong>Masking applies to the findings tables only.</strong>
   <p>This report also carries
   {%- if report.run.extracted_text_used %} the text read off each page{% endif %}
   {%- if report.run.extracted_text_used and report.run.page_images_used %} and{% endif %}
@@ -447,7 +434,7 @@ above for any other.</p>
 {% set cm = agg.content_matrix %}
 <p class="note">Each passage is placed by two kinds of evidence: whether a person reading the
 document would see it, and whether it reads as an instruction to a model. The levels are
-strength of evidence, not probabilities. Select a cell to filter the table.</p>
+strength of evidence. Select a cell to filter the table.</p>
 <div class="cmatrix">
   <div></div>
   <div class="cm-h">Visible</div>
@@ -594,7 +581,7 @@ that text afterwards. Greyed rows are low-severity findings from the name model.
     <tr><td>{{ category_meta(cat).label }}</td><td class="why">{{ reason }}</td></tr>
   {% endfor %}</tbody>
 </table></div>
-<p class="note">These count zero because nothing looked, not because nothing is there.</p>
+<p class="note">These categories were not scanned in this run.</p>
 {% endif %}
 {% endif %}
 </section>
@@ -643,9 +630,8 @@ that text afterwards. Greyed rows are low-severity findings from the name model.
       </div>
 
       <div data-view="pages">
-        {# The workspace is the same shape for every document, including one
-           nobody could open: same bar, same two frames, and the reason said
-           inside them rather than in place of them. #}
+        {# The same workspace for every document, including one that could not
+           be opened, with the reason shown inside it. #}
         {% set rows = page_rows(doc) %}
         <div class="pagebar">
           <div class="pnav">
@@ -717,9 +703,7 @@ that text afterwards. Greyed rows are low-severity findings from the name model.
                 <span class="flags">
                   {%- for level, label in row.flags %}<span class="flag {{ level }}">{{ label }}</span>{% if not loop.last %} · {% endif %}{% endfor -%}
                 </span>
-                {# Filled in while the reader points at a mark on the layout.
-                   The browser's own tooltip says the same thing, after its own
-                   delay; this says it at once and without covering the page. #}
+                {# Filled in while pointing at a mark on the layout. #}
 
               </div>
             </div>
@@ -732,18 +716,15 @@ that text afterwards. Greyed rows are low-severity findings from the name model.
                  and --compare-extractor or --compare-ocr-engine the rest. #}
               {% set compare = row.source == "native" and row.ocr_text %}
               {% set panes = [] %}
-              {# When several readers are being compared, the first pane is named
-                 after the one whose reading the report was built from, so the
-                 switch reads as a list of readers rather than one odd one out. #}
+              {# When several readers are compared, the first pane is named after
+                 the reader the report was built from. #}
               {%- set kept_label = (report.run.extractor if row.readings and row.source != "ocr"
                                     else ("what OCR read" if row.source == "ocr" else "text layer")) -%}
               {%- if row.text or row.ocr_text -%}
                 {%- set _ = panes.append(("text", kept_label, row.text or row.ocr_text)) -%}
               {%- endif -%}
               {%- if compare -%}{%- set _ = panes.append(("ocr", "what OCR sees", row.ocr_text)) -%}{%- endif -%}
-              {#- Each other reader's pane carries its differences from the kept
-                  reading in place. Two plain panes to flip between would leave
-                  someone to find the difference by reading both. -#}
+              {#- Each other reader's pane marks its differences from the kept reading. -#}
               {%- for d in row.diffs -%}
                 {%- set _ = panes.append(("read-" ~ loop.index0, d.reader, d)) -%}
               {%- endfor -%}
@@ -833,15 +814,14 @@ that text afterwards. Greyed rows are low-severity findings from the name model.
           {% endfor %}
           </tbody>
         </table></div>
-        <p class="note">Only the first was used. The others read the same pages so the two
-        can be compared here and now, on one machine, rather than across two runs that would
-        differ for reasons of their own.</p>
+        <p class="note">Findings use the first. The others read the same pages in the same
+        run for comparison.</p>
         {% endif %}
         {% if doc.load_warnings %}
           <div class="notice"><strong>Reading this document was incomplete.</strong>
             <ul>{% for w in doc.load_warnings %}<li>{{ w }}</li>{% endfor %}</ul></div>
         {% endif %}
-        <p class="doc-meta">{{ doc.format }} · {{ plural(doc.page_count, "page") }}{% if not doc.page_count_known %}, not fixed{% endif %}{% if doc.readiness and doc.readiness.score %} ·
+        <p class="doc-meta">{{ doc.format }} · {{ plural(doc.page_count, "page") }}{% if not doc.page_count_known %} (unpaginated){% endif %}{% if doc.readiness and doc.readiness.score %} ·
           <span class="{{ 'attn' if score_band(doc.readiness.score.value) == 'poor' else '' }}">{{ doc.readiness.score.label }}, {{ doc.readiness.score.value }}/100</span>{% endif %}{% if doc.timing %} ·
           {{ duration(doc.timing.total_seconds) }} to read and analyse{% endif %}</p>
         {% set concerns = doc.readiness.signals | selectattr("rating", "equalto", "poor") | list if doc.readiness else [] %}

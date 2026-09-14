@@ -22,9 +22,9 @@ Documents are duck-typed, so no framework is imported:
 A loader is anything with `load()`, `load_data()` or `lazy_load()`, or a
 callable returning documents.
 
-Loader output carries text and metadata, not the page. Signals that need the
-page itself — text coverage, columns, tables, rotation, scan quality — are
-reported as not measured rather than inferred from text that cannot show them.
+Loader output carries text and metadata and no page geometry. Signals that need
+the page itself (text coverage, columns, tables, rotation, scan quality) are
+reported as not measured.
 
 Page numbers come from `page_number` if present, otherwise from `page` read as
 zero-based, which is what LangChain's PDF loaders emit. Several documents with
@@ -126,8 +126,7 @@ def inspect_documents(
     the report states that network access was allowed, and everything
     complydoc does after loading stays behind the guard.
 
-    `extracted_text` is on here, unlike `full_audit`, because seeing what the
-    loader extracted is usually the point.
+    `extracted_text` is on by default here, unlike `full_audit`.
     """
     inspection = inspect_run(
         source,
@@ -172,8 +171,7 @@ def inspect_run(
     """Run the loader and build a report entry for each document it returned."""
     if isinstance(source, (str, bytes, os.PathLike)):
         raise TypeError(
-            "inspect_documents takes documents or a loader, not a path; "
-            "use full_audit to audit files on disk"
+            "inspect_documents takes documents or a loader; use full_audit to audit files on disk"
         )
 
     settings = config or load_config()
@@ -422,7 +420,7 @@ def _scan_metadata(
     """Identifiers in metadata values, each distinct key and value reported once.
 
     Loaders repeat the same metadata on every page, so a finding is attached to
-    the first page it appeared on rather than repeated for every page after.
+    the first page it appeared on.
     """
     seen: set[tuple[str, str]] = set()
     found: list[MetadataFinding] = []
@@ -580,7 +578,7 @@ def _loader_limitations(loader: LoaderRun, entries: list[DocumentReport]) -> lis
             Limitation(
                 area="Loader",
                 statement=(
-                    f"Text came from {loader.name}, not from the files. Signals that need "
+                    f"Text came from {loader.name}. Signals that need "
                     f"the page itself — text coverage, columns, tables, rotation and scan "
                     f"quality — are reported as not measured, and vision cost is not "
                     f"estimated."

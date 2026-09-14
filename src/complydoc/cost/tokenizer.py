@@ -1,11 +1,9 @@
-"""Text token counting against a real tokenizer, with an honest fallback.
+"""Text token counting against a vendored tokenizer, with a character-based fallback.
 
 The encodings are vendored (see `complydoc.vendor`), so this works offline on a
 machine that has never had network access. If an encoding named in pricing.yaml
 is not among the vendored ones, complydoc does not go and fetch it — it falls
-back to a crude character-based estimate and says so in the report, because
-silently substituting a guess for a measurement is the failure mode this whole
-tool exists to avoid.
+back to a character-based estimate and says so in the report.
 """
 
 from __future__ import annotations
@@ -71,8 +69,7 @@ def count_tokens(text: str, spec: TokenizerSpec) -> TokenCount:
             note=(
                 f"The {spec.encoding} encoding is not available locally and complydoc will "
                 f"not download it at runtime, so this count is a crude estimate of one "
-                f"token per {_FALLBACK_CHARS_PER_TOKEN:.0f} characters. Treat it as an "
-                f"order of magnitude, not a measurement."
+                f"token per {_FALLBACK_CHARS_PER_TOKEN:.0f} characters."
             ),
         )
 

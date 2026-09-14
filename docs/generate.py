@@ -48,9 +48,8 @@ def command_pages() -> None:
         if help_text:
             lines += [help_text, ""]
 
-        # `param_type_name` rather than isinstance: Typer vendors its own copy
-        # of click, so its parameters are not instances of the click classes
-        # this module imports and every isinstance check quietly returned false.
+        # Typer vendors its own copy of click, so isinstance checks against the
+        # click classes imported here fail. `param_type_name` works for both.
         arguments = [p for p in command.params if p.param_type_name == "argument"]
         options = [
             p for p in command.params if p.param_type_name == "option" and not set(p.opts) & HIDDEN
@@ -177,12 +176,11 @@ def configuration_page() -> None:
         "",
         "Four files — `pricing.yaml`, `readiness.yaml`, `sensitive.yaml` and",
         "`hidden.yaml`. The shipped set is used unless you point at your own with",
-        "`--config-dir` (where `hidden.yaml` is optional), and",
-        "a run records the digest of what it loaded so two reports can be compared",
-        "honestly.",
+        "`--config-dir` (where `hidden.yaml` is optional). A run records the digest",
+        "of the files it loaded.",
         "",
-        "Every field below is validated on load. A file that does not satisfy this",
-        "stops the run with the reason rather than being half applied.",
+        "Every field below is validated on load. A file that fails validation stops",
+        "the run with the reason.",
         "",
     ]
     from pydantic import BaseModel

@@ -1,7 +1,6 @@
 """Reading one page with several readers, and keeping what each made of it.
 
-The point is to see the difference, not just measure it: a character count says
-two readers disagreed, and the text says how. Only the selected reader's output
+Each reader's text is kept for comparison. Only the selected reader's output
 reaches a finding.
 """
 
@@ -86,7 +85,7 @@ def test_measuring_without_keeping_text_keeps_no_text(config):
 
 
 def test_a_second_ocr_engine_reading_is_kept(stub_engine):
-    """OCR engines genuinely disagree, which is what makes this worth showing."""
+    """A second OCR engine's reading is kept."""
     document = load_document(
         FIXTURES / "scanned_page.pdf",
         IngestOptions(ocr=True, compare_engines=("stub",), keep_readings=True),
@@ -119,7 +118,7 @@ def test_the_readings_reach_the_report(config):
 
 
 def test_the_compare_command_uses_every_reader_installed(tmp_path):
-    """One command, rather than remembering to name each reader by hand."""
+    """`complydoc compare` uses every installed reader."""
     import json
 
     from typer.testing import CliRunner
@@ -147,7 +146,7 @@ def test_the_compare_command_uses_every_reader_installed(tmp_path):
 
 
 def test_the_compare_command_keeps_what_each_reader_read(tmp_path):
-    """Comparing is the point, so the text has to survive into the report."""
+    """Each reader's text is kept in the report."""
     import json
 
     from typer.testing import CliRunner

@@ -5,9 +5,7 @@ text layer is extracted locally and only text is sent. The vision path assumes
 each page is rendered and sent as an image. For a scanned document the text path
 is not available at all, and saying so is more useful than quoting a cost of zero.
 
-Only input cost is estimated. Output length depends entirely on what you ask the
-model to produce, which this tool cannot know, so it is left out rather than
-guessed at.
+Only input cost is estimated. Output length depends on the prompt.
 """
 
 from __future__ import annotations
@@ -219,9 +217,7 @@ def _model_estimate(
     throughput = model.input_tokens_per_second
     text_seconds = token_count.tokens / throughput if throughput and text_cost is not None else None
 
-    # The same tokens through the provider's batch endpoint. Only where one is
-    # published: assuming the customary half price would put a discount nobody
-    # can check into a budget.
+    # The same tokens through the provider's batch endpoint, where one is published.
     batch = model.batch_input_per_mtok_usd
     batch_text = None if text_cost is None or batch is None else token_count.tokens / 1e6 * batch
     batch_vision = (

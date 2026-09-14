@@ -14,8 +14,7 @@
     var DURATION = still ? 0 : 260;
 
     // The viewBox is an attribute, so CSS cannot transition it. Without tweening
-    // it the chart snapped to its new height while the bars were still sliding,
-    // which read as a jump rather than a filter.
+    // it the chart snapped to its new height while the bars were still sliding.
     function resize(svg, to) {
       var box = svg.getAttribute("viewBox").split(" ");
       var from = parseFloat(box[3]);
@@ -53,7 +52,7 @@
         groups.forEach(function (g) {
           var keep = !provider || g.getAttribute("data-provider") === provider;
           if (keep) {
-            // Slide into the slot the hidden rows vacated rather than reflowing.
+            // Slide into the slot the hidden rows vacated.
             g.setAttribute("transform", "translate(0," + (top + shown * step) + ")");
             g.classList.remove("out");
             shown++;
@@ -94,19 +93,15 @@
       });
     });
 
-    // Sit the file list at the height of the panels rather than the height of
-    // the column, which also carries the filename and the page bar above them.
+    // Align the file list with the panels, below the filename and page bar.
     var aside = root.querySelector(".files");
     function alignFiles() {
       if (!aside) return;
       if (window.innerWidth <= 860) { aside.style.marginTop = ""; return; }
 
       var doc = root.querySelector(".viewer > .doc:not([hidden])");
-      // Centred on the panels, and only on the panels. Note the offsetParent
-      // check: a panel is hidden along with the whole Pages view when the
-      // signals tab is showing, and `:not([hidden])` still matches it because
-      // the attribute is on its container. Measuring that ghost is what moved
-      // the list about depending on which tab you were on.
+      // The offsetParent check skips a panel hidden with the Pages view, which
+      // `:not([hidden])` still matches because the attribute is on its container.
       var panels = null;
       var candidates = doc ? doc.querySelectorAll(".spread:not([hidden])") : [];
       for (var i = 0; i < candidates.length; i++) {
@@ -122,13 +117,11 @@
     }
 
     // Anything that changes the height of the workspace has to re-run this.
-    // Watching the element covers the cases nobody thought to fire an event for:
-    // a page image finishing its decode, a tab, a font, a window.
+    // A ResizeObserver also covers image decodes, tab switches and font loads.
     root.addEventListener("aligned", alignFiles);
     window.addEventListener("resize", alignFiles);
     // The first paint happens before the page images have their size, and a
-    // resize settles a frame after the event. Both would otherwise leave the
-    // list sitting slightly off until the reader touched something.
+    // resize settles a frame after the event, so both are re-aligned.
     window.addEventListener("load", alignFiles);
     if (window.requestAnimationFrame) {
       window.requestAnimationFrame(function () { alignFiles(); });
@@ -149,9 +142,7 @@
     }
 
     function apply() {
-      // Matches the file name, format, text source and the signals actually rated
-      // poor — not the explanatory prose, which is identical in every document and
-      // made a search for "rotated" return the whole folder.
+      // Matches the file name, format, text source and the signals rated poor.
       var q = input ? input.value.trim().toLowerCase() : "";
       var shown = 0;
       items.forEach(function (li) {
@@ -238,9 +229,7 @@
         var wanted = Number(jump.value);
         if (jump.value === "") { if (missing) missing.hidden = true; return; }
         var index = numbers.indexOf(wanted);
-        // A page number the document does not have is said so rather than
-        // silently snapping to the nearest one, which would be a lie about
-        // which page you are looking at.
+        // A page number the document does not have shows a message.
         if (index === -1) { if (missing) missing.hidden = false; return; }
         show(index);
       });
@@ -272,10 +261,7 @@
       if (event.key === "ArrowRight") { show(at + 1); event.preventDefault(); }
     });
 
-    // Pointing at a mark on the layout says what it is, beside the mark. The
-    // <title> in the markup says the same thing for a reader without script and
-    // for a screen reader; this is only quicker and does not wait for the
-    // browser's own tooltip delay.
+    // Pointing at a mark shows its explanation beside it.
     Array.prototype.slice.call(doc.querySelectorAll(".pv-mark")).forEach(function (mark) {
       var face = mark.closest(".face");
       var tipText = mark.getAttribute("data-tip");
@@ -420,8 +406,7 @@
   }
 
   // Click a column to reorder. Numeric columns sort on data-value when a cell
-  // carries one, which is how severity sorts high > medium > low rather than
-  // alphabetically.
+  // carries one, so severity sorts high > medium > low.
   function sortable(table) {
     var body = table.tBodies[0];
     if (!body) return;

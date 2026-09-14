@@ -1,6 +1,6 @@
 """Vision token counting.
 
-Providers count image tokens in genuinely different ways: some tile the image and
+Providers count image tokens in different ways: some tile the image and
 charge per tile, some use a width-times-height formula, some charge a flat count
 per image below a size threshold. All the constants live in pricing.yaml; this
 module only knows how to apply the three shapes.
@@ -36,9 +36,8 @@ def rendered_size(width_pt: float, height_pt: float, preset: ResolutionPreset) -
     """Pixel dimensions a page would be sent at, for a given resolution setting.
 
     The long edge is rendered to the preset's pixel count and the aspect ratio is
-    preserved. A PDF page is vector content, so any resolution is achievable; the
-    preset is a choice about how much detail to pay for, not a limit imposed by
-    the source.
+    preserved. A PDF page is vector content, so the preset sets how much detail
+    is paid for.
     """
     if width_pt <= 0 or height_pt <= 0:
         return RenderedSize(0, 0)

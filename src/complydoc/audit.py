@@ -1,8 +1,8 @@
 """Run the requested components over a target path and assemble one report.
 
 The three components are independent. Asking for only the sensitive data scan
-loads no tokenizer and computes no cost, and the report says plainly which
-components were run so nobody reads a partial audit as a complete one.
+loads no tokenizer and computes no cost, and the report records which
+components were run.
 
 With `jobs` above one the documents are spread over a process pool. That is a
 wall-clock decision and nothing else: documents are analysed independently, so
@@ -120,8 +120,7 @@ def extractor_readings(document: Document) -> list[ExtractorReading]:
     shape: dict[str, tuple[str, bool]] = {}
     worst: dict[str, float] = {}
     # A document counts as reordered only if every page that differed did so by
-    # holding the same words. One page of genuinely different words is the more
-    # serious finding and is what the report should name.
+    # holding the same words. One page of different words is reported instead.
     shuffled: dict[str, bool] = {}
 
     for page in document.pages:
@@ -155,8 +154,7 @@ def extractor_readings(document: Document) -> list[ExtractorReading]:
                 seconds=round(seconds, 4),
                 granularity=granularity,
                 reads_tables=reads_tables,
-                # The worst page, not the average: one scrambled page is worth
-                # knowing about in a document whose other forty are fine.
+                # The worst page's similarity, so one scrambled page is reported.
                 similarity=round(worst.get(name, 1.0), 4),
                 reordered=shuffled.get(name, False),
             )
@@ -169,9 +167,8 @@ def build_entry(
 ) -> DocumentReport:
     """A report entry for a document that has already been read.
 
-    Separate from reading because documents do not only come from files: an
-    external loader hands over text it produced, and everything from here on
-    applies to it unchanged.
+    Separate from reading so loader output, which has no file to read, goes
+    through the same steps.
     """
     entry = DocumentReport(
         path=document.path,
@@ -296,9 +293,8 @@ def _worker_init(work: Work) -> None:
 
     The native thread pools are pinned to one thread each. OCR otherwise spreads
     one page across every core, so without this the workers spend their time
-    fighting each other for the same cores and the run gets slower rather than
-    faster. It has to happen before the OCR engine is built, which is why it
-    happens here.
+    fighting each other for the same cores and the run gets slower. It has to
+    happen before the OCR engine is built.
     """
     global _WORKER_WORK
     for variable in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS"):
@@ -383,8 +379,7 @@ def run_audit(
         files = sample_files(files, sample)
     sampled = len(files) < found
 
-    # Rasterising is only worth the memory when something will actually look at
-    # the pixels — OCR, or the skew signal.
+    # Pages are rasterised only for OCR, page images, OCR comparison or the skew signal.
     wants_raster = ocr or page_images or ocr_compare or "readiness" in requested
     options = IngestOptions(
         ocr=ocr,
@@ -511,8 +506,7 @@ def assemble_report(
             if settings.enabled
         }
     report.limitations = build_limitations(run, documents, skipped, staleness, config)
-    # Both are read off the finished report, so they belong here rather than in
-    # whichever writer happens to run: the JSON is as much an output as the page.
+    # Computed from the finished report so both the JSON and HTML carry them.
     report.overall = overall_readiness(report, config.readiness.overall)
     report.quick_wins = quick_wins(report)
     return report

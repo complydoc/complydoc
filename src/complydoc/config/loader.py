@@ -116,12 +116,10 @@ def load_config(config_dir: Path | None = None) -> Config:
 def _with_imported(pricing: PricingConfig) -> PricingConfig:
     """Add the vendored table's models behind the curated ones.
 
-    They arrive switched off, so the default comparison is still the short list
-    someone has actually checked. What they add is reach: `--model` can name any
-    of them, and `complydoc models` can show what there is to name.
+    They arrive switched off, so the default comparison stays the curated list.
+    `--model` can name any of them and `complydoc models` lists them.
 
-    A curated entry always wins. Nothing here overwrites a price a person
-    verified with one nobody did.
+    A curated entry always takes precedence over an imported one.
     """
     from complydoc.cost.price_table import imported_models
 
@@ -159,11 +157,11 @@ _SPECIALISED = (
     "translate",
     "build",
     "multi-agent",
-    # Written to produce code, not to read a page of one.
+    # Code models.
     "codex",
     "codestral",
     "devstral",
-    # Speech, not documents.
+    # Speech models.
     "voxtral",
     "whisper",
 )
@@ -204,9 +202,8 @@ def _select(
     """Choose the comparison: each provider's current line-up.
 
     One model per product line, the newest cut of it, and the most recently
-    released lines first. That is what a reader recognises — Anthropic's haiku,
-    sonnet, opus and fable; OpenAI's astra, terra, sol and luna — rather than
-    four versions of one model or whatever happened to sit at a price point.
+    released lines first: Anthropic's haiku, sonnet, opus and fable; OpenAI's
+    astra, terra, sol and luna.
 
     Text-only models are included. They cannot answer the vision column, and the
     report already says so per model, but they are perfectly real choices for
@@ -248,7 +245,7 @@ def _current_lineup(
         return []
 
     def within_line(model: ModelPricing) -> tuple[Any, ...]:
-        """Which cut of a line to show: the newest, named as plainly as possible."""
+        """Which cut of a line to show: the newest, with the shortest name."""
         return (
             released(model.id) or dt.date.min,
             -len(_bare(model.id)),
@@ -262,9 +259,8 @@ def _current_lineup(
     def between_lines(model: ModelPricing) -> tuple[Any, ...]:
         """Which lines to show: the newest, and a named one over the bare family.
 
-        Several lines are released on the same day. When that happens the named
-        ones — astra, terra, luna, sol — are what a reader recognises, ahead of
-        the plain family name they were all cut from.
+        When several lines are released on the same day, named lines (astra,
+        terra, luna, sol) come before the plain family name.
         """
         line = line_of(_bare(model.id))
         return (
@@ -280,8 +276,7 @@ def _current_lineup(
 def check_staleness(pricing: PricingConfig, today: dt.date | None = None) -> list[StalenessWarning]:
     """Every priced entry whose verification date is absent or older than the threshold.
 
-    Disabled models are skipped: an unpriced template nobody is using is not a
-    stale number, it is an empty slot.
+    Disabled models are skipped.
     """
     now = today or dt.date.today()
     limit = pricing.staleness_warn_days
@@ -291,10 +286,7 @@ def check_staleness(pricing: PricingConfig, today: dt.date | None = None) -> lis
         if not model.enabled:
             continue
         if model.price_source == "imported":
-            # Not a verification that went stale — a price that was never
-            # claimed to be verified. Telling the reader to "check it and set
-            # the date" once per model would bury the run's real limitations
-            # under a dozen copies of a fact the provenance entry states once.
+            # Imported prices are covered by one provenance limitation.
             continue
         age = model.days_since_verified(now)
         if age is None:

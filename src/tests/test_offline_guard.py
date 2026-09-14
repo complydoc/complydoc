@@ -1,4 +1,4 @@
-"""The offline promise, enforced rather than asserted in a README."""
+"""The network guard holds for a full audit."""
 
 from __future__ import annotations
 
@@ -42,12 +42,12 @@ def test_guard_status_reports_armed(armed):
 
 
 def test_a_full_audit_completes_with_the_guard_armed(armed, config):
-    """The load-bearing test: everything works with the network cut off."""
+    """A full audit works with the network guard armed."""
     report = run_audit(FIXTURES, config)
     assert report.run.offline_guard == "armed"
     assert report.aggregate is not None
     assert report.aggregate.documents_audited > 0
-    # Token counting in particular must not have silently fallen back.
+    # Token counting must not have fallen back to an estimate.
     fidelities = {
         model.text_token_fidelity
         for document in report.documents

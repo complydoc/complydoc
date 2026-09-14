@@ -1,7 +1,6 @@
 """Model selection, and importing prices from litellm's table.
 
-The table is stubbed rather than depending on litellm being installed — the
-importer reads a JSON file, so a small fixture exercises the same path.
+The table is a small JSON fixture, so litellm is not needed.
 """
 
 from __future__ import annotations
@@ -55,7 +54,7 @@ TABLE = {
         "input_cost_per_token": 0,
     },
     "weird-provider-model": {
-        "litellm_provider": "somebody-else",
+        "litellm_provider": "other-provider",
         "mode": "chat",
         "supports_vision": True,
         "input_cost_per_token": 1e-06,
@@ -131,7 +130,7 @@ def test_unknown_provider_gets_no_vision_formula():
 
 
 def test_generated_yaml_validates_against_the_real_schema(config):
-    """The whole point: the output must be loadable by complydoc itself."""
+    """The generated YAML loads with complydoc's own schema."""
     fragment = to_yaml(select(TABLE), today=dt.date(2026, 9, 8))
     base = yaml.safe_load(
         (__import__("pathlib").Path("src/complydoc/config/pricing.yaml")).read_text()
@@ -191,7 +190,7 @@ def test_selecting_an_unpriced_template_is_an_error(config):
     raw["models"].append(
         {
             "id": "priceless",
-            "provider": "nobody",
+            "provider": "unlisted",
             "display_name": "Priceless",
             "enabled": True,
             "input_per_mtok_usd": None,

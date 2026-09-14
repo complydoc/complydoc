@@ -1,12 +1,9 @@
 """Small text helpers.
 
-`plural` exists so no message has to say "3 page(s)". A report that a business
-reader is meant to act on should read like it was written, not templated.
+`plural` exists so no message has to say "3 page(s)".
 
-`reading_similarity` lives here rather than beside either of its two callers,
-because it has both: the loader records how closely each reader matched the one
-it kept, and the report marks where they parted company. One measure, so the
-number in the table and the marks on the page are saying the same thing.
+`reading_similarity` is shared by the loader, which records how closely each
+reader matched the kept one, and the report, which marks the differences.
 """
 
 from __future__ import annotations
@@ -21,8 +18,8 @@ _WORD = re.compile(r"\S+\s*")
 MAX_WORDS = 6000
 """A ceiling on a quadratic comparison.
 
-A page longer than this is nearly always a parsing accident rather than a page,
-and both callers say when they compared only a part.
+Pages longer than this are compared only up to this length, and both callers
+say so.
 """
 
 

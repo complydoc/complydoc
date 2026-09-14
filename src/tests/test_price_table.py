@@ -1,8 +1,7 @@
 """The vendored price table.
 
-`pricing.yaml` is the curated layer — a handful of models someone checked
-against the provider's own page. This is the long tail behind it, so that naming
-a model works without anyone having hand-written an entry for it first.
+`pricing.yaml` is the curated layer of verified models. This is the catalogue
+behind it, so any current model can be named.
 
 The line these tests hold is that an import is never presented as a verification.
 """
@@ -55,19 +54,14 @@ def test_every_imported_price_says_it_was_imported():
 
 
 def test_every_provider_is_in_the_comparison(config):
-    """All of them, not a chosen few. A provider left off the chart is a
-    provider nobody can compare against."""
+    """Every provider with a priced vision model is compared."""
     compared = {m.provider for m in config.pricing.usable_models}
     offered = {m.provider for m in config.pricing.models if m.supports_vision and m.is_priced}
     assert compared == offered
 
 
 def test_each_provider_contributes_one_model_per_product_line(config):
-    """Providers name a line and version it, and the line is what a reader knows.
-
-    Four cuts of opus answer nothing; haiku, sonnet, opus and fable are the
-    choice actually being made.
-    """
+    """One model per product line: haiku, sonnet, opus and fable."""
     import collections
 
     from complydoc.cost.price_table import line_of
@@ -94,8 +88,7 @@ def test_nothing_built_for_another_job_is_compared(config):
 
 
 def test_a_provider_does_not_list_another_provider_s_model(config):
-    """A reseller files someone else's model under its own name; it is the same
-    model at a different price, and it is not that provider's line-up."""
+    """A reseller's copy of another provider's model is not in its line-up."""
     marques = {
         "anthropic": "claude",
         "openai": "gpt",
@@ -115,7 +108,7 @@ def test_a_provider_does_not_list_another_provider_s_model(config):
 
 
 def test_the_anthropic_lineup_is_the_one_a_reader_would_name(config):
-    """The worked example: the four tiers, not four cuts of one tier."""
+    """Anthropic is represented by one model per product line."""
     from complydoc.cost.price_table import line_of
 
     picked = {line_of(m.id) for m in config.pricing.usable_models if m.provider == "anthropic"}
@@ -156,7 +149,7 @@ def test_a_curated_price_is_never_replaced_by_an_imported_one(config):
 
 
 def test_a_model_from_the_table_can_be_named(config):
-    """The whole point of the breadth: --model reaches it."""
+    """A catalogue model can be named with --model."""
     chosen = resolve_models(config.pricing, ["gpt-4.1-mini"])
     assert len(chosen) == 1
     assert chosen[0].price_source == "imported"
@@ -183,8 +176,7 @@ def test_a_batch_price_is_used_where_published(config):
 def test_a_batch_price_is_never_invented(config):
     """Anthropic runs a batch API; this table does not publish its price.
 
-    The customary half price is not written in, because a discount nobody can
-    check does not belong in a budget.
+    No batch price is assumed.
     """
     document = load_document(FIXTURES / "native_text.pdf", IngestOptions())
     models = resolve_models(config.pricing, ["claude-opus-5"])
@@ -207,7 +199,7 @@ def test_a_verified_only_run_carries_no_provenance_caveat(config):
 
 
 def test_the_catalogue_knows_when_models_were_released():
-    """Recency is the whole reason for preferring this catalogue.
+    """The catalogue records release dates.
 
     Without it the only ordering available is alphabetical, which puts a
     two-year-old model above the one released this month.

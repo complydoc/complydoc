@@ -1,4 +1,4 @@
-"""Time is measured on the machine that ran the audit, not modelled."""
+"""Timing is measured on the machine that ran the audit."""
 
 from __future__ import annotations
 
@@ -61,7 +61,7 @@ def test_ocr_throughput_is_observed_not_assumed(report):
 
 
 def test_scans_take_longer_to_read_than_a_text_page(report):
-    """The point of measuring: a scan is not the same unit of work as a text page."""
+    """A scanned page takes longer to read than a text page."""
     by_name = {d.relative_path: d for d in report.documents}
     scan = by_name["scanned_page.pdf"].timing
     text = by_name["native_text.pdf"].timing
@@ -92,7 +92,7 @@ def test_durations_read_at_every_scale(seconds, expected):
     assert duration(seconds) == expected
 
 
-# --- the honest gap --------------------------------------------------------
+# --- model time -------------------------------------------------------------
 
 
 def test_model_time_is_not_estimated_without_a_measured_throughput(report):

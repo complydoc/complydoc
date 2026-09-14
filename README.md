@@ -73,8 +73,8 @@ OCR and name detection are optional extras. `complydoc doctor` shows what is ins
 
 - **Offline**: outbound sockets and DNS lookups are blocked for the whole run, and each
   report records that the guard was armed.
-- **Measured, not inferred**: a signal that cannot be measured is reported as not measured
-  and left out of scores.
+- **Unmeasured values**: a signal that cannot be measured is reported as unmeasured and left
+  out of scores.
 - **Evidence tiers**: every finding states how it was established, whether by checksum,
   corroboration, pattern or model.
 - **Configurable**: prices, signal weights and detection patterns are YAML files.

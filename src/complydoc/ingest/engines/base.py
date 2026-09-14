@@ -1,8 +1,7 @@
 """What an OCR engine is asked for, and what it hands back.
 
 Unlike the PDF extractors, which agree on the text of a page to within a per
-cent, OCR engines genuinely disagree: they read different words, and they differ
-about how sure they are. That makes a comparison worth running.
+cent, OCR engines read different words and report different confidence.
 """
 
 from __future__ import annotations

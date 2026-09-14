@@ -9,8 +9,8 @@ more importantly, a different reach:
   so it reaches every document. The OCR itself costs nothing to the provider.
 - **Vision** — send the rendered page. Reaches everything, costs the most.
 
-Cost alone would make the first look best. It is only best for the documents it can
-actually serve, so reach is reported beside every figure.
+The text layer is cheapest but serves only documents that have one, so reach is
+reported beside every figure.
 """
 
 from __future__ import annotations
@@ -27,10 +27,9 @@ from complydoc.text import count
 __all__ = ["ArchitectureCost", "ModelComparison", "build_comparison", "grouped_bars_svg"]
 
 # Categorical series colours, held as CSS variables so light and dark can differ.
-# Deliberately not the report's green/amber/red, which carry status meaning here;
-# reusing them would say "vision is bad".
+# Distinct from the report's green/amber/red, which carry status meaning.
 #
-# Both sets were validated against their own surface rather than flipped:
+# Each set was validated against its own surface:
 #   light  #2a78d6 blue / #4a3aa7 violet / #e87ba4 magenta  — CVD 13.0, normal 16.3
 #   dark   #3987e5 blue / #d55181 magenta / #c98500 yellow  — CVD 13.2, normal 19.3
 # Blue and magenta keep their hue across modes; the middle slot cannot, because
@@ -185,8 +184,7 @@ def grouped_bars_svg(
     """Horizontal grouped bars: one group per model, one bar per architecture.
 
     Each bar is labelled with its value and with how many documents that
-    architecture can actually serve, because the cheapest option is regularly the
-    one that reaches fewest documents. Groups carry their provider so the page can
+    architecture can serve. Groups carry their provider so the page can
     filter them, and re-stack themselves when it does.
     """
     rows = [
@@ -276,8 +274,7 @@ BAND_SERIES: Final = (
 )
 """The four bands in order, worst last, with the colour each takes.
 
-Ordered so the ring reads clockwise from best to worst and the eye lands on
-the trouble at the end rather than hunting for it among four equal wedges.
+Ordered so the ring reads clockwise from best to worst.
 """
 
 
@@ -286,10 +283,7 @@ def readiness_donut_svg(
 ) -> str:
     """The folder's composition, with its score in the middle.
 
-    A pie of a single score is that score with a circle drawn round it. What a
-    reader actually wants to know is what the folder is made of: a mean of 71
-    reads as fine and can still be hiding two documents nothing can be read
-    from, and those two are the ones somebody has to deal with.
+    Each wedge is the share of documents in one band.
     """
     total = sum(bands.values())
     if not total:

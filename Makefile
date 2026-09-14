@@ -38,8 +38,7 @@ install-all: ## Install everything, including OCR and the local NER model
 tool: ## Install (or update) complydoc on PATH, with OCR and name detection
 # `uv tool install` copies the source as it stands, so a global complydoc does
 # not follow the repository: re-run this after changing anything. --reinstall
-# matters as much as --force — without it uv reuses the wheel it built for this
-# version number, and an edit that leaves the version alone is silently ignored.
+# is needed as well as --force, or uv reuses the wheel it built for this version.
 # Rebuilding the environment drops the spaCy model, so it is put back after.
 	$(UV) tool install . --force --reinstall --with rapidocr-onnxruntime --with spacy
 	$(UV) pip install --python "$$($(UV) tool dir)/complydoc/bin/python" $(SPACY_MODEL)
@@ -108,7 +107,7 @@ fixtures: ## Rebuild the committed test fixtures
 .PHONY: prices
 prices: ## Refresh the vendored model price table from litellm
 	$(PYTHON) python src/scripts/build_price_table.py
-	@echo "Review the diff: every entry it writes is imported, not verified."
+	@echo "Review the diff. Entries are marked imported."
 
 .PHONY: diagrams
 diagrams: ## Re-export the README architecture diagrams to SVG

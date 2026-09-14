@@ -1,5 +1,4 @@
-/* The palette the report uses, so the documentation and the product it
-   documents look like the same thing. */
+/* The report's palette, applied to the documentation site. */
 :root {
   --md-primary-fg-color: #1a7f4b;
   --md-accent-fg-color: #1a7f4b;

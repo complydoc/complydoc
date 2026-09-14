@@ -1,7 +1,6 @@
-"""Write a CycloneDX SBOM for what a complydoc install actually pulls in.
+"""Write a CycloneDX SBOM for the packages a complydoc install pulls in.
 
-Built from `uv.lock` rather than from whatever happens to be installed, so the
-bill of materials describes the release and not the machine that made it. The
+Built from `uv.lock`, so the bill of materials describes the release. The
 dev group is excluded and both optional extras are included, because the extras
 are what a user installing OCR and NER would get.
 

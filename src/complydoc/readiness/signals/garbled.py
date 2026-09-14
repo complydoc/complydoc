@@ -53,8 +53,7 @@ class GarbledSignal:
 
         # Ligatures must be counted against the un-normalised characters. The
         # extractor's text assembly turns a fi ligature into "fi" before we ever
-        # see it, so counting them in `text` would always return zero and this
-        # line of the report would be quietly meaningless.
+        # see it, so counting them in `text` would always return zero.
         raw = "".join(page.raw_chars for page in document.pages)
         ligature_source = "unnormalised page characters" if raw else "extracted text"
         ligatures = sum((raw or text).count(c) for c in _LIGATURES)

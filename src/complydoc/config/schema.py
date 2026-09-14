@@ -1,8 +1,7 @@
-"""Pydantic models for the three configuration files.
+"""Pydantic models for the configuration files.
 
-Everything a reader might want to disagree with — a price, a token formula, a
-signal weight, a rating threshold, a detection pattern — lives in YAML and is
-validated here. No number that appears in a report is hardcoded in Python.
+Prices, token formulas, signal weights, rating thresholds and detection patterns
+live in YAML and are validated here.
 """
 
 from __future__ import annotations
@@ -109,9 +108,7 @@ class ModelPricing(_Base):
     batch_input_per_mtok_usd: float | None = None
     """Input price on the provider's batch endpoint, where it publishes one.
 
-    Never inferred from the usual half-price convention. A discount nobody can
-    check does not belong in a budget, so a model without a published batch
-    price simply has none here and the report says so.
+    Left empty when the provider publishes no batch price.
     """
     supports_vision: bool = True
     vision_formula: str | None = None
@@ -131,8 +128,7 @@ class ModelPricing(_Base):
 
     "verified" means a person read it off the provider's own page and stamped
     `last_verified`. "imported" means it was taken from a maintained third-party
-    table on `imported_on` and nobody has checked it since. The report keeps the
-    two apart rather than presenting an import as a verification.
+    table on `imported_on` and has not been checked. The report shows which.
     """
     imported_on: dt.date | None = None
 
@@ -168,8 +164,7 @@ class CompareConfig(_Base):
 
     The curated entries are always in. Below `per_provider`, each provider is
     topped up from the vendored catalogue with its most recently released models
-    that take images, so a refreshed catalogue brings a refreshed comparison
-    rather than a file somebody has to remember to edit.
+    that take images, so refreshing the catalogue refreshes the comparison.
     """
 
     providers: list[str] = []
@@ -177,10 +172,8 @@ class CompareConfig(_Base):
     per_provider: int = 4
     """How many models each provider contributes, spread across its price range.
 
-    Not the four newest — those tend to cost about the same as each other, and
-    four figures within a few cents say nothing. Spread across the range they
-    give the trade you are actually choosing between: Anthropic contributes
-    haiku, sonnet, opus and fable rather than four flavours of opus.
+    One model per product line, so the comparison spans the price range: for
+    Anthropic, haiku, sonnet, opus and fable.
     """
     top_up_from_catalogue: bool = True
     headline_model: str = "claude-sonnet-5"
@@ -190,9 +183,7 @@ class CompareConfig(_Base):
     be a figure, and that means picking one. The cheapest in the comparison was
     the wrong pick: it is whichever small model happened to be cheapest that
     week, so the headline moved for reasons that had nothing to do with the
-    folder, and it flattered the estimate. A mid-range model in wide use is what
-    someone is actually likely to run, and it stays put between refreshes of the
-    catalogue.
+    folder. A mid-range model in wide use stays fixed between catalogue refreshes.
 
     Falls back to the cheapest priced model in the comparison when this one is
     not among them, and the report says which it used either way.
@@ -221,7 +212,7 @@ class PricingConfig(_Base):
 
     @property
     def usable_models(self) -> list[ModelPricing]:
-        """Models that are switched on and carry a price we can actually multiply."""
+        """Models that are switched on and carry a price."""
         return [m for m in self.models if m.enabled and m.is_priced]
 
 
@@ -299,7 +290,7 @@ class ScoringConfig(_Base):
         if self.enabled and not self.print_weights_in_report:
             raise ValueError(
                 "scoring.enabled requires print_weights_in_report: true — a score whose "
-                "weights are not shown in the report is exactly what this tool refuses to emit"
+                "weights are not shown in the report is not allowed"
             )
         return self
 
@@ -310,7 +301,7 @@ class OverallConfig(_Base):
     Content is weighted heaviest because it is the question the others depend
     on: a page nothing can be read from has no cost path and no exposure worth
     measuring. The weights do not have to sum to one; they are renormalised
-    over whichever factors the run actually measured.
+    over the factors the run measured.
     """
 
     enabled: bool = True
@@ -320,9 +311,8 @@ class OverallConfig(_Base):
     recognised_page_score: float = 60.0
     """What a page worth, out of 100, when its text had to be recognised.
 
-    Not nought: OCR gets the document onto the cheap path at the model, which
-    is the expensive half. Not full marks either: it costs machine time here,
-    and what OCR reads is a reading rather than the text itself.
+    OCR puts the document on the text path at the model, but costs machine
+    time and can introduce recognition errors.
     """
     points_per_exposure: float = 4.0
     """Points off per unit of exposure, where one unit is a low-severity
@@ -462,4 +452,4 @@ class Config(_Base):
     hidden: HiddenConfig = Field(default_factory=_shipped_hidden)
     source_dir: str
     digest: str
-    """SHA-256 over the three raw files, so two runs can be compared honestly."""
+    """SHA-256 over the raw configuration files."""

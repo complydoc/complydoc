@@ -39,8 +39,8 @@ document, and its page count is reported as unknown.
 
 ## What is not measured
 
-Loader output has text and metadata, not the page. These are reported as not
-measured:
+Loader output carries text and metadata and no page geometry. These are
+reported as not measured:
 
 - text layer coverage, column count, tables, rotation, skew, scan resolution and
   OCR confidence

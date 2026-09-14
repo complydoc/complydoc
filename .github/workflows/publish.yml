@@ -1,13 +1,10 @@
 # Upload a release to PyPI.
 #
-# Deliberately not triggered by the tag. Pushing a tag builds the artefacts,
-# attests them and drafts a release; this runs only when a human publishes that
-# release. A version on PyPI can never be replaced or reused, so the last step
-# before it is a person deciding, not a git push.
+# Runs when a drafted release is published. Pushing a tag builds the artefacts,
+# attests them and drafts the release; a version on PyPI cannot be replaced, so
+# publishing is a manual step.
 #
-# The files uploaded are the ones already attached to the release — the exact
-# artefacts that were built and signed under `release.yml`, not a rebuild that
-# might differ.
+# The files uploaded are the ones attached to the release by `release.yml`.
 #
 # Authentication is PyPI Trusted Publishing: GitHub proves this workflow's
 # identity with a short-lived OIDC token and PyPI checks it against the
@@ -51,7 +48,7 @@ jobs:
           gh release download "${TAG}" --dir dist \
             --pattern '*.whl' --pattern '*.tar.gz'
           # The release also carries an SBOM and a checksum file. PyPI accepts
-          # distributions only, so they are deliberately not downloaded.
+          # distributions only, so they are not downloaded.
           ls -l dist
 
       - name: the version being uploaded matches the tag

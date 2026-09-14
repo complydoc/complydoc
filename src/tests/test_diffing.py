@@ -1,9 +1,6 @@
 """Showing where two readings of a page part company.
 
-Knowing that two readers disagree is the measurement; this is the part someone
-can act on. The line these tests hold is that the marks appear where the
-readers actually differ and nowhere else — a diff that marks every page for
-line breaks is worse than no diff, because it is read as noise and ignored.
+Marks appear only where the readers' words differ; line breaks are ignored.
 """
 
 from __future__ import annotations
@@ -42,11 +39,7 @@ def test_a_word_only_one_reader_found_is_marked_as_added():
 
 
 def test_the_marked_text_still_reads_as_the_page():
-    """The pane is the reader's own text with marks on it, not a diff listing.
-
-    Someone comparing wants to read the page and see what moved, so joining
-    every segment has to give back what that reader read.
-    """
+    """Joining every segment gives back that reader's text."""
     other = "payable within 14 days of the date"
     diff = compare_readings("payable within fourteen days of the date", {"other": other})[0]
     rebuilt = "".join(s.text for s in diff.segments if s.kind != "missing")
@@ -61,7 +54,7 @@ def test_a_reader_that_read_nothing_is_all_missing():
 
 
 def test_the_two_column_page_is_the_one_that_gets_marked():
-    """The case the whole comparison exists for.
+    """A two-column page read out of order is marked.
 
     Only the page where a reader walked the columns in the wrong order should
     carry marks; the fixtures that every reader agrees on should carry none.

@@ -1,11 +1,8 @@
-"""Generate the limitations section from what actually happened during the run.
+"""Generate the limitations section from what happened during the run.
 
-This is deliberately not a fixed list of caveats. It is assembled from the run's
-own facts — which pages could not be read, which detectors were unavailable,
-which signals did not apply, which prices are unverified — so it describes this
-run rather than describing the tool in general.
-
-If a section here is empty, that is itself information: nothing was skipped.
+Assembled from the run's own facts: which pages could not be read, which
+detectors were unavailable, which signals did not apply, which prices are
+unverified.
 """
 
 from __future__ import annotations
@@ -38,8 +35,8 @@ def build_limitations(
                 area="Sampling",
                 statement=(
                     f"--sample limited this run to {run.sample_size} of the {run.sampled_from} "
-                    f"documents found. Every total and monthly figure describes that sample, not "
-                    f"the folder. The sample keeps each file type's share of the folder and is "
+                    f"documents found. Every total and monthly figure describes that sample. "
+                    f"The sample keeps each file type's share of the folder and is "
                     f"chosen the same way every time, so two runs of this folder compare."
                 ),
                 severity="important",
@@ -57,7 +54,7 @@ def build_limitations(
                     f"The extractors this run compared ({names}) read "
                     f"{count(len(differing), 'document')} differently. The findings come from the "
                     f"first of them, so what the others read is not reflected anywhere but "
-                    f"here — on those documents the choice of extractor changes the answer."
+                    f"here. On those documents the choice of extractor affects the findings."
                 ),
                 affected=differing,
                 severity="important",
@@ -125,14 +122,13 @@ def build_limitations(
                     statement=(
                         "Hidden-text checks cover the text layer of PDFs and the formatting of "
                         "Word and Excel files. Text inside images, which a vision model reads, "
-                        "is not checked. Instruction patterns are mostly English. No findings "
-                        "means these checks found nothing, not that a document is safe."
+                        "is not checked. Instruction patterns are mostly English."
                     ),
                     severity="info",
                 )
             )
 
-    # --- Prices nobody checked --------------------------------------------
+    # --- Imported prices --------------------------------------------------
     priced = next((d.cost.models for d in documents if d.cost), [])
     imported = sorted({m.display_name for m in priced if m.price_source == "imported"})
     if imported:
@@ -143,10 +139,9 @@ def build_limitations(
                 statement=(
                     f"{count(len(imported), 'model')} "
                     f"{'is' if len(imported) == 1 else 'are'} priced from a maintained "
-                    f"third-party table{f' taken on {taken.isoformat()}' if taken else ''} rather "
-                    f"than from the provider's own page. Nobody has checked "
-                    f"{'that number' if len(imported) == 1 else 'those numbers'} against the "
-                    f"provider, and a price that has moved since is a figure that moved with it."
+                    f"third-party table{f' taken on {taken.isoformat()}' if taken else ''}. "
+                    f"{'That price has' if len(imported) == 1 else 'Those prices have'} not been "
+                    f"checked against the provider's own page."
                 ),
                 affected=imported,
                 severity="important",
@@ -189,8 +184,7 @@ def build_limitations(
                 area="Pages that could not be read",
                 statement=(
                     f"{count(total, 'page')} carried no readable text because {why}. Those pages "
-                    f"were not searched for sensitive information, so a count of zero for "
-                    f"them means 'not looked at', not 'nothing there'."
+                    f"were not searched for sensitive information."
                 ),
                 affected=[
                     f"{path}: {plural(len(pages), 'page')} {', '.join(map(str, pages))}"
@@ -247,8 +241,7 @@ def build_limitations(
 
     # --- Signals that did not apply ---------------------------------------
     # Keyed by (signal, reason). Grouping on the signal alone would attach one
-    # document's reason to every other document in the group, which produced
-    # entries telling the reader a PNG was skipped because "this is a docx file".
+    # document's reason to every other document in the group.
     na_signals: dict[tuple[str, str], list[str]] = {}
     error_signals: dict[tuple[str, str], list[str]] = {}
     for document in documents:
@@ -265,8 +258,7 @@ def build_limitations(
             bucket.setdefault(key, []).append(document.relative_path)
 
     # Signals that simply do not apply to a format are a property of the document,
-    # not of the run. They are listed on the document itself; repeating nineteen of
-    # them here buried everything that actually needed attention.
+    # not of the run, and are listed on the document itself.
     _ = na_signals
 
     for (name, reason), affected in sorted(error_signals.items()):
@@ -275,8 +267,7 @@ def build_limitations(
                 area="Signals that failed",
                 statement=(
                     f'"{name}" raised an error on {count(len(set(affected)), "document")} and was '
-                    f"skipped: {reason}. This is a defect in complydoc, not a property of "
-                    f"the document."
+                    f"skipped: {reason}. This is a defect in complydoc."
                 ),
                 affected=sorted(set(affected)),
                 severity="important",
@@ -300,10 +291,9 @@ def build_limitations(
             Limitation(
                 area="Table detection",
                 statement=(
-                    f"{count(len(aligned), 'document')} contain tables held together by "
-                    f"whitespace rather than ruling lines. They are counted, but a table "
-                    f"with no rules carries nothing to read a span from, so header depth "
-                    f"and merged cells are not measured for them."
+                    f"{count(len(aligned), 'document')} contain tables aligned by "
+                    f"whitespace with no ruling lines. They are counted; header depth and "
+                    f"merged cells are not measured for them."
                 ),
                 affected=sorted(aligned),
             )
@@ -319,7 +309,7 @@ def build_limitations(
                     f"{count(len(unpaged), 'document')} have no fixed pagination until they are "
                     f"rendered, so their page count, page dimensions and any per-page cost "
                     f"figure are not measurements. Vision-path costs are reported as not "
-                    f"applicable for them rather than as zero."
+                    f"applicable for them."
                 ),
                 affected=sorted(unpaged),
             )
@@ -372,9 +362,8 @@ def build_limitations(
             Limitation(
                 area="Cost scope",
                 statement=(
-                    "Only input cost is estimated. What you pay for output depends entirely "
-                    "on what you ask the model to produce, which this tool cannot know, so "
-                    "it is left out rather than guessed at. Your real bill will be higher."
+                    "Only input cost is estimated. Output cost depends on the prompt, so "
+                    "the real bill will be higher."
                 ),
             )
         )

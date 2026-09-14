@@ -23,7 +23,7 @@ private call and expect it to break.
 
 A report's shape is versioned. `report.run.schema_version` moves when it
 changes — the same number the JSON carries — so code that reads one can branch
-on it rather than guess.
+on it.
 
 Nothing here reaches the network. The guard is armed for the duration of each
 audit and the socket module is restored afterwards, so an audit cannot leak a
@@ -39,7 +39,4 @@ from complydoc import api as _api
 from complydoc.api import *  # noqa: F403
 
 __all__ = ["__version__", *_api.__all__]
-"""The public surface: everything `complydoc.api` exports, plus the version.
-
-One list rather than two, because two would drift and a name that appears here
-by accident is a name we cannot take back."""
+"""The public surface: everything `complydoc.api` exports, plus the version."""

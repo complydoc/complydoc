@@ -1,10 +1,8 @@
 # Changelog
 
-Notable changes, newest first. Versions follow [semantic versioning](https://semver.org):
-the major number changes when a report's JSON shape or a config file's meaning breaks,
-the minor number when something is added, the patch number when a measurement is
-corrected. `schema_version` in the JSON is versioned separately and is the field to
-branch on when reading reports programmatically.
+Newest first. Versions follow [semantic versioning](https://semver.org): major for a
+breaking change to the report JSON or a config key, minor for additions, patch for
+corrections. `schema_version` in the JSON is versioned separately.
 
 ## [Unreleased]
 
@@ -12,487 +10,182 @@ branch on when reading reports programmatically.
 
 ### Added
 
-- The security scan reports hidden content and text addressed to a model. PDF
-  pages are drawn and each character in the text layer is checked for ink under
-  it; Word and Excel files are read for hidden formatting, hidden sheets, rows
-  and columns; any text is checked for Unicode tag characters, zero-width runs
-  and bidirectional overrides. Instruction-like phrasing is matched against
-  patterns in the new `hidden.yaml`, and `cd.register_instruction_classifier()`
-  adds a local classifier. Each passage carries a visibility level and an
-  instruction level, and the Security page shows them as a matrix. See
-  `docs/explanation/hidden-content.md`.
-- `cd.inspect_documents()` reports on the output of another framework's
-  loader instead of complydoc's own readers: a LangChain or LlamaIndex loader, a
-  callable, or documents already loaded. It runs the same identifier scan,
-  readiness signals and cost estimate as an audit, and adds what only loader
-  output has — the metadata on each document and the network connections the
-  loader attempted. Documents are read by shape, so neither framework is a
-  dependency.
-- Metadata is scanned with the same detectors as page text. Findings are in
-  `document.metadata_findings`, keys holding absolute file paths in
-  `document.path_exposures`, and both appear on the report's security tab and
-  as a quick win.
-- The network guard records refused connections, and `offline.guarded()`
-  yields them. A loader that catches the refusal and continues is still
-  reported as having tried.
-- `cd.compare_loaders()` runs several loaders on the same input and reports
-  where their output differs, measured against the first: text similarity per
-  document with the differing words marked per page, identifiers found by some
-  loaders and not others, metadata keys and documents not returned by all, and
-  each loader's network attempts and scores. The report is an ordinary report
-  built from the first loader, with the comparison in `loader_comparison`.
-- `inspect_documents(..., allow_network=True)` lets a loader that calls a
-  hosted service reach the network. Its connections are recorded rather than
-  refused, the report states that network access was allowed, and everything
-  complydoc does after loading stays behind the guard.
-- A documentation site, built with MkDocs Material and published to GitHub
-  Pages. Everything under `reference/` is generated at build time — the command
-  line from the Typer app, the Python API from the docstrings, the report shape
-  from `report_shape()` beside the version it describes, and the configuration
-  from the models that validate it — so a renamed flag changes the
-  documentation in the same commit as the code.
-- Every example in a guide is a real file under `docs/examples`, included into
-  the page and executed by the test suite. A guide that stops working fails the
-  build rather than misleading somebody quietly.
-- `make docs` serves the site and rebuilds as you edit; `make docs-build`
-  builds it the way CI does, under `--strict`.
+- Hidden content and prompt injection checks in the security scan:
+  - PDF: each character in the text layer is checked for ink under it on the rendered page.
+  - Word and Excel: hidden formatting, white or tiny text, hidden sheets, rows and columns.
+  - Any text: Unicode tag characters, zero-width runs and bidirectional overrides.
+  - Instruction patterns in the new `hidden.yaml`; `cd.register_instruction_classifier()`
+    adds a local classifier.
+  - Each passage has a visibility level and an instruction level, shown as a matrix on the
+    Security page. See `docs/explanation/hidden-content.md`.
+- `cd.inspect_documents()` runs the audit on the output of a LangChain or LlamaIndex loader,
+  a callable, or loaded documents, and reports the metadata on each document and the network
+  connections the loader attempted.
+- `cd.compare_loaders()` runs several loaders on the same input and reports text similarity,
+  identifiers found by some loaders only, and metadata keys and documents not returned by all.
+- `inspect_documents(..., allow_network=True)` lets the loader call connect. Connections are
+  recorded and the report states that network access was allowed.
+- Metadata values are scanned for identifiers (`document.metadata_findings`) and absolute file
+  paths (`document.path_exposures`).
+- `offline.guarded()` yields the connections it refused.
+- `cd.extract_text()` returns a folder's text with identifiers masked, in chunks with token
+  counts, and warnings for anything that could not be read or scanned.
+- `register_loader`, `register_extractor` and `register_engine`, with the types a plug-in needs
+  (`Document`, `Page`, `Rect`, `IngestOptions`). `DocumentFormat.OTHER` for unknown formats.
+- A Python API: `cd.full_audit`, `cd.security_audit`, `cd.cost_audit`, `cd.readiness_audit`,
+  `cd.write_html`, `cd.write_json`. `complydoc.__all__` defines the public surface.
+- Documentation site on GitHub Pages. Reference pages are generated from the code, and guide
+  examples are executed by the test suite. `make docs` and `make docs-build`.
 
 ### Changed
 
-- The report template, stylesheet and script live in `complydoc/ui` as
-  `report.html.j2`, `report.css` and `report.js`. The written report is still
-  one file.
-- Tests are in `src/tests`, with the LangChain tests in `src/tests/integration`,
-  and the maintenance scripts in `src/scripts`. Neither is part of the wheel.
-- The package ships a `py.typed` marker.
-- Page text has a fourth source, `loader`, for text another framework supplied.
-  Signals that need the page itself report as not measured on it, including
-  whether the file has a text layer.
-- `schema_version` is 4. The report carries `loader` and `loader_comparison`, and each document
-  `metadata_findings` and `path_exposures`.
-- `complydoc schema` reads the report shape from `report_shape()` in
-  `report/models.py` rather than a dict inside the command, so the command line
-  and the documentation cannot describe different JSON. Updating it revealed it
-  had gone stale: it described neither `overall`, nor `quick_wins`, nor the
-  `evidence` on a match, nor `other` as a document format.
+- The report template, stylesheet and script are in `complydoc/ui`.
+- Tests are in `src/tests` (LangChain tests in `src/tests/integration`) and maintenance scripts
+  in `src/scripts`. Neither is in the wheel.
+- The package ships `py.typed`.
+- Page text has a `loader` source. Signals that need page geometry report as not measured on it.
+- `schema_version` is 4: `loader`, `loader_comparison`, and per document `metadata_findings`,
+  `path_exposures`, `content_findings` and `visibility_checked`.
+- `complydoc schema` reads the report shape from `report_shape()` in `report/models.py`.
+- `offline.guarded()` arms the network guard for a block and restores the socket module after.
+  The library entry points use it.
+- A library call on a missing path raises `FileNotFoundError`.
+- The README installs from PyPI.
 
 ### Fixed
 
-- The HTML report did not escape values. Autoescaping was configured for
-  templates ending in `.html` and the template is `report.html.j2`, so document
-  text, file names and metadata were written into the page as markup, and a
-  document could put a script into its own report. Every value is now escaped
-  unless it is markup the report built itself.
-- A number that happened to pass the Luhn checksum was reported as a
-  confirmed, high-severity card number. Luhn passes one digit string in ten;
-  PDFPlumber's `CreationDate` metadata, `D:20260909103836`, was one of them.
-  Card numbers now also have to match a card network's issuer prefix and
-  length.
-- The entity model is no longer loaded in the process the workers fork from.
-  Loading it pulls in torch, which on macOS brings up Metal and Objective-C
-  runtime state, and Apple's frameworks do not survive a fork. A worker forked
-  from such a process was caught segfaulting inside pypdfium2 — code unrelated
-  to either library, which is what an address space inherited in a bad state
-  looks like. The crash is intermittent and could not be reproduced often
-  enough to prove this removes it; what is certain is that the hazard is real,
-  that `_pool_context` already refuses to fork this process for the same
-  reason, and that the preload was worth about six per cent of a parallel scan.
-  Six per cent is not worth a fork hazard. Each worker now loads the model on
-  its first document instead.
-
-### Added
-
-- `cd.extract_text()` hands back a folder's own words with the identifiers
-  covered over, in chunks, each carrying a token count and how exact that count
-  is. The audit says what documents are like; this is for putting them through
-  something. `max_tokens` splits long pages at paragraph breaks, and
-  `mask=False` returns the text as the page says it.
-- It says what it could not get, and what it cannot promise. A page nothing
-  could be read off, a file that would not open, a category that could not be
-  scanned — and, every time masking runs, that names and organisations are
-  found by a statistical model rather than a rule, so some will have been
-  missed. `chunk.masked_confirmed` separates the masks that passed a checksum
-  from the ones resting on a guess, and nothing in the API claims the text is
-  certified clean.
-- Loaders, extractors and OCR engines can be registered from outside, through
-  `register_loader`, `register_extractor` and `register_engine`. The types a
-  loader is written in — `Document`, `Page`, `Rect`, `IngestOptions` and the
-  rest — are exported too, because a plug-in point you cannot write against is
-  not one. `DocumentFormat.OTHER` exists for a format complydoc does not know.
-
-### Fixed
-
-- An overlapping weaker finding could expose a confirmed one. The detectors are
-  independent, so a card number that passed a checksum and a name a model
-  thought it saw can claim the same characters: on a line reading
-  `Card 4111 1111 1111 1111` the model calls `Card 4111` an organisation, and
-  masking them in turn wrote the weaker over the stronger and left four digits
-  of the card number in the clear. Masking now works a character at a time,
-  best evidence first, and never writes where something is already masked.
-
-- A Python API. `import complydoc as cd` then `cd.full_audit`,
-  `cd.security_audit`, `cd.cost_audit` or `cd.readiness_audit`, each taking a
-  path and returning the same report the command line writes, plus
-  `cd.write_html` and `cd.write_json` to put it somewhere. The command line was
-  the only way in, which left the tool unusable from an ingestion pipeline, a
-  notebook or CI.
-- What is public is now a decision rather than an accident. `complydoc.__all__`
-  names the surface, the report objects are part of it, and everything else in
-  the package is internal and may be renamed. `ConfigError`,
-  `UnknownModelError` and `NetworkAccessError` are exported because a caller
-  has to be able to catch them by name.
-
-### Changed
-
-- The network guard can be scoped. `offline.guarded()` arms it for a block and
-  restores the socket module exactly as it found it, which is what the library
-  entry points use. Arming permanently is right for a command that owns its
-  process and would be sabotage inside somebody else's application, where every
-  unrelated call would start failing with a message about documents.
-- A library call on a path that does not exist raises `FileNotFoundError`
-  instead of returning an empty report. "Nothing was found in these documents"
-  and "that folder is not there" are different answers, and only one of them is
-  about the documents.
-
-### Documentation
-
-- The README installs from PyPI. `uv tool install complydoc` replaces the git
-  URL, and keeping it current is `uv tool upgrade complydoc`.
+- The HTML report did not escape values, so document text, file names and metadata could inject
+  markup. Autoescaping is now on for the template.
+- Numbers passing Luhn (such as a PDF `CreationDate`) were reported as card numbers. Card numbers
+  must also match an issuer prefix and length.
+- The entity model is no longer preloaded in the process workers fork from, which could crash
+  pypdfium2 in a worker on macOS.
+- An overlapping weaker finding could unmask part of a confirmed one. Masking now applies the
+  strongest evidence first and never overwrites masked characters.
 
 ## [0.3.0] — 2026-09-10
 
 ### Added
 
-- The release can publish to PyPI. Publishing the drafted release uploads the
-  wheel and sdist already attached to it — the artefacts that were built and
-  attested, not a rebuild — over Trusted Publishing, so there is no token
-  stored anywhere. The tag deliberately does not do it: a version on PyPI
-  cannot be replaced or reused, so the last step before it is a person.
-- PyPI metadata: classifiers, and Homepage, Changelog and Issues links. The
-  README's images are absolute URLs now, because PyPI renders it with no
-  repository context and relative paths arrive broken.
-- `complydoc demo` audits six synthetic sample documents that ship with the
-  tool and opens the report. Evaluating this used to mean finding a folder
-  first. The samples carry the problems the tool exists to find — a scan with
-  no text layer, a two-column page the readers disagree about, a whitespace
-  table, and identifiers of several kinds — and no real person is described in
-  any of them.
-- The README shows the report. The product is the page it produces, and the
-  repository did not show it.
-- Global readiness, on the front page as a ring. AI readiness asks whether the
-  text can be got off the page; this asks whether the folder can be put through
-  a pipeline at all, combining content with the cost path it forces and what it
-  carries that should not leave. Weights are in `readiness.yaml` and printed
-  beside the score. A factor the run did not measure is dropped and the rest
-  renormalised — never counted as nought — and the report says how many of the
-  three it was built from.
-- The ring shows the composition rather than the score, because the mean hides
-  the tail: a folder averaging 71 can still hold two documents nothing can be
-  read from, and those two are the ones somebody has to deal with.
-- Quick wins: what to do next, ranked by how much of the folder each touches.
-  Every entry names the documents it applies to, says whether complydoc can do
-  it or a person has to, and where the consequence follows from prices already
-  in the report it is computed — the OCR entry quotes what those documents cost
-  today on the image path. None of them predicts a score, because signals
-  interact and the only honest way to know is to fix the documents and run the
-  audit again.
-- Every sensitive finding carries an evidence tier: `confirmed` when a checksum
-  passed, `corroborated` when a label sits beside it, `pattern` for a shape
-  alone, and `model` for a statistical guess. The security table shows it and
-  breaks a severity tie on it, so a confirmed card number sorts above a name a
-  model thought it saw.
+- PyPI publishing through Trusted Publishing, triggered by publishing a drafted release.
+- PyPI metadata: classifiers and project links. README images use absolute URLs.
+- `complydoc demo` audits six bundled synthetic documents.
+- Global readiness score combining content, cost path and exposure, with weights in
+  `readiness.yaml`. Unmeasured factors are dropped and the rest renormalised.
+- The front-page ring shows how many documents fall in each band.
+- Quick wins, ranked by the number of documents affected, each naming its documents and who acts.
+- Evidence tiers on sensitive findings: `confirmed`, `corroborated`, `pattern`, `model`.
 
 ### Changed
 
-- Cost is off the front page. The tile and the per-1,000 chart move to the Cost
-  tab, which is what that tab is for, and the chart leads it. An audit's front
-  page should answer whether these documents can be used, not what the pipeline
-  would bill — the price only matters once the answer to the first question is
-  yes. The only figure left is what a quick win would save, which is the reason
-  to act on it rather than a cost breakdown.
-- The model detector reports no confidence rather than 1.0. The small English
-  pipeline exposes no per-entity score, so recording one put a guess level with
-  a passed checksum — the one place this tool was reporting a number that meant
-  something other than what it said. `confidence` is now null there, and the
-  `min_confidence: 0.5` configured for names and organisations is gone: it
-  filtered nothing and implied a threshold that was never applied.
-- `schema_version` is 3. The report carries `overall` and `quick_wins`, every
-  sensitive match carries `evidence`, and `confidence` on a match may be null.
-- The summary quotes Claude Sonnet 5 rather than whichever model happened to be
-  cheapest. The cheapest was a moving target — it changed with a catalogue
-  refresh rather than with the folder — and it flattered the estimate with a
-  model few people would actually run. `compare.headline_model` in
-  `pricing.yaml` sets it, and the report falls back to the cheapest priced model
-  and still names it when that one is not in the comparison.
-- A model that carried its own id as its name now borrows the catalogue's, so
-  the chart no longer reads `zai/glm-5.3-flash` beside `Claude Sonnet 5`. The
-  seven curated entries that were written that way are fixed as well.
-- How many documents each architecture reaches is stated once per architecture
-  in the legend, instead of beside every bar. On a dozen models that was ninety
-  copies of three numbers, crowding out the figures that differ. It stays on
-  each bar's own hover.
-- The explanation of a sensitive mark follows the mark instead of appearing
-  under the page, and there is one of it. The mark used to carry an SVG
-  `<title>` as well, which is the browser's own tooltip, so pointing at a mark
-  drew the same words twice in two different boxes. The mark now carries an
-  `aria-label`, which says the same thing to a screen reader without drawing
-  anything.
-- A mark says what was found, masked exactly as the findings table masks it —
-  the last few characters, with the separators kept so the shape stays legible.
-  A rectangle and a category left the reader hunting for which item it was.
-  `--reveal` puts the whole value there as it does everywhere else.
-- The summary tiles say one thing each. The heading above the first chart no
-  longer repeats the tile directly above it.
+- Cost moved from the front page to the Cost tab.
+- The NER detector reports `confidence` as null; `min_confidence` for names and organisations
+  was removed.
+- `schema_version` is 3: `overall`, `quick_wins`, `evidence` on matches; `confidence` may be null.
+- The summary prices against `compare.headline_model` (Claude Sonnet 5 by default), falling back
+  to the cheapest priced model.
+- Models named by their id use the catalogue's display name.
+- Architecture reach is shown once per architecture in the chart legend.
+- A sensitive mark has one tooltip, carries an `aria-label`, and shows the masked value.
+- Summary tiles no longer repeat the chart heading.
 
 ### Fixed
 
-- `.complydoc`, where a run writes when nobody passes `--out`, is git-ignored.
-  Those reports carry the text read off each page and a picture of every page,
-  so a default run inside a repository was leaving document content untracked
-  in the working tree.
+- `.complydoc` is git-ignored.
 
 ### Performance
 
-- A 392-page book took 2.1 GB of memory and now takes 0.99 GB. pdfplumber
-  caches every object it parses off a page, and nothing released them, so the
-  whole document's characters — 680,000 of them — stayed in memory until the
-  run ended. They are dropped as soon as each page has been read. It matters
-  most where it was worst: a process pool holds one document per worker, so
-  the old figure was multiplied by the number of workers.
-- The coverage helper is fourteen times faster. It called `np.clip` four times
-  per rectangle, and numpy's per-call overhead on a single Python float dwarfs
-  the arithmetic — on a dense page that was a tenth of the whole run. Plain
-  `min`/`max` gives the identical answer.
+- Memory for a 392-page book: 2.1 GB to 0.99 GB, by releasing pdfplumber page caches.
+- The coverage helper is fourteen times faster, using `min`/`max` in place of `np.clip`.
 
 ### Internal
 
-- Type suppressions are down from twenty to four, and each was removed by
-  fixing what caused it rather than by widening the annotation. The largest
-  group came from one helper that returned `object` where it had a `Config` in
-  hand, which cost eight `type: ignore` comments in commands downstream. The
-  four that remain are in the network guard, where assigning to a standard
-  library method cannot be expressed in the type system.
-- One severity table instead of two. The report and the readiness score each
-  had their own copy, so a fourth severity would have had to be remembered in
-  both; the band label is public now rather than reached for as a private name
-  from another module.
-- Dead code removed: an unused page property, and a price helper left behind
-  when model selection moved from price spread to product line.
+- Type suppressions reduced from twenty to four.
+- One shared severity table.
+- Dead code removed.
 
 ## [0.2.0] — 2026-09-10
 
 ### Added
 
-- `complydoc compare <path>` runs an audit with every reader and every OCR
-  engine installed, so comparing does not mean naming each one by hand. It says
-  which it is using before it starts, and says so plainly when there is nothing
-  installed to compare against.
-- Extractors are pluggable, and more than one can run in a single pass.
-  `--extractor` picks which library reads the text layer; `--compare-extractor`
-  reads every page with a second one as well and reports where the two differ.
-  Only the first reaches a finding — the rest are measured, never adopted.
-  Comparison lives inside a run, so it is the same page on the same machine at the
-  same moment rather than two runs that would differ for reasons of their own.
-  `complydoc extractors` lists them. With `--extracted-text` on, what each reader made
-  of a page is kept, so the Documents page can switch between them and show the text
-  itself rather than only how much of it there was.
-- pdfium as a second extractor: measured against pdfplumber on a real 392-page book
-  the two agree on the text within one to two per cent, and pdfium reads it about
-  thirteen times faster. It provides no table structure and a box per line rather
-  than per word, so the signals that need those report that they could not measure
-  rather than returning a number that means something else.
-- A third reader for a PDF's text layer, `pypdf`. It is already a dependency,
-  so it costs no install and no measurable time, and it shares no code with
-  either of the others — which is the only reason a third reading is worth
-  having. It returns text and no geometry, so it reports coverage as not
-  measured rather than as nought per cent, and the findings that need boxes say
-  the same.
-- OCR engines are pluggable the same way, with `--ocr-engine`,
-  `--compare-ocr-engine` and `complydoc engines`. Tesseract is included for anyone
-  who already has it; it is not a dependency, because it needs a system binary.
-- Where two readers parted company is now shown, not just measured. Each other
-  reader's pane carries its own text with the words only it found underlined
-  and the words only the kept reader found struck through, so the difference is
-  read in place rather than by flipping between two panes and holding both in
-  your head. The page bar gains a control that jumps to the next page the
-  readers read differently, which on a long document is a handful of pages
-  among hundreds.
-- The report tells a reader that walked a page in the wrong order apart from
-  one that read different words. They look the same to any similarity score and
-  they call for different things: the first scrambled a page it could read, the
-  second could not read part of it.
-- A live bar, count and clock while a folder is read. A run over a few hundred
-  documents takes minutes, and a terminal that says nothing for minutes is
-  indistinguishable from one that has hung. A pipe still gets one line per
-  document, and `--quiet` still gets nothing.
-- A vendored model catalogue from models.dev: every current model from the eight
-  first-party providers, so `--model` reaches one without anyone having hand-written an
-  entry for it. `complydoc models --new N` lists the most recently released, because an
-  alphabetical dump sorts a two-year-old model above this month's. It is data on disk —
-  a run still reaches no network — and `make prices` refreshes it. Imported prices are
-  marked as imported, kept apart from the handful someone verified against a provider's
-  page, and a report that prices against one says so in its limitations.
-  Batch prices come from litellm, the only one of the two sources that publishes them.
-- The report compares three models per provider rather than whichever ten had been
-  written down, so every provider is represented and two of them are no longer missing
-  altogether. Each provider is topped up from the catalogue with its most recently
-  released models that take images; `compare.per_provider` in `pricing.yaml` sets the
-  number. A refreshed catalogue brings a refreshed comparison.
-- Batch pricing, where the provider publishes one. The cost page shows what the same
-  tokens cost through a batch endpoint beside the interactive price. Never inferred from
-  the customary half price: a discount nobody can check does not belong in a budget.
-- `--save-text <dir>` keeps the text complydoc read, one file per document. Reading a
-  scanned folder is the slow part of an audit and it was being thrown away, so the next
-  tool to want the text ran OCR over the same pages again.
-- The summary says how long the work took by stage — reading, OCR, signals, identifier
-  scan — and what the measured rate means for 100, 1,000, 10,000 and 100,000 documents.
+- `complydoc compare` runs an audit with every installed extractor and OCR engine.
+- Pluggable extractors: `--extractor`, `--compare-extractor`, `complydoc extractors`. Only the
+  first extractor's reading produces findings.
+- pdfium extractor: agrees with pdfplumber within 1–2% on a 392-page book and is about thirteen
+  times faster. No table structure; one box per line.
+- pypdf extractor: text only, no geometry.
+- Pluggable OCR engines: `--ocr-engine`, `--compare-ocr-engine`, `complydoc engines`. Tesseract
+  support.
+- The page viewer marks words found by only one reader, and can jump to the next page where
+  readers differ.
+- The report distinguishes a reader that returned the same words in a different order from one
+  that read different words.
+- Progress bar, count and elapsed time while reading a folder.
+- Vendored model catalogue from models.dev, `complydoc models --new N`, and `make prices`.
+  Imported prices are marked as imported. Batch prices from litellm.
+- The comparison covers three models per provider (`compare.per_provider`).
+- Batch pricing where the provider publishes it.
+- `--save-text <dir>` writes the extracted text, one file per document.
+- Timing by stage, with projections for 100 to 100,000 documents.
 
 ### Changed
 
-- The difficulty component is called readiness. A high score always meant a document
-  that was easy to process, which read backwards under a name promising the opposite.
-  The command is `complydoc readiness`, the config file is `readiness.yaml`, the JSON
-  carries `readiness` where it carried `difficulty`, and `schema_version` is 2. The
-  score bands read the same way round as the number now: ready, workable, needs work,
-  not ready. Signal directions are `higher_is_better` and `lower_is_better`.
-- The Documents page is a page viewer rather than a grid of the first twelve pages.
-  Every page of a document is reachable, by stepping or by typing a page number, and
-  the page sits beside the text that was read off it instead of in a separate tab.
-  The two halves are one row of equal height and each scrolls inside its own frame.
-- The Documents page is the file list and the two panels, and nothing else. The
-  folder-wide table of readiness signals, the per-document summary line and the list
-  of poorly rated signals moved to that document's own Signals tab, where they answer
-  a question the reader has actually asked.
-- The text read off each page is in the report by default. Reading a page beside what
-  was extracted from it is the point of the tool, and it was behind a flag. The report
-  says on its security page that the masking covers the findings table and not the file,
-  since the file now reproduces the pages those values were read off.
-  `--no-extracted-text` restores a report with no document content.
-- Sensitive marks on the page layout explain themselves on hover: what was found, why it
-  was reported, and why that matters. The value itself is never in the explanation.
-- Readings are compared by word rather than by character, and spacing is no
-  longer a difference. Every reader breaks lines somewhere slightly different,
-  and counting that marked every page of every document. One measure now backs
-  both the number in the table and the marks on the page.
-- The report is laid out to the width of the window rather than a 60rem reading
-  column, so the page and its text get the room.
-- Findings on the security page arrive ordered by severity, and every column there
-  can be sorted.
-- The page heading repeating the folder path, the timestamp and the version is gone.
-  All of it is recorded once, in the footer.
-- The panels are one fixed frame, identical on every document and every page. Their
-  height used to follow whichever page image was loaded, so the workspace resized
-  every time you stepped a page or picked another file. A document nobody could open
-  now draws the same workspace with the reason inside it, rather than a different
-  block that resized the page on arrival.
-- The file list sits at the height of the panels, not the column that holds them.
-- Every page starts the same distance below the tab bar, whether or not it opens on
-  a heading.
-- `complydoc pricing-import` reads the vendored table, so it works without litellm
-  installed, and the entry it generates is marked `price_source: imported` rather than
-  being stamped with a `last_verified` date nobody earned.
+- The difficulty component is renamed readiness (`complydoc readiness`, `readiness.yaml`,
+  `schema_version` 2). Bands: ready, workable, needs work, not ready.
+- The Documents page is a page viewer: every page, with the page beside its text.
+- Readiness tables moved to each document's Signals tab.
+- Extracted text is included in the report by default; `--no-extracted-text` removes it.
+- Sensitive marks on the page layout explain the finding on hover.
+- Readings are compared by word, ignoring whitespace.
+- The report uses the full window width.
+- Security findings are sorted by severity; every column is sortable.
+- The page heading was removed; run details are in the footer.
+- The document panels have a fixed height.
+- `complydoc pricing-import` reads the vendored table and marks entries as imported.
 
 ### Performance
 
-Measured on this machine: a folder of 102 documents 17.6s to 10.9s with OCR and
-7.4s to 2.9s without, a 392-page book 56.9s to 31.0s.
+A folder of 102 documents: 17.6s to 10.9s with OCR, 7.4s to 2.9s without. A 392-page book:
+56.9s to 31.0s.
 
-- Skew was measured by rotating the whole page once per candidate angle. The same
-  measurement falls out of projecting the ink pixels, which are a tenth of the page,
-  and a coarse pass now finds the degree before the fine pass refines it.
-- The entity model loaded a tagger, a dependency parser and a lemmatiser that nothing
-  reads, and parsed every page once per category rather than once.
-- The whitespace table pass pulled the text out of every candidate before applying the
-  geometric test that rejects almost all of them. The cheap test runs first now, and it
-  reuses the words the page has already been asked for instead of clustering its
-  characters into words a second time.
-- Worker processes fork from a server that has loaded the models, instead of each
-  loading its own copy, and the number of them is chosen from the size of the folder.
+- Skew is measured by projecting ink pixels, coarse then fine.
+- The entity model loads only the named-entity component and parses each page once.
+- The whitespace table pass applies the geometric test before extracting text.
+- Workers fork from a server with models loaded; worker count follows folder size.
 
 ### Fixed
 
-- Two extractors that read a page in a different order are now reported as
-  disagreeing. The comparison used to be a character count, which cannot see the
-  case it most needs to: on a two-column page, one library reads down the columns
-  and another straight across, interleaving every sentence, and both return the
-  same number of characters. Readings are now compared in order, and the report
-  names the kind of difference rather than only that there was one.
-- Pointing at a sensitive mark on the page layout does something. The marks are drawn
-  as outlines, and an SVG shape with no fill answers the pointer only along its stroke —
-  on a mark six pixels tall that is two hairlines, so hovering the middle of one hit
-  nothing. The explanation also appears under the page at once rather than waiting for
-  the browser's own tooltip, and the marks can be tabbed to.
-- DOCX merged cells were counted by object identity, which made the count depend on
-  memory reuse and differ between processes reading the same file. They are read from
-  the markup now.
-- The OCR engine registers its own shutdown cleanup, at the point it creates the
-  native threads, instead of relying on another module importing it during
-  interpreter teardown — when the import machinery may already be gone, and a run
-  that had already succeeded aborts with a mutex error.
-- The file list sat in the right place only some of the time. `.spread:not([hidden])` also
-  matched a panel hidden along with the whole Pages view, because the attribute sits on the
-  container, so the list was being centred on a zero-height ghost whenever the signals tab
-  was showing. It also now re-aligns when a page is first shown, which it could not do while
-  it was hidden.
-- An imported price is no longer reported as a verification that went stale. It was
-  never claimed to be verified, and warning once per model buried the run's real
-  limitations under a dozen copies of what the provenance entry says once.
+- Two extractors reading a page in different orders are reported as disagreeing.
+- Sensitive marks respond to the pointer across their whole area and can be focused.
+- DOCX merged cells are counted from the markup.
+- The OCR engine registers its shutdown cleanup when it starts, fixing a mutex error at exit.
+- The file list aligns correctly when the Signals tab is shown.
+- Imported prices no longer produce staleness warnings.
 
 ### Documentation
 
-- The README is written for someone running the tool: what it does, how to run it, what the
-  flags mean. Architecture, adding a signal, fixtures and the release process moved to
-  CONTRIBUTING.md, and this changelog now ships inside the package, so an installed copy can
-  say what changed in the version you have.
-- The README says how to keep an installed copy up to date, and why `--reinstall`
-  matters as much as `--force`.
+- CONTRIBUTING.md holds architecture, signals, fixtures and releases. The changelog ships in
+  the package.
 
 ## [0.1.0]
 
 First release.
 
-### Audit
-
-- Three independent components — cost, extraction readiness, sensitive data — run
-  together or one at a time. The report states which of them ran.
-- Cost estimated from measured page geometry and a real tokenizer, across text, OCR and
-  vision paths for every priced model. Vision formulas and prices live in
-  `pricing.yaml` with a `last_verified` date; a price older than 90 days is reported as
-  stale rather than quoted plainly.
-- Nineteen readiness signals, each contributing a measured value, a rating and one
-  sentence saying why. Weights and thresholds are configuration, not code, and are
-  printed alongside any score. A new signal is one new file plus a registration.
-- Sensitive data scan covering national identifiers for the UK, US, IE, NL, PT, ES, FR
-  and DE, EU VAT numbers, IBANs, payment cards and local NER for names and
-  organisations, each with its own checksum or validator.
-- Wall-clock time measured per document and projected to a backlog, including the
-  observed OCR rate on the machine that ran it.
-
-### Safety
-
-- The network guard replaces the socket module's outbound entry points before any
-  document is opened, in every process, and the test suite asserts a full audit
-  completes with it armed. `run.offline_guard` records this in every report.
-- Matched values are masked to the last four characters at most. `--reveal` prints them
-  in full, and the report says on its face that it was used. Categories marked
-  `never_reveal` stay masked regardless.
-
-### Reports
-
-- One self-contained HTML file — no network, no bundler, no server — with summary, cost,
-  security and per-document pages, and a document browser showing each page beside what
-  was extracted from it and what OCR read.
-- A JSON report of the same run, and `--print-json` for piping into another tool.
-- A limitations section generated from the run's own facts: what could not be opened,
-  which pages held no readable text, which detectors were unavailable, which prices are
-  unverified.
-
-### Running it
-
-- `complydoc` on its own audits the current directory.
-- `--jobs` spreads documents over a process pool, `--sample` reads a deterministic
-  type-proportional subset of a large folder, `--password` opens encrypted PDFs.
-- A packaged agent skill, installed with the tool, so an agent can be told to use it.
+- Cost, extraction readiness and sensitive data components, run together or separately.
+- Cost from page geometry and a tokenizer, across text, OCR and vision paths. Prices in
+  `pricing.yaml` with `last_verified`; prices older than 90 days are flagged as stale.
+- Nineteen readiness signals, with weights and thresholds in configuration.
+- Identifiers for the UK, US, IE, NL, PT, ES, FR and DE, EU VAT, IBAN, payment cards, and local
+  NER for names and organisations.
+- Per-document timing and backlog projections.
+- Network guard armed before any document is opened, in every process; recorded in
+  `run.offline_guard`.
+- Values masked to the last four characters; `--reveal` shows them and is recorded;
+  `never_reveal` categories stay masked.
+- Self-contained HTML report, JSON report, `--print-json`.
+- Generated limitations section.
+- `complydoc` audits the current directory; `--jobs`, `--sample`, `--password`.
+- Packaged agent skill.
 
 [Unreleased]: https://github.com/duartecaldascardoso/complydoc/compare/v0.3.1...HEAD
 [0.3.1]: https://github.com/duartecaldascardoso/complydoc/compare/v0.3.0...v0.3.1

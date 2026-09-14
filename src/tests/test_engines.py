@@ -1,8 +1,8 @@
 """The OCR engine registry.
 
 Unlike the PDF extractors, which agree on a page's text to within a per cent,
-OCR engines genuinely disagree. The registry exists so a second opinion is
-possible; only the one selected produces the text a report is built from.
+OCR engines disagree. Only the selected engine produces the text a report is
+built from.
 """
 
 from __future__ import annotations
@@ -36,7 +36,7 @@ def test_an_engine_ships_that_needs_no_system_binary():
 
 
 def test_selecting_an_unknown_engine_keeps_the_working_one():
-    """A typo should not silently leave a run with no OCR at all."""
+    """An unknown engine name keeps the current engine."""
     before = ocr.engine_name()
     try:
         ocr.select("no-such-engine")
@@ -79,7 +79,7 @@ def test_the_engine_registers_its_own_cleanup():
     source = inspect.getsource(rapidocr)
     assert "atexit.register(release)" in source
     assert source.index("atexit.register(release)") > source.index("def _pipeline"), (
-        "registered where the engine is built, not merely on import"
+        "registered where the engine is built"
     )
     assert callable(rapidocr.release)
     del atexit

@@ -103,7 +103,7 @@ def test_flat_formula_tiles_above_the_threshold():
 
 
 def test_the_three_providers_disagree_as_they_should(config):
-    """The whole reason the formulas live in config is that they differ."""
+    """Each provider's vision formula gives a different count."""
     size = rendered_size(*A4_PT, config.pricing.resolution_presets["medium"])
     results = {
         name: vision_tokens(size, formula)
@@ -136,7 +136,7 @@ def test_dpi_is_reported_for_a_scan_and_not_for_text(loader, config):
 
 
 def test_a_scan_has_no_text_path(loader, config):
-    """Quoting a cost of zero for an impossible path would be a lie."""
+    """A scan has no text-path cost."""
     estimate = estimate_document(loader("scanned_page.pdf"), config.pricing)
     model = estimate.models[0]
     assert model.text_path_input_usd is None

@@ -9,7 +9,7 @@
 # What is written by hand is the part a machine cannot produce: what to do, and
 # why it works the way it does. Every example in a guide is a real file under
 # `docs/examples`, included here and executed by the test suite, so a guide that
-# stops working fails the build rather than misleading somebody quietly.
+# stops working fails the build.
 
 site_name: complydoc
 site_description: >-

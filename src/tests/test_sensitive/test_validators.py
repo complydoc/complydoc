@@ -147,7 +147,7 @@ def test_eu_vat_country_rules(value, expected):
 
 
 def test_every_configured_validator_exists(config):
-    """A typo in the config would otherwise silently disable a checksum."""
+    """Every validator named in the config exists."""
     from complydoc.sensitive.validators import VALIDATORS
 
     for name, category in config.sensitive.categories.items():

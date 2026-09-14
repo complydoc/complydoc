@@ -2,10 +2,7 @@
 
 OCR is an optional extra (`uv sync --extra ocr`) because it is a large download
 and a diagnostic run is still useful without it. When it is missing, every page
-that could not be read is named individually in the report's limitations rather
-than being quietly counted as containing nothing — a sensitive data scan that
-silently returns zero on a scanned bank statement is worse than one that says it
-could not look.
+that could not be read is listed in the report's limitations.
 
 The engine itself lives in `engines/`, chosen by name. This module is what the
 rest of complydoc talks to: which engine is selected, how much work it did, and
@@ -36,16 +33,14 @@ __all__ = [
     "unavailable_reason",
 ]
 
-# OCR dominates the wall clock on a folder of scans, and how fast it runs is a
-# property of this machine rather than something worth guessing at. It is
-# measured here so the report can quote a rate it actually observed.
+# OCR time is measured here so the report can quote the observed rate.
 _pages = 0
 _seconds = 0.0
 _selected = DEFAULT_ENGINE
 
 
 def select(engine_id: str | None) -> None:
-    """Choose the engine. Unknown names fall back to the default rather than failing."""
+    """Choose the engine. Unknown names fall back to the default."""
     global _selected
     if engine_id and engine_by_id(engine_id) is not None:
         _selected = engine_id

@@ -15,8 +15,8 @@ __all__ = ["coverage_fraction"]
 def coverage_fraction(rects: Iterable[Rect], width: float, height: float, grid: int = 240) -> float:
     """Fraction of the page covered by `rects`, in the range 0.0 to 1.0.
 
-    Rasterises onto a coarse grid rather than summing areas, because text and
-    image boxes overlap constantly and a naive sum reports coverage above 100%.
+    Rasterises onto a coarse grid, because text and image boxes overlap and a
+    sum of areas can exceed 100%.
     """
     if width <= 0 or height <= 0:
         return 0.0
@@ -25,10 +25,7 @@ def coverage_fraction(rects: Iterable[Rect], width: float, height: float, grid: 
         return 0.0
 
     mask = np.zeros((grid, grid), dtype=bool)
-    # Plain arithmetic, not np.clip. Every call here is on one Python float,
-    # and numpy's per-call overhead on a scalar dwarfs the work: this loop was
-    # fourteen times slower for the same answer, and on a dense page it was
-    # a tenth of the whole run.
+    # Plain min/max: np.clip on a scalar was fourteen times slower here.
     scale_x, scale_y = grid / width, grid / height
     for rect in boxes:
         col0 = max(0, min(grid, int(rect.x0 * scale_x)))

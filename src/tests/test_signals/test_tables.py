@@ -1,8 +1,8 @@
 """Table detection, including the tables that carry no ruling lines.
 
 Most invoices align their columns with whitespace and draw no rules at all. The
-line-based pass finds nothing in them, and running a text-alignment pass on its
-own is worse than useless: it finds a thirteen-column table in a page of prose.
+line-based pass finds nothing in them, and a text-alignment pass on its own finds
+a thirteen-column table in a page of prose.
 These tests pin both halves — the tables it must find and the prose it must not.
 """
 

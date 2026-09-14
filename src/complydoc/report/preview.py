@@ -1,14 +1,11 @@
-"""Per-page wireframes showing where the cost and the risk actually sit.
+"""Per-page wireframes showing text, images and findings.
 
 A page is drawn as geometry only: rectangles for the words, shaded blocks for
 the images, marks where sensitive values were found. No pixels from the document
 are ever rendered, and no character of its text reaches the output.
 
-That restriction is the point. A thumbnail of the page would show the reader
-exactly the bank account number the scan just took care to mask, and the report
-is meant to be forwardable. Geometry answers the useful question — which pages
-are expensive, where the risk is concentrated — without answering the dangerous
-one.
+A thumbnail of the page would show the values the scan masks. The geometry shows
+which pages are dense or image-heavy and where findings are, without the content.
 """
 
 from __future__ import annotations
@@ -26,8 +23,7 @@ _IMAGE_WIDTH_PX = 1060
 """Rendered width of an embedded page image.
 
 Twice the width the viewer gives it, so the page is sharp on a high-density
-screen and legible when the reader zooms in. This is the single biggest
-contributor to the size of a report built with --page-images.
+screen. This is most of the size of a report built with --page-images.
 """
 _IMAGE_QUALITY = 72
 
@@ -54,7 +50,7 @@ class Box:
 
     Pointing at a rectangle and being told only that it is a card number leaves
     you to find which one by eye. The last few characters identify it without
-    disclosing it, and `--reveal` puts the whole value here as it does there.
+    disclosing it; `--reveal` shows the whole value.
     """
 
     @classmethod
@@ -108,9 +104,8 @@ class PagePreview:
     def flags(self) -> list[tuple[str, str]]:
         """What is wrong with this page, as (severity, label) chips.
 
-        The readiness signals are folder-wide and document-wide; these put the
-        same facts on the page they came from, which is where a reader looking at
-        a thumbnail actually wants them.
+        The readiness signals are folder-wide and document-wide; these attach the
+        same facts to the page they came from.
         """
         found: list[tuple[str, str]] = []
         if self.unreadable:
@@ -145,10 +140,9 @@ def _plausible(rect: Rect, page: Page) -> bool:
     """Reject a located box that cannot be a single identifier.
 
     Words are matched in extraction order, which on a multi-column page runs
-    across the gutter rather than down one column. A run that starts in the left
-    column and finishes in the right produces a box spanning the whole page, and
-    drawing it would point the reader at the wrong place. Dropping it and
-    reporting the match as unplaced is the honest outcome.
+    across the gutter. A run that starts in the left column and finishes in the
+    right produces a box spanning the page, so it is dropped and the match is
+    reported as unplaced.
     """
     if page.width_pt <= 0:
         return False
@@ -280,9 +274,7 @@ def _attach_image(preview: PagePreview, raster: object) -> None:
 def _why_sensitive(match: SensitiveMatch, config: SensitiveConfig | None) -> str:
     """What this mark is, why it was reported, and why it matters.
 
-    A rectangle on a wireframe says only that something was found. The reader
-    pointing at it wants the three things the table would have told them, and
-    none of them is the value itself.
+    The explanation never includes the value itself.
     """
     lines = [f"{match.label} — {match.severity} severity, {match.evidence}"]
     entry = config.categories.get(match.category) if config is not None else None

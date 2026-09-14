@@ -168,9 +168,8 @@ def _table_shape(table: Any) -> TableInfo | None:
     cell_rows: list[list[tuple[float, float, float, float]]] = []
     for row in rows:
         cells = [c for c in getattr(row, "cells", []) or [] if c is not None]
-        # Spelled out rather than built by comprehension: a four-tuple cannot
-        # be expressed as one, and pdfplumber gives a cell as exactly four
-        # numbers — anything else is not a cell and is dropped.
+        # A loop so the four-tuple type checks. Anything other than four
+        # numbers is not a cell and is dropped.
         boxes: list[tuple[float, float, float, float]] = []
         for cell in cells:
             values = [float(v) for v in cell]
@@ -213,7 +212,7 @@ def _release(plumber_page: Any) -> None:
     """Drop a page's parsed objects once everything needed is off it.
 
     Best effort: pdfplumber has named this differently across versions, and a
-    page that cannot be released is a memory cost, never a wrong answer.
+    page that cannot be released only costs memory.
     """
     for name in ("close", "flush_cache"):
         method = getattr(plumber_page, name, None)
@@ -223,14 +222,11 @@ def _release(plumber_page: Any) -> None:
 
 
 def _cuts_too_many_words(words: list[Any], interior: list[float]) -> bool:
-    """Whether these column edges slice through the text rather than between it.
+    """Whether these column edges cut through words.
 
-    Two things keep this cheap, and it is worth keeping cheap because it runs
-    for every candidate on every page of every document. The edges are sorted,
-    so finding whether one falls inside a word is a bisection rather than a
-    walk over all of them. And it stops as soon as the answer is settled: on a
-    page of prose the budget is spent in the first few dozen words, and there
-    is nothing to learn from checking the other sixteen hundred.
+    Runs for every candidate on every page, so it is kept cheap: the edges are
+    sorted, so each word is a bisection, and it stops once the budget of cut
+    words is spent.
     """
     budget = int(len(words) * _MAX_WORDS_CUT)
     cut = 0
@@ -244,12 +240,12 @@ def _cuts_too_many_words(words: list[Any], interior: list[float]) -> bool:
 
 
 def _aligned_tables(plumber_page: Any, words: list[Any]) -> list[TableInfo]:
-    """Tables held together by whitespace rather than ruling lines.
+    """Tables aligned by whitespace, with no ruling lines.
 
     Most invoices align their columns with spacing and draw no rules at all, so
-    the line-based pass finds nothing in them. Running the text strategy alone is
-    worse than useless — it finds a thirteen-column "table" in a page of prose —
-    so a candidate is only accepted when its column edges fall in the gutters.
+    the line-based pass finds nothing in them. The text strategy alone finds a
+    thirteen-column "table" in a page of prose, so a candidate is only accepted
+    when its column edges fall in the gutters.
     A boundary that cuts through words is not a column.
 
     The words are passed in because the page has already been asked for them;
@@ -443,9 +439,9 @@ class PdfLoader:
                     needs_raster.append(index)
                 # pdfplumber caches every object it parsed off the page, and
                 # holding all of them for the length of the document is what
-                # made a 392-page book cost gigabytes. Everything worth keeping
+                # made a 392-page book use gigabytes. Everything needed
                 # has been copied into `page` by now, and a worker holding one
-                # document at a time is the whole point of the process pool.
+                # document at a time keeps memory bounded per worker.
                 _release(plumber_page)
 
         rasters = _render_pages(path, password, needs_raster, options.render_dpi)
@@ -548,7 +544,7 @@ class PdfLoader:
         page.notes.extend(kept.notes)
 
         # Word geometry from the extractor that was kept. The alignment table
-        # pass reuses it rather than clustering the characters a second time.
+        # pass reuses it.
         words: list[Any] = []
         if kept.granularity == "word":
             try:
@@ -571,8 +567,7 @@ class PdfLoader:
 
         page.raw_chars = kept.raw_chars
         try:
-            # Fonts are a fact about the page rather than a reading of it, so
-            # they come from the file whichever extractor was used.
+            # Fonts come from the file, whichever extractor was used.
             page.fonts = {str(c["fontname"]) for c in plumber_page.chars if c.get("fontname")}
         except Exception:
             page.fonts = set()
@@ -609,9 +604,8 @@ class PdfLoader:
         """Read every rasterised page with the other OCR engines as well.
 
         Unlike the PDF extractors, which agree on a page's text to within a per
-        cent, OCR engines genuinely disagree — they read different words and
-        differ about how sure they are. Only the selected engine's reading is
-        used; the rest are here to be read beside it.
+        cent, OCR engines read different words and report different confidence.
+        Only the selected engine's reading is used.
         """
         if not options.compare_engines or not options.keep_readings:
             return

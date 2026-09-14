@@ -46,7 +46,7 @@ def test_every_category_names_a_registered_detector(config):
 
 
 def test_scoring_cannot_hide_its_weights():
-    """A score whose weights are not printed is exactly what this tool refuses."""
+    """Scoring requires printing weights in the report."""
     with pytest.raises(ValidationError, match="print_weights_in_report"):
         ScoringConfig(enabled=True, print_weights_in_report=False)
 
@@ -87,7 +87,7 @@ def test_unpriced_models_are_excluded_from_costing(config):
 
 
 def test_a_never_verified_price_always_warns(config):
-    """A missing date is treated as maximally stale, not as fine."""
+    """A missing date is treated as maximally stale."""
     raw = yaml.safe_load((FIXTURES.parents[2] / "src/complydoc/config/pricing.yaml").read_text())
     raw["models"][0]["last_verified"] = None
     pricing = PricingConfig.model_validate(raw)

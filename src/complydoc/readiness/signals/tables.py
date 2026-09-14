@@ -16,11 +16,9 @@ def _tables(document: Document) -> list[TableInfo]:
 
 
 def _tables_were_searched(document: Document) -> bool:
-    """Whether anything actually looked.
+    """Whether the extractor looked for tables.
 
-    A leaner extractor reads the text and no structure, so its zero tables means
-    nobody looked rather than there being none — the distinction this whole
-    module is built to keep.
+    An extractor that reads no structure reports zero tables without looking.
     """
     summaries = [s for page in document.pages for s in page.extractions]
     if not summaries:
@@ -79,8 +77,8 @@ class TableHeaderDepthSignal:
             return Measurement.na("no tables were detected, so there is no header to measure")
         if not ruled:
             return Measurement.na(
-                "the tables here are held together by whitespace rather than ruling "
-                "lines, and a table with no rules carries nothing to read a span from"
+                "the tables here are aligned by whitespace with no ruling lines, so "
+                "header spans cannot be read"
             )
         depth = max(t.header_depth for t in ruled)
         return Measurement(
@@ -110,8 +108,8 @@ class TableMergedCellsSignal:
             return Measurement.na("no tables were detected, so there are no cells to merge")
         if not ruled:
             return Measurement.na(
-                "the tables here are held together by whitespace rather than ruling "
-                "lines, so there are no spans to count"
+                "the tables here are aligned by whitespace with no ruling lines, so "
+                "merged cells cannot be counted"
             )
         merged = sum(t.merged_cells for t in ruled)
         return Measurement(

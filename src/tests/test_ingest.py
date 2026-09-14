@@ -141,7 +141,7 @@ def test_alignment_tables_reuse_the_words_already_extracted(loader):
     """Clustering characters into words is one of the loader's biggest costs.
 
     The page has already been asked for its words by the time tables are looked
-    for, so they are handed over rather than derived a second time.
+    for, so they are passed in.
     """
     import inspect
 

@@ -45,8 +45,7 @@ __all__ = [
 def severity_rank(severity: str) -> int:
     """Sort weight. Alphabetical would file high between low and medium.
 
-    A severity nobody recognises sorts last rather than raising: the table is
-    still readable, and the row is still in it.
+    An unknown severity sorts last.
     """
     return SEVERITY_WEIGHT.get(severity, 0)
 
@@ -133,8 +132,7 @@ class PageRow:
     """One page of a document, as the viewer needs it: the page and its content.
 
     Previews and extracted text are collected separately and either can be
-    absent — the default report carries no page images and no text — so they are
-    joined by page number here rather than being assumed to line up.
+    absent, so they are joined by page number here.
     """
 
     number: int
@@ -218,12 +216,7 @@ def _money(value: float | None, currency: str = "USD") -> str:
 
 
 def _drivers(readiness: object, rating: str, limit: int) -> list[object]:
-    """The signals that actually moved the verdict, heaviest first.
-
-    A document carries nineteen signals but only a few explain its score. Ranking by
-    the weight behind each one answers "which parts make it easy or hard" without
-    making the reader diff two tables of nineteen rows.
-    """
+    """The signals with the most weight behind a rating, heaviest first."""
     signals = getattr(readiness, "signals", None) or []
     matching = [s for s in signals if getattr(s, "rating", None) == rating]
     matching.sort(key=lambda s: (s.weight, s.id), reverse=True)
@@ -233,8 +226,7 @@ def _drivers(readiness: object, rating: str, limit: int) -> list[object]:
 def page_preview_svg(preview: PagePreview, width: int = _PREVIEW_WIDTH) -> str:
     """One page drawn as geometry: words, images, sensitive marks. No content.
 
-    Deliberately monochrome and unlabelled — it is a thumbnail, and the numbers
-    that go with it are in the table underneath.
+    Monochrome and unlabelled; the numbers are in the table underneath.
     """
     height = max(24, round(width * preview.aspect))
     parts: list[str] = [
@@ -246,8 +238,7 @@ def page_preview_svg(preview: PagePreview, width: int = _PREVIEW_WIDTH) -> str:
 
     def rect(box: Box, **attrs: object) -> str:
         x, y = box.x * width, box.y * height
-        # A floor of 0.6, so a hairline rule or a one-character mark is still
-        # drawn rather than rounding away to nothing.
+        # A floor of 0.6, so a hairline rule or a one-character mark is still drawn.
         w, h = max(0.6, box.w * width), max(0.6, box.h * height)
         extra = " ".join(f'{k.replace("_", "-")}="{v}"' for k, v in attrs.items())
         return f'<rect x="{x:.1f}" y="{y:.1f}" width="{w:.1f}" height="{h:.1f}" {extra}/>'
@@ -266,10 +257,8 @@ def page_preview_svg(preview: PagePreview, width: int = _PREVIEW_WIDTH) -> str:
         stroke = "var(--poor)" if box.label == "high" else "var(--fair)"
         mark = rect(box, fill="none", stroke=stroke, stroke_width="1.2")
         if box.title:
-            # Deliberately not a <title>: that is the browser's own tooltip, and
-            # it appeared alongside the report's, so a reader got the same text
-            # twice in two different boxes. `aria-label` says the same thing to a
-            # screen reader without drawing anything.
+            # `aria-label` instead of <title>, which would show a second, browser
+            # tooltip next to the report's own.
             label = " ".join(box.title.split())
             value = f' data-value="{escape(box.value)}"' if box.value else ""
             parts.append(
@@ -334,7 +323,7 @@ def render_html(report: AuditReport, config: Config) -> str:
             return "r-fair"
         return "r-poor"
 
-    # Computed with the report, not here: the JSON carries them too.
+    # Normally computed with the report, so the JSON carries them too.
     overall = report.overall or overall_readiness(report, config.readiness.overall)
     wins = report.quick_wins or quick_wins(report)
     comparisons = build_comparison(report)

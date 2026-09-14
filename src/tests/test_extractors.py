@@ -48,7 +48,7 @@ def test_the_registry_finds_the_readers_that_always_ship():
 
 
 def test_every_extractor_declares_what_it_can_do():
-    """A signal needs to know what was not available, not guess from an empty list."""
+    """Each extractor declares whether it provides tables and raw characters."""
     for engine in all_extractors():
         assert isinstance(engine.provides_tables, bool)
         assert isinstance(engine.provides_raw_chars, bool)
@@ -62,7 +62,7 @@ def test_the_default_run_uses_one_extractor_and_says_which():
 
 
 def test_comparing_does_not_change_what_was_kept():
-    """The whole safety property: a second opinion is recorded, never adopted."""
+    """A compared extractor's reading does not replace the kept one."""
     alone = load_document(FIXTURES / "dense_text.pdf", IngestOptions())
     compared = load_document(
         FIXTURES / "dense_text.pdf", IngestOptions(compare_extractors=("pdfium",))
@@ -133,8 +133,8 @@ def test_the_same_characters_in_a_different_order_is_a_disagreement():
 def test_reading_different_words_is_not_called_a_reordering():
     """The two call for different things.
 
-    A reader that scrambled a page it could otherwise read has a layout
-    problem. A reader that returned different words could not read part of it.
+    Scrambled order is a layout problem; different words mean part of the page
+    could not be read.
     """
     document = DocumentReport(
         path=FIXTURES / "x.pdf",
@@ -162,7 +162,7 @@ def test_a_large_difference_is():
 
 
 def test_one_reading_nothing_at_all_is_always_a_disagreement():
-    """The case that matters most: one of them could not read the page."""
+    """A reader that read nothing always counts as disagreeing."""
     document = DocumentReport(
         path=FIXTURES / "x.pdf",
         relative_path="x.pdf",
@@ -225,8 +225,7 @@ def test_either_extractor_can_read_a_plain_page(name):
 def test_a_reader_without_geometry_reports_no_coverage_rather_than_none_of_it():
     """pypdf returns text and no boxes.
 
-    Nought per cent coverage would read as a page with nothing on it, which is
-    the opposite of what happened.
+    Coverage is None, since 0% would describe a blank page.
     """
     document = load_document(FIXTURES / "dense_text.pdf", IngestOptions(extractor="pypdf"))
     summary = document.pages[0].extractions[0]

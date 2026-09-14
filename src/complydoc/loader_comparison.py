@@ -294,8 +294,7 @@ def _identifier_differences(
 def _uneven_keys(inspections: list[Inspection]) -> dict[str, list[str]]:
     """Metadata keys some loaders returned and others did not, ignoring case.
 
-    PyPDF writes `author` where PDFPlumber writes `Author`; listing both as
-    missing from the other would bury the keys that actually differ. A key
+    PyPDF writes `author` where PDFPlumber writes `Author`. A key
     spelled differently is shown under every spelling, joined by a slash.
     """
     returned = {i.loader.name: {k.casefold() for k in i.loader.metadata_keys} for i in inspections}

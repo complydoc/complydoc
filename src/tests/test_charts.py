@@ -27,7 +27,7 @@ def test_all_three_architectures_are_costed(comparisons):
 
 def test_vision_costs_more_than_text(comparisons):
     """Where a model can do both. Some read text only, and have no vision cost
-    at all rather than a cost of zero."""
+    at all."""
     compared = 0
     for comparison in comparisons:
         text = comparison.by_key("text_ocr")
@@ -50,7 +50,7 @@ def test_a_text_only_model_has_no_vision_cost_rather_than_zero(comparisons):
 
 
 def test_ocr_reaches_more_documents_than_the_text_layer_alone(comparisons):
-    """The whole point of showing reach: cheapest is not the same as most useful."""
+    """OCR reaches documents the text layer alone cannot."""
     for comparison in comparisons:
         assert (
             comparison.by_key("text_ocr").documents_served

@@ -1,18 +1,7 @@
-"""Where two readings of the same page part company.
+"""Word-level differences between two readings of the same page.
 
-Knowing that two extractors disagree is most of the measurement and none of the
-answer. A page of a contract is two thousand characters; being told that one
-reader matches another 87% of the way leaves someone to find the other 13% by
-reading both. This turns that into something the eye can land on.
-
-The comparison is by word rather than by character. Character diffs mark the
-inside of words and read as noise; a reader looking at a page wants to see which
-phrases moved, not which letters did.
-
-Spacing is not a difference. Every reader breaks lines somewhere slightly
-different, so a comparison that counted that would mark every page of every
-document and be worth nothing. Words are compared; the original spacing is what
-gets shown.
+Words are compared and whitespace is ignored, since readers break lines in
+different places. The original spacing is kept in the output.
 """
 
 from __future__ import annotations
@@ -82,8 +71,7 @@ def _one(reader: str, left: list[str], right: list[str], truncated: bool) -> Rea
     def add(kind: Kind, words: list[str]) -> None:
         if not words:
             return
-        # Runs of the same kind are joined so the markup is one span per run
-        # rather than one per word.
+        # Runs of the same kind are joined into one span.
         if segments and segments[-1].kind == kind:
             segments[-1] = Segment(kind, segments[-1].text + "".join(words))
         else:

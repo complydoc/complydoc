@@ -1,20 +1,17 @@
 """The vendored model price table.
 
-`pricing.yaml` is the curated layer: a short list of models someone has checked
-against the provider's own page, and the only ones a report compares by default.
-This is the catalogue behind it — every current model from the first-party
-providers, so that asking for one by name works without anybody having
-hand-written an entry for it first.
+`pricing.yaml` is the curated layer: models verified against the provider's own
+page, compared by default. This is the catalogue behind it: every current model
+from the first-party providers, so any of them can be named.
 
 Each entry carries the date its model was released, which is what lets the tool
 show what is current instead of an alphabetical list where a two-year-old model
 sorts above this month's.
 
-The file is data on disk. Nothing here reaches the network; `scripts/build_price_table.py`
-refreshes it, and that is a maintenance step, not part of an audit.
+The file is data on disk. Nothing here reaches the network;
+`src/scripts/build_price_table.py` refreshes it.
 
-Imported prices are marked as imported. They are not presented as verified,
-because nobody verified them.
+Imported prices are marked as imported.
 """
 
 from __future__ import annotations
@@ -40,7 +37,7 @@ __all__ = [
 TABLE_PATH = Path(__file__).parent.parent / "config" / "model_prices.json"
 
 # Which of complydoc's vision formulas counts each provider's images. A provider
-# missing here is priced for text only rather than guessed at.
+# missing here is priced for text only.
 _VISION_FORMULA = {
     "anthropic": "width_height_area",
     "openai": "tiled_512",
@@ -117,8 +114,7 @@ def line_of(model_id: str) -> str:
 
     Providers name a line and version it: claude-haiku-4-5 and claude-haiku-5
     are two cuts of haiku, gemini-3.8-flash and gemini-2.5-flash two cuts of
-    flash. The line is what a reader recognises and what a comparison should
-    carry one of, rather than four versions of the same thing.
+    flash. A comparison carries one model per line.
     """
     stem = model_id.rsplit("/", 1)[-1]
     stem = _QUALIFIER.sub("", stem)
@@ -152,18 +148,15 @@ def released_on(model_id: str) -> dt.date | None:
 def imported_models() -> tuple[ModelPricing, ...]:
     """Every model in the table, switched off.
 
-    Off because a report that compared three hundred models would answer nobody's
-    question. They are here so that naming one with `--model` works, and so that
-    `complydoc models` can show what is available to name.
+    Switched off so the default comparison stays short. They can be named with
+    `--model` and listed with `complydoc models`.
     """
     source_url, imported, _ = table_provenance()
     models: list[ModelPricing] = []
     for name, entry in sorted(_table().get("models", {}).items()):
         provider = str(entry.get("provider", "unknown"))
         formula = _VISION_FORMULA.get(provider)
-        # The catalogue says what each model actually accepts, so a text-only
-        # model is priced for text rather than being given an image formula it
-        # would never be sent an image under.
+        # A text-only model gets no image formula.
         takes_images = bool(entry.get("accepts_image"))
         notes = None
         if takes_images and provider in _ASSUMED_FORMULA:

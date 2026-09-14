@@ -1,7 +1,7 @@
 # Unmeasured values
 
-A document with no text layer has no word count, not a word count of zero. A
-reader that cannot detect tables reports no table count, not a count of zero.
+A document with no text layer has no word count. A reader that cannot detect
+tables reports no table count. Neither is recorded as zero.
 
 Recording either as zero puts an unmeasured value into every average computed
 from it, with nothing in the output to distinguish it from a measurement.
@@ -15,10 +15,9 @@ So every measurement can say it was not taken:
 - A **readiness factor** the run did not measure is dropped the same way.
   `complydoc readiness` alone still produces a score, computed from one factor
   instead of three, and the report states which.
-- **Coverage** from a reader that returns no geometry is `null`, not 0%. Nought
-  per cent would read as a blank page, which is the opposite of what happened.
-- A **token count** with no local encoding is marked `estimated`, because
-  dividing by four is not measuring.
+- **Coverage** from a reader that returns no geometry is `null`. A value of 0%
+  would describe a blank page.
+- A **token count** with no local encoding is marked `estimated`.
 
 ## Previous exception
 

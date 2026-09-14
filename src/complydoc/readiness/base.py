@@ -2,9 +2,7 @@
 
 A signal measures one specific, nameable property of a document and explains in
 one sentence why that property matters for extraction. It does not produce a
-score and it does not know about any other signal. That is deliberate: the
-report is a table of independent lines, and a reader must be able to reject any
-one line without rejecting the rest.
+score and it does not know about any other signal.
 
 A signal that cannot measure its property for a given document returns
 `Measurement.na(reason)`. That is not a zero and it is not a failure — it is

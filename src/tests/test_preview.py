@@ -1,4 +1,4 @@
-"""Page wireframes. The load-bearing property is that they carry no content."""
+"""Page wireframes carry no document content."""
 
 from __future__ import annotations
 
@@ -191,11 +191,10 @@ def test_a_sensitive_mark_explains_itself(loader, config):
 
 
 def test_the_explanation_never_carries_the_value(loader, config):
-    """The whole point of the wireframe is that it reproduces no content.
+    """The wireframe explanation reproduces no content.
 
-    Asserted on the explanation itself rather than by searching the output for
-    the values: an organisation the model found may legitimately share words
-    with a category's own label, and that is not a leak.
+    Asserted on the explanation itself, because an organisation the model found
+    may share words with a category's own label.
     """
     from complydoc.report.preview import _why_sensitive
     from complydoc.sensitive.scanner import scan
@@ -239,7 +238,7 @@ def test_a_sensitive_mark_answers_the_pointer_across_its_whole_area():
 
 
 def test_the_explanation_is_reachable_without_a_pointer():
-    """A tooltip nobody can tab to is a tooltip some readers never get."""
+    """Marks can be focused with the keyboard."""
     from complydoc.report import html_writer
 
     template = (html_writer._TEMPLATE_DIR / "report.js").read_text()
@@ -267,11 +266,7 @@ def test_the_browser_draws_no_tooltip_of_its_own(config, tmp_path):
 
 
 def test_a_mark_says_what_was_found_and_masks_it(config, tmp_path):
-    """A rectangle and a category leaves the reader hunting for which one.
-
-    The last few characters identify it; the rest are covered, exactly as the
-    findings table covers them.
-    """
+    """A mark shows the last few characters, masked as in the findings table."""
     import re
 
     html = _rendered(config, tmp_path)
@@ -283,10 +278,9 @@ def test_a_mark_says_what_was_found_and_masks_it(config, tmp_path):
 
 
 def test_a_mark_never_carries_a_value_the_run_did_not_reveal(config, tmp_path):
-    """The whole trust proposition, checked where the value is newest.
+    """A mark shows only masked values unless the run used --reveal.
 
-    This is the one place a raw value is written into the report outside the
-    findings table, so it is the one most likely to leak one.
+    Marks are the only place outside the findings table where a value is written.
     """
     import re
 

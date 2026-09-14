@@ -12,10 +12,8 @@ application would break every unrelated call in that process, so the library
 arms it for the audit and puts the socket module back exactly as it found it —
 whatever happens in between.
 
-And the public surface has to be a decision rather than an accident. Everything
-reachable from `complydoc` is something callers will depend on and we cannot
-then rename, so the set is named explicitly and this checks it has not grown by
-mistake.
+The public surface is named explicitly, and this checks it has not changed
+unintentionally.
 """
 
 from __future__ import annotations
@@ -123,7 +121,7 @@ def test_a_full_audit_carries_the_global_score_and_the_quick_wins():
 
 
 def test_a_string_path_works_as_well_as_a_path():
-    """Nobody reaches for pathlib to call one function."""
+    """A string path is accepted."""
     assert cd.security_audit(str(SAMPLE)).documents
     assert cd.security_audit(FIXTURES / "sensitive_sample.pdf").documents
 
@@ -163,7 +161,7 @@ def test_the_guard_is_put_back_even_when_the_audit_fails(tmp_path):
 
 
 def test_a_caller_who_armed_the_guard_keeps_it():
-    """Theirs to disarm, not ours. Restoring it would be a surprise."""
+    """A guard armed by the caller stays armed."""
     offline.arm()
     try:
         cd.security_audit(SAMPLE)

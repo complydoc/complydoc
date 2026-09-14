@@ -1,7 +1,6 @@
 # Network isolation
 
-complydoc makes no outbound network connections. This is enforced at runtime
-rather than stated as a policy.
+complydoc makes no outbound network connections. This is enforced at runtime.
 
 `complydoc/offline.py` replaces the standard library's outbound entry points —
 `socket.socket.connect`, `connect_ex`, `socket.create_connection` and
@@ -21,20 +20,21 @@ The intended input is documents that cannot be uploaded to a third party.
 
 A stated policy covers first-party code only. Replacing the socket entry points
 also covers transitive dependencies: a library that opens a connection during a
-run raises `NetworkAccessError` rather than succeeding silently.
+run raises `NetworkAccessError`.
 
-There is no option to send content to a hosted API, including opt-in.
+The one exception is `inspect_documents(..., allow_network=True)`, which lets the
+loader call connect. The connections are recorded, the report states it, and
+complydoc's own processing stays guarded.
 
 ## Consequences
 
-The model catalogue and prices are **vendored** — data on disk, refreshed
-deliberately, never fetched at runtime. Each price carries its provenance: a
+The model catalogue and prices are **vendored**: data files updated with
+`make prices` and read from disk at runtime. Each price carries its provenance: a
 handful verified against a provider's own page, the rest marked imported, and a
 report that prices against an imported figure says so.
 
-OCR and name detection are local models, which is why they are optional extras.
-They are a large download and a run is still useful without them. `complydoc
-doctor` says what is installed and what its absence costs.
+OCR and name detection are local models, shipped as optional extras because of
+their download size. `complydoc doctor` says what is installed.
 
 ## Library use
 

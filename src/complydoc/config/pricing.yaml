@@ -1,8 +1,7 @@
 # Model prices and vision token formulas.
 #
 # Every entry carries its own `last_verified` date. complydoc prints that date in
-# every report and warns when it is older than `staleness_warn_days`. Prices move
-# constantly; a confidently-printed stale number is worse than no number, so an
+# every report and warns when it is older than `staleness_warn_days`. An
 # entry with `last_verified: null` is treated as never verified and warned about
 # on every run until you check it and set the date yourself.
 #
@@ -82,8 +81,7 @@ models:
       approximate_ratio: 1.0
       approximation_note: >
         Anthropic does not publish an offline tokenizer, so text token counts are
-        approximated with the o200k_base encoding. Treat the figure as indicative
-        rather than exact.
+        approximated with the o200k_base encoding.
     last_verified: 2026-06-24
     source_url: https://docs.anthropic.com/en/docs/about-claude/pricing
 
@@ -101,8 +99,7 @@ models:
       approximate_ratio: 1.0
       approximation_note: >
         Anthropic does not publish an offline tokenizer, so text token counts are
-        approximated with the o200k_base encoding. Treat the figure as indicative
-        rather than exact.
+        approximated with the o200k_base encoding.
     last_verified: 2026-06-24
     source_url: https://docs.anthropic.com/en/docs/about-claude/pricing
 
@@ -120,14 +117,13 @@ models:
       approximate_ratio: 1.0
       approximation_note: >
         Anthropic does not publish an offline tokenizer, so text token counts are
-        approximated with the o200k_base encoding. Treat the figure as indicative
-        rather than exact.
+        approximated with the o200k_base encoding.
     last_verified: 2026-06-24
     source_url: https://docs.anthropic.com/en/docs/about-claude/pricing
 
   # Imported from the litellm price table on 2026-09-09.
-  # Prices are per million tokens, USD. Check anything that matters before
-  # relying on it; complydoc records the import date, not an audit.
+  # Prices are per million tokens, USD. Check prices before relying on them.
+  # Only the import date is recorded.
 
   - id: deepseek-v4-flash-vision-exp
     provider: deepseek

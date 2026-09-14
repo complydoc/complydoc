@@ -92,7 +92,7 @@ def test_reveal_is_refused_for_never_reveal_categories(loader, config):
 
 
 def test_an_unreadable_page_is_recorded_rather_than_called_clean(loader, config):
-    """Zero findings on a page nobody could read is not an all-clear."""
+    """An unreadable page is listed in unreadable_pages."""
     result = scan(loader("scanned_page.pdf"), config.sensitive)
     assert result.total == 0
     assert result.unreadable_pages == [1]
@@ -117,7 +117,7 @@ def test_no_entity_spans_a_line_break(result):
 
 
 def test_unavailable_detectors_are_reported_as_unscanned_not_zero(loader, config):
-    """The distinction that matters most in this whole component."""
+    """An unavailable detector marks its categories as unscanned."""
     import complydoc.sensitive.detectors.ner as ner_module
 
     original = ner_module._load
@@ -130,7 +130,7 @@ def test_unavailable_detectors_are_reported_as_unscanned_not_zero(loader, config
     def unavailable(name: str):
         from complydoc.sensitive.registry import DetectorUnavailableError
 
-        raise DetectorUnavailableError("model deliberately removed for this test")
+        raise DetectorUnavailableError("model removed for this test")
 
     ner_module._load = unavailable  # type: ignore[assignment]
     try:

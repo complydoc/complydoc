@@ -1,8 +1,7 @@
 """Person and organisation names, via a local statistical model.
 
 spaCy is an optional extra. When it is missing, this raises DetectorUnavailableError
-so the affected categories are reported as *not scanned* rather than as zero
-found. Those are very different claims and only one of them is true.
+so the affected categories are reported as not scanned.
 
 The model runs entirely locally. It is downloaded once at install time, like any
 other dependency, and never contacts anything at scan time.
@@ -20,7 +19,7 @@ _MAX_CHARS = 400_000
 """spaCy's default parser ceiling; longer pages are truncated and the scan says so."""
 
 _MIN_ALPHA = 2
-"""Entities with fewer real letters than this are noise, not names."""
+"""Entities with fewer letters than this are discarded."""
 
 _ACRONYM_MAX = 5
 """Single all-caps tokens up to this length are treated as field labels."""
@@ -95,7 +94,7 @@ class NerDetector:
             # An entity straddling a line break is almost always an artefact of
             # reading a laid-out page as flat text: the model has run the end of
             # one line into the start of the next and named the result. Reporting
-            # "Jane Doe / Employer" as one person's name helps nobody.
+            # "Jane Doe / Employer" as one name would be wrong.
             if "\n" in span or "\r" in span:
                 continue
             if sum(1 for c in span if c.isalpha()) < _MIN_ALPHA:

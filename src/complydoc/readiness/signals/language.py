@@ -29,7 +29,7 @@ class LanguageCountSignal:
     id = "language_count"
     name = "Languages detected"
     unit = "languages"
-    why = "A pipeline tuned for one language lets a second pass through silently."
+    why = "A pipeline tuned for one language handles a second one poorly."
     applies_to = ALL_FORMATS
 
     def measure(self, document: Document) -> Measurement:

@@ -14,12 +14,8 @@ This is the audit turned around. The report says what a folder is like; this
 hands back the folder's own words, ready to go somewhere else, with everything
 the scan would have reported replaced by mask characters.
 
-Three things make it trustworthy rather than merely convenient.
-
-**It does not go through the report.** A report truncates long pages, because a
-person is going to read it. Dropping the end of a contract without saying so
-would be indefensible here, so the documents are loaded and scanned directly
-and the text comes back whole.
+**It does not go through the report.** A report truncates long pages, so the
+documents are loaded and scanned directly and the text comes back whole.
 
 **Every count says how good it is.** A token figure from the real encoding and
 a token figure from dividing by four are both numbers, and only one of them can
@@ -28,7 +24,7 @@ be budgeted against. `chunk.token_fidelity` says which this is.
 **It says what it could not get, and what it cannot promise.** A page nothing
 could be read off, a file that would not open, a category that could not be
 scanned at all — and, every time masking runs, that some categories are found
-by a statistical model rather than by a rule.
+by a statistical model.
 
 That last warning is the one to read. A card number is masked because it passed
 a checksum; a person's name is masked because a model thought it was one, and
@@ -96,7 +92,7 @@ class Chunk:
     masked: int
     """How many identifiers were covered over in this chunk."""
     masked_confirmed: int
-    """How many of those passed a checksum rather than being a model's guess.
+    """How many of those passed a checksum.
 
     The difference between the two is the part of the masking that is best
     effort. A chunk where they are equal had nothing guessed in it.
@@ -147,19 +143,16 @@ class TextResult:
     def complete(self) -> bool:
         """Whether everything in the folder reached this result.
 
-        False when a file or a page could not be read. Check it before treating
-        the text as the whole of what you pointed at.
+        False when a file or a page could not be read.
         """
         return not any(w.hides_content for w in self.warnings)
 
     @property
     def all_categories_scanned(self) -> bool:
-        """Whether every configured identifier category actually ran.
+        """Whether every configured identifier category ran.
 
-        Deliberately not called `masking_complete`: it says that nothing was
-        skipped, not that nothing was missed. The categories a model finds miss
-        things even when they run perfectly, which `MASKING_BEST_EFFORT` says
-        every time masking happens.
+        True means no category was skipped. Categories found by a model can
+        still miss values; `MASKING_BEST_EFFORT` says so every time masking runs.
         """
         return not any(w.kind == MASKING_INCOMPLETE for w in self.warnings)
 
@@ -181,7 +174,7 @@ def _mask_page(text: str, matches: list[SensitiveMatch]) -> tuple[str, int, int]
     checksum — the difference being the part of the masking that rests on a
     model's judgement.
 
-    Matches can overlap, and that is the whole difficulty. The detectors are
+    Matches can overlap. The detectors are
     independent, so a card number that passed a checksum and a name a model
     thought it saw can claim the same characters: on a line reading
     `Card 4111 1111 1111 1111` the model calls `Card 4111` an organisation.
@@ -244,8 +237,7 @@ def _split(text: str, spec: TokenizerSpec, max_tokens: int) -> list[str]:
     """Break a page into pieces of at most `max_tokens`, at paragraph breaks.
 
     Paragraphs first, then lines, and a line longer than the budget on its own
-    is passed through whole rather than cut mid-sentence: a chunk slightly over
-    budget is a smaller problem than a sentence in two halves.
+    is passed through whole.
     """
     if count_tokens(text, spec).tokens <= max_tokens:
         return [text]
@@ -302,13 +294,11 @@ def extract_text(
 ) -> TextResult:
     """Read a folder's text, masked, with token counts and what went wrong.
 
-    `ocr` is on here, unlike the audit: somebody asking for the text of a
-    folder wants the scanned pages read too, and a silently empty page is the
-    thing this is meant to warn about rather than produce.
+    `ocr` is on by default here, unlike the audit, so scanned pages are read.
 
     `mask=False` returns the text as the page says it, with no scan run at all.
     `reveal=True` runs the scan and reports the counts while leaving the values
-    in place — a combination worth being deliberate about.
+    in place.
     """
     from complydoc.config.loader import load_config
 
@@ -417,9 +407,8 @@ def extract_text(
             ExtractionWarning(
                 kind=MASKING_BEST_EFFORT,
                 detail=(
-                    f"{', '.join(guessed).lower()} are recognised by a statistical model "
-                    f"rather than by a rule, so some will have been missed. The text is "
-                    f"much safer than the original and is not certified free of them"
+                    f"{', '.join(guessed).lower()} are recognised by a statistical model, "
+                    f"so some will have been missed"
                 ),
             )
         )
@@ -430,7 +419,7 @@ def extract_text(
                 kind=TEXT_ESTIMATED_TOKENS,
                 detail=(
                     f"no local encoding for {spec.encoding}, so token counts are "
-                    f"a character estimate rather than a measurement"
+                    f"a character estimate"
                 ),
             )
         )

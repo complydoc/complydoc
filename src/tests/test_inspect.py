@@ -167,9 +167,8 @@ def test_a_loader_stopped_by_the_guard_produces_a_report_saying_so():
 def test_the_guard_is_restored_afterwards():
     """The socket module comes back exactly as it was.
 
-    Starts from a disarmed guard deliberately: the command-line tests arm it for
-    the life of the process, which is correct for the CLI, and `guarded()` leaves
-    a guard it did not arm alone.
+    Starts from a disarmed guard, because the command-line tests arm it for the
+    life of the process and `guarded()` leaves a guard it did not arm alone.
     """
     was_armed = offline.is_armed()
     offline.disarm()

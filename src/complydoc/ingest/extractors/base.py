@@ -1,14 +1,12 @@
 """What an extractor is asked for, and what it hands back.
 
 An extractor reads the text layer of one page. It does not open the file, decide
-its size, find its images or read its fonts — those are facts about the document
-rather than choices about how to read it, and they stay with the loader.
+its size, find its images or read its fonts; the loader does that.
 
 Extractors differ in what they can offer. pdfplumber returns a box per word and
-finds ruled tables; pdfium returns a box per line and finds none. Rather than
-paper over that, an extractor declares what it provides, and the signals that
-need what it cannot give report that they could not measure instead of
-returning a number that means something else.
+finds ruled tables; pdfium returns a box per line and finds none. An extractor
+declares what it provides, and signals that need something it does not provide
+report as not measured.
 """
 
 from __future__ import annotations
@@ -25,8 +23,7 @@ Granularity = Literal["word", "line", "none"]
 
 Coverage from line boxes counts the gaps between words as text,, so the two are not
 interchangeable. `"none"` is for a reader that returns text and no geometry at
-all: it reports no coverage rather than nought per cent, which would read as an
-empty page."""
+all: it reports no coverage."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -57,7 +54,7 @@ class Extraction:
     """Characters before unicode normalisation, where the extractor exposes them.
 
     Empty when it does not: the garbled-character signal needs un-normalised text
-    and will say it could not measure rather than guess from normalised text.
+    and reports as not measured without it.
     """
     tables: list[TableInfo] = field(default_factory=list)
     tables_searched: bool = False
@@ -72,8 +69,7 @@ class Extraction:
     def coverage_pct(self, width: float, height: float) -> float | None:
         """Share of the page covered by text boxes, or None if none were returned.
 
-        A reader that hands back text without geometry has not measured nought
-        per cent coverage; it has not measured coverage.
+        A reader that returns text without geometry has no coverage measurement.
         """
         if self.granularity == "none":
             return None

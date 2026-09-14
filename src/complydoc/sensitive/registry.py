@@ -23,9 +23,7 @@ T = TypeVar("T", bound=type)
 class DetectorUnavailableError(RuntimeError):
     """A detector cannot run — usually an optional model that is not installed.
 
-    Raised rather than returning nothing, so the scan reports the category as
-    unscanned instead of reporting a count of zero. Those two things mean very
-    different things to someone assessing breach risk.
+    Raised so the scan reports the category as unscanned.
     """
 
 

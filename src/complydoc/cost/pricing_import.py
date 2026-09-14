@@ -11,7 +11,7 @@ hosted APIs, which is the wrong shape for a tool that never calls one. Only the
 data is used, and only when you ask for it.
 
 The table carries per-token prices but no vision token formulas, because those
-are provider-specific tiling rules rather than a number. complydoc keeps those
+are provider-specific tiling rules. complydoc keeps those
 in `vision_formulas`, and this maps each provider onto the right shape.
 """
 
@@ -47,7 +47,7 @@ _VISION_FORMULA = {
 }
 
 _ASSUMED_FORMULA = frozenset({"deepseek", "moonshot", "zai"})
-"""Providers whose vision formula is inferred rather than documented."""
+"""Providers whose vision formula is assumed; none is published."""
 
 # Providers whose text tokenizer complydoc can count exactly with a vendored encoding.
 _EXACT_TOKENIZER = {"openai", "azure", "azure_ai"}
@@ -80,8 +80,7 @@ def _from_vendored() -> dict[str, dict[str, object]]:
     """The package's own table, put back into the upstream shape.
 
     complydoc vendors a normalised subset so that a run needs nothing installed.
-    Reading it back through the same code path keeps one selection routine
-    rather than two that drift.
+    Reading it back through the same code path keeps one selection routine.
     """
     from complydoc.cost.price_table import TABLE_PATH
 
@@ -186,8 +185,8 @@ def to_yaml(models: list[ImportedModel], today: dt.date | None = None) -> str:
     stamp = (today or dt.date.today()).isoformat()
     lines = [
         f"  # Imported from the litellm price table on {stamp}.",
-        "  # Prices are per million tokens, USD. Check anything that matters before",
-        "  # relying on it; complydoc records the import date, not an audit.",
+        "  # Prices are per million tokens, USD. Check prices before relying on them.",
+        "  # Only the import date is recorded.",
     ]
     for model in models:
         formula = model.vision_formula
@@ -215,10 +214,7 @@ def to_yaml(models: list[ImportedModel], today: dt.date | None = None) -> str:
                 f"        {model.provider} does not publish an offline tokenizer; token counts are",
                 "        approximated with the o200k_base encoding.",
             ]
-        # Deliberately not last_verified: nothing was verified. Stamping the
-        # import date into that field would make the report say a person checked
-        # the price, and the staleness warning would then count down from a
-        # check that never happened.
+        # `imported_on`, with `last_verified` left empty: the price was not checked.
         lines += [
             "    price_source: imported",
             f"    imported_on: {stamp}",

@@ -1,94 +1,58 @@
-# Contributing to complydoc
+# Contributing
 
-## Getting set up
+## Setup
 
 ```bash
-make install-all   # dependencies, both optional extras, and the spaCy model
-make check         # lint, types, tests — what CI runs
+make install-all   # dependencies, optional extras and the spaCy model
+make check         # lint, types and tests, as CI runs them
 make               # list every target
 ```
 
-`make tool` installs the working tree as a global `complydoc`. It passes `--reinstall`
-as well as `--force`, because uv otherwise reuses the wheel it already built for this
-version number and an edit that leaves the version alone is silently ignored.
+`make tool` installs the working tree as the global `complydoc`, with `--force --reinstall`
+so uv rebuilds the wheel even when the version is unchanged. Re-run it after each change you
+want on your PATH. It also reinstalls the spaCy model and runs `complydoc doctor`.
 
-The copy it installs does not follow the checkout, so **re-run `make tool` after every
-change you want on your PATH**. Use the target rather than `uv tool install .` by hand:
-rebuilding the environment drops the spaCy model, and `make tool` puts it back and then
-runs `complydoc doctor` so you can see what the new install can actually do.
+## Layout
+
+| Path | Contents |
+| --- | --- |
+| `src/complydoc/ingest/` | Per-format loaders behind the `Loader` protocol |
+| `src/complydoc/readiness/signals/` | One file per signal, registered by decorator |
+| `src/complydoc/sensitive/detectors/` | Regex, checksum and NER detectors |
+| `src/complydoc/hidden/` | Hidden content and instruction checks |
+| `src/complydoc/cost/` | Tokenizers, vision formulas, price catalogue |
+| `src/complydoc/report/` | JSON and HTML writers, previews, limitations |
+| `src/complydoc/ui/` | Report template, stylesheet and script |
+| `src/complydoc/config/` | YAML configuration |
+| `src/tests/` | Tests and fixtures; `integration/` needs the `integrations` group |
+| `src/scripts/` | Maintenance scripts, not shipped |
+| `docs/` | Documentation site |
+
+Documents go through discovery and a loader into the `Document` model; every component reads
+that model. Cost, readiness and the sensitive scan are independent.
+
+`offline.py` replaces the outbound socket and DNS entry points before any file is opened.
+`src/tests/test_offline_guard.py` runs a full audit with the guard armed.
 
 ## Documentation
 
-`make docs` serves the site at `localhost:8000` and rebuilds as you edit;
-`make docs-build` builds it the way CI does, under `--strict`, so a broken link
-fails rather than shipping.
+`make docs` serves the site at `localhost:8000`; `make docs-build` builds it with `--strict`.
 
-The rule the site is built on: **generate everything that can be generated.**
-Nothing under `docs/reference/` is committed — the command line comes from the
-Typer app, the Python API from the docstrings, the report shape from
-`report_shape()` beside the version it describes, and the configuration from the
-Pydantic models. A renamed flag changes the documentation in the same commit as
-the code, without anybody remembering to.
+`docs/reference/` is generated at build time from the Typer app, the docstrings,
+`report_shape()` and the configuration models. Guides include examples from `docs/examples`,
+which `src/tests/test_docs.py` executes.
 
-What is written by hand is what a machine cannot produce: the guides and the
-explanations. Every example in a guide is a real file under `docs/examples`,
-included with a snippet directive and executed by `src/tests/test_docs.py`. An
-example that stops working fails the test suite. Do not paste code into a guide
-that is not one of those files.
+## Sample documents
 
-## The sample documents
-
-`src/complydoc/sample` holds six synthetic documents, shipped in the wheel so
-`complydoc demo` has something to audit without anyone having to find a folder
-first. They are generated, not real: every name and identifier in them was
-invented, and none of them describes a person.
-
-Between them they carry the problems the tool exists to find — a scan with no
-text layer, a two-column page the readers disagree about, a table held together
-by whitespace, and identifiers of several kinds. They are copies of the
-fixtures under `src/tests/fixtures`, renamed to look like documents somebody would
-actually point this at, and `make sample` refreshes them.
-
-Nothing but a document belongs in that folder: discovery reports anything else
-as a skipped file, and the demo is the first thing many people will see.
-
-## How it is put together
-
-Documents pass through discovery and a per-format loader into the normalised `Document`
-model, and everything downstream reads that rather than touching a PDF directly. The three
-analysis components are independent: asking for only the sensitive scan loads no tokenizer
-and computes no cost.
-
-| Path | What lives there |
-| --- | --- |
-| `ingest/` | Per-format loaders behind one `Loader` protocol |
-| `readiness/signals/` | One file per signal, registered by decorator |
-| `sensitive/detectors/` | Regex, checksum and NER detectors, same pattern |
-| `cost/` | Tokenizers, vision formulas, the price catalogue |
-| `report/` | JSON, HTML, the page previews and the generated limitations |
-| `config/` | Every number that appears in a report |
-
-`offline.py` replaces the standard library's outbound socket and DNS entry points before any
-file is opened. `src/tests/test_offline_guard.py` runs a full audit with the guard armed. Nothing
-may reach the network at run time, and a dependency that tries fails the run loudly rather
-than succeeding quietly.
-
-### The scripts folder
-
-Three maintenance programs, none of which ship in the wheel and none of which run during an
-audit. Each is reachable through a `make` target:
-
-| Script | Target | What it does |
-| --- | --- | --- |
-| `build_price_table.py` | `make prices` | Refreshes the vendored model catalogue |
-| `build_sbom.py` | `make sbom` | Writes a CycloneDX bill of materials from the lockfile |
-| `build_diagram.py` | `make diagrams` | Re-exports the README architecture diagram |
+`src/complydoc/sample` holds the six synthetic documents used by `complydoc demo`. They are
+copies of fixtures in `src/tests/fixtures`; `make sample` refreshes them. Every name and
+identifier in them is invented.
 
 ## Adding a signal
 
-One file under `readiness/signals/` with an `@signal` decorated class, and a weight block in
-`readiness.yaml`. The package is walked at import time, so there is no central list to
-update. Detectors work the same way with `@detector`, loaders with `register`.
+Add a file under `readiness/signals/` with an `@signal` class, and a block in
+`readiness.yaml`. Signals are discovered at import. Detectors use `@detector`; loaders use
+`register`.
 
 ```python
 @signal
@@ -102,108 +66,58 @@ class ScanDpiSignal:
     def measure(self, document: Document) -> Measurement: ...
 ```
 
-A signal that cannot measure its property returns `Measurement.na(reason)`, and the reason is
-carried into the report. That distinction matters more than it looks: a signal that returns
-zero because it could not look is a false measurement, and the report is built to keep the
-two apart.
+Return `Measurement.na(reason)` when the property cannot be measured.
 
 ## Tests and fixtures
 
 ```bash
 make test
-make fixtures   # rebuild the committed fixtures from src/tests/generate_fixtures.py
+make fixtures   # rebuild fixtures from src/tests/generate_fixtures.py
 ```
 
-The fixtures are committed so the suite does not depend on a PDF writer's output staying
-byte-stable; CI checks the generator still produces every one of them. They include a scanned
-page, a three-row merged header table, a two-column layout, a whitespace-aligned table, a
-scan both skewed and rotated, an encrypted PDF, one with a corrupted ToUnicode map, mixed
-page sizes, a fillable form, and a file that is not a valid PDF.
+Fixtures are committed; CI checks the generator still produces all of them. Identifiers in the
+PII fixture are test values: a published test card number, the ISO 13616 example IBAN, an
+Ofcom drama-range phone number, and invented names.
 
-Every identifier in the synthetic PII fixture is fake: a published test card number, the IBAN
-from the ISO 13616 specification, an Ofcom fiction-range phone number, and invented names.
+- Assert on behaviour. CLI help text and Rich tables wrap differently in CI.
+- Calibrate thresholds on real pages.
 
-Two habits worth keeping, both learned from breaking them:
+## Maintenance scripts
 
-- Assert on behaviour, not on rendered output. A test that reads the CLI's help text or a
-  Rich table passes locally and fails on CI, because both wrap at the width of whatever
-  terminal is running them.
-- A number in a test that came from tuning against the fixtures is a number that will be
-  wrong on real documents. Measure real pages before calibrating a threshold.
+| Script | Target | Purpose |
+| --- | --- | --- |
+| `build_price_table.py` | `make prices` | Refresh the vendored model catalogue |
+| `build_sbom.py` | `make sbom` | CycloneDX SBOM from the lockfile |
+| `build_diagram.py` | `make diagrams` | Rebuild the architecture diagram |
+
+Entries written by `make prices` are marked `imported`. To mark one verified, check it at the
+source and replace `price_source`/`imported_on` with `last_verified`.
 
 ## Branches and releases
 
-`main` holds released code and nothing else. Work lands on `development` first and reaches
-`main` as one merge per release; both branches run the full check suite on every push.
+Work lands on `development`; `main` receives fast-forward merges for releases. Both run the
+full check suite.
 
-Versions are semantic, and what each number means is decided by what a reader of an old
-report would notice:
-
-| Change | Bump |
+| Change | Version bump |
 | --- | --- |
-| The JSON shape breaks, or a config key changes meaning | Major |
+| Report JSON shape breaks, or a config key changes meaning | Major |
 | A signal, detector, model or flag is added | Minor |
 | A measurement, threshold or price is corrected | Patch |
 
-The JSON carries its own `schema_version`, which is the field to branch on when reading
-reports programmatically — it moves only when the shape does.
-
-Releases are cut by tagging `main`:
-
 ```bash
-make release-check       # version, changelog and working tree agree
-git tag -a v0.2.0 -m "complydoc v0.2.0"
-git push origin v0.2.0
+make release-check
+git tag -a v0.3.1 -m "complydoc v0.3.1"
+git push origin v0.3.1
 ```
 
-The tag builds the wheel and sdist, writes a CycloneDX SBOM from the lockfile, records
-checksums, signs build provenance for each artefact, and opens a draft release. The tag has
-to match `complydoc.__version__` and `src/complydoc/CHANGELOG.md` has to have an entry for
-it, or the build stops before producing anything — a report that names a version the artefact
-does not carry would be worse than no release. Verify a downloaded artefact with:
+The tag must match `complydoc.__version__` and have a changelog entry. `release.yml` builds the
+wheel and sdist, an SBOM and checksums, attests the artefacts, and drafts a release:
 
 ```bash
-gh attestation verify complydoc-0.2.0-py3-none-any.whl --repo duartecaldascardoso/complydoc
+gh attestation verify complydoc-0.3.1-py3-none-any.whl --repo duartecaldascardoso/complydoc
 ```
 
-GitHub does not store attestations for a user-owned private repository, so while this
-repository is private the release ships `SHA256SUMS` and the SBOM without a signed provenance
-statement, and says so in its notes.
-
-### Publishing to PyPI
-
-The tag does not publish. It drafts a release; **publishing that release** is what uploads
-to PyPI, and that is deliberate — a version on PyPI can never be replaced or reused, so the
-last step before it is a person deciding rather than a `git push`. What gets uploaded is the
-wheel and sdist already attached to the release, so PyPI receives the exact artefacts that
-were built and attested, not a rebuild that might differ.
-
-There is no API token anywhere. `publish.yml` authenticates with PyPI Trusted Publishing:
-GitHub mints a short-lived OIDC token proving which workflow is running, and PyPI checks it
-against the publisher configured for the project.
-
-That configuration is a one-time job on the PyPI website and cannot be done from here:
-
-1. Sign in at [pypi.org](https://pypi.org) and go to **Your projects → Publishing**.
-2. Add a **pending publisher** — the project does not exist yet, so this is what reserves
-   `complydoc` for the first upload. Owner `duartecaldascardoso`, repository `complydoc`,
-   workflow `publish.yml`, environment `pypi`.
-3. In this repository, create the `pypi` environment under **Settings → Environments**.
-   Adding yourself as a required reviewer there puts a second confirmation in front of every
-   upload, which is worth having.
-
-After that, publishing a drafted release uploads it. `workflow_dispatch` with a tag name
-re-runs an upload that partly failed; it skips files that already landed rather than erroring
-on them.
-
-## Keeping prices current
-
-```bash
-make prices    # refresh the vendored catalogue from models.dev and litellm
-```
-
-Every entry it writes is marked `imported`, not `verified`, because nobody checked it against
-the provider's own page. That distinction is load-bearing: an imported price stays out of
-staleness warnings, and a report that prices against one says so in its limitations. To
-promote one, check the number at the source and replace `price_source`/`imported_on` with a
-`last_verified` date.
+Publishing the draft runs `publish.yml`, which uploads the attached artefacts to PyPI through
+Trusted Publishing (owner `duartecaldascardoso`, repository `complydoc`, workflow
+`publish.yml`, environment `pypi`). `workflow_dispatch` with a tag re-runs a partial upload and
+skips files already present.

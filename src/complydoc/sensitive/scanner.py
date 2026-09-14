@@ -3,9 +3,7 @@
 The scan reports counts and locations. Values are masked unless `--reveal` was
 passed, and categories under `masking.never_reveal` stay masked even then.
 
-Pages with no readable text are recorded by number rather than treated as
-containing nothing. A scanned bank statement that nobody could read is not a
-clean bank statement, and a report that implies otherwise is dangerous.
+Pages with no readable text are recorded by number.
 """
 
 from __future__ import annotations

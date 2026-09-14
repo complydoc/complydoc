@@ -60,7 +60,7 @@ def _profile_score(ink: Ink, angle: float) -> float:
 
     Level text lines produce alternating bands of ink and whitespace and so a
     spiky profile; sloped lines smear into a flat one. Using the coefficient of
-    variation rather than raw variance keeps the number dimensionless, so scores
+    variation keeps the number dimensionless, so scores
     from differently shaped images can be compared.
 
     Rotating the page and summing its rows is the same thing as summing the ink

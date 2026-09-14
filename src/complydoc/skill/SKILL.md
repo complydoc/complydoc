@@ -31,7 +31,7 @@ Run `complydoc` with no arguments to audit the current directory.
 | `complydoc models` | Which models can be priced against (`--new N` for the latest, `--all` for every one) |
 | `complydoc doctor` | What is installed |
 
-Flags worth knowing: `--monthly-volume N` extrapolates cost, `--model <id>` (repeatable)
+Useful flags: `--monthly-volume N` extrapolates cost, `--model <id>` (repeatable)
 narrows the comparison, `--no-ocr` is faster, `--out <dir>` moves the reports,
 `--password <pw>` is tried on encrypted PDFs, `--no-extracted-text` leaves the
 document content out of the report.
@@ -54,7 +54,7 @@ complydoc sensitive ./invoices --print-json | jq '{
 }'
 ```
 
-- `run.components_run` — which components actually ran.
+- `run.components_run` — which components ran.
 - `run.offline_guard` — `armed` means nothing could have left the machine.
 - `aggregate.sensitive_by_category` / `sensitive_by_severity` — folder totals.
 - `overall.score` — global readiness, 0-100: content, cost path and exposure
@@ -93,26 +93,25 @@ produces a report with no document content in it. Only pass `--reveal` if the us
 explicitly asks for unmasked values in the findings table.
 
 **A price is either verified or imported, and the report says which.** Ten or so models
-carry a price someone read off the provider's page; a few hundred more come from a
-third-party table and nobody has checked them. Naming one of those with `--model` puts a
-`Price provenance` entry in `limitations[]` — repeat it rather than quoting the figure
-as if it were checked.
+carry a price verified against the provider's page; a few hundred more come from a
+third-party table and are unchecked. Naming one of those with `--model` adds a
+`Price provenance` entry to `limitations[]`; include that caveat when quoting the figure.
 
 **Costs are input tokens only.** Output cost depends on the prompt, which complydoc
-cannot know, so the real bill is higher. Prices carry `last_verified`; report a stale
-price as stale rather than quoting it plainly.
+cannot know, so the real bill is higher. Prices carry `last_verified`; say when a
+price is stale.
 
 **A table found by alignment reports less than a ruled one.** Tables drawn with ruling
 lines give up their header depth and merged cells; a table held together by whitespace
-alone carries nothing to read those from, so they come back null rather than zero.
+alone has neither, so both come back null.
 
 **A sampled run does not describe the folder.** When `run.sampled_from` is set, every
 total, monthly figure and count covers only the documents that were read. Report them as
-a sample of that many out of `run.sampled_from`, never as the folder's totals.
+a sample of that many out of `run.sampled_from`.
 
 **Timing is local only.** `seconds_per_document` is the cost of reading and analysing a
 document on this machine, before anything reaches a model. Time on the model is null
-unless someone has configured a measured throughput.
+unless a measured throughput is configured.
 
 ## Reporting back
 

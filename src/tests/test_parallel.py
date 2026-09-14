@@ -2,7 +2,7 @@
 
 Neither is allowed to change a finding. `--jobs` is a wall-clock decision and
 `--sample` is a scope decision, so the first must produce byte-identical
-findings and the second must say plainly that it looked at only part.
+findings and the second must state that it read only part of the folder.
 """
 
 from __future__ import annotations
@@ -86,7 +86,7 @@ def test_a_large_folder_uses_the_machine():
 
 
 def test_asking_for_workers_overrides_the_judgement():
-    """A number given on the command line is an instruction, not a hint."""
+    """An explicit worker count is used as given."""
     assert resolve_jobs(4, 15) == 4
 
 

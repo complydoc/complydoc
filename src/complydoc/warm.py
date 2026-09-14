@@ -5,9 +5,8 @@ vocabulary and the language identifier up front. On its own that saves nothing,
 but the process pool forks its workers from a server process that has imported
 this, so each worker starts with them already in memory.
 
-The entity model is deliberately **not** here, and that is the whole point of
-this note. Loading it pulls in torch, and a process that has initialised torch
-is not safe to fork from: on macOS it brings up Metal and Objective-C runtime
+The entity model is not preloaded. Loading it pulls in torch, and a process that
+has initialised torch is not safe to fork from: on macOS it brings up Metal and Objective-C runtime
 state, and Apple's frameworks are explicit that they do not survive a fork.
 A worker forked from such a process was observed segfaulting inside pypdfium2,
 in code that has nothing to do with either library — the signature of an

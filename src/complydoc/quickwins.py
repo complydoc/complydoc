@@ -1,21 +1,8 @@
 """What to do next, ranked, with what it would buy.
 
-The audit says what is wrong. This says what to do about it, and it only says
-things it can substantiate: every entry names the documents it applies to, and
-where the consequence can be computed it is computed rather than estimated in
-adjectives.
-
-Two rules keep this from becoming a nag.
-
-It never predicts a score. Saying "this would take you to 84" would be a
-fabrication — the signals interact, and the only honest way to know is to fix
-the documents and run the audit again. It states the concrete effect instead:
-four documents move onto the text path, and here is what that costs today.
-
-And it always says who acts. "complydoc can do this" and "you have to do this"
-are different rows, and mixing them produces a list nobody can work through.
-Rescanning a fax at 300 dpi is not something a report can do for you, and
-pretending otherwise wastes the reader's time.
+Each entry names the documents it applies to and who acts (`complydoc` or
+`you`). Where the effect can be computed from the report, such as the cost of
+the image path, it is. Entries do not predict a score.
 """
 
 from __future__ import annotations
@@ -30,7 +17,7 @@ __all__ = ["QuickWin", "quick_wins"]
 
 @dataclass(frozen=True, slots=True)
 class QuickWin:
-    """One thing worth doing, and what is known about doing it."""
+    """One recommended action and the documents it applies to."""
 
     id: str
     title: str
@@ -67,8 +54,7 @@ class _Context:
         """Record a win, unless it applies to nothing.
 
         Every builder computes its list first and calls this unconditionally,
-        so the empty case is handled once here rather than guarded at each of
-        the call sites.
+        so the empty case is handled here.
         """
         if not documents:
             return
@@ -140,18 +126,17 @@ def _skipped_documents(context: _Context) -> None:
         id="supply_password",
         title="Supply a password for the encrypted files",
         detail=(
-            "These were skipped, so nothing in them has been measured — they are "
-            "absent from every figure in this report, not scored badly in it. "
+            "These were skipped and are absent from every figure in this report. "
             "Pass --password to include them."
         ),
         documents=encrypted,
         actor="you",
-        effect="they would be audited rather than skipped",
+        effect="they would be audited",
     )
 
     # An unsupported type and a corrupt file are both skipped and are not the
-    # same problem. One is a folder that holds more than documents; the other
-    # is a document nobody can open.
+    # same problem: one is a file of another type, the other a document that
+    # cannot be opened.
     unsupported = [s.path.name for s in context.report.skipped if "unsupported" in s.reason.lower()]
     context.add(
         id="unsupported_types",
@@ -246,8 +231,7 @@ def _high_severity_exposure(context: _Context) -> None:
         id="high_severity",
         title="Deal with the confirmed high-severity identifiers",
         detail=(
-            "These carry identifiers that passed a checksum, so they are what "
-            "they look like rather than a pattern that happened to match. "
+            "These carry identifiers that passed a checksum. "
             "Anything sent to a hosted model takes them with it."
         ),
         documents=exposed,
@@ -257,7 +241,7 @@ def _high_severity_exposure(context: _Context) -> None:
 
 
 def _poor_ocr(context: _Context) -> None:
-    """Text recognised badly is worse than text not recognised at all."""
+    """Pages with low OCR confidence."""
     poor: list[str] = []
     for document in context.report.documents:
         readiness = document.readiness
@@ -354,11 +338,7 @@ _BUILDERS = (
 
 
 def quick_wins(report: AuditReport) -> list[QuickWin]:
-    """Everything worth doing to this folder, most documents first.
-
-    Ranked by how much of the folder each one touches. A fix for eleven
-    documents is worth reading before a fix for one, whoever has to do it.
-    """
+    """All quick wins for the report, ranked by the number of documents affected."""
     context = _Context(report=report)
     for builder in _BUILDERS:
         builder(context)

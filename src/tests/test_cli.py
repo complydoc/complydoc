@@ -152,9 +152,7 @@ def test_the_run_never_crashes_on_the_awkward_folder(tmp_path):
 def test_models_command_lists_configured_models(monkeypatch):
     """Read at a fixed width: a narrow terminal wraps the ids mid-string.
 
-    The table is for a person to read, so the test reads it the way a person
-    with a normal-sized window would rather than at whatever width happens to
-    be running the suite.
+    The test sets a fixed terminal width.
     """
     # The console is built when the module is imported, so it has already read
     # the width; setting the environment here would be too late.
@@ -314,12 +312,7 @@ def _run_json(tmp_path, *flags):
 
 
 def test_the_extracted_text_is_kept_by_default(tmp_path):
-    """Reading a page beside what was read off it is the point of the tool.
-
-    Asserted through the CLI rather than by reading the help text, which wraps at
-    the width of whatever terminal is running the test, or by introspecting
-    typer, whose internals are not the contract.
-    """
+    """Checked through CLI output, since help text wraps with terminal width."""
     report = _run_json(tmp_path)
     assert report["run"]["extracted_text_used"] is True
     assert report["documents"][0]["extracted_text"]
@@ -334,8 +327,8 @@ def test_the_text_can_be_left_out(tmp_path):
 def test_models_can_be_listed_newest_first(monkeypatch):
     """An alphabetical dump sorts a two-year-old model above this month's.
 
-    Checked against the catalogue rather than by reading dates out of the
-    table, which prints release dates and import dates in the same row.
+    Checked against the catalogue, since the table prints release and import
+    dates in the same row.
     """
     from complydoc import cli
     from complydoc.config.loader import load_config
@@ -364,7 +357,7 @@ def test_searching_the_catalogue_finds_imported_models(monkeypatch):
 
 
 def test_the_demo_audits_the_samples_that_ship_with_the_tool(tmp_path):
-    """Somebody evaluating this should not have to find a folder first."""
+    """`complydoc demo` audits the bundled samples."""
     import json
 
     result = runner.invoke(app, ["demo", "--no-open", "--no-ocr", "--out", str(tmp_path)])

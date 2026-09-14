@@ -1,8 +1,7 @@
 """Standalone image loader (PNG, JPG).
 
 An image file is a scan with no text layer by definition, so everything depends
-on OCR. Without the OCR extra the page is reported as unread rather than as
-empty.
+on OCR. Without the OCR extra the page is reported as unread.
 """
 
 from __future__ import annotations

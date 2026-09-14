@@ -25,7 +25,7 @@ from complydoc.readiness.base import SignalStatus
 from complydoc.report.preview import PagePreview
 from complydoc.sensitive.scanner import ScanResult
 
-if TYPE_CHECKING:  # pragma: no cover - resolved by the type checker, not at runtime
+if TYPE_CHECKING:  # pragma: no cover - type-checking imports only
     from complydoc.overall import OverallReadiness
     from complydoc.quickwins import QuickWin
 
@@ -48,12 +48,11 @@ SCHEMA_VERSION = 4
 
 
 def report_shape() -> dict[str, object]:
-    """What a report's JSON holds, for somebody about to parse one.
+    """What a report's JSON holds, for code that parses it.
 
     Lives next to the version it describes, and is the single source for both
     `complydoc schema` and the documentation. Written by hand because it is a
-    summary rather than a schema — a full JSON Schema of this shape is four
-    hundred lines and answers fewer questions than thirty do.
+    summary; a full JSON Schema of this shape is about four hundred lines.
     """
     return {
         "schema_version": SCHEMA_VERSION,
@@ -129,7 +128,7 @@ def report_shape() -> dict[str, object]:
 
 @dataclass(frozen=True, slots=True)
 class MetadataFinding:
-    """An identifier found in a document's metadata rather than its text.
+    """An identifier found in a document's metadata.
 
     Loaders attach metadata to every document they return, and it is usually
     stored beside the content — in a vector store, next to each chunk — so an
@@ -147,7 +146,7 @@ class MetadataFinding:
 
     @property
     def significant(self) -> bool:
-        """Whether this finding should raise an alarm rather than only be listed.
+        """Whether this finding raises limitations and quick wins.
 
         A low-severity category found by the name model is excluded. Loaders put
         the producing software in metadata — "ReportLab PDF Library", "Microsoft
@@ -316,7 +315,7 @@ class RunMetadata:
 
 @dataclass(frozen=True, slots=True)
 class DocumentTiming:
-    """Wall clock spent on one document, measured rather than modelled."""
+    """Wall clock spent on one document."""
 
     read_seconds: float
     analyse_seconds: float
@@ -327,7 +326,7 @@ class DocumentTiming:
 
 @dataclass(frozen=True, slots=True)
 class PageText:
-    """Exactly what was read off one page, for checking extraction quality."""
+    """The text read off one page, for checking extraction quality."""
 
     number: int
     source: str
@@ -342,7 +341,7 @@ class PageText:
 _SIMILAR_ENOUGH = 0.95
 """Below this, two readings of a page are telling different stories.
 
-Line endings and stray whitespace put honest extractors at about 0.99 of each
+Line endings and stray whitespace put agreeing extractors at about 0.99 of each
 other; a scrambled two-column page measures around 0.1.
 """
 
@@ -413,11 +412,7 @@ class DocumentReport:
 
     @property
     def disagreement(self) -> str | None:
-        """What the extractors disagreed about, in the words a reader needs.
-
-        "They differ" sends someone to compare two thousand characters by eye.
-        Naming the kind of difference says where to look.
-        """
+        """The kind of disagreement between extractors, or None."""
         if len(self.extractions) < 2:
             return None
         kept = self.extractions[0]
@@ -508,9 +503,9 @@ class AuditReport:
     limitations: list[Limitation] = field(default_factory=list)
     staleness_warnings: list[str] = field(default_factory=list)
     signal_weights: dict[str, float] = field(default_factory=dict)
-    """Printed in the report whenever a score is shown, never hidden."""
+    """Printed in the report whenever a score is shown."""
     config_masking: MaskingConfig | None = None
-    """Echoed so a reader can see exactly how much of a value was ever shown."""
+    """Echoed so the report can state how much of a value is shown."""
     overall: OverallReadiness | None = None
     """Global readiness: content, cost and exposure combined.
 
@@ -521,7 +516,7 @@ class AuditReport:
     quick_wins: list[QuickWin] = field(default_factory=list)
     """What to do next, ranked. See `complydoc.quickwins`."""
     loader: LoaderRun | None = None
-    """Set when the documents came from an external loader rather than from files."""
+    """Set when the documents came from an external loader."""
     loader_comparison: LoaderComparison | None = None
     """Set by `compare_loaders`. `loader` is then the baseline's run."""
 

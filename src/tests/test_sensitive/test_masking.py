@@ -1,4 +1,4 @@
-"""Masking is the default and the point. These tests are the guard rail."""
+"""Masking of detected values."""
 
 from __future__ import annotations
 

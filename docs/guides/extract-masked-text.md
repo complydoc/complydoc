@@ -15,8 +15,7 @@ financial-summary.pdf p1: 74 tokens (approximate)
 
   [unreadable_page] invoice-scan.pdf p1: nothing could be read off this page; OCR was not run
   [masking_best_effort] run: organisation name, person name are recognised by a statistical
-  model rather than by a rule, so some will have been missed. The text is much safer
-  than the original and is not certified free of them
+  model, so some will have been missed
 ```
 
 ## Warnings
@@ -43,8 +42,7 @@ financial-summary.pdf p1: 74 tokens (approximate)
 ## Chunks
 
 One chunk per page, unless `max_tokens` is set. A page over the budget is split
-at paragraph breaks; a single paragraph exceeding the budget is emitted whole
-rather than split mid-sentence.
+at paragraph breaks; a single paragraph exceeding the budget is emitted whole.
 
 `chunk.token_fidelity` is `exact` when the count came from the model's own
 encoding, `approximate` from another provider's encoding, and `estimated` when

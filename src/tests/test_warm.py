@@ -43,8 +43,8 @@ def test_nothing_that_cannot_be_forked_is_warmed():
     with no connection to either library, which is what an address space
     inherited in a bad state looks like.
 
-    Warming it was worth about six per cent of a parallel scan. This test is
-    here so that six per cent cannot quietly be taken back.
+    Preloading it saved about six per cent of a parallel scan. This test keeps
+    it out.
     """
     import subprocess
     import sys

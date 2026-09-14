@@ -1,12 +1,10 @@
 """The optional weighted score.
 
-The breakdown is the product; this is a convenience on top of it. The score is
-only produced when every weight that went into it is printed alongside it, which
-the config schema enforces rather than trusts.
+The score is produced only when every weight that went into it is printed
+alongside it.
 
-Weights are renormalised over the signals that actually produced a rating for
-this document, so a document where six signals do not apply is not silently
-penalised for the six missing contributions.
+Weights are renormalised over the signals that produced a rating for
+this document, so signals that do not apply do not lower the score.
 """
 
 from __future__ import annotations
@@ -78,7 +76,7 @@ def compute_score(results: list[SignalResult], config: ScoringConfig) -> Readine
     for result in counted:
         normalised = result.weight / total_weight
         # A counted signal always has a rating; the fallback is for a rating
-        # the config does not price, not for its absence.
+        # the config assigns no points to.
         points = 0.0 if result.rating is None else config.rating_points.get(result.rating, 0.0)
         contribution = normalised * points
         accumulated += contribution
@@ -106,8 +104,7 @@ def compute_score(results: list[SignalResult], config: ScoringConfig) -> Readine
         low_confidence=low_confidence,
         confidence_note=(
             f"Only {len(counted)} of {total_signals} signals could be measured for this "
-            f"document, so this score rests on a small part of the picture. Read the "
-            f"breakdown rather than the number."
+            f"document, so this score rests on few signals. See the breakdown."
             if low_confidence
             else None
         ),

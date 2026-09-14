@@ -15,11 +15,10 @@ re-exposed through routing layers — Bedrock, Azure, OpenRouter, Vertex — whi
 would list one model half a dozen times under names that price the same request
 differently depending on who fronts it.
 
-    uv run python scripts/build_price_table.py                 # fetch both
-    uv run python scripts/build_price_table.py --offline       # keep batch prices as they are
+    uv run python src/scripts/build_price_table.py                 # fetch both
+    uv run python src/scripts/build_price_table.py --offline       # keep batch prices as they are
 
-Nothing here runs during an audit. Every entry it writes is marked imported
-rather than verified, because nobody checked it against the provider's own page.
+Nothing here runs during an audit. Every entry it writes is marked imported.
 """
 
 from __future__ import annotations
@@ -126,12 +125,9 @@ def build(catalogue: dict[str, Any], batch: dict[str, float]) -> dict[str, Any]:
                     if isinstance(cost.get("output"), int | float)
                     else None
                 ),
-                # Only where the provider publishes one. The customary half price
-                # is not assumed: a discount nobody can check does not belong in
-                # a budget.
+                # Only where the provider publishes one.
                 "batch_input_per_mtok_usd": batch.get(model_id),
-                # An explicit list of what the model accepts, rather than a
-                # single "supports vision" flag that says nothing about PDFs.
+                # Whether the model accepts images, from its declared inputs.
                 "accepts_image": "image" in inputs,
                 "family": _family(model_id),
                 "accepts_pdf": "pdf" in inputs,

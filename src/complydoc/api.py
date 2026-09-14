@@ -30,19 +30,18 @@ whole file format nothing here handles yet:
 
     cd.register_loader(MarkdownLoader())
 
-Which is why `Document`, `Page`, `Rect` and the rest of the loader's vocabulary
-are exported too: a plug-in point you cannot write against is not one.
+`Document`, `Page`, `Rect` and the other types a loader uses are exported for
+this.
 
 Four audit entry points, one per way of asking. `full_audit` runs everything;
-the other three run one component each, which is the point of them — asking
-only for the identifier scan loads no tokenizer and prices nothing, and is
-several times quicker for it.
+the other three run one component each. The identifier scan alone loads no
+tokenizer and prices nothing, and is several times quicker.
 
 The three exceptions are exported because a caller has to be able to catch
 them by name: `ConfigError` for a configuration that will not load,
-`UnknownModelError` for a model nobody ships a price for, and
+`UnknownModelError` for a model with no price, and
 `NetworkAccessError` if anything in the run reaches for the network. A missing
-path raises `FileNotFoundError`, because that is what it is.
+path raises `FileNotFoundError`.
 
 Everything named in `complydoc.__all__` is the public surface, and the report
 objects it returns are part of it. Anything else in the package is internal and
@@ -50,17 +49,11 @@ may be renamed without notice. The shape of a report is versioned:
 `report.run.schema_version` moves when it changes, exactly as it does for the
 JSON, so code can branch on it.
 
-Two differences from the command line, both deliberate.
+Two differences from the command line:
 
-The network guard is scoped. The CLI arms it for the life of the process, which
-is right when it owns the process; here it is armed for the audit and the socket
-module is put back as it was found. A library that permanently broke its host's
-network would be indefensible, however good its reasons.
-
-And `jobs` is 1 unless asked otherwise. The CLI reads the folder and decides,
-because a person waiting at a terminal wants the cores. A library called from a
-notebook, a web worker or another pool should not quietly start processes of its
-own.
+- The network guard is scoped. The CLI arms it for the life of the process; here
+  it is armed for the audit and the socket module is restored afterwards.
+- `jobs` defaults to 1. The CLI chooses a worker count from the folder size.
 """
 
 from __future__ import annotations
@@ -164,10 +157,8 @@ __all__ = [
 class AuditOptions(TypedDict, total=False):
     """Everything the four entry points accept beyond the folder itself.
 
-    One set for all of them, and an option that means nothing to the components
-    being run is ignored rather than rejected — `monthly_volume` on a scan for
-    identifiers has nothing to extrapolate, and refusing it would only make the
-    functions harder to call from a loop.
+    One set for all of them. An option that does not apply to the components
+    being run is ignored.
     """
 
     config: Config | None
@@ -264,9 +255,8 @@ def cost_audit(target: str | os.PathLike[str], **options: Unpack[AuditOptions]) 
 def readiness_audit(target: str | os.PathLike[str], **options: Unpack[AuditOptions]) -> AuditReport:
     """Measure how ready these documents are to extract data from.
 
-    The signals are the product; `report.documents[i].readiness.signals` is the
-    table, and a signal that could not be measured says so rather than
-    reporting a zero.
+    `report.documents[i].readiness.signals` holds the signals. A signal that could
+    not be measured is reported as not applicable.
     """
     return _audit(target, ("readiness",), options)
 

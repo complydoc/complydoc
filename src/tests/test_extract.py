@@ -4,9 +4,8 @@ The audit says what a folder is like. This hands back the folder's own words,
 ready to be sent somewhere else, and that makes the promises harder: a caller
 is about to put this in front of a model on the strength of what it says.
 
-So the line these tests hold is that nothing here overclaims. The text is
-whole, the token counts say how good they are, and what could not be read — or
-could not be masked — is said out loud rather than left to be noticed.
+These tests check that the text is whole, token counts state their fidelity,
+and anything that could not be read or masked is reported.
 """
 
 from __future__ import annotations
@@ -44,11 +43,9 @@ def test_nothing_is_masked_when_nothing_is_asked_for():
 
 
 def test_the_text_is_not_truncated_the_way_the_report_truncates_it():
-    """The report cuts a page at twenty thousand characters, for a reader.
+    """The report cuts a page at twenty thousand characters.
 
-    Dropping the end of a contract without saying so would be indefensible
-    here, which is why this loads documents directly instead of reading the
-    text back off a report.
+    `extract_text` loads documents directly, so its text is not truncated.
     """
     from complydoc.audit import _MAX_TEXT_CHARS
 
@@ -78,7 +75,7 @@ def test_the_total_is_the_sum_of_the_chunks():
 
 
 def test_a_page_nothing_could_be_read_off_is_reported_not_dropped():
-    """A silently missing page is the failure this exists to prevent."""
+    """An unreadable page is reported as a warning."""
     result = cd.extract_text(FIXTURES / "scanned_page.pdf", ocr=False)
     assert UNREADABLE_PAGE in kinds(result)
     assert not result.complete
@@ -96,7 +93,7 @@ def test_a_file_that_would_not_open_is_reported():
 
 @requires_ner
 def test_masking_is_always_declared_best_effort():
-    """The warning that matters most, and it is true every time.
+    """The best-effort masking warning is raised every time masking runs.
 
     A card number is masked because it passed a checksum. A person's name is
     masked because a model thought it was one, and models miss — on the sample
@@ -147,8 +144,7 @@ def test_a_page_is_split_to_fit_a_token_budget():
     assert len(result.chunks) > 1, "the fixture is longer than the budget"
     assert all(c.document == "dense_text.pdf" for c in result.chunks)
     assert [c.part for c in result.chunks] == list(range(1, len(result.chunks) + 1))
-    # Generous, because a paragraph longer than the budget is passed through
-    # whole rather than cut mid-sentence.
+    # Generous, because a paragraph longer than the budget is passed through whole.
     assert all(c.tokens <= 200 * 2 for c in result.chunks)
 
 

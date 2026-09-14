@@ -1,9 +1,7 @@
 """The single point at which a detected value can become readable text.
 
 Every reported hit goes through `render`. Nothing else in complydoc turns a span
-back into characters. That is the whole design: a report cannot leak a bank
-account number by accident, because the code path that would print one does not
-exist anywhere else.
+back into characters.
 
 Masking is the default. `--reveal` is honoured only for categories not listed
 under `masking.never_reveal`, and any report produced with it is stamped.

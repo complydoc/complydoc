@@ -1,12 +1,7 @@
 """Global readiness: content, cost and exposure in one number.
 
-AI readiness asks whether the text can be got off the page. That is the
-largest question and not the only one — a folder that is legible, ruinous to
-run and full of national insurance numbers is not ready either.
-
-The line these tests hold is the same one the content score holds: a factor
-nobody measured is dropped and the rest are renormalised, never counted as
-nought, and the result says what it was built from.
+An unmeasured factor is dropped and the remaining weights renormalised, and the
+result states which factors it used.
 """
 
 from __future__ import annotations
@@ -33,8 +28,7 @@ def test_a_full_run_measures_every_factor(config):
 def test_a_factor_nobody_measured_is_dropped_not_scored_nought(config):
     """`complydoc readiness` runs no cost estimate and no scan.
 
-    Counting those as zero would report a folder as unusable because of two
-    questions nobody asked.
+    Those factors are left out of the score.
     """
     partial = scored(config, ("readiness",))
     full = scored(config)
@@ -43,7 +37,7 @@ def test_a_factor_nobody_measured_is_dropped_not_scored_nought(config):
     assert [f.key for f in partial.factors if not f.measured] == ["cost", "exposure"]
     assert partial.score is not None
     content = next(f for f in partial.factors if f.key == "content")
-    assert partial.score == content.score, "one factor left, so it is the whole score"
+    assert partial.score == content.score, "one factor left, so the score equals it"
     assert partial.score != full.score
 
 

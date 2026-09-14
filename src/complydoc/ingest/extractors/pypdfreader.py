@@ -2,9 +2,7 @@
 
 The library is already a dependency — it is what reads encryption and document
 metadata — so this reader costs no install and is always there to compare
-against. It is a genuinely separate implementation from pdfplumber and pdfium
-rather than a wrapper around either, which is the only reason a third reading is
-worth having.
+against. It is a separate implementation from pdfplumber and pdfium.
 
 What it does not return is geometry. There are no word boxes, no line boxes and
 no table structure, so a run using it reports coverage as not measured and the

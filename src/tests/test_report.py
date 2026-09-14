@@ -181,7 +181,7 @@ def test_default_report_embeds_no_page_images(html, report):
 
 
 def test_page_images_are_recorded_in_the_run_options(config):
-    """A picture of every page is worth recording, not worth a banner."""
+    """--page-images is recorded in the run options."""
     from complydoc.report.html_writer import render_html
 
     with_images = run_audit(FIXTURES, config, COMPONENTS, page_images=True)
@@ -203,8 +203,7 @@ def test_report_ships_its_own_filter_and_pagination(html):
 
 
 def test_the_file_filter_indexes_facts_not_prose(html):
-    """Matching the whole section text made "rotated" return every document, because
-    the explanation of the rotation signal appears in all of them."""
+    """The filter index holds facts, so "rotated" does not match every document."""
     assert "data-search=" in html
     index = html.split('data-search="')[1].split('"')[0]
     assert "rotated" not in index or "rotated_scan" in index
@@ -319,12 +318,7 @@ def test_decision_changing_facts_survive_in_the_html(html, report):
 
 
 def test_the_summary_leads_with_readiness_and_what_to_do(html):
-    """The front page answers "can I use these", not "what will they cost".
-
-    Cost has a tab of its own. Leading with the bill made the front of an audit
-    about the price of the pipeline rather than whether the documents can go
-    through one at all.
-    """
+    """The summary leads with readiness and quick wins; cost has its own tab."""
     summary = html.split('id="summary"')[1].split("<section")[0]
     assert "Global readiness" in summary
     assert "Quick wins" in summary
@@ -333,15 +327,14 @@ def test_the_summary_leads_with_readiness_and_what_to_do(html):
 
 
 def test_the_summary_carries_no_price_table_or_chart(html):
-    """The one figure allowed here is what a quick win would save, because
-    that is the reason to act on it rather than a cost breakdown."""
+    """The summary has no price table or chart."""
     summary = html.split('id="summary"')[1].split("<section")[0]
     assert 'class="chart"' not in summary
     assert "Cost per 1,000 documents" not in summary
 
 
 def test_the_cost_tab_gained_what_the_summary_lost(html):
-    """Moved, not dropped — it is the most quotable figure in the report."""
+    """The per-1,000 cost chart is on the Cost tab."""
     cost = html.split('id="cost"')[1].split("<section")[0]
     assert "Cost per 1,000 documents" in cost
 
@@ -355,9 +348,7 @@ def test_cost_page_carries_the_charts(html):
 def test_reach_is_stated_once_and_not_in_a_second_table(html):
     """Cost alone favours the text layer; reach is what stops that misleading.
 
-    It used to be printed beside every bar, which on a dozen models is ninety
-    copies of three numbers and buries the figures that actually differ. Once
-    per architecture, in the legend, says the same thing.
+    It is printed once per architecture, in the legend.
     """
     cost = html.split('id="cost"')[1].split("<section")[0]
     assert "The same numbers" not in cost, "not a second table of the same figures"
@@ -436,7 +427,7 @@ def test_every_signal_carries_its_explanation(html):
 
 
 def test_report_does_not_explain_its_own_flags(html):
-    """Instructions for command line flags are not what a reader is here for."""
+    """The report does not explain command line flags."""
     for phrase in ("Run with <code>--page-images", "Weights come from"):
         assert phrase not in html
 
@@ -454,7 +445,7 @@ def test_signal_explanations_are_one_sentence(config):
 
 
 def test_no_parenthesised_plurals_reach_the_reader(html):
-    """ "3 page(s)" reads like a template, not like something someone wrote."""
+    """No parenthesised plurals such as "3 page(s)"."""
     import re
 
     found = re.findall(r"\w+\(s\)", html)
@@ -480,10 +471,10 @@ def test_run_options_record_exactly_what_was_asked_for(config):
 
 
 def test_filtering_the_chart_animates_rather_than_snapping(html):
-    """A viewBox is an attribute, so it has to be tweened, not CSS-transitioned."""
+    """The chart viewBox is tweened with requestAnimationFrame."""
     assert "requestAnimationFrame" in html
     assert "prefers-reduced-motion" in html
-    assert ".grp.out" in html, "filtered rows fade rather than vanishing"
+    assert ".grp.out" in html, "filtered rows fade out"
 
 
 def test_the_summary_leads_with_preparation_time(html):
@@ -511,8 +502,7 @@ def test_every_page_starts_the_same_distance_below_the_tabs(html):
 def test_masking_does_not_claim_more_than_it_covers(config):
     """The findings are masked; the pages the report also carries are not.
 
-    Saying "masked to the last four characters" and stopping there would be a
-    half-truth in a file that reproduces the page those values were read off.
+    The notice says the page text and images carry unmasked values.
     """
     from complydoc.audit import COMPONENTS, run_audit
     from complydoc.report.html_writer import render_html
@@ -520,16 +510,16 @@ def test_masking_does_not_claim_more_than_it_covers(config):
 
     with_text = render_html(run_audit(FIXTURES, config, COMPONENTS, extracted_text=True), config)
     security = with_text.split('id="security"')[1].split("</section>")[0]
-    assert "masking applies to this table, not to the whole file" in security
+    assert "Masking applies to the findings tables only" in security
     assert "--no-extracted-text" in security
 
     without = render_html(run_audit(FIXTURES, config, COMPONENTS, extracted_text=False), config)
     quiet = without.split('id="security"')[1].split("</section>")[0]
-    assert "not to the whole file" not in quiet, "nothing to warn about"
+    assert "Masking applies to the findings tables only" not in quiet, "nothing to warn about"
 
 
 def test_document_content_is_escaped_in_the_html(tmp_path):
-    """Text, file names and metadata come from the documents, not from us."""
+    """Document text, file names and metadata are escaped."""
     import complydoc as cd
 
     report = cd.inspect_documents(

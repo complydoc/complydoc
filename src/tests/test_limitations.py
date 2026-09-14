@@ -22,8 +22,7 @@ def entries(report, area):
 def test_each_reason_is_attributed_to_the_right_documents(report):
     """Grouping on the signal alone attached one document's reason to all of them.
 
-    It produced entries telling the reader a PNG was skipped because "this is a
-    docx file", which is simply false.
+    It attributed "this is a docx file" to a PNG.
     """
     for entry in entries(report, "Signals not measured"):
         if "this is a docx file" in entry.statement:
@@ -59,7 +58,7 @@ def test_character_counts_describe_their_own_document(report):
 
 
 def test_articles_read_as_english(report):
-    """The reasons are generated, so the article has to be chosen, not hardcoded."""
+    """Generated reasons use the correct article."""
     for entry in report.limitations:
         assert "a image" not in entry.statement
     reasons = [
@@ -81,9 +80,8 @@ def test_signals_that_do_not_apply_are_not_run_level_limitations(report):
     assert not areas & signals, "a signal became a run-level limitation"
 
     # The entries describe the run, so how many there are tracks the run's own
-    # facts rather than the signals measured on each of its documents. The exact
-    # number moves with which optional extras are installed — a detector that is
-    # missing is itself a limitation — so the bound is on the shape, not a count.
+    # facts. The exact number depends on which optional extras are installed, so
+    # the bound is loose.
     assert len(report.limitations) < len(report.documents) * 2
 
 
@@ -95,7 +93,7 @@ def test_a_signal_that_did_not_apply_still_says_why_on_its_document(report):
 
 
 def test_one_entry_per_distinct_tokenizer_note(report):
-    """Models sharing a note get one entry between them, not one each."""
+    """Models sharing a note get one entry."""
     notes = entries(report, "Token counting")
     assert notes
     statements = [n.statement for n in notes]
@@ -107,7 +105,7 @@ def test_one_entry_per_distinct_tokenizer_note(report):
 
 
 def test_an_unopenable_document_reports_no_table_count(loader, config):
-    """Counting zero tables in a file nobody could open is a false measurement."""
+    """A document that could not be opened has no table count."""
     document = loader("encrypted.pdf")
     result = analyse(document, config.readiness)
     signal = next(s for s in result.signals if s.id == "table_count")
@@ -126,6 +124,6 @@ def test_an_unopenable_document_scores_from_one_signal(loader, config):
 def test_alignment_tables_say_what_they_cannot_measure(report):
     """A table with no rules carries nothing to read a span from."""
     entry = next(x for x in report.limitations if x.area == "Table detection")
-    assert "whitespace rather than ruling lines" in entry.statement
+    assert "whitespace with no ruling lines" in entry.statement
     assert "whitespace_table.pdf" in entry.affected
     assert "native_text.pdf" not in entry.affected, "prose is not a table"

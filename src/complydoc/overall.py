@@ -80,12 +80,7 @@ class OverallReadiness:
     label: str = ""
     factors: list[Factor] = field(default_factory=list)
     bands: dict[str, int] = field(default_factory=dict)
-    """How many documents fall in each band — the composition, not the average.
-
-    The mean is one number and it hides the tail: a folder averaging 71 can
-    still hold two documents nothing can be read from, and those two are the
-    ones somebody has to deal with.
-    """
+    """How many documents fall in each band."""
     by_document: dict[str, float] = field(default_factory=dict)
     scored_documents: int = 0
     total_documents: int = 0
@@ -110,14 +105,10 @@ def _content_score(document: DocumentReport) -> float | None:
 def _cost_score(document: DocumentReport, config: OverallConfig) -> float | None:
     """How far this document is from the cheap path.
 
-    Not the price — the price depends on which model somebody picks and how
-    many documents they have. This is the part the document itself decides:
-    whether its text can be read off the page, had to be recognised, or cannot
-    be had at all, in which case every page has to be sent as an image.
+    Whether its text can be read off the page, had to be recognised, or cannot
+    be read at all, in which case every page has to be sent as an image.
     """
-    # From the cost estimate rather than the extracted text: the text is only
-    # kept when the run was asked to keep it, and a factor that vanishes with
-    # --no-extracted-text would silently reweight the score.
+    # Uses the cost estimate, which exists whether or not extracted text is kept.
     if document.cost is None or not document.cost.pages:
         return None
 
@@ -153,9 +144,7 @@ def _exposure_score(document: DocumentReport, config: OverallConfig) -> float | 
         *document.metadata_findings,
     ]
     for match in findings:
-        # A severity nobody recognises is not free: it counts as the lowest
-        # rather than as nothing, so a config that grows a level does not
-        # quietly stop costing anything.
+        # An unknown severity counts as the lowest.
         severity = float(SEVERITY_WEIGHT.get(match.severity, 1))
         evidence = _EVIDENCE_WEIGHT.get(match.evidence, 0.5)
         exposure += severity * evidence
@@ -168,9 +157,7 @@ def _document_score(
 ) -> tuple[float | None, dict[str, float | None]]:
     """One document on all three factors, and the weighted result.
 
-    Weights are renormalised over the factors that were actually measured, so a
-    run without the cost component is not scored as though cost came out at
-    nought.
+    Weights are renormalised over the factors that were measured.
     """
     parts: dict[str, float | None] = {
         "content": _content_score(document),

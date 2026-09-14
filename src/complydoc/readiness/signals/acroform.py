@@ -1,4 +1,4 @@
-"""Named form fields. A positive signal, not a negative one."""
+"""Named form fields. More fields rate better."""
 
 from __future__ import annotations
 

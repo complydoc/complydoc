@@ -18,12 +18,11 @@ pipeline at all*, from three factors, with the weights printed beside them:
 | Factor | Asks |
 | --- | --- |
 | Content | Can the text be got off the page |
-| Cost path | Does the document force the expensive path — an image rather than text |
+| Cost path | Whether pages have to be sent as images |
 | Exposure | What it carries that should not leave |
 
 A factor the run did not measure is excluded and the remaining weights are
-renormalised. The ring shows the distribution of documents across bands, not the
-mean.
+renormalised. The ring shows how many documents fall in each band.
 
 **Quick wins** lists remediable findings, ordered by the number of documents
 affected. Each carries an `actor` of `complydoc` or `you`, and a saving where
@@ -47,7 +46,7 @@ complydoc audit ~/contracts --compare-extractor pypdf
 Findings come from the first reader only. The others are measured and reported;
 the page viewer shows each reader's text with the differences marked.
 
-Readings are compared by word order, not by length. On a two-column page
+Readings are compared by word order. On a two-column page
 pdfplumber walks the text layer in file order, crossing both columns, and
 returns the same character count as a reader that follows the columns. The
 report labels this `same words, different order`.

@@ -1,22 +1,17 @@
 """Process-wide network guard.
 
-complydoc's entire trust proposition is that document content never leaves the
-machine. That promise is enforced here rather than merely documented: the guard
-replaces the outbound entry points of the standard library socket module with
-functions that raise, so any accidental or transitive network call fails loudly
-instead of succeeding quietly.
+Document content must not leave the machine. The guard replaces the outbound
+entry points of the standard library socket module with functions that raise,
+so any network call, including one from a dependency, fails.
 
 The guard is armed by the CLI before any document is opened, and
-``tests/test_offline_guard.py`` asserts that a full audit completes with it in
+``src/tests/test_offline_guard.py`` asserts that a full audit completes with it in
 place. Local ``AF_UNIX`` sockets are permitted because they cannot leave the
 machine; every ``AF_INET``/``AF_INET6`` connection and every DNS lookup is
 refused.
 
-``arm`` changes the whole process, which is right for a command that owns its
-process and wrong for a library inside somebody else's. Code called as a
-library uses ``guarded()``, which puts the socket module back exactly as it
-found it — so complydoc can promise its own audit reached no network without
-breaking the network its caller depends on.
+``arm`` changes the whole process and is used by the CLI. Library code uses
+``guarded()``, which restores the socket module afterwards.
 """
 
 from __future__ import annotations
@@ -50,9 +45,8 @@ def _refuse(description: str) -> NetworkAccessError:
 
 
 _MESSAGE = (
-    "complydoc blocked an outbound network call. This tool is offline by design: "
-    "no document content may leave the machine. If you are seeing this, a dependency "
-    "attempted a connection and the run has been stopped rather than allowed to continue."
+    "complydoc blocked an outbound network call. A dependency attempted a connection "
+    "and the run was stopped."
 )
 
 
@@ -91,8 +85,7 @@ def arm() -> None:
     global _armed
     if _armed:
         return
-    # Replacing standard library entry points is the point of this module, so the
-    # signature mismatches mypy reports here are deliberate rather than accidental.
+    # Replacing standard library entry points; mypy flags the signature mismatch.
     socket.socket.connect = _blocked_connect  # type: ignore[method-assign, assignment]
     socket.socket.connect_ex = _blocked_connect_ex  # type: ignore[method-assign, assignment]
     socket.create_connection = _blocked_create_connection
@@ -118,13 +111,11 @@ def disarm() -> None:
 def guarded(active: bool = True) -> Iterator[list[str]]:
     """Arm the guard for this block, then leave the process as it was found.
 
-    The library entry points run inside this. Arming permanently would be
-    sabotage in a host application: every unrelated HTTP call in the process
-    would start failing, with a message about documents that makes no sense
-    where it appeared.
+    The library entry points run inside this, so a host application's own
+    network calls keep working outside it.
 
     Restores on the way out whatever happens, and leaves the guard alone if the
-    caller had already armed it for themselves — theirs to disarm, not ours.
+    caller had already armed it.
 
     Yields a list that holds, once the block exits, every connection refused
     inside it. Blocks nest: an inner block collects only its own attempts.
@@ -179,8 +170,8 @@ def permitted() -> Iterator[list[str]]:
     the guard is lifted for the block and put back exactly as it was.
 
     `create_connection` is left as the standard library's, which resolves and
-    connects through the recorded `getaddrinfo` and `connect`, so each
-    connection is recorded once per step rather than twice.
+    connects through the recorded `getaddrinfo` and `connect`, so each step is
+    recorded once.
 
     Yields a list that holds, once the block exits, every lookup and connection
     made inside it, without repeats.

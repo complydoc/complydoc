@@ -1,4 +1,4 @@
-"""How much of the page is image rather than text."""
+"""Share of the page covered by images."""
 
 from __future__ import annotations
 

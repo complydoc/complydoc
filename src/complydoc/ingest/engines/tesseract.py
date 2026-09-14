@@ -2,8 +2,8 @@
 
 Not shipped and not a dependency: it needs a system binary, which is exactly the
 kind of install complydoc avoids imposing. It is here because OCR engines
-genuinely disagree, and a second opinion on a scanned page is worth having when
-somebody already has this one installed.
+disagree, and a second reading of a scanned page is useful where it is
+installed.
 
     brew install tesseract      # or the equivalent
     uv pip install pytesseract
@@ -42,7 +42,7 @@ class TesseractEngine:
         return None
 
     def set_threads(self, count: int | None) -> None:
-        """Tesseract takes its thread count from the environment, not from here."""
+        """Tesseract takes its thread count from the environment."""
 
     def read(self, image: Image) -> Recognised:
         if not self.available():

@@ -4,10 +4,9 @@ Two things rot in documentation: the examples stop working, and the reference
 drifts from what the tool does. Both are checked here.
 
 Every example in a guide is a real file under `docs/examples`, included into the
-page and executed below, so a guide that stops working fails the build instead
-of misleading somebody quietly. The reference pages are generated from the code
-at build time, so the only thing worth asserting about them is that the build
-still produces them.
+page and executed below, so a guide that stops working fails the build. The
+reference pages are generated at build time, so the test checks the build still
+produces them.
 """
 
 from __future__ import annotations
@@ -30,7 +29,7 @@ def test_there_are_examples_to_check():
 
 @pytest.mark.parametrize("example", EXAMPLES, ids=lambda p: p.stem)
 def test_every_example_in_the_guides_runs(example: Path, tmp_path: Path):
-    """Run it exactly as a reader would, from the root of a checkout."""
+    """Run from the root of a checkout."""
     import importlib.util
 
     source = example.read_text(encoding="utf-8")
@@ -50,7 +49,7 @@ def test_every_example_in_the_guides_runs(example: Path, tmp_path: Path):
 
 @pytest.mark.parametrize("example", EXAMPLES, ids=lambda p: p.stem)
 def test_every_example_is_shown_on_a_page(example: Path):
-    """An example nobody includes is an example nobody maintains."""
+    """Every example is included in a documentation page."""
     needle = f'--8<-- "examples/{example.name}"'
     pages = list((DOCS / "guides").rglob("*.md")) + list((DOCS / "explanation").rglob("*.md"))
     assert any(needle in page.read_text(encoding="utf-8") for page in pages), needle

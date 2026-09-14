@@ -1,4 +1,4 @@
-"""The deliberately awkward fixtures, which is where the signals earn their keep."""
+"""Signals measured on the awkward fixtures."""
 
 from __future__ import annotations
 
@@ -147,7 +147,7 @@ def test_mixed_page_sizes_are_counted(loader, config):
 def test_form_fields_rate_as_good_not_bad(loader, config):
     signal = measure(loader("acroform.pdf"), config, "acroform_fields")
     assert signal.value == 5
-    assert signal.rating == "good", "named form fields are the easy case, not a problem"
+    assert signal.rating == "good", "named form fields rate good"
 
 
 # --- language ----------------------------------------------------------------
@@ -168,7 +168,7 @@ def test_language_declines_to_guess_on_a_page_of_figures(loader, config):
 
 
 def test_a_realistically_dense_page_rates_good_for_coverage(loader, config):
-    """The thresholds have to be set against a real page, not a sparse fixture.
+    """Coverage thresholds are calibrated on a realistically dense page.
 
     Every other text fixture here is fifteen lines on an A4 page and measures
     under 8%. Calibrating from those rated every genuine document "good" and made

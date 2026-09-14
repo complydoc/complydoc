@@ -1,8 +1,6 @@
 """Types for the sensitive data scan.
 
-Detectors return *spans*, never strings. Turning a span into something a human
-can read is the exclusive job of `masking.render`, which is what makes it
-structurally impossible for an unmasked value to reach a report by accident.
+Detectors return spans. Only `masking.render` turns a span into readable text.
 """
 
 from __future__ import annotations
@@ -26,8 +24,7 @@ __all__ = [
 Evidence = Literal["confirmed", "corroborated", "pattern", "model"]
 """How strong the case for a finding is.
 
-A number would suggest a precision nobody has. These four say what was actually
-established, and they sort:
+Four tiers, strongest first:
 
 `confirmed`
     A checksum passed. A card number that satisfies Luhn is a card number.
@@ -104,11 +101,7 @@ EVIDENCE_ORDER: Final = ("confirmed", "corroborated", "pattern", "model")
 
 
 def evidence_of(detector: str, validators_passed: list[str], context_term: str | None) -> Evidence:
-    """Which tier a finding earned, from what actually happened to it.
-
-    Derived rather than declared, so a detector cannot claim more for its
-    findings than the checks they survived.
-    """
+    """The tier a finding earned from the checks it passed."""
     if validators_passed:
         return "confirmed"
     if context_term:

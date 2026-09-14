@@ -38,7 +38,7 @@ def _destination(root: Path, relative: str) -> Path:
     """Mirror the source layout, so two invoices called the same thing stay apart."""
     target = root / (relative + ".txt")
     # A relative path can only ever point downwards, but the report's paths come
-    # from a folder the caller chose, so this is checked rather than assumed.
+    # from a folder the caller chose, so this is checked.
     resolved = target.resolve()
     if not resolved.is_relative_to(root.resolve()):
         return root / (relative.replace("/", "_") + ".txt")
