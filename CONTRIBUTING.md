@@ -20,6 +20,10 @@ want on your PATH. It also reinstalls the spaCy model and runs `complydoc doctor
 | `src/complydoc/readiness/signals/` | One file per signal, registered by decorator |
 | `src/complydoc/sensitive/detectors/` | Regex, checksum and NER detectors |
 | `src/complydoc/hidden/` | Hidden content and instruction checks |
+| `src/complydoc/loaders.py`, `loader_comparison.py` | Loader inspection, folder sources and comparison |
+| `src/complydoc/facts.py` | Expected fact matching |
+| `src/complydoc/parsers.py` | Parser presets (`LoaderSpec`) |
+| `src/complydoc/notebook.py` | Report tables and Jupyter display |
 | `src/complydoc/cost/` | Tokenizers, vision formulas, price catalogue |
 | `src/complydoc/report/` | JSON and HTML writers, previews, limitations |
 | `src/complydoc/ui/` | Report template, stylesheet and script |
@@ -106,15 +110,15 @@ full check suite.
 
 ```bash
 make release-check
-git tag -a v0.3.1 -m "complydoc v0.3.1"
-git push origin v0.3.1
+git tag -a v0.4.0 -m "complydoc v0.4.0"
+git push origin v0.4.0
 ```
 
 The tag must match `complydoc.__version__` and have a changelog entry. `release.yml` builds the
 wheel and sdist, an SBOM and checksums, attests the artefacts, and drafts a release:
 
 ```bash
-gh attestation verify complydoc-0.3.1-py3-none-any.whl --repo duartecaldascardoso/complydoc
+gh attestation verify complydoc-0.4.0-py3-none-any.whl --repo duartecaldascardoso/complydoc
 ```
 
 Publishing the draft runs `publish.yml`, which uploads the attached artefacts to PyPI through

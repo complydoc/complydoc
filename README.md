@@ -38,12 +38,19 @@ print(report.overall.score)
 cd.write_html(report, "report.html")
 ```
 
-Output from a LangChain or LlamaIndex loader:
+Output from a LangChain or LlamaIndex loader, or several loaders over a folder:
 
 ```python
-from langchain_community.document_loaders import PyPDFLoader
+from langchain_community.document_loaders import PDFPlumberLoader, PyPDFLoader
 
 report = cd.inspect_documents(PyPDFLoader("contract.pdf"))
+
+report = cd.compare_loaders(
+    {"pypdf": PyPDFLoader, "pdfplumber": PDFPlumberLoader, "docling": cd.parsers.docling()},
+    paths="./contracts",
+    facts=["Payment is due within thirty days"],
+)
+report.to_pandas("loaders")
 ```
 
 OCR and name detection are optional extras. `complydoc doctor` shows what is installed.
@@ -52,15 +59,21 @@ OCR and name detection are optional extras. `complydoc doctor` shows what is ins
 
 - **Token cost**: text and vision tokens per document, priced across models and three
   extraction paths (text layer, OCR, vision).
-- **Extraction readiness**: measured per-page signals such as text layer coverage, tables,
-  columns, rotation, scan resolution and garbled characters.
+- **Extraction readiness**: measured signals such as text layer coverage, tables, columns,
+  rotation, scan resolution, garbled characters, glyph codes and repeated headers.
 - **Identifiers**: personal and financial identifiers in UK, US and EU formats,
   checksum-validated where a checksum exists, masked in every output.
 - **Hidden content and prompt injection**: text a reader does not see and a model does
   (white or invisible text, hidden formatting, Unicode tag characters), and passages that
   read as instructions to a model.
 - **Loader inspection and comparison**: what a loader extracted, the metadata it attached,
-  the network connections it attempted, and where several loaders disagree.
+  the network connections it attempted, and where several loaders disagree, over a single
+  input or a folder, with failures, load time and estimated parser cost per loader.
+- **Expected facts**: whether passages you expect appear in each loader's text, as exact or
+  fuzzy matches.
+- **Parser presets**: Docling, Unstructured, LlamaParse and Azure Document Intelligence;
+  hosted parsers run only with `allow_network=True`.
+- **Tables**: every part of a report as a pandas DataFrame, and a summary in Jupyter.
 - **Masked text**: the documents' text with identifiers covered, chunked and counted in
   tokens.
 

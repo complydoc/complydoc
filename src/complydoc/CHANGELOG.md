@@ -6,6 +6,8 @@ corrections. `schema_version` in the JSON is versioned separately.
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-09-14
+
 ### Added
 
 - `report.to_pandas(table)` returns a report table as a DataFrame (`notebook` extra), and a
@@ -22,6 +24,13 @@ corrections. `schema_version` in the JSON is versioned separately.
 - `complydoc.parsers` presets for Docling, Unstructured, LlamaParse and Azure Document
   Intelligence. Hosted presets need `allow_network=True`; per-page prices are under
   `parsers` in `pricing.yaml` and a comparison reports each parser's estimated cost.
+
+### Changed
+
+- `schema_version` is 5: `loader_comparison.facts`, and per loader `failures`, `facts_found`
+  and `parser_usd`.
+- `pricing.yaml` has a `parsers` section.
+- The demo audits seven sample documents.
 
 ## [0.3.1] — 2026-09-14
 
@@ -204,7 +213,8 @@ First release.
 - `complydoc` audits the current directory; `--jobs`, `--sample`, `--password`.
 - Packaged agent skill.
 
-[Unreleased]: https://github.com/duartecaldascardoso/complydoc/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/duartecaldascardoso/complydoc/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/duartecaldascardoso/complydoc/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/duartecaldascardoso/complydoc/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/duartecaldascardoso/complydoc/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/duartecaldascardoso/complydoc/compare/v0.1.0...v0.2.0

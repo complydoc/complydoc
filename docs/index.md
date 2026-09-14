@@ -7,6 +7,8 @@ complydoc reads documents, or the output of a document loader, and reports:
 - **Identifiers**: personal and financial identifiers, masked.
 - **Hidden content**: text a reader does not see and a model does, and text
   that reads as an instruction to a model.
+- **Loaders**: what one or several loaders extracted, over a file or a folder,
+  with expected facts, failures and parser cost.
 
 It produces a report. It does not modify documents.
 
@@ -36,7 +38,7 @@ cd.write_html(report, "report.html")
 ## Output
 
 An HTML report and a JSON file with the same data. The JSON carries
-`schema_version`, currently 4.
+`schema_version`, currently 5.
 
 ## Network access
 
