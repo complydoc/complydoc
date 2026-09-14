@@ -167,7 +167,7 @@ class TextResult:
         return [c for c in self.chunks if c.masked and c.masked == c.masked_confirmed]
 
 
-def _mask_page(text: str, matches: list[SensitiveMatch]) -> tuple[str, int, int]:
+def mask_matches(text: str, matches: list[SensitiveMatch]) -> tuple[str, int, int]:
     """Replace each found identifier with its masked form.
 
     Returns the text, how many were replaced, and how many of those passed a
@@ -261,7 +261,7 @@ def _blocks(text: str) -> list[str]:
     return paragraphs if len(paragraphs) > 1 else [ln for ln in text.split("\n") if ln.strip()]
 
 
-def _tokenizer_for(config: Config, model: str | None) -> TokenizerSpec:
+def tokenizer_for(config: Config, model: str | None) -> TokenizerSpec:
     """The encoding to count with: the named model's, or the headline one's."""
     wanted = model or config.pricing.compare.headline_model
     entry = config.pricing.model_by_id(wanted)
@@ -308,7 +308,7 @@ def extract_text(
         raise FileNotFoundError(f"no such file or folder: {root}")
 
     files, skipped = discover(root, recurse=recurse)
-    spec = _tokenizer_for(settings, model)
+    spec = tokenizer_for(settings, model)
     warnings: list[ExtractionWarning] = [
         ExtractionWarning(
             kind=UNREADABLE_DOCUMENT,
@@ -375,7 +375,7 @@ def extract_text(
                 continue
 
             body, replaced, confirmed = (
-                _mask_page(text, by_page.get(page.number, [])) if mask else (text, 0, 0)
+                mask_matches(text, by_page.get(page.number, [])) if mask else (text, 0, 0)
             )
             parts = _split(body, spec, max_tokens) if max_tokens else [body]
             for index, part in enumerate(parts, start=1):

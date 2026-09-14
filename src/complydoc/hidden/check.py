@@ -340,8 +340,8 @@ def _masked(text: str, config: Config, reveal: bool) -> str:
     if reveal or not text.strip():
         return text
     # Imported here: extract builds on the audit, which builds on this module.
-    from complydoc.extract import _mask_page
+    from complydoc.extract import mask_matches
     from complydoc.sensitive.scanner import scan_text
 
     matches, _unavailable = scan_text(text, config.sensitive, reveal=False)
-    return _mask_page(text, matches)[0]
+    return mask_matches(text, matches)[0]

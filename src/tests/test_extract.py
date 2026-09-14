@@ -215,7 +215,7 @@ def test_an_overlapping_weaker_match_cannot_expose_a_confirmed_one(tmp_path):
 
 def test_the_strongest_evidence_claims_the_characters(tmp_path):
     """Where two matches want the same span, the checksum-backed one wins."""
-    from complydoc.extract import _mask_page
+    from complydoc.extract import mask_matches
     from complydoc.sensitive.base import SensitiveMatch
 
     def match(column, length, masked, evidence):
@@ -232,7 +232,7 @@ def test_the_strongest_evidence_claims_the_characters(tmp_path):
         )
 
     # A model's guess arrives first in position but second in strength.
-    text, replaced, confirmed = _mask_page(
+    text, replaced, confirmed = mask_matches(
         "AB 4111111111111111",
         [
             match(0, 7, "•• ••11", "model"),

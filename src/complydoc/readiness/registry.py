@@ -13,7 +13,7 @@ from typing import Final, TypeVar
 
 from complydoc.readiness.base import Signal
 
-__all__ = ["all_signals", "signal", "signal_by_id"]
+__all__ = ["all_signals", "register", "signal", "signal_by_id"]
 
 _SIGNALS: Final[dict[str, Signal]] = {}
 _discovered = False
@@ -21,15 +21,29 @@ _discovered = False
 T = TypeVar("T", bound=type)
 
 
-def signal(cls: T) -> T:
-    """Class decorator. Instantiates the signal once and registers it by id."""
-    instance = cls()
-    if not isinstance(instance, Signal):  # pragma: no cover - programming error
-        raise TypeError(f"{cls.__name__} does not satisfy the Signal protocol")
+def _add(instance: Signal) -> None:
+    if not isinstance(instance, Signal):
+        raise TypeError(f"{type(instance).__name__} does not satisfy the Signal protocol")
     if instance.id in _SIGNALS:
         raise ValueError(f"duplicate signal id {instance.id!r}")
     _SIGNALS[instance.id] = instance
+
+
+def signal(cls: T) -> T:
+    """Class decorator for the built-in signals. Instantiates and registers by id."""
+    _add(cls())
     return cls
+
+
+def register(instance: Signal) -> Signal:
+    """Add a readiness signal to every run in this process.
+
+    The signal is measured and shown unrated until `readiness.signals.<id>` is
+    configured, for example with `Config.override`.
+    """
+    _discover()
+    _add(instance)
+    return instance
 
 
 def _discover() -> None:

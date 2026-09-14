@@ -12,7 +12,7 @@ from typing import Final, TypeVar
 
 from complydoc.sensitive.base import Detector
 
-__all__ = ["DetectorUnavailableError", "all_detectors", "detector", "detector_by_id"]
+__all__ = ["DetectorUnavailableError", "all_detectors", "detector", "detector_by_id", "register"]
 
 _DETECTORS: Final[dict[str, Detector]] = {}
 _discovered = False
@@ -27,14 +27,29 @@ class DetectorUnavailableError(RuntimeError):
     """
 
 
-def detector(cls: T) -> T:
-    instance = cls()
-    if not isinstance(instance, Detector):  # pragma: no cover - programming error
-        raise TypeError(f"{cls.__name__} does not satisfy the Detector protocol")
+def _add(instance: Detector) -> None:
+    if not isinstance(instance, Detector):
+        raise TypeError(f"{type(instance).__name__} does not satisfy the Detector protocol")
     if instance.id in _DETECTORS:
         raise ValueError(f"duplicate detector id {instance.id!r}")
     _DETECTORS[instance.id] = instance
+
+
+def detector(cls: T) -> T:
+    """Class decorator for the built-in detectors. Instantiates and registers by id."""
+    _add(cls())
     return cls
+
+
+def register(instance: Detector) -> Detector:
+    """Add an identifier detector to this process.
+
+    A category uses it when its `detector` is this detector's id; add the category
+    to `sensitive.categories`, for example with `Config.override`.
+    """
+    _discover()
+    _add(instance)
+    return instance
 
 
 def _discover() -> None:

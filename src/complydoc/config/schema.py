@@ -7,7 +7,8 @@ live in YAML and are validated here.
 from __future__ import annotations
 
 import datetime as dt
-from typing import Annotated, Literal
+from collections.abc import Mapping
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -464,4 +465,66 @@ class Config(_Base):
     hidden: HiddenConfig = Field(default_factory=_shipped_hidden)
     source_dir: str
     digest: str
+
+    def override(self, changes: Mapping[str | tuple[str, ...], Any]) -> Config:
+        """A validated copy with settings replaced.
+
+        Keys are dotted paths such as `"readiness.signals.table_count.weight"`, or
+        tuples for names containing dots: `("pricing", "models", "gpt-4.1", "enabled")`.
+        A list of models is indexed by `id`. A missing final key is added, so new
+        signals, categories and parser prices can be configured. The copy gets its
+        own digest.
+        """
+        import hashlib
+        import json
+
+        from complydoc.config.loader import ConfigError
+
+        data = self.model_dump()
+        for path, value in changes.items():
+            keys = path.split(".") if isinstance(path, str) else list(path)
+            _assign(data, keys, value, ".".join(keys))
+        description = json.dumps(
+            {".".join(k) if isinstance(k, tuple) else k: v for k, v in changes.items()},
+            sort_keys=True,
+            default=str,
+        )
+        data["digest"] = hashlib.sha256((self.digest + description).encode()).hexdigest()[:16]
+        try:
+            return Config.model_validate(data)
+        except ValueError as exc:
+            raise ConfigError(f"the override is invalid:\n{exc}") from exc
+
+
+def _assign(node: Any, keys: list[str], value: Any, path: str) -> None:
+    from complydoc.config.loader import ConfigError
+
+    for position, key in enumerate(keys):
+        last = position == len(keys) - 1
+        if isinstance(node, dict):
+            if last:
+                node[key] = value
+                return
+            if key not in node:
+                raise ConfigError(f"no setting at {path!r}: {key!r} does not exist")
+            node = node[key]
+        elif isinstance(node, list):
+            index = next(
+                (
+                    i
+                    for i, item in enumerate(node)
+                    if isinstance(item, dict) and item.get("id") == key
+                ),
+                None,
+            )
+            if index is None and key.isdigit() and int(key) < len(node):
+                index = int(key)
+            if index is None:
+                raise ConfigError(f"no setting at {path!r}: no entry {key!r}")
+            if last:
+                node[index] = value
+                return
+            node = node[index]
+        else:
+            raise ConfigError(f"no setting at {path!r}: {key!r} is inside a value")
     """SHA-256 over the raw configuration files."""

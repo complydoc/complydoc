@@ -93,6 +93,8 @@ from complydoc.loader_comparison import compare_loaders
 from complydoc.loaders import inspect_documents
 from complydoc.offline import NetworkAccessError
 from complydoc.parsers import LoaderSpec
+from complydoc.readiness.base import Measurement, Signal
+from complydoc.readiness.registry import register as register_signal
 from complydoc.report.html_writer import write_html as _write_html
 from complydoc.report.json_writer import write_json as _write_json
 from complydoc.report.models import (
@@ -104,6 +106,9 @@ from complydoc.report.models import (
     LoaderSummary,
     MetadataFinding,
 )
+from complydoc.sensitive.base import Detector, DetectorContext, Finding
+from complydoc.sensitive.registry import register as register_detector
+from complydoc.strings import MaskedText, TextScan, count_tokens, find_hidden, mask_text, scan_text
 
 if TYPE_CHECKING:
     from complydoc.config.schema import Config
@@ -114,6 +119,8 @@ __all__ = [
     "Chunk",
     "ConfigError",
     "ContentFinding",
+    "Detector",
+    "DetectorContext",
     "Document",
     "DocumentFormat",
     "Engine",
@@ -122,6 +129,7 @@ __all__ = [
     "Extractor",
     "Fact",
     "FactCheck",
+    "Finding",
     "IdentifierDifference",
     "IngestOptions",
     "Loader",
@@ -130,30 +138,40 @@ __all__ = [
     "LoaderRun",
     "LoaderSpec",
     "LoaderSummary",
+    "MaskedText",
+    "Measurement",
     "MetadataFinding",
     "NetworkAccessError",
     "Page",
     "PageSource",
     "Recognised",
     "Rect",
+    "Signal",
     "TextBlock",
     "TextResult",
+    "TextScan",
     "UnknownModelError",
     "all_engines",
     "all_extractors",
     "check_facts",
     "compare_loaders",
     "cost_audit",
+    "count_tokens",
     "extract_text",
+    "find_hidden",
     "full_audit",
     "inspect_documents",
     "load_config",
+    "mask_text",
     "parsers",
     "readiness_audit",
+    "register_detector",
     "register_engine",
     "register_extractor",
     "register_instruction_classifier",
     "register_loader",
+    "register_signal",
+    "scan_text",
     "security_audit",
     "sha256_of",
     "supported_extensions",

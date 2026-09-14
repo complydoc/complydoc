@@ -6,6 +6,13 @@ versioned separately.
 
 ## [Unreleased]
 
+### Added
+
+- `cd.scan_text`, `cd.mask_text`, `cd.find_hidden` and `cd.count_tokens` work on plain strings.
+- `Config.override` returns a validated copy of a configuration with settings replaced.
+- `cd.register_signal` and `cd.register_detector` add readiness signals and identifier
+  detectors. `Detector`, `DetectorContext`, `Finding`, `Signal` and `Measurement` are exported.
+
 ## [0.4.0] — 2026-09-14
 
 ### Added
