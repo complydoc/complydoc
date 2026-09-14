@@ -15,6 +15,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from markupsafe import escape
 
 from complydoc.config.schema import Config
+from complydoc.hidden.check import severity_of
 from complydoc.overall import overall_readiness
 from complydoc.quickwins import quick_wins
 from complydoc.report.charts import (
@@ -53,6 +54,15 @@ def severity_rank(severity: str) -> int:
 def evidence_rank(evidence: str) -> int:
     """Sort weight, strongest first. Alphabetical would put a model guess top."""
     return len(EVIDENCE_ORDER) - EVIDENCE_ORDER.index(evidence) if evidence in EVIDENCE_ORDER else 0
+
+
+def content_rows(report: AuditReport) -> list[tuple[DocumentReport, Any]]:
+    """Every hidden or instruction-like passage in the folder, most serious first."""
+    rows = [(d, f) for d in report.documents for f in d.content_findings]
+    rows.sort(
+        key=lambda row: (-severity_rank(row[1].severity), row[0].relative_path, row[1].page or 0)
+    )
+    return rows
 
 
 def sensitive_rows(report: AuditReport) -> list[tuple[DocumentReport, Any]]:
@@ -379,6 +389,8 @@ def render_html(report: AuditReport, config: Config) -> str:
         band_series=BAND_SERIES,
         severity_class=severity_class,
         severity_badge=severity_badge,
+        content_rows=content_rows,
+        content_severity=severity_of,
         severity_rank=severity_rank,
         evidence_rank=evidence_rank,
         hard_drivers=lambda d, n=3: _drivers(d, "poor", n),

@@ -291,6 +291,10 @@ def _summary(report: AuditReport) -> None:
             f"{aggregate.sensitive_total} in "
             f"{aggregate.documents_with_sensitive_data}/{aggregate.documents_audited} docs",
         )
+        passages = aggregate.content_findings_total
+        high = aggregate.content_findings_high
+        summary = count(passages, "passage") if passages else "none found"
+        table.add_row("Hidden content", f"[red]{summary}, {high} high[/]" if high else summary)
     if aggregate.pages_unreadable:
         table.add_row("Unread pages", f"[yellow]{aggregate.pages_unreadable}[/]")
     console.print(table)

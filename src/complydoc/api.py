@@ -75,6 +75,7 @@ from complydoc.audit import COMPONENTS, run_audit
 from complydoc.config.loader import ConfigError, load_config
 from complydoc.cost.estimator import UnknownModelError
 from complydoc.extract import Chunk, ExtractionWarning, TextResult, extract_text
+from complydoc.hidden.instructions import register_instruction_classifier
 from complydoc.ingest.base import (
     Document,
     DocumentFormat,
@@ -100,6 +101,7 @@ from complydoc.offline import NetworkAccessError
 from complydoc.report.html_writer import write_html as _write_html
 from complydoc.report.json_writer import write_json as _write_json
 from complydoc.report.models import (
+    ContentFinding,
     IdentifierDifference,
     LoaderComparison,
     LoaderRun,
@@ -115,6 +117,7 @@ __all__ = [
     "AuditOptions",
     "Chunk",
     "ConfigError",
+    "ContentFinding",
     "Document",
     "DocumentFormat",
     "Engine",
@@ -148,6 +151,7 @@ __all__ = [
     "readiness_audit",
     "register_engine",
     "register_extractor",
+    "register_instruction_classifier",
     "register_loader",
     "security_audit",
     "sha256_of",

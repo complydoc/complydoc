@@ -30,6 +30,7 @@ from complydoc.config.loader import check_staleness
 from complydoc.config.schema import Config, ModelPricing
 from complydoc.cost.estimator import estimate_document, folder_from_estimates, resolve_models
 from complydoc.discovery import discover
+from complydoc.hidden.check import check_content
 from complydoc.ingest import ocr as ocr_module
 from complydoc.ingest.base import Document, IngestOptions, LoaderError, SkipRecord
 from complydoc.ingest.extractors.registry import DEFAULT_EXTRACTOR
@@ -192,6 +193,17 @@ def build_entry(
     scan_started = time.perf_counter()
     if "sensitive" in work.requested:
         entry.sensitive = scan(document, work.config.sensitive, reveal=work.reveal)
+        check = check_content(
+            document.path,
+            [(page.number, page.text) for page in document.pages],
+            work.config,
+            reveal=work.reveal,
+            password=work.options.password or "",
+            loader_text=any(page.text_source == "loader" for page in document.pages),
+        )
+        entry.content_findings = check.findings
+        entry.visibility_checked = check.visibility_checked
+        entry.visibility_note = check.note
     scan_seconds = time.perf_counter() - scan_started
 
     if work.models is not None:

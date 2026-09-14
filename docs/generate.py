@@ -175,8 +175,9 @@ def configuration_page() -> None:
     lines = [
         "# Configuration",
         "",
-        "Three files — `pricing.yaml`, `readiness.yaml` and `sensitive.yaml`. The",
-        "shipped set is used unless you point at your own with `--config-dir`, and",
+        "Four files — `pricing.yaml`, `readiness.yaml`, `sensitive.yaml` and",
+        "`hidden.yaml`. The shipped set is used unless you point at your own with",
+        "`--config-dir` (where `hidden.yaml` is optional), and",
         "a run records the digest of what it loaded so two reports can be compared",
         "honestly.",
         "",

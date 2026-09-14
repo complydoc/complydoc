@@ -112,6 +112,7 @@ nav:
       - Network isolation: explanation/offline.md
       - Unmeasured values: explanation/not-measured.md
       - Evidence tiers: explanation/evidence.md
+      - Hidden content: explanation/hidden-content.md
 
 not_in_nav: |
   examples/

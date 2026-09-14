@@ -225,6 +225,25 @@
   .ev-model { color: var(--faint); font-style: italic; }
   /* Listed but not alarming: a low-severity finding the name model made. */
   tr.quiet td { color: var(--faint); }
+  /* Hidden content: instruction evidence down, visibility across. */
+  .cmatrix { display: grid; grid-template-columns: 8.5rem repeat(4, minmax(4.5rem, 1fr));
+             gap: 4px; max-width: 40rem; margin: .5rem 0 1rem; font-size: .85rem; }
+  .cm-h { color: var(--muted); padding: .35rem .25rem; line-height: 1.25; }
+  .cm-h span { display: block; color: var(--faint); font-size: .75rem; }
+  .cm-cell { border: 1px solid var(--line); border-radius: 6px; background: var(--panel);
+             padding: .45rem .5rem; text-align: left; font: inherit; color: var(--ink);
+             min-height: 3.1rem; cursor: pointer; }
+  .cm-cell strong { display: block; font-size: 1.05rem; font-weight: 600; }
+  .cm-cell span { font-size: .72rem; color: var(--muted); }
+  .cm-cell[disabled] { cursor: default; color: var(--faint); background: transparent; }
+  .cm-na { border-style: dashed; }
+  .cm-high { border-color: var(--poor); }
+  .cm-high strong, .cm-high span { color: var(--poor); }
+  .cm-medium { border-color: var(--warn-mid); }
+  .cm-medium strong, .cm-medium span { color: var(--warn-mid); }
+  .cm-empty { color: var(--faint); padding: .45rem .5rem; border: 1px dashed var(--line);
+              border-radius: 6px; }
+  .cm-cell.sel { outline: 2px solid var(--ink); outline-offset: 1px; }
   .loaderrun { margin: 0 0 1.5rem; }
   .loaderrun table th { text-align: left; font-weight: 500; color: var(--muted);
                         width: 12rem; }
@@ -897,6 +916,59 @@ above for any other.</p>
   {%- if report.run.extracted_text_used and report.run.page_images_used %} and{% endif %}
   {%- if report.run.page_images_used %} without <code>--page-images</code>{% endif %}
   for a report that carries no document content.</p></div>
+{% endif %}
+
+<h3>Hidden content and instructions</h3>
+{% set cm = agg.content_matrix %}
+<p class="note">Each passage is placed by two kinds of evidence: whether a person reading the
+document would see it, and whether it reads as an instruction to a model. The levels are
+strength of evidence, not probabilities. Select a cell to filter the table.</p>
+<div class="cmatrix">
+  <div></div>
+  <div class="cm-h">Visible</div>
+  <div class="cm-h">Not measured<span>no file to check</span></div>
+  <div class="cm-h">Hidden<span>one signal</span></div>
+  <div class="cm-h">Hidden<span>confirmed</span></div>
+  {% for row, label, sub in [("confirmed", "Confirmed", "decoded hidden text"), ("pattern", "Pattern", "instruction phrasing"), ("model", "Model", "classifier score"), ("none", "None", "")] %}
+  <div class="cm-h">{{ label }}{% if sub %}<span>{{ sub }}</span>{% endif %}</div>
+  {% for column in ["visible", "not_measured", "suspected", "confirmed"] %}
+    {% set n = cm.get(row, {}).get(column, 0) %}
+    {% set sev = content_severity(column, row) %}
+    {% if row == "none" and column in ("visible", "not_measured") %}
+  <div class="cm-empty">—</div>
+    {% else %}
+  <button type="button" class="cm-cell{% if column == 'not_measured' %} cm-na{% endif %}{% if n %} cm-{{ sev }}{% endif %}"
+    data-cm-cell="{{ row }}:{{ column }}"{% if not n %} disabled{% endif %}
+    aria-label="{{ label }} instruction evidence, {{ column | replace('_', ' ') }}: {{ n }}">
+    <strong>{{ n if n else "·" }}</strong>{% if n %}<span>{{ sev }}</span>{% endif %}</button>
+    {% endif %}
+  {% endfor %}
+  {% endfor %}
+</div>
+{% set crows = content_rows(report) %}
+{% if crows %}
+<p><button type="button" id="cm-reset" hidden>Show all passages</button></p>
+<div class="scroll"><table data-sortable id="content-findings">
+  <thead><tr><th data-sort="text">Document</th><th data-sort="num">Page</th>
+    <th data-sort="num" data-sort-default="desc">Severity</th><th data-sort="text">Hidden</th>
+    <th data-sort="text">Instruction</th><th>Passage</th>
+    {% if report.loader %}<th data-sort="text">In loader output</th>{% endif %}</tr></thead>
+  <tbody>
+  {% for doc, f in crows %}
+    <tr data-cm="{{ f.instruction }}:{{ f.visibility }}"{% if f.severity == "low" %} class="quiet"{% endif %}>
+      <td class="mono">{{ doc.relative_path }}</td>
+      <td class="n" data-value="{{ f.page or 0 }}">{{ f.page or "—" }}</td>
+      <td data-value="{{ severity_rank(f.severity) }}">{{ severity_badge(f.severity) | safe }}</td>
+      <td>{{ f.visibility | replace("_", " ") }}{% if f.hidden_reasons %}<br><span class="why">{{ f.hidden_reasons | join("; ") }}</span>{% endif %}</td>
+      <td>{{ f.instruction }}{% if f.instruction_reasons %}<br><span class="why">{{ f.instruction_reasons | join("; ") }}</span>{% endif %}</td>
+      <td class="mono">{{ f.excerpt }}</td>
+      {% if report.loader %}<td>{% if f.in_loader_output is none %}—{% elif f.in_loader_output %}<span class="attn">yes</span>{% else %}no{% endif %}</td>{% endif %}
+    </tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% else %}
+<p class="note">No hidden text or instruction-like passages were found{% if agg.documents_visibility_unchecked %}; hidden text was not checked in {{ plural(agg.documents_visibility_unchecked, "document") }}{% endif %}.</p>
 {% endif %}
 
 {% if agg.sensitive_by_category %}
@@ -1890,6 +1962,24 @@ that text afterwards. Greyed rows are low-severity findings from the name model.
   Array.prototype.forEach.call(
     document.querySelectorAll("table[data-paginate]"), paginate
   );
+})();
+</script>
+<script>
+(function () {
+  var cells = Array.prototype.slice.call(document.querySelectorAll("[data-cm-cell]"));
+  var rows = Array.prototype.slice.call(document.querySelectorAll("#content-findings tbody tr"));
+  var reset = document.getElementById("cm-reset");
+  function apply(key) {
+    rows.forEach(function (row) { row.hidden = !!key && row.getAttribute("data-cm") !== key; });
+    cells.forEach(function (cell) { cell.classList.toggle("sel", cell.getAttribute("data-cm-cell") === key); });
+    if (reset) reset.hidden = !key;
+  }
+  cells.forEach(function (cell) {
+    cell.addEventListener("click", function () {
+      apply(cell.classList.contains("sel") ? null : cell.getAttribute("data-cm-cell"));
+    });
+  });
+  if (reset) reset.addEventListener("click", function () { apply(null); });
 })();
 </script>
 </body>

@@ -1,0 +1,91 @@
+# Hidden content and text addressed to a model.
+#
+# Two questions, answered separately. `visibility` decides whether a person
+# looking at the document would see a piece of text. `instructions` decides
+# whether text reads as an instruction to a model. The report combines them.
+#
+# Optional in a custom --config-dir: the shipped file is used when it is absent.
+schema_version: 1
+
+visibility:
+  # Pages are drawn at this resolution to see what a reader would see.
+  render_dpi: 100
+  # Grey levels (0-255) between the lightest and darkest pixel under a glyph.
+  # Black on white measures 255, light grey text about 50, white text on white
+  # and text under a filled shape 0.
+  min_contrast: 16
+  min_font_size_pt: 1.0
+  # Letters or digits a passage needs before it is reported.
+  min_characters: 4
+  # Share of a passage's glyphs that must be hidden for it to count as hidden.
+  min_hidden_share: 0.8
+  # A fill colour at or above this on every channel is white.
+  near_white: 0.94
+  # Zero-width characters in a row before they are treated as a payload.
+  zero_width_run: 8
+  max_pages: 500
+
+instructions:
+  # Used only when a classifier is registered with
+  # cd.register_instruction_classifier().
+  classifier_threshold: 0.8
+  patterns:
+    - id: override
+      label: tells the model to ignore its instructions
+      languages: [en, pt, es, fr, de, it, nl]
+      regexes:
+        - '\b(?:ignore|disregard|forget|override|bypass)\b[^.\n]{0,40}?\b(?:instructions?|prompts?|rules|directions|guidelines|guardrails)\b'
+        - '\b(?:ignore|ignora|ignorar|desconsidere|desconsidera|esque[çc]a)\b[^.\n]{0,40}?\b(?:instru[çc][õo]es|regras|orienta[çc][õo]es)\b'
+        - '\b(?:ignora|ignore|ignorar|olvida|olvide)\b[^.\n]{0,40}?\b(?:instrucciones|reglas|indicaciones)\b'
+        - '\b(?:ignore[rz]?|oublie[rz]?)\b[^.\n]{0,40}?\b(?:instructions|consignes|r[èe]gles)\b'
+        - '\b(?:ignoriere|ignorieren|vergiss|vergessen)\b[^.\n]{0,40}?\b(?:anweisungen|anweisung|regeln|vorgaben)\b'
+        - '\b(?:ignora|ignorare|dimentica)\b[^.\n]{0,40}?\b(?:istruzioni|regole)\b'
+        - '\b(?:negeer|vergeet)\b[^.\n]{0,40}?\b(?:instructies|regels)\b'
+
+    - id: role
+      label: reassigns the model's role
+      languages: [en]
+      regexes:
+        - '\byou are (?:now|no longer)\b'
+        - '\bfrom now on,? you\b'
+        - '\bpretend (?:to be|you are)\b'
+        - '\bnew (?:system )?instructions?\s*:'
+
+    - id: role_marker
+      label: contains chat-template or role markers
+      languages: []
+      regexes:
+        - '<\|(?:im_start|im_end|system|user|assistant|endoftext|begin_of_text|start_header_id|end_header_id)\|>'
+        - '\[/?INST\]'
+        - '<</?SYS>>'
+        - '</?(?:system|assistant)>'
+        - '^\s*(?:#+\s*)?(?:system|developer)\s+(?:prompt|message|instructions?)\s*:'
+
+    - id: addressed_to_model
+      label: addresses an AI model directly
+      languages: [en]
+      regexes:
+        - '\b(?:if|when) you are an? (?:ai|artificial intelligence|language model|large language model|llm|chatbot|ai assistant)\b'
+        - '\b(?:note|message|instructions?|attention) (?:to|for) (?:the |any )?(?:ai|llm|language model|model|assistant|chatbot)\b'
+        - '\b(?:dear|hey|hello|attention)\s*,?\s+(?:ai|llm|chatgpt|gpt|claude|gemini|copilot|assistant)\b'
+
+    - id: conceal
+      label: asks for something to be kept from the user
+      languages: [en]
+      regexes:
+        - '\b(?:do not|don.t|never)\s+(?:tell|inform|mention|reveal|disclose|show)\b[^.\n]{0,20}\b(?:the user|the reader|the human|anyone)\b'
+        - '\bwithout (?:telling|informing|alerting) (?:the user|the reader|anyone)\b'
+        - '\bkeep (?:this|these instructions) (?:secret|hidden|confidential)\b'
+
+    - id: steer_output
+      label: dictates what a summary or assessment should say
+      languages: [en]
+      regexes:
+        - '\bwhen (?:summari[sz]ing|reviewing|screening|evaluating|analy[sz]ing|assessing|processing|ranking|grading) (?:this|the)\b[^.\n]{0,80}\b(?:say|state|respond|reply|answer|rate|score|recommend|approve|conclude|mention|report|output|classify)\b'
+
+    - id: exfiltration
+      label: tries to move data out through a link or the conversation
+      languages: [en]
+      regexes:
+        - '!\[[^\]\n]*\]\(\s*https?://[^)\s]*[?&][^)\s]*=[^)\s]*\)'
+        - '\b(?:include|append|insert|repeat)\b[^.\n]{0,30}\b(?:the |your )?(?:conversation|chat history|system prompt|previous messages)\b'

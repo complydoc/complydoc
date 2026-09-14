@@ -64,6 +64,74 @@ def build_limitations(
             )
         )
 
+    # --- Hidden text, and text addressed to a model -----------------------
+    if "sensitive" in run.components_run:
+        high = [
+            d.relative_path
+            for d in documents
+            if any(f.severity == "high" for f in d.content_findings)
+        ]
+        passages = sum(1 for d in documents for f in d.content_findings if f.severity == "high")
+        if high:
+            limitations.append(
+                Limitation(
+                    area="Hidden content",
+                    statement=(
+                        f"{count(passages, 'passage')} in {count(len(high), 'document')} read as "
+                        f"instructions to a model and are hidden from a person reading the "
+                        f"document. A model given this text reads them."
+                    ),
+                    affected=high,
+                    severity="important",
+                )
+            )
+        hidden_only = [
+            d.relative_path
+            for d in documents
+            if d.relative_path not in high
+            and any(f.visibility in ("suspected", "confirmed") for f in d.content_findings)
+        ]
+        if hidden_only:
+            limitations.append(
+                Limitation(
+                    area="Hidden content",
+                    statement=(
+                        f"{count(len(hidden_only), 'document')} contain text a reader does not "
+                        f"see and a model given the extracted text does."
+                    ),
+                    affected=hidden_only,
+                    severity="important",
+                )
+            )
+        unchecked = [d for d in documents if d.visibility_checked is False]
+        if unchecked:
+            reasons = sorted({d.visibility_note for d in unchecked if d.visibility_note})
+            limitations.append(
+                Limitation(
+                    area="Hidden content",
+                    statement=(
+                        f"Hidden text was not checked in {count(len(unchecked), 'document')}"
+                        + (f": {'; '.join(reasons)}." if reasons else ".")
+                        + " Instruction-like text in them is reported as not measured."
+                    ),
+                    affected=[d.relative_path for d in unchecked],
+                    severity="info",
+                )
+            )
+        if documents:
+            limitations.append(
+                Limitation(
+                    area="Hidden content",
+                    statement=(
+                        "Hidden-text checks cover the text layer of PDFs and the formatting of "
+                        "Word and Excel files. Text inside images, which a vision model reads, "
+                        "is not checked. Instruction patterns are mostly English. No findings "
+                        "means these checks found nothing, not that a document is safe."
+                    ),
+                    severity="info",
+                )
+            )
+
     # --- Prices nobody checked --------------------------------------------
     priced = next((d.cost.models for d in documents if d.cost), [])
     imported = sorted({m.display_name for m in priced if m.price_source == "imported"})

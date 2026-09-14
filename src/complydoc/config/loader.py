@@ -14,6 +14,7 @@ import yaml
 
 from complydoc.config.schema import (
     Config,
+    HiddenConfig,
     ModelPricing,
     PricingConfig,
     ReadinessConfig,
@@ -30,6 +31,9 @@ __all__ = [
 
 DEFAULT_CONFIG_DIR: Final = Path(__file__).parent
 _FILENAMES: Final = ("pricing.yaml", "readiness.yaml", "sensitive.yaml")
+_OPTIONAL: Final = ("hidden.yaml",)
+"""Read from the given directory when present, from the shipped set otherwise,
+so a configuration directory made before the file existed still loads."""
 
 
 class ConfigError(RuntimeError):
@@ -88,6 +92,11 @@ def load_config(config_dir: Path | None = None) -> Config:
         raw, data = _read(directory / name)
         raws.append(raw)
         parsed[name] = data
+    for name in _OPTIONAL:
+        candidate = directory / name
+        raw, data = _read(candidate if candidate.is_file() else DEFAULT_CONFIG_DIR / name)
+        raws.append(raw)
+        parsed[name] = data
 
     digest = hashlib.sha256("\n".join(raws).encode("utf-8")).hexdigest()[:16]
 
@@ -96,6 +105,7 @@ def load_config(config_dir: Path | None = None) -> Config:
             pricing=_with_imported(PricingConfig.model_validate(parsed["pricing.yaml"])),
             readiness=ReadinessConfig.model_validate(parsed["readiness.yaml"]),
             sensitive=SensitiveConfig.model_validate(parsed["sensitive.yaml"]),
+            hidden=HiddenConfig.model_validate(parsed["hidden.yaml"]),
             source_dir=str(directory),
             digest=digest,
         )

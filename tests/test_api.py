@@ -45,6 +45,8 @@ def test_the_public_surface_is_exactly_what_was_promised():
         # text out, with the identifiers covered over
         "extract_text",
         "inspect_documents",
+        "ContentFinding",
+        "register_instruction_classifier",
         "compare_loaders",
         "IdentifierDifference",
         "LoaderComparison",

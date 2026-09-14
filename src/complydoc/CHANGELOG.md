@@ -10,6 +10,15 @@ branch on when reading reports programmatically.
 
 ### Added
 
+- The security scan reports hidden content and text addressed to a model. PDF
+  pages are drawn and each character in the text layer is checked for ink under
+  it; Word and Excel files are read for hidden formatting, hidden sheets, rows
+  and columns; any text is checked for Unicode tag characters, zero-width runs
+  and bidirectional overrides. Instruction-like phrasing is matched against
+  patterns in the new `hidden.yaml`, and `cd.register_instruction_classifier()`
+  adds a local classifier. Each passage carries a visibility level and an
+  instruction level, and the Security page shows them as a matrix. See
+  `docs/explanation/hidden-content.md`.
 - `cd.inspect_documents()` reports on the output of another framework's
   loader instead of complydoc's own readers: a LangChain or LlamaIndex loader, a
   callable, or documents already loaded. It runs the same identifier scan,

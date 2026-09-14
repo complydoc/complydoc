@@ -304,7 +304,46 @@ def _identifying_metadata(context: _Context) -> None:
     )
 
 
+def _hidden_content(context: _Context) -> None:
+    """Text a reader does not see, and instructions a model would read."""
+    documents = context.report.documents
+    instructed = [
+        d.relative_path for d in documents if any(f.severity == "high" for f in d.content_findings)
+    ]
+    context.add(
+        id="hidden_instructions",
+        title="Remove hidden instructions before these reach a model",
+        detail=(
+            "These contain text a reader does not see that reads as instructions to a "
+            "model. Each passage is on the Security page. Remove it from the file, or drop "
+            "the flagged passages from the extracted text before it is sent."
+        ),
+        documents=instructed,
+        actor="you",
+        effect="a model no longer receives instructions a reviewer cannot see",
+    )
+    hidden = [
+        d.relative_path
+        for d in documents
+        if d.relative_path not in instructed
+        and any(f.visibility in ("suspected", "confirmed") for f in d.content_findings)
+    ]
+    context.add(
+        id="hidden_text",
+        title="Check the hidden text in these",
+        detail=(
+            "These contain text a reader does not see, such as white or hidden-formatted "
+            "text, that ends up in the extracted text. It may be harmless leftovers; it is "
+            "still part of what a model is given."
+        ),
+        documents=hidden,
+        actor="you",
+        effect="the text a model receives matches what a reviewer sees",
+    )
+
+
 _BUILDERS = (
+    _hidden_content,
     _no_text_layer,
     _skipped_documents,
     _reader_disagreement,

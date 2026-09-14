@@ -395,12 +395,71 @@ class SensitiveConfig(_Base):
         return {k: v for k, v in self.categories.items() if v.enabled}
 
 
+# --------------------------------------------------------------------------
+# hidden.yaml
+# --------------------------------------------------------------------------
+
+
+class VisibilityConfig(_Base):
+    render_dpi: int = Field(default=100, ge=36, le=600)
+    """Resolution a PDF page is drawn at to see what a reader would see."""
+    min_contrast: int = Field(default=16, ge=0, le=255)
+    """Grey levels between the lightest and darkest pixel under a glyph below
+    which nothing visible is drawn there."""
+    min_font_size_pt: float = 1.0
+    min_characters: int = 4
+    """Letters or digits a passage needs before it is reported."""
+    min_hidden_share: float = Field(default=0.8, ge=0.0, le=1.0)
+    near_white: float = Field(default=0.94, ge=0.0, le=1.0)
+    zero_width_run: int = 8
+    max_pages: int = 500
+
+
+class InstructionPattern(_Base):
+    id: str
+    label: str
+    languages: list[str] = Field(default_factory=list)
+    regexes: list[str]
+
+    @model_validator(mode="after")
+    def _compiles(self) -> InstructionPattern:
+        import re
+
+        for regex in self.regexes:
+            try:
+                re.compile(regex)
+            except re.error as exc:
+                raise ValueError(f"pattern {self.id!r}: {regex!r} does not compile: {exc}") from exc
+        return self
+
+
+class InstructionsConfig(_Base):
+    classifier_threshold: float = Field(default=0.8, ge=0.0, le=1.0)
+    patterns: list[InstructionPattern] = Field(default_factory=list)
+
+
+class HiddenConfig(_Base):
+    schema_version: int
+    visibility: VisibilityConfig = VisibilityConfig()
+    instructions: InstructionsConfig = InstructionsConfig()
+
+
+def _shipped_hidden() -> HiddenConfig:
+    from pathlib import Path
+
+    import yaml
+
+    raw = yaml.safe_load((Path(__file__).parent / "hidden.yaml").read_text(encoding="utf-8"))
+    return HiddenConfig.model_validate(raw)
+
+
 class Config(_Base):
-    """The three files, loaded together."""
+    """The configuration files, loaded together."""
 
     pricing: PricingConfig
     readiness: ReadinessConfig
     sensitive: SensitiveConfig
+    hidden: HiddenConfig = Field(default_factory=_shipped_hidden)
     source_dir: str
     digest: str
     """SHA-256 over the three raw files, so two runs can be compared honestly."""

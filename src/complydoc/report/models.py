@@ -33,6 +33,7 @@ __all__ = [
     "SCHEMA_VERSION",
     "Aggregate",
     "AuditReport",
+    "ContentFinding",
     "DocumentReport",
     "DocumentTiming",
     "ExtractorReading",
@@ -94,6 +95,12 @@ def report_shape() -> dict[str, object]:
             "sensitive.unreadable_pages": "pages that were not searched at all",
             "extractions[]": "one per reader asked for; the first is the one kept",
             "metadata_findings[]": "key, category, severity, evidence, masked (from metadata)",
+            "content_findings[]": (
+                "page, visibility (visible | not_measured | suspected | confirmed), "
+                "instruction (confirmed | pattern | model | none), severity, excerpt, "
+                "hidden_reasons[], instruction_reasons[], score, in_loader_output"
+            ),
+            "visibility_checked": "bool, null when the scan did not run",
             "path_exposures": "metadata keys holding an absolute filesystem path",
         },
         "overall": {
@@ -112,7 +119,10 @@ def report_shape() -> dict[str, object]:
             "network, scores), identifier_differences[] (found_by[], missed_by[]), "
             "metadata_keys (key -> loaders returning it), documents (path -> loaders)"
         ),
-        "aggregate": "folder totals: cost, signal_distribution, sensitive_by_category",
+        "aggregate": (
+            "folder totals: cost, signal_distribution, sensitive_by_category, "
+            "content_matrix (instruction -> visibility -> passages)"
+        ),
         "limitations[]": "area, statement, affected[], severity (info | important)",
     }
 
@@ -165,6 +175,34 @@ class LoaderRun:
     network_allowed: bool = False
     """The caller passed `allow_network=True`, so the loader's connections went
     through. complydoc's own processing stays behind the guard either way."""
+
+
+VISIBILITY_LEVELS = ("visible", "not_measured", "suspected", "confirmed")
+"""Whether a person reading the document would see a passage, weakest evidence of
+hiding first."""
+INSTRUCTION_LEVELS = ("confirmed", "pattern", "model", "none")
+"""Whether a passage reads as an instruction to a model, strongest evidence first."""
+
+
+@dataclass(frozen=True, slots=True)
+class ContentFinding:
+    """A passage that is hidden from a reader, reads as an instruction to a model, or both."""
+
+    page: int | None
+    visibility: str
+    """`visible`, `not_measured`, `suspected` (one signal) or `confirmed`."""
+    instruction: str
+    """`confirmed` (decoded from hidden characters), `pattern`, `model` or `none`."""
+    severity: str
+    excerpt: str
+    """The passage, identifiers masked unless the run used `reveal`, cut at 240 characters."""
+    characters: int
+    hidden_reasons: list[str] = field(default_factory=list)
+    instruction_reasons: list[str] = field(default_factory=list)
+    score: float | None = None
+    """The registered classifier's score, when there is one."""
+    in_loader_output: bool | None = None
+    """For loader output: whether the loader's text contains this passage."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -351,6 +389,11 @@ class DocumentReport:
     """One per extractor the run was asked for. The first is the one kept."""
     metadata_findings: list[MetadataFinding] = field(default_factory=list)
     """Identifiers in the metadata a loader returned. Empty for files read directly."""
+    content_findings: list[ContentFinding] = field(default_factory=list)
+    """Hidden passages and instruction-like text. See `complydoc.hidden`."""
+    visibility_checked: bool | None = None
+    """Whether hidden text could be checked for. None when the scan did not run."""
+    visibility_note: str | None = None
     path_exposures: list[str] = field(default_factory=list)
     """Metadata keys whose value is an absolute filesystem path.
 
@@ -426,6 +469,13 @@ class Aggregate:
     documents_with_sensitive_data: int = 0
     categories_not_scanned: dict[str, str] = field(default_factory=dict)
 
+    content_matrix: dict[str, dict[str, int]] = field(default_factory=dict)
+    """Passages by instruction evidence, then by visibility."""
+    content_findings_total: int = 0
+    content_findings_high: int = 0
+    documents_with_content_findings: int = 0
+    documents_visibility_unchecked: int = 0
+
     total_seconds: float = 0.0
     """Wall clock for the whole run, measured on the machine that ran it."""
     seconds_per_document: float | None = None
@@ -491,6 +541,8 @@ def build_aggregate(
     by_severity: Counter[str] = Counter()
     not_scanned: dict[str, str] = {}
     with_sensitive = 0
+    content_matrix: dict[str, dict[str, int]] = {}
+    content_total = content_high = with_content = unchecked = 0
 
     for document in documents:
         formats[document.format.value] += 1
@@ -521,6 +573,14 @@ def build_aggregate(
             for entry in document.sensitive.unscanned_categories:
                 not_scanned.setdefault(entry.category, entry.reason)
 
+        for finding in document.content_findings:
+            row = content_matrix.setdefault(finding.instruction, {})
+            row[finding.visibility] = row.get(finding.visibility, 0) + 1
+            content_total += 1
+            content_high += finding.severity == "high"
+        with_content += bool(document.content_findings)
+        unchecked += document.visibility_checked is False
+
     timings = [d.timing for d in documents if d.timing]
     measured_seconds = sum(t.total_seconds for t in timings)
     ocr_pages, ocr_seconds = ocr_module.stats()
@@ -539,6 +599,11 @@ def build_aggregate(
         sensitive_total=int(sum(by_category.values())),
         documents_with_sensitive_data=with_sensitive,
         categories_not_scanned=not_scanned,
+        content_matrix=content_matrix,
+        content_findings_total=content_total,
+        content_findings_high=content_high,
+        documents_with_content_findings=with_content,
+        documents_visibility_unchecked=unchecked,
         total_seconds=round(measured_seconds, 3),
         seconds_per_document=(round(measured_seconds / len(timings), 3) if timings else None),
         seconds_per_page=round(measured_seconds / pages, 3) if pages else None,
