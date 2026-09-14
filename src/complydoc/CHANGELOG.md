@@ -1,8 +1,8 @@
 # Changelog
 
-Newest first. Versions follow [semantic versioning](https://semver.org): major for a
-breaking change to the report JSON or a config key, minor for additions, patch for
-corrections. `schema_version` in the JSON is versioned separately.
+Newest first. Releases increment the patch number; the minor number changes only for a
+breaking change to the report JSON or a config key. `schema_version` in the JSON is
+versioned separately.
 
 ## [Unreleased]
 
