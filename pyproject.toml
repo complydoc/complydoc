@@ -1,12 +1,12 @@
 [project]
 name = "complydoc"
 dynamic = ["version"]
-description = "Offline pre-purchase diagnostic for document automation: LLM cost estimate, extraction readiness signals, and a masked scan for personal and financial identifiers."
+description = "Offline analysis of documents and loader output before they reach an LLM: token cost, extraction readiness, identifiers, hidden text and prompt injection."
 readme = "README.md"
 requires-python = ">=3.11,<3.14"
 license = { text = "MIT" }
 authors = [{ name = "Duarte Cardoso", email = "caldasdcardoso@gmail.com" }]
-keywords = ["pdf", "ocr", "gdpr", "pii", "document-automation", "offline"]
+keywords = ["pdf", "ocr", "pii", "prompt-injection", "langchain", "document-loaders", "llm", "offline"]
 
 # How the package is filed and found on PyPI. Kept to the ones that are true:
 # a long list of aspirational classifiers is noise on the page.
@@ -21,7 +21,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
-    "Topic :: Office/Business",
+    "Topic :: Text Processing",
     "Topic :: Text Processing :: Markup :: HTML",
     "Topic :: Utilities",
     "Typing :: Typed",

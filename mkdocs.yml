@@ -13,9 +13,7 @@
 
 site_name: complydoc
 site_description: >-
-  Offline document audit: LLM cost, extraction readiness, and personal data.
-  Point it at a folder and it tells you what processing those documents would
-  cost, how ready they are, and what they carry that should not leave.
+  Offline analysis of documents and loader output before they reach an LLM.
 site_url: https://duartecaldascardoso.github.io/complydoc/
 repo_url: https://github.com/duartecaldascardoso/complydoc
 repo_name: duartecaldascardoso/complydoc

@@ -1,8 +1,8 @@
-"""complydoc — an offline pre-purchase diagnostic for document automation.
+"""complydoc — offline analysis of documents before they reach an LLM.
 
-Point it at a folder of business documents and it answers three questions: what
-they would cost to process with an LLM, how ready they are to extract data
-from, and what personal or financial information they hold.
+Reads files, or the output of another framework's loader, and reports token
+cost, extraction readiness, personal and financial identifiers, and text that is
+hidden from a reader or addressed to a model.
 
     import complydoc as cd
 
@@ -33,7 +33,7 @@ document and cannot break a host application that needs the network of its own.
 from __future__ import annotations
 
 # Before the import below, which reaches code that reads it back off this module.
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 
 from complydoc import api as _api
 from complydoc.api import *  # noqa: F403

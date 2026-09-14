@@ -7,38 +7,16 @@
 </div>
 
 <div align="center">
-  <h3>Offline document audit: LLM cost, extraction readiness, and personal data.</h3>
+  <h3>Offline analysis of documents before they reach an LLM.</h3>
 </div>
 
 <div align="center">
   <a href="https://pypi.org/project/complydoc/"><img src="https://img.shields.io/pypi/v/complydoc?color=1a7f4b" alt="PyPI"></a>
+  <a href="https://github.com/duartecaldascardoso/complydoc/actions/workflows/checks.yml"><img src="https://github.com/duartecaldascardoso/complydoc/actions/workflows/checks.yml/badge.svg?branch=main" alt="Tests"></a>
   <a href="https://duartecaldascardoso.github.io/complydoc/"><img src="https://img.shields.io/badge/docs-complydoc-1a7f4b" alt="Documentation"></a>
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-1a7f4b" alt="License"></a>
   <img src="https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-4f5d75" alt="Python versions">
-  <img src="https://img.shields.io/badge/network-none%20at%20runtime-1a7f4b" alt="No network at runtime">
-  <img src="https://img.shields.io/badge/tests-490-4f5d75" alt="Tests">
 </div>
-
-<br>
-
-<div align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/duartecaldascardoso/complydoc/main/.github/images/report-dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/duartecaldascardoso/complydoc/main/.github/images/report-light.png">
-    <img alt="The complydoc report: a global readiness ring with its three factors, and a ranked list of quick wins" src="https://raw.githubusercontent.com/duartecaldascardoso/complydoc/main/.github/images/report-light.png" width="100%">
-  </picture>
-</div>
-
-<br>
-
-Point complydoc at a folder of business documents and it answers three questions: what they
-would cost to process with an LLM, how ready they are to extract data from, and what personal
-or financial information they hold. It is a diagnostic you run before buying a document
-automation system, not a pipeline you run in production.
-
-**It makes no network calls.** `offline.py` replaces the standard library's outbound socket
-and DNS entry points before any file is opened, and the test suite runs a full audit with
-that guard armed. Every report records whether it was active.
 
 <br>
 
@@ -46,12 +24,21 @@ that guard armed. Every report records whether it was active.
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/duartecaldascardoso/complydoc/main/.github/images/complydoc-architecture-dark.svg">
     <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/duartecaldascardoso/complydoc/main/.github/images/complydoc-architecture.svg">
-    <img alt="complydoc pipeline: documents pass through discovery and per-format loaders into three independent analysis components, which emit a JSON report and a self-contained HTML report, all inside a network guard boundary" src="https://raw.githubusercontent.com/duartecaldascardoso/complydoc/main/.github/images/complydoc-architecture.svg" width="100%">
+    <img alt="complydoc architecture: files and loader output feed four analyses (cost, readiness, identifiers, hidden content) that produce a report and masked text, inside a network guard" src="https://raw.githubusercontent.com/duartecaldascardoso/complydoc/main/.github/images/complydoc-architecture.svg" width="100%">
   </picture>
 </div>
 
-**[Documentation](https://duartecaldascardoso.github.io/complydoc/)** — guides, the full
-command line and Python API reference, and why it works the way it does.
+complydoc reads documents, or the output of a document loader, and reports:
+
+| | |
+| --- | --- |
+| **Cost** | Text and vision tokens per document, priced per model |
+| **Readiness** | Measured extraction signals: text layer, coverage, tables, columns, rotation, scan resolution |
+| **Identifiers** | Personal and financial identifiers, checksum-validated where one exists, masked |
+| **Hidden content** | Text a reader does not see and a model does, and text that reads as an instruction to a model |
+
+Everything runs locally. Outbound sockets and DNS lookups are blocked for the duration of a run,
+and each report records that the guard was armed.
 
 ## Install
 
@@ -59,373 +46,89 @@ command line and Python API reference, and why it works the way it does.
 uv tool install complydoc
 ```
 
-Or `pipx install complydoc`, or `pip install complydoc` into an environment of your own.
-See a report straight away, on six sample documents that ship with it:
+Optional extras: `ocr` for scanned pages, `ner` for names and organisations (plus the
+`en_core_web_sm` model). `complydoc doctor` lists what is available.
+
+## Command line
 
 ```bash
-complydoc demo
+complydoc demo                                   # audit the bundled sample documents
+complydoc audit ./documents                      # writes .complydoc/complydoc.{html,json}
+complydoc sensitive ./documents                  # identifiers and hidden content only
+complydoc readiness ./documents
+complydoc cost ./documents --monthly-volume 2500
+complydoc compare ./documents                    # read each page with every installed extractor
 ```
 
-If `complydoc: command not found`, add uv's bin directory to your shell:
+Formats: PDF, PNG, JPG, TIFF, BMP, DOCX, XLSX. `complydoc --help` lists every command and flag.
 
-```bash
-echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc && exec zsh
-```
-
-OCR and local name detection are optional extras — a large download, and a diagnostic
-run is still useful without them. To install both:
-
-```bash
-uv tool install --force --reinstall --with rapidocr-onnxruntime --with spacy complydoc
-uv pip install --python "$(uv tool dir)/complydoc/bin/python" \
-  https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl
-```
-
-The second line puts the spaCy model inside the tool's own environment, which
-`spacy download` cannot do because it shells out to pip and a uv tool environment has
-none. `complydoc doctor` says which extras it can see.
-
-## Use
-
-See a report before you point it at anything of your own — six synthetic sample
-documents ship with the tool:
-
-```bash
-complydoc demo
-```
-
-Then the real thing:
-
-```bash
-cd ~/invoices
-complydoc
-```
-
-That audits the folder you are standing in and writes `.complydoc/complydoc.html` and
-`.complydoc/complydoc.json`, printing both as clickable links. The output directory is
-hidden so a second run does not pick up the first run's reports.
-
-```bash
-complydoc audit ~/invoices --monthly-volume 2500  # extrapolate to a monthly bill
-complydoc audit ~/invoices --save-text ./text     # keep the text it read, one file per document
-complydoc compare ~/invoices                      # read every page with every reader installed
-complydoc sensitive ~/invoices                    # only the identifier scan
-complydoc readiness ~/invoices                    # only the extraction signals
-complydoc cost ~/invoices                         # only the price estimate
-complydoc models --new 15                         # the newest models it can price against
-complydoc extractors                              # libraries that can read a text layer
-complydoc engines                                 # local OCR engines
-complydoc doctor                                  # what is installed
-```
-
-Inputs: PDF (native and scanned), PNG, JPG, TIFF, BMP, DOCX, XLSX. Folders are recursed and
-anything that cannot be opened is skipped and reported rather than failing the run.
-
-### Options worth knowing
-
-| Flag | What it does |
-| --- | --- |
-| `--monthly-volume N` | Extrapolates the folder's cost to a monthly and annual bill |
-| `--model <id>` | Prices one model instead of the default set; repeatable |
-| `--save-text <dir>` | Writes the extracted text out, one file per document |
-| `--sample N` | Audits N documents instead of all of them, keeping each file type's share |
-| `--password <pw>` | Tried on encrypted PDFs |
-| `--reveal` | Prints identifiers in full instead of masked, and stamps the report |
-| `--no-ocr` | Skips reading scanned pages. Faster, and finds less |
-| `--no-page-images` / `--no-extracted-text` | Leave the document content out of the report |
-| `--extractor <id>` | Which library reads the text layer. The default is pdfplumber |
-| `--compare-extractor <id>` | Reads every page with a second library too, and keeps what each read |
-| `--compare-ocr-engine <id>` | The same for OCR engines, which disagree far more than the extractors |
-| `--jobs N` | Fixes the worker count. The default reads the folder size and decides |
-| `--print-json` | Puts the JSON on stdout and nothing else |
-
-`--sample` changes what the report finds, so it says on its front page that it read a sample
-and how many documents it skipped. The choice is deterministic: two runs of one folder pick
-the same documents, so their reports compare.
-
-> [!IMPORTANT]
-> The report carries the text read off each page, and a picture of each page, so that you can
-> check what was extracted against what was there. That means the file holds the identifiers
-> it masks elsewhere. Treat it as you would treat the documents. `--no-extracted-text` and
-> `--no-page-images` produce a report with no document content in it.
-
-## From Python
-
-The command line is one way in. Everything it does is available as a library, which is
-the point if you want this inside an ingestion pipeline, a notebook or CI rather than in
-front of a person:
+## Python
 
 ```python
 import complydoc as cd
 
-report = cd.security_audit("~/contracts")
-for document in report.documents:
-    for match in document.sensitive.matches:
-        print(document.relative_path, match.label, match.severity, match.evidence, match.masked)
+report = cd.full_audit("./documents")
+report.overall.score
+report.documents[0].sensitive.matches
+report.documents[0].content_findings
+cd.write_html(report, "report.html")
 ```
 
-Four entry points. `full_audit` runs everything; the other three run one component each,
-which is why they exist — asking only for the identifier scan loads no tokenizer and
-prices nothing:
+Loader output, from LangChain, LlamaIndex or anything with the same shape:
 
 ```python
-cd.full_audit("~/contracts", ocr=True)          # all three components
-cd.security_audit("~/contracts")                # identifiers only
-cd.cost_audit("~/contracts", monthly_volume=5_000)
-cd.readiness_audit("~/contracts")
+from langchain_community.document_loaders import PDFPlumberLoader, PyPDFLoader
+
+report = cd.inspect_documents(PyPDFLoader("contract.pdf"))
+report = cd.compare_loaders(
+    {"pypdf": PyPDFLoader("contract.pdf"), "pdfplumber": PDFPlumberLoader("contract.pdf")}
+)
 ```
 
-What comes back is the same report the CLI writes, and you can write it out:
+Text with identifiers masked, chunked and counted in tokens:
 
 ```python
-report = cd.full_audit("~/contracts")
-
-report.overall.score            # 82.4
-report.overall.bands            # {"ready": 4, "workable": 2}
-report.quick_wins               # ranked; each has .documents and .actor
-report.aggregate.sensitive_total
-
-cd.write_html(report, "audit.html")
-cd.write_json(report, "audit.json")
-```
-
-Two things differ from the command line, deliberately.
-
-**The network guard is scoped.** The CLI arms it for the life of the process, which is
-right when it owns the process. Called as a library it is armed for the audit and the
-socket module is put back exactly as it was found — a library that permanently broke its
-host's networking would be indefensible, whatever its reasons. Each report still records
-whether its own run was guarded.
-
-**It starts no processes unless asked.** `jobs` is 1, because a notebook or a web worker
-should not get a surprise process pool. Pass `jobs=0` to let it read the folder and decide,
-as the CLI does.
-
-### Text you can send on
-
-The other direction: not what the folder is like, but the folder's own words with every
-identifier covered over, chunked, and counted in tokens.
-
-```python
-result = cd.extract_text("~/contracts")
-
+result = cd.extract_text("./documents", max_tokens=2000)
 for chunk in result.chunks:
-    send_to_model(chunk.text)       # identifiers replaced with mask characters
-    budget += chunk.tokens          # and chunk.token_fidelity says how exact that is
-
-if not result.complete:
-    ...                             # something could not be read; result.warnings says what
+    chunk.text, chunk.tokens
 ```
 
-`max_tokens=2000` splits pages that exceed it, at paragraph breaks. `mask=False` returns
-the text as the page says it, with no scan run at all.
+## Output
 
-**Read the warnings.** They are the point of the design, not decoration:
-
-| Warning | What it means |
-| --- | --- |
-| `masking_best_effort` | Raised every time masking runs. Names and organisations have no checksum to pass, so a model finds them and models miss |
-| `masking_incomplete` | A category could not be scanned at all, so none of that kind were covered |
-| `unreadable_page` | Nothing could be read off a page — usually a scan with `ocr=False` |
-| `unreadable_document` | A file would not open. None of its content is in the result |
-| `estimated_tokens` | No local encoding, so counts are a character estimate |
-
-Masked text is much safer than the original and is **not** certified clean. On the sample
-document that ships with the tool, the model finds `John Smith` and misses `Jane Doe` on
-the line above. `chunk.masked_confirmed` is how many of a chunk's masks passed a checksum;
-the difference from `chunk.masked` is the part resting on a model's judgement.
-
-This does not read text back off a report, because a report truncates long pages for the
-person reading it. Dropping the end of a contract silently would be indefensible here.
-
-### Bringing your own reader
-
-The registries are public. Teach it a format it does not handle:
-
-```python
-class MarkdownLoader:
-    extensions = (".md",)
-    format = cd.DocumentFormat.OTHER
-
-    def load(self, path, options):
-        document = cd.Document(path=path, sha256=cd.sha256_of(path), format=self.format)
-        page = cd.Page(number=1, width_pt=595.0, height_pt=842.0)
-        page.text = path.read_text()
-        page.text_source = "native"
-        document.pages.append(page)
-        return document
-
-cd.register_loader(MarkdownLoader())
-```
-
-Everything downstream then treats it as a document complydoc always knew about — the scan,
-the masking, the signals, the report. `register_extractor` does the same for a library that
-reads a PDF's text layer and `register_engine` for an OCR engine, and `cd.all_extractors()`
-lists what is registered.
-
-Everything in `complydoc.__all__` is the public API and the report objects are part of it.
-Anything else in the package is internal and may be renamed, so treat an import from
-`complydoc.something` as a private call. A report's shape is versioned:
-`report.run.schema_version` moves when it changes, which is the field to branch on.
-
-## Reading the same page twice
-
-Three libraries can read a PDF's text layer, and they do not always agree. All three
-ship with the tool; `complydoc extractors` lists them:
-
-| Reader | Boxes | Tables |
-| --- | --- | --- |
-| `pdfplumber` | per word | yes |
-| `pdfium` | per line | no |
-| `pypdf` | none | no |
-
-`--compare-extractor` reads every page with a second reader as well and reports where the
-two differ. Only the first reaches a finding; the rest are measured and never adopted. The
-comparison lives inside one run — the same page on the same machine at the same moment —
-so a difference is a difference between the libraries and not between two runs.
-
-In the report, each other reader's pane shows its own text with the words only it found
-underlined and the words only the kept reader found struck through, so you read the page
-and see what moved rather than flipping between two panes. The page bar has a control that
-jumps straight to the next page the readers read differently — on a long document that is a
-handful of pages among hundreds. Spacing is not counted as a difference, or every page of
-every document would be marked.
-
-They are compared in order and by word, not by size, because the case worth catching does
-not change the size. On a two-column page, `pdfplumber` walks the text layer in the order the file
-stores it, which runs across both columns and interleaves every sentence with one from the
-other side. It returns the same number of characters as the readers that get it right. The
-report says `same words, different order` when that happens, and `they read different
-words` when a reader genuinely could not read part of a page, and with `--extracted-text` on
-you can switch between what each reader made of the page and see it.
-
-`pdfplumber` remains the default because it is the only one that gives a box per word and
-finds ruled tables, which several findings need. If your documents are laid out in columns,
-compare it against `pypdf` — that costs no install and no measurable time — and look at
-what the comparison says before trusting the reading.
-
-```bash
-complydoc audit ./contracts --compare-extractor pypdf --compare-extractor pdfium
-```
-
-Or let it use everything installed, readers and OCR engines both:
-
-```bash
-complydoc compare ./contracts
-```
-
-It says which readers it is using before it starts. Reading each page several
-times is slower than a plain audit, so it is a command you point at a sample
-rather than a nightly job.
-
-A reader that returns no geometry, like `pypdf`, reports coverage as not measured rather
-than as nought per cent, and the findings that need boxes say the same.
-
-## The report
-
-One self-contained HTML file — no server, no network, no assets to load — behind a tab bar.
-
-| Page | Answers |
-| --- | --- |
-| **Summary** | Cost per 1,000 documents, AI readiness, how long processing takes, sensitive items per document |
-| **Cost** | Every model across three processing architectures, filterable by provider |
-| **Security** | What personal data is in there, by category and by occurrence, sortable by severity |
-| **Documents** | A file browser: every page beside the text read off it, with its signals a tab away |
-
-The JSON alongside it is sorted and stable, so two runs can be compared with `diff`. It
-carries a schema version and a digest of the config that produced it.
-
-## What it measures
-
-**Cost.** Page count, dimensions, DPI, text layer coverage, text tokens from a real
-tokenizer, and vision tokens at each resolution. Vision formulas differ by provider — some
-tile the image, some use width by height, some charge a flat count — so all three shapes live
-in configuration, not in code.
-
-Three architectures are compared: the **text layer** alone, **text plus local OCR**, and
-**vision**. Cost alone favours the text layer, but it only reaches documents that have one,
-so the number of documents each approach can serve is shown beside every figure. Where a
-provider publishes a batch price, that is shown too.
-
-Input cost only — output depends on your prompt, which complydoc cannot know. Prices are
-either verified against the provider's own page or imported from a catalogue, and the report
-says which; an imported price is never presented as a checked one.
-
-**Time.** Reading and analysing is measured on the machine that runs the audit, so the report
-quotes a rate it observed rather than one it assumed: a breakdown by stage, per document, per
-page, and the OCR throughput that dominates a folder of scans — then what that rate means for
-100, 1,000, 10,000 and 100,000 documents. That is the work before anything reaches a model.
-Time *on* the model is not estimated, because complydoc cannot benchmark a hosted endpoint
-offline; add `input_tokens_per_second` to a model from your own benchmark and it will.
-
-**Readiness.** Nineteen signals, each with a measured value, a rating, and one sentence on
-why it matters. Text layer and coverage, image proportion, garbled characters, tables and
-merged cells, columns, rotation and skew, scan DPI, fonts, date consistency, page sizes,
-language, encryption, and form fields — which count as a *positive* signal. A high score
-means a document that is ready to process as it stands.
-
-The weighted score exists only because every weight is visible in configuration and printed
-beside its row. Signals that cannot be measured are excluded rather than counted as failures.
-
-**Personal data.** Detection is not tied to one jurisdiction. Every national identifier is
-checksum-validated, so enabling them all does not flood the report:
-
-| Region | Identifiers |
-| --- | --- |
-| UK | National Insurance, sort code, account number, postcode, address, phone, VAT, UTR |
-| US | Social Security number, EIN, ABA routing number |
-| IE · NL · PT · ES · FR · DE | PPS, BSN, NIF, DNI/NIE, NIR, Steuer-ID |
-| EU | VAT numbers, per country length rules |
-| International | IBAN, payment cards, email, dates of birth, names and organisations |
-
-Pages with no readable text are listed by number and excluded from the counts, so a page
-nobody could read stays distinguishable from a page with nothing on it. Every mark on the
-page layout explains, on hover, what was found and why it matters.
-
-> [!IMPORTANT]
-> Values are masked in the findings — at most the last four characters. `--reveal` unmasks
-> them and stamps the report; categories configured as `never_reveal` stay masked even then.
+- One self-contained HTML file and a JSON file with the same data. The JSON carries
+  `schema_version`.
+- Identifiers are masked to the last four characters. `--reveal` shows them in full and the
+  report records it.
+- Extracted text and page images are document content. `--no-extracted-text` and
+  `--no-page-images` leave them out.
 
 ## Configuration
 
-Everything a reader might want to disagree with — a price, a token formula, a signal weight,
-a rating threshold, a detection pattern — lives in YAML, not in code. Point `--config-dir` at
-a copy to change any of it.
+Prices, signal weights, detection patterns and instruction patterns are YAML files:
+`pricing.yaml`, `readiness.yaml`, `sensitive.yaml`, `hidden.yaml`. Pass `--config-dir` to use
+your own.
 
-| File | Contents |
+## Documentation
+
+[duartecaldascardoso.github.io/complydoc](https://duartecaldascardoso.github.io/complydoc/)
+
+## Development
+
+```bash
+uv sync --group dev
+uv run pytest
+uv run ruff check src && uv run mypy src/complydoc
+```
+
+| Path | Contents |
 | --- | --- |
-| `pricing.yaml` | Model prices, how many to compare per provider, vision formulas |
-| `model_prices.json` | The current first-party models, available to `--model` |
-| `readiness.yaml` | Signal weights, rating thresholds, scoring rules |
-| `sensitive.yaml` | Patterns, validators, regions, severities, masking rules |
+| `src/complydoc` | The package |
+| `src/complydoc/ui` | Report template, stylesheet and script |
+| `src/tests` | Tests; `src/tests/integration` needs the `integrations` group |
+| `src/scripts` | Price table, diagram and SBOM builders |
+| `docs` | Documentation site |
 
-Three providers are compared by default, three models each, chosen from the newest the
-catalogue knows about. To reach any of the others:
-
-```bash
-complydoc models --new 15                     # the most recently released
-complydoc models gpt                          # or search
-complydoc audit ~/invoices -m gpt-6-astra     # and price against one by name
-```
-
-## From an agent
-
-```bash
-complydoc audit ./invoices --print-json | jq '.aggregate'
-```
-
-`--print-json` puts the report on stdout and nothing else; progress goes to stderr. complydoc
-ships an agent skill, so one install gives you the tool and the instructions for driving it:
-
-```bash
-complydoc skill --install     # → ~/.claude/skills/complydoc/SKILL.md
-```
-
-## Contributing
-
-Architecture, how to add a signal, the test fixtures, and the release process are in
-[CONTRIBUTING.md](CONTRIBUTING.md). The changelog ships with the package, at
-[`src/complydoc/CHANGELOG.md`](src/complydoc/CHANGELOG.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md) and the [changelog](src/complydoc/CHANGELOG.md).
 
 ## Licence
 

@@ -75,71 +75,69 @@ def node(t, x, y, w, h, tag, name, sub, kind="step", tag_w=32):
 def svg(t: dict) -> str:
     slug = t["slug"]
     a = t["accent"]
-    return f"""<svg viewBox="0 0 1000 600" role="img" aria-labelledby="{slug}-title {slug}-desc" xmlns="http://www.w3.org/2000/svg">
-  <title id="{slug}-title">complydoc pipeline architecture</title>
-  <desc id="{slug}-desc">A folder of documents passes through discovery and a format-specific ingest layer into three independent analysis components — cost, readiness and sensitive data — which are driven by YAML config and emit a diffable JSON report and a self-contained HTML report. The whole pipeline sits inside a network guard boundary, so no document content can leave the machine.</desc>
+    stage = "#ffffff" if not t["slug"].endswith("dark") else t["paper2"]
+    arrow = f'stroke="{t["muted"]}" stroke-width="1.2" marker-end="url(#{slug}-arrow)"'
+    return f"""<svg viewBox="0 0 976 648" role="img" aria-labelledby="{slug}-title {slug}-desc" xmlns="http://www.w3.org/2000/svg">
+  <title id="{slug}-title">complydoc architecture</title>
+  <desc id="{slug}-desc">Files are read by per-format readers and loader output is taken as it is; both feed four independent analyses (cost, readiness, identifiers, hidden content), configured by YAML, which produce an HTML and JSON report and masked text, all inside a network guard that blocks outbound connections.</desc>
   <defs>
     <marker id="{slug}-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 8 3, 0 6" fill="{t["muted"]}"/>
-    </marker>
-    <marker id="{slug}-arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
-      <polygon points="0 0, 8 3, 0 6" fill="{a}"/>
     </marker>
   </defs>
 
   <rect width="100%" height="100%" fill="{t["paper"]}"/>
 
-  <!-- Network guard boundary: drawn first, behind everything -->
-  <rect x="24" y="72" width="940" height="440" rx="8" fill="{t["accent_wash"]}" stroke="{t["accent_stroke"]}" stroke-width="1" stroke-dasharray="4,4"/>
-  <rect x="44" y="64" width="96" height="16" rx="2" fill="{t["paper"]}"/>
-  <text x="52" y="76" fill="{a}" font-size="8" font-family="{MONO}" letter-spacing="0.14em">NETWORK GUARD</text>
+  <!-- Network guard boundary -->
+  <rect x="24" y="64" width="928" height="512" rx="8" fill="{t["accent_wash"]}" stroke="{t["accent_stroke"]}" stroke-width="1" stroke-dasharray="4,4"/>
+  <rect x="44" y="56" width="96" height="16" rx="2" fill="{t["paper"]}"/>
+  <text x="52" y="68" fill="{a}" font-size="8" font-family="{MONO}" letter-spacing="0.14em">NETWORK GUARD</text>
 
   <!-- Analysis zone -->
-  <rect x="560" y="112" width="208" height="296" rx="8" fill="{t["zone_fill"]}" stroke="{t["zone_stroke"]}" stroke-width="0.8"/>
-  <rect x="596" y="104" width="136" height="16" rx="2" fill="{t["paper"]}"/>
-  <text x="664" y="116" fill="{t["zone_label"]}" font-size="7" font-family="{MONO}" text-anchor="middle" letter-spacing="0.14em">ANALYSIS · INDEPENDENT</text>
+  <rect x="448" y="96" width="200" height="368" rx="8" fill="{t["zone_fill"]}" stroke="{t["zone_stroke"]}" stroke-width="0.8"/>
+  <rect x="496" y="100" width="104" height="12" rx="2" fill="{t["paper"]}"/>
+  <text x="548" y="109" fill="{t["zone_label"]}" font-size="7" font-family="{MONO}" text-anchor="middle" letter-spacing="0.14em">ANALYSIS</text>
 
   <!-- Arrows, drawn before boxes -->
-  <line x1="184" y1="272" x2="216" y2="272" stroke="{t["muted"]}" stroke-width="1.2" marker-end="url(#{slug}-arrow)"/>
-  <line x1="352" y1="272" x2="384" y2="272" stroke="{t["muted"]}" stroke-width="1.2" marker-end="url(#{slug}-arrow)"/>
-
-  <path d="M 528,252 H 544 Q 552,252 552,244 V 184 Q 552,176 560,176 H 576" fill="none" stroke="{t["muted"]}" stroke-width="1.2" marker-end="url(#{slug}-arrow)"/>
-  <line x1="528" y1="272" x2="576" y2="272" stroke="{t["muted"]}" stroke-width="1.2" marker-end="url(#{slug}-arrow)"/>
-  <path d="M 528,292 H 544 Q 552,292 552,300 V 360 Q 552,368 560,368 H 576" fill="none" stroke="{t["muted"]}" stroke-width="1.2" marker-end="url(#{slug}-arrow)"/>
-
-  <line x1="664" y1="448" x2="664" y2="408" stroke="{t["muted"]}" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#{slug}-arrow)"/>
-  <rect x="676" y="420" width="84" height="12" rx="2" fill="{t["paper"]}"/>
-  <text x="680" y="429" fill="{t["soft"]}" font-size="8" font-family="{MONO}" letter-spacing="0.06em">THRESHOLDS</text>
-
-  <line x1="768" y1="240" x2="804" y2="240" stroke="{t["muted"]}" stroke-width="1.2" marker-end="url(#{slug}-arrow)"/>
-  <path d="M 768,300 H 778 Q 786,300 786,308 V 328 Q 786,336 794,336 H 804" fill="none" stroke="{t["muted"]}" stroke-width="1.2" marker-end="url(#{slug}-arrow)"/>
+  <line x1="208" y1="184" x2="256" y2="184" {arrow}/>
+  <line x1="208" y1="368" x2="256" y2="368" {arrow}/>
+  <line x1="400" y1="184" x2="448" y2="184" {arrow}/>
+  <line x1="400" y1="368" x2="448" y2="368" {arrow}/>
+  <line x1="648" y1="184" x2="696" y2="184" {arrow}/>
+  <line x1="648" y1="368" x2="696" y2="368" {arrow}/>
+  <line x1="548" y1="496" x2="548" y2="464" stroke="{t["muted"]}" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#{slug}-arrow)"/>
 
   <!-- Nodes -->
-{node(t, 48, 240, 136, 64, "INPUT", "documents/", "pdf · img · docx · xlsx", "input", 36)}
-{node(t, 216, 240, 136, 64, "WALK", "Discovery", "skips unopenable", "step", 32)}
-{node(t, 384, 240, 144, 64, "LOAD", "Ingest", "per-format loaders", "step", 32)}
-{node(t, 576, 144, 176, 64, "01", "Cost", "tokens, pages, price", "step", 20)}
-{node(t, 576, 240, 176, 64, "02", "Readiness", "18 measured signals", "step", 20)}
-{node(t, 576, 336, 176, 64, "03", "Sensitive", "masked by default", "focal", 20)}
-{node(t, 576, 448, 176, 52, "YAML", "Config", "prices · weights · patterns", "store", 32)}
-{node(t, 804, 208, 136, 64, "JSON", "report.json", "machine readable", "store", 32)}
-{node(t, 804, 304, 136, 64, "HTML", "report.html", "self-contained", "store", 32)}
+{node(t, 48, 152, 160, 64, "INPUT", "documents/", "pdf · img · docx · xlsx", "input", 36)}
+{node(t, 48, 336, 160, 64, "INPUT", "loader output", "langchain · llamaindex", "input", 36)}
+{node(t, 256, 152, 144, 64, "READ", "Ingest", "text layer · ocr", "step", 32)}
+{node(t, 256, 336, 144, 64, "LOADER", "Inspect", "one or several loaders", "step", 44)}
+{node(t, 460, 128, 176, 64, "01", "Cost", "tokens · prices", "step", 20)}
+{node(t, 460, 212, 176, 64, "02", "Readiness", "measured signals", "step", 20)}
+{node(t, 460, 296, 176, 64, "03", "Identifiers", "checksums · masked", "step", 20)}
+{node(t, 460, 380, 176, 64, "04", "Hidden content", "visibility · instructions", "focal", 20)}
+{node(t, 460, 496, 176, 64, "YAML", "Config", "prices · signals · patterns", "store", 32)}
+{node(t, 696, 152, 200, 64, "OUT", "Report", "html · json", "store", 28)}
+{node(t, 696, 336, 200, 64, "OUT", "Masked text", "chunks · token counts", "store", 28)}
 
   <!-- Legend -->
-  <line x1="24" y1="544" x2="976" y2="544" stroke="{t["rule"]}" stroke-width="0.8"/>
-  <text x="24" y="566" fill="{t["muted"]}" font-size="8" font-family="{MONO}" letter-spacing="0.14em">LEGEND</text>
+  <line x1="24" y1="600" x2="952" y2="600" stroke="{t["rule"]}" stroke-width="0.8"/>
+  <text x="24" y="624" fill="{t["muted"]}" font-size="8" font-family="{MONO}" letter-spacing="0.14em">LEGEND</text>
 
-  <rect x="112" y="556" width="14" height="12" rx="2" fill="{t["accent_tint"]}" stroke="{a}" stroke-width="1"/>
-  <text x="134" y="566" fill="{t["soft"]}" font-size="8" font-family="{MONO}">MASKED VALUES</text>
+  <rect x="112" y="612" width="16" height="12" rx="2" fill="{t["input_fill"]}" stroke="{t["soft"]}" stroke-width="1"/>
+  <text x="136" y="622" fill="{t["soft"]}" font-size="8" font-family="{MONO}">INPUT</text>
 
-  <rect x="356" y="556" width="14" height="12" rx="2" fill="{t["accent_wash"]}" stroke="{t["accent_stroke"]}" stroke-width="1" stroke-dasharray="3,3"/>
-  <text x="378" y="566" fill="{t["soft"]}" font-size="8" font-family="{MONO}">NO OUTBOUND SOCKET</text>
+  <rect x="276" y="612" width="16" height="12" rx="2" fill="{stage}" stroke="{t["ink"]}" stroke-width="1"/>
+  <text x="300" y="622" fill="{t["soft"]}" font-size="8" font-family="{MONO}">STAGE</text>
 
-  <rect x="592" y="556" width="14" height="12" rx="2" fill="{"#ffffff" if not t["slug"].endswith("dark") else t["paper2"]}" stroke="{t["ink"]}" stroke-width="1"/>
-  <text x="614" y="566" fill="{t["soft"]}" font-size="8" font-family="{MONO}">PIPELINE STAGE</text>
+  <rect x="440" y="612" width="16" height="12" rx="2" fill="{t["accent_tint"]}" stroke="{a}" stroke-width="1"/>
+  <text x="464" y="622" fill="{t["soft"]}" font-size="8" font-family="{MONO}">HIDDEN TEXT · INJECTION</text>
 
-  <rect x="792" y="556" width="14" height="12" rx="2" fill="{t["store_fill"]}" stroke="{t["muted"]}" stroke-width="1"/>
-  <text x="814" y="566" fill="{t["soft"]}" font-size="8" font-family="{MONO}">CONFIG AND OUTPUT</text>
+  <rect x="644" y="612" width="16" height="12" rx="2" fill="{t["store_fill"]}" stroke="{t["muted"]}" stroke-width="1"/>
+  <text x="668" y="622" fill="{t["soft"]}" font-size="8" font-family="{MONO}">CONFIG AND OUTPUT</text>
+
+  <rect x="824" y="612" width="16" height="12" rx="2" fill="{t["accent_wash"]}" stroke="{t["accent_stroke"]}" stroke-width="1" stroke-dasharray="3,3"/>
+  <text x="848" y="622" fill="{t["soft"]}" font-size="8" font-family="{MONO}">NO OUTBOUND</text>
 </svg>"""
 
 
@@ -149,7 +147,7 @@ def page(t: dict) -> str:
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>complydoc — pipeline architecture</title>
+<title>complydoc — architecture</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   body {{ margin:0; background:{t["paper"]}; color:{t["ink"]};
@@ -166,9 +164,9 @@ def page(t: dict) -> str:
 <body>
 <div class="wrap">
   <p class="eyebrow">complydoc</p>
-  <h1>Pipeline</h1>
-  <p class="sub">Files are read locally by per-format loaders, then passed to three analysis
-  components that run independently. Each run writes a JSON report and an HTML report.</p>
+  <h1>Architecture</h1>
+  <p class="sub">Files, or the output of another framework's loader, are passed to four
+  independent analyses. A run writes an HTML and JSON report; extract_text returns masked text.</p>
   {svg(t)}
 </div>
 </body>
