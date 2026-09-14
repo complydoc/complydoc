@@ -363,7 +363,10 @@ def test_the_demo_audits_the_samples_that_ship_with_the_tool(tmp_path):
     result = runner.invoke(app, ["demo", "--no-open", "--no-ocr", "--out", str(tmp_path)])
     assert result.exit_code == 0, result.output
     report = json.loads((tmp_path / "complydoc-demo.json").read_text())
-    assert len(report["documents"]) == 6
+    assert len(report["documents"]) == 7
+    by_name = {d["relative_path"]: d for d in report["documents"]}
+    assessment = by_name["vendor-assessment.pdf"]
+    assert [f["severity"] for f in assessment["content_findings"]] == ["high"]
 
 
 def test_the_sample_folder_holds_documents_and_nothing_else():

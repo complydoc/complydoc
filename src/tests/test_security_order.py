@@ -70,7 +70,7 @@ def test_every_match_survives_the_sort(report):
 def test_the_columns_are_sortable(report, config):
     html = render_html(report, config)
     security = html.split('id="security"')[1].split("</section>")[0]
-    assert security.count("data-sortable") == 2, "both the summary and the occurrences"
+    assert security.count("data-sortable") == 3, "hidden passages, the summary and the occurrences"
     for column in ("Document", "Category", "Severity"):
         assert f'data-sort="text">{column}' in security or f">{column}<" in security
 

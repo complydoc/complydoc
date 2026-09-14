@@ -44,7 +44,7 @@ which `src/tests/test_docs.py` executes.
 
 ## Sample documents
 
-`src/complydoc/sample` holds the six synthetic documents used by `complydoc demo`. They are
+`src/complydoc/sample` holds the seven synthetic documents used by `complydoc demo`. They are
 copies of fixtures in `src/tests/fixtures`; `make sample` refreshes them. Every name and
 identifier in them is invented.
 
