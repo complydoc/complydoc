@@ -6,6 +6,8 @@ versioned separately.
 
 ## [Unreleased]
 
+## [0.4.4] — 2026-09-15
+
 ### Fixed
 
 - `complydoc chunks` passes documents with `page_content` and `metadata` attributes, so
@@ -290,7 +292,8 @@ First release.
 - `complydoc` audits the current directory; `--jobs`, `--sample`, `--password`.
 - Packaged agent skill.
 
-[Unreleased]: https://github.com/complydoc/complydoc/compare/v0.4.3...HEAD
+[Unreleased]: https://github.com/complydoc/complydoc/compare/v0.4.4...HEAD
+[0.4.4]: https://github.com/complydoc/complydoc/compare/v0.4.3...v0.4.4
 [0.4.3]: https://github.com/complydoc/complydoc/compare/v0.4.2...v0.4.3
 [0.4.2]: https://github.com/complydoc/complydoc/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/complydoc/complydoc/compare/v0.4.0...v0.4.1
