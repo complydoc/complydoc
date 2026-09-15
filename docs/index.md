@@ -81,3 +81,4 @@ are vendored as data files. See [Network isolation](explanation/offline.md).
 | [Python API](reference/api.md) | `import complydoc as cd` |
 | [Report JSON](reference/report.md) | The shape a run writes |
 | [Configuration](reference/configuration.md) | The YAML files |
+| [Identifiers](reference/identifiers.md) | Every identifier category and how it is found |

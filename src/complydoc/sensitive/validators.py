@@ -33,11 +33,7 @@ def _digits(value: str) -> str:
     return "".join(c for c in value if c.isdigit())
 
 
-def luhn(value: str) -> bool:
-    """The Luhn checksum used by payment cards."""
-    digits = _digits(value)
-    if not 12 <= len(digits) <= 19:
-        return False
+def _luhn_valid(digits: str) -> bool:
     total = 0
     for index, char in enumerate(reversed(digits)):
         digit = int(char)
@@ -47,6 +43,12 @@ def luhn(value: str) -> bool:
                 digit -= 9
         total += digit
     return total % 10 == 0
+
+
+def luhn(value: str) -> bool:
+    """The Luhn checksum used by payment cards, on 12 to 19 digits."""
+    digits = _digits(value)
+    return 12 <= len(digits) <= 19 and _luhn_valid(digits)
 
 
 _CARD_ISSUERS: tuple[tuple[str, str, frozenset[int]], ...] = (
@@ -163,6 +165,7 @@ def plausible_dob(value: str) -> bool:
         "%d/%m/%y",
         "%d %b %Y",
         "%d %B %Y",
+        "%Y-%m-%d",
     )
     text = " ".join(value.split())
     for fmt in candidates:
@@ -322,6 +325,167 @@ def eu_vat(value: str) -> bool:
     return any(c.isdigit() for c in body)
 
 
+def _plausible_date(day: int, month: int) -> bool:
+    return 1 <= month <= 12 and 1 <= day <= 31
+
+
+def e164_phone(value: str) -> bool:
+    """An international number with a country code, other than +44, of 8 to 15 digits."""
+    digits = _digits(value)
+    return value.strip().startswith("+") and 8 <= len(digits) <= 15 and not digits.startswith("44")
+
+
+def nanp_phone(value: str) -> bool:
+    """A North American number: area code and exchange each start with 2 to 9."""
+    digits = _digits(value)
+    if len(digits) == 11 and digits.startswith("1"):
+        digits = digits[1:]
+    return len(digits) == 10 and digits[0] in "23456789" and digits[3] in "23456789"
+
+
+_CF_ODD = dict(zip("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+    [1, 0, 5, 7, 9, 13, 15, 17, 19, 21, 1, 0, 5, 7, 9, 13, 15, 17, 19, 21, 2, 4, 18, 20,
+     11, 3, 6, 8, 12, 14, 16, 10, 22, 25, 24, 23], strict=True))  # fmt: skip
+
+
+def it_codice_fiscale(value: str) -> bool:
+    """Italian tax code: sixteen characters, check letter from odd and even position tables."""
+    code = "".join(value.split()).upper()
+    if len(code) != 16 or not code.isalnum():
+        return False
+    total = 0
+    for position, char in enumerate(code[:15]):
+        if position % 2 == 0:
+            total += _CF_ODD[char]
+        else:
+            total += int(char) if char.isdigit() else ord(char) - 65
+    return chr(total % 26 + 65) == code[15]
+
+
+def be_national_number(value: str) -> bool:
+    """Belgian national register number: mod-97 check, with a 2 prefix for births from 2000."""
+    digits = _digits(value)
+    if len(digits) != 11:
+        return False
+    body, check = digits[:9], int(digits[9:])
+    return check in (97 - int(body) % 97, 97 - int("2" + body) % 97)
+
+
+def pl_pesel(value: str) -> bool:
+    """Polish PESEL: weighted mod-10 check digit."""
+    digits = _digits(value)
+    if len(digits) != 11:
+        return False
+    total = _weighted_mod(digits[:10], (1, 3, 7, 9, 1, 3, 7, 9, 1, 3), 10)
+    return (10 - total) % 10 == int(digits[10])
+
+
+def se_personnummer(value: str) -> bool:
+    """Swedish personal identity number: a date, a serial and a Luhn check digit."""
+    digits = _digits(value)
+    if len(digits) == 12:
+        digits = digits[2:]
+    if len(digits) != 10:
+        return False
+    day = int(digits[4:6])
+    # Coordination numbers add 60 to the day.
+    return _plausible_date(day - 60 if day > 60 else day, int(digits[2:4])) and _luhn_valid(digits)
+
+
+def dk_cpr(value: str) -> bool:
+    """Danish CPR number: a DDMMYY date and a four-digit serial. It has no checksum."""
+    digits = _digits(value)
+    return len(digits) == 10 and _plausible_date(int(digits[:2]), int(digits[2:4]))
+
+
+def ch_ahv(value: str) -> bool:
+    """Swiss AHV number: 756, then an EAN-13 check digit."""
+    digits = _digits(value)
+    if len(digits) != 13 or not digits.startswith("756"):
+        return False
+    total = sum(int(d) * (3 if i % 2 else 1) for i, d in enumerate(digits[:12]))
+    return (10 - total % 10) % 10 == int(digits[12])
+
+
+def _mod11_digit(digits: str, weights: range | tuple[int, ...]) -> int:
+    remainder = sum(int(d) * w for d, w in zip(digits, weights, strict=True)) % 11
+    return 0 if remainder < 2 else 11 - remainder
+
+
+def br_cpf(value: str) -> bool:
+    """Brazilian CPF: two mod-11 check digits."""
+    digits = _digits(value)
+    if len(digits) != 11 or len(set(digits)) == 1:
+        return False
+    first = _mod11_digit(digits[:9], range(10, 1, -1))
+    second = _mod11_digit(digits[:10], range(11, 1, -1))
+    return digits[9:] == f"{first}{second}"
+
+
+def br_cnpj(value: str) -> bool:
+    """Brazilian CNPJ: two mod-11 check digits."""
+    digits = _digits(value)
+    if len(digits) != 14 or len(set(digits)) == 1:
+        return False
+    first = _mod11_digit(digits[:12], (5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2))
+    second = _mod11_digit(digits[:13], (6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2))
+    return digits[12:] == f"{first}{second}"
+
+
+_VERHOEFF_D = (
+    (0, 1, 2, 3, 4, 5, 6, 7, 8, 9), (1, 2, 3, 4, 0, 6, 7, 8, 9, 5),
+    (2, 3, 4, 0, 1, 7, 8, 9, 5, 6), (3, 4, 0, 1, 2, 8, 9, 5, 6, 7),
+    (4, 0, 1, 2, 3, 9, 5, 6, 7, 8), (5, 9, 8, 7, 6, 0, 4, 3, 2, 1),
+    (6, 5, 9, 8, 7, 1, 0, 4, 3, 2), (7, 6, 5, 9, 8, 2, 1, 0, 4, 3),
+    (8, 7, 6, 5, 9, 3, 2, 1, 0, 4), (9, 8, 7, 6, 5, 4, 3, 2, 1, 0),
+)  # fmt: skip
+_VERHOEFF_P = (
+    (0, 1, 2, 3, 4, 5, 6, 7, 8, 9), (1, 5, 7, 6, 2, 8, 3, 0, 9, 4),
+    (5, 8, 0, 3, 7, 9, 6, 1, 4, 2), (8, 9, 1, 6, 0, 4, 3, 5, 2, 7),
+    (9, 4, 5, 3, 1, 2, 6, 8, 7, 0), (4, 2, 8, 6, 5, 7, 3, 9, 0, 1),
+    (2, 7, 9, 3, 8, 0, 6, 4, 1, 5), (7, 0, 4, 6, 9, 1, 3, 2, 5, 8),
+)  # fmt: skip
+
+
+def verhoeff(value: str) -> bool:
+    checksum = 0
+    for position, digit in enumerate(reversed(_digits(value))):
+        checksum = _VERHOEFF_D[checksum][_VERHOEFF_P[position % 8][int(digit)]]
+    return checksum == 0
+
+
+def in_aadhaar(value: str) -> bool:
+    """Indian Aadhaar number: twelve digits, not starting 0 or 1, Verhoeff check digit."""
+    digits = _digits(value)
+    return len(digits) == 12 and digits[0] not in "01" and verhoeff(digits)
+
+
+def in_pan(value: str) -> bool:
+    """Indian PAN: five letters, four digits, a letter; the fourth letter is the holder type."""
+    code = "".join(value.split()).upper()
+    return (
+        len(code) == 10
+        and code[:5].isalpha()
+        and code[5:9].isdigit()
+        and code[9].isalpha()
+        and code[3] in "ABCFGHJLPT"
+    )
+
+
+def ca_sin(value: str) -> bool:
+    """Canadian Social Insurance Number: nine digits, Luhn, not starting 0 or 8."""
+    digits = _digits(value)
+    return len(digits) == 9 and digits[0] not in "08" and _luhn_valid(digits)
+
+
+def au_tfn(value: str) -> bool:
+    """Australian Tax File Number: nine digits with a weighted mod-11 check."""
+    digits = _digits(value)
+    if len(digits) != 9:
+        return False
+    return _weighted_mod(digits, (1, 4, 3, 7, 5, 8, 6, 9, 10), 11) == 0
+
+
 VALIDATORS: dict[str, Callable[[str], bool]] = {
     "luhn": luhn,
     "card_issuer": card_issuer,
@@ -342,6 +506,20 @@ VALIDATORS: dict[str, Callable[[str], bool]] = {
     "fr_nir": fr_nir,
     "de_steuer_id": de_steuer_id,
     "eu_vat": eu_vat,
+    "e164_phone": e164_phone,
+    "nanp_phone": nanp_phone,
+    "it_codice_fiscale": it_codice_fiscale,
+    "be_national_number": be_national_number,
+    "pl_pesel": pl_pesel,
+    "se_personnummer": se_personnummer,
+    "dk_cpr": dk_cpr,
+    "ch_ahv": ch_ahv,
+    "br_cpf": br_cpf,
+    "br_cnpj": br_cnpj,
+    "in_aadhaar": in_aadhaar,
+    "in_pan": in_pan,
+    "ca_sin": ca_sin,
+    "au_tfn": au_tfn,
 }
 
 

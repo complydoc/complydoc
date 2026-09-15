@@ -117,15 +117,23 @@ categories:
   street_address:
     enabled: true
     label: Street address
-    region: UK
+    region: international
     detector: regex
     severity: medium
     patterns:
+      # English: 12 High Street
       - '\b\d+[A-Za-z]?[ ,]+(?:[A-Z][A-Za-z''-]+[ ]){1,4}(?:Road|Rd|Street|St|Avenue|Ave|Lane|Ln|Close|Drive|Dr|Way|Court|Ct|Place|Pl|Crescent|Terrace|Gardens|Grove|Hill|Park|Square|Sq)\b'
-    context_terms: ["address", "registered office", "correspondence"]
+      # Portuguese, Spanish, Catalan, Italian: Rua Augusta, 12 / Calle Mayor 5
+      - '\b(?:Rua|Avenida|Travessa|Largo|Calle|Avda\.|Paseo|Plaza|Carrer|Via|Viale|Piazza|Corso)\s+(?:[A-ZÀ-Ý][\wÀ-ÿ''’.-]*\s?){1,5},?\s*(?:n\.?º?\s*)?\d{1,4}[A-Za-z]?\b'
+      # French: 12 rue de la Paix
+      - '\b\d{1,4}(?:\s?(?:bis|ter))?,?\s+(?:rue|avenue|boulevard|place|chemin|allée|impasse|quai)\s+(?:[\wÀ-ÿ''’-]+\s?){1,5}'
+      # German, Dutch: Hauptstraße 5 / Kerkstraat 12
+      - '\b[\wÀ-ÿ-]+(?:straße|strasse|weg|gasse|allee|platz|straat|laan|plein|gracht)\s+\d{1,4}[a-zA-Z]?\b'
+    context_terms: ["address", "registered office", "correspondence", "morada", "dirección", "adresse", "anschrift", "adres", "indirizzo"]
     gdpr_note: >
-      Detected by a house-number-plus-street-type heuristic. It will miss flats,
-      named houses and multi-line addresses split across lines.
+      Detected by house-number-and-street-word heuristics for English, Portuguese,
+      Spanish, Italian, French, German and Dutch. It will miss flats, named houses
+      and addresses split across lines.
 
   email_address:
     enabled: true
@@ -150,8 +158,8 @@ categories:
     validators: [uk_phone]
     context_terms: ["tel", "phone", "mobile", "contact"]
     gdpr_note: >
-      Personal data when tied to an individual. UK formats only; international
-      numbers other than +44 are not detected.
+      Personal data when tied to an individual. UK formats; numbers with another
+      country code are reported as international phone numbers.
 
   date_of_birth:
     enabled: true
@@ -162,8 +170,9 @@ categories:
     context_patterns:
       - '\b\d{1,2}[/.-]\d{1,2}[/.-](?:19|20)\d{2}\b'
       - '\b\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+(?:19|20)\d{2}\b'
+      - '\b(?:19|20)\d{2}-\d{2}-\d{2}\b'
     validators: [plausible_dob]
-    context_terms: ["date of birth", "dob", "d.o.b", "born", "birth date", "birthdate"]
+    context_terms: ["date of birth", "dob", "d.o.b", "born", "birth date", "birthdate", "data de nascimento", "nascido", "nascida", "fecha de nacimiento", "nacido", "nacida", "date de naissance", "né le", "née le", "geburtsdatum", "geboren", "data di nascita", "nato il", "nata il", "geboortedatum", "födelsedatum", "fødselsdato", "data urodzenia"]
     gdpr_note: >
       Special-risk identifier in combination with a name. Only dates near an
       explicit birth-date label are reported, so an unlabelled DOB is missed.
@@ -369,3 +378,251 @@ categories:
     gdpr_note: >
       Business identifier, checked against the per-country length rules. Personal
       data only where the business is a sole trader.
+
+  # ---------------------------------------------------------------------
+  # Phone numbers and postcodes outside the UK.
+  # ---------------------------------------------------------------------
+
+  international_phone:
+    enabled: true
+    label: International phone number
+    region: international
+    detector: regex
+    severity: medium
+    patterns:
+      - '\+(?!44)[1-9]\d{0,2}(?:[ .-]?\(?\d{1,4}\)?){2,5}\b'
+    validators: [e164_phone]
+    gdpr_note: >
+      A number written with a country code other than +44, 8 to 15 digits. Numbers
+      written without a country code are found only for the UK and North America.
+
+  us_phone:
+    enabled: true
+    label: North American phone number
+    region: US
+    detector: regex
+    severity: medium
+    context_patterns:
+      - '\(?\b[2-9]\d{2}\)?[ .-]\d{3}[ .-]\d{4}\b'
+    validators: [nanp_phone]
+    context_terms: ["phone", "tel", "mobile", "cell", "fax", "call"]
+    gdpr_note: >
+      US and Canadian numbers without a country code. Ten digits are common in
+      business documents, so a nearby label is required.
+
+  us_zip_code:
+    enabled: true
+    label: US ZIP code
+    region: US
+    detector: regex
+    severity: medium
+    context_patterns:
+      - '\b\d{5}(?:-\d{4})?\b'
+    context_terms: ["zip code", "zip:", "zip ", "zipcode"]
+    gdpr_note: >
+      Narrows location when combined with other identifiers. Five digits are too
+      common to report without a nearby label.
+
+  ca_postal_code:
+    enabled: true
+    label: Canadian postal code
+    region: CA
+    detector: regex
+    severity: medium
+    patterns:
+      - '\b[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z][ -]?\d[ABCEGHJ-NPRSTV-Z]\d\b'
+    gdpr_note: >
+      A letter-digit pattern distinctive enough to report without a label.
+
+  eu_postal_code:
+    enabled: true
+    label: Postal code
+    region: EU
+    detector: regex
+    severity: medium
+    context_patterns:
+      - '\b\d{5}\b'
+      - '\b\d{4}-\d{3}\b'
+      - '\b[1-9]\d{3}\s?[A-Z]{2}\b'
+    context_terms: ["postleitzahl", "plz", "code postal", "código postal", "codigo postal", "codice postale", "postcode", "postal code", "cod. postal"]
+    gdpr_note: >
+      German, French, Spanish and Italian five-digit codes, Portuguese NNNN-NNN and
+      Dutch 1234 AB codes. Reported only near a postal-code label.
+
+  br_cep:
+    enabled: true
+    label: Brazilian CEP
+    region: BR
+    detector: regex
+    severity: medium
+    context_patterns:
+      - '\b\d{5}-\d{3}\b'
+    context_terms: ["cep:", "cep ", "código de endereçamento"]
+    gdpr_note: >
+      Brazilian postal code. Reported only near a CEP label.
+
+  # ---------------------------------------------------------------------
+  # National identifiers outside the UK, US and the countries above.
+  # ---------------------------------------------------------------------
+
+  it_codice_fiscale:
+    enabled: true
+    label: Italian codice fiscale
+    region: IT
+    detector: regex
+    severity: high
+    patterns:
+      - '\b[A-Z]{6}\d{2}[A-EHLMPR-T]\d{2}[A-Z]\d{3}[A-Z]\b'
+    validators: [it_codice_fiscale]
+    context_terms: ["codice fiscale", "c.f.", "cf"]
+    gdpr_note: >
+      Personal tax code encoding name, birth date and birthplace, validated with
+      its check letter.
+
+  be_national_number:
+    enabled: true
+    label: Belgian national register number
+    region: BE
+    detector: regex
+    severity: high
+    context_patterns:
+      - '\b\d{2}\.?\d{2}\.?\d{2}[-. ]?\d{3}\.?\d{2}\b'
+    validators: [be_national_number]
+    context_terms: ["rijksregisternummer", "rijksregister", "numéro national", "numero national", "national number", "registre national"]
+    gdpr_note: >
+      Direct identifier encoding birth date and sex, validated with its mod-97 key.
+
+  pl_pesel:
+    enabled: true
+    label: Polish PESEL
+    region: PL
+    detector: regex
+    severity: high
+    context_patterns:
+      - '\b\d{11}\b'
+    validators: [pl_pesel]
+    context_terms: ["pesel"]
+    gdpr_note: >
+      Direct identifier encoding birth date and sex, validated with its check digit.
+
+  se_personnummer:
+    enabled: true
+    label: Swedish personal identity number
+    region: SE
+    detector: regex
+    severity: high
+    context_patterns:
+      - '\b(?:19|20)?\d{6}[-+]?\d{4}\b'
+    validators: [se_personnummer]
+    context_terms: ["personnummer", "samordningsnummer", "personal identity number"]
+    gdpr_note: >
+      Direct identifier, validated as a date with a Luhn check digit.
+
+  dk_cpr:
+    enabled: true
+    label: Danish CPR number
+    region: DK
+    detector: regex
+    severity: high
+    context_patterns:
+      - '\b\d{6}-?\d{4}\b'
+    validators: [dk_cpr]
+    context_terms: ["cpr", "personnummer", "cpr-nummer"]
+    gdpr_note: >
+      Direct identifier encoding birth date. It has no checksum, so only the date is
+      checked and a nearby label is required.
+
+  ch_ahv:
+    enabled: true
+    label: Swiss AHV number
+    region: CH
+    detector: regex
+    severity: high
+    patterns:
+      - '\b756\.?\d{4}\.?\d{4}\.?\d{2}\b'
+    validators: [ch_ahv]
+    context_terms: ["ahv", "avs", "social security"]
+    gdpr_note: >
+      Swiss social security number, validated with its EAN-13 check digit.
+
+  br_cpf:
+    enabled: true
+    label: Brazilian CPF
+    region: BR
+    detector: regex
+    severity: high
+    patterns:
+      - '\b\d{3}\.\d{3}\.\d{3}-\d{2}\b'
+    context_patterns:
+      - '\b\d{11}\b'
+    validators: [br_cpf]
+    context_terms: ["cpf", "cadastro de pessoas"]
+    gdpr_note: >
+      Individual taxpayer number, validated with its two check digits.
+
+  br_cnpj:
+    enabled: true
+    label: Brazilian CNPJ
+    region: BR
+    detector: regex
+    severity: low
+    patterns:
+      - '\b\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}\b'
+    validators: [br_cnpj]
+    context_terms: ["cnpj"]
+    gdpr_note: >
+      Company registration number, validated with its two check digits. Business
+      identifier.
+
+  in_aadhaar:
+    enabled: true
+    label: Indian Aadhaar number
+    region: IN
+    detector: regex
+    severity: high
+    context_patterns:
+      - '\b[2-9]\d{3}[ -]?\d{4}[ -]?\d{4}\b'
+    validators: [in_aadhaar]
+    context_terms: ["aadhaar", "aadhar", "uidai"]
+    gdpr_note: >
+      Biometric-linked national identifier, validated with its Verhoeff check digit.
+
+  in_pan:
+    enabled: true
+    label: Indian PAN
+    region: IN
+    detector: regex
+    severity: high
+    context_patterns:
+      - '\b[A-Z]{3}[ABCFGHJLPT][A-Z]\d{4}[A-Z]\b'
+    validators: [in_pan]
+    context_terms: ["permanent account number", "pan no", "pan:", "pan number", "income tax"]
+    gdpr_note: >
+      Tax identifier. It has no checksum, so the holder-type letter is checked and a
+      nearby label is required.
+
+  ca_sin:
+    enabled: true
+    label: Canadian Social Insurance Number
+    region: CA
+    detector: regex
+    severity: high
+    context_patterns:
+      - '\b\d{3}[ -]?\d{3}[ -]?\d{3}\b'
+    validators: [ca_sin]
+    context_terms: ["social insurance", "s.i.n", "sin:", "sin no", "assurance sociale"]
+    gdpr_note: >
+      Direct identifier, validated with the Luhn checksum.
+
+  au_tfn:
+    enabled: true
+    label: Australian Tax File Number
+    region: AU
+    detector: regex
+    severity: high
+    context_patterns:
+      - '\b\d{3}[ ]?\d{3}[ ]?\d{3}\b'
+    validators: [au_tfn]
+    context_terms: ["tfn", "tax file number"]
+    gdpr_note: >
+      Tax identifier, validated with its weighted mod-11 check.

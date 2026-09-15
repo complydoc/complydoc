@@ -42,6 +42,24 @@ _EXCLUSIVE_GROUP = frozenset(
         "date_of_birth",
         "vat_number",
         "utr",
+        "international_phone",
+        "us_phone",
+        "us_ssn",
+        "us_ein",
+        "us_routing_number",
+        "nl_bsn",
+        "pt_nif",
+        "de_steuer_id",
+        "be_national_number",
+        "pl_pesel",
+        "se_personnummer",
+        "dk_cpr",
+        "ch_ahv",
+        "br_cpf",
+        "br_cnpj",
+        "in_aadhaar",
+        "ca_sin",
+        "au_tfn",
     }
 )
 
@@ -108,9 +126,16 @@ def _resolve_overlaps(
     exclusive = [c for c in candidates if c.category_id in _EXCLUSIVE_GROUP]
     independent = [c for c in candidates if c.category_id not in _EXCLUSIVE_GROUP]
 
-    # Longest first, so a full card number beats a phone-shaped slice of it.
+    # Longest first, so a full card number beats a phone-shaped slice of it. At equal
+    # length, a match reported beside its own label wins: "CPR-nummer: 010190-1234"
+    # is a Danish CPR number, although the digits also fit a UK phone number.
     exclusive.sort(
-        key=lambda c: (c.finding.end - c.finding.start, c.finding.confidence), reverse=True
+        key=lambda c: (
+            c.finding.end - c.finding.start,
+            c.finding.context_term is not None,
+            c.finding.confidence or 0.0,
+        ),
+        reverse=True,
     )
     accepted: list[Candidate] = []
     taken: list[tuple[int, int]] = []

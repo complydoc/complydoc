@@ -1,6 +1,6 @@
 ---
 name: complydoc
-description: Audit a folder of documents offline for LLM processing cost, extraction readiness, and personal or financial identifiers (national IDs across the UK, US and EU, payment cards, IBANs, bank details). Use when asked what documents would cost to process with an LLM, how ready they are to extract from, whether a folder contains personal data, or to check documents for PII before sending them anywhere. Runs locally and makes no network calls.
+description: Audit a folder of documents offline for LLM processing cost, extraction readiness, and personal or financial identifiers (national IDs across Europe, the Americas, India and Australia, payment cards, IBANs, bank details). Use when asked what documents would cost to process with an LLM, how ready they are to extract from, whether a folder contains personal data, or to check documents for PII before sending them anywhere. Runs locally and makes no network calls.
 ---
 
 # complydoc

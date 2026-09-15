@@ -204,7 +204,42 @@ def configuration_page() -> None:
         page.write("\n".join(lines))
 
 
+def identifiers_page() -> None:
+    """Every identifier category in the shipped `sensitive.yaml`."""
+    from complydoc.config.loader import load_config
+
+    categories = load_config().sensitive.categories
+    lines = [
+        "# Identifiers",
+        "",
+        "The identifier categories in the shipped `sensitive.yaml`. **On sight** means the",
+        "pattern is reported wherever it matches; **near a label** means it is reported only",
+        "when one of the category's context terms is close by. A category with validators",
+        "reaches the `confirmed` evidence tier when they pass.",
+        "",
+        "| Category | Id | Region | Severity | Found | Validators |",
+        "| --- | --- | --- | --- | --- | --- |",
+    ]
+    for category_id, category in categories.items():
+        if category.detector == "ner":
+            found = "name detection model"
+        elif category.patterns and category.context_patterns:
+            found = "on sight, or near a label"
+        elif category.patterns:
+            found = "on sight"
+        else:
+            found = "near a label"
+        validators = ", ".join(f"`{name}`" for name in category.validators) or "—"
+        lines.append(
+            f"| {category.label} | `{category_id}` | {category.region} | {category.severity} "
+            f"| {found} | {validators} |"
+        )
+    with mkdocs_gen_files.open("reference/identifiers.md", "w") as page:
+        page.write("\n".join(lines) + "\n")
+
+
 command_pages()
 api_page()
 report_page()
 configuration_page()
+identifiers_page()

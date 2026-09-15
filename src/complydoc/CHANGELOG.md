@@ -6,6 +6,20 @@ versioned separately.
 
 ## [Unreleased]
 
+### Added
+
+- Identifiers beyond the UK: Italian codice fiscale, Belgian national register number,
+  Polish PESEL, Swedish personnummer, Danish CPR, Swiss AHV, Brazilian CPF and CNPJ, Indian
+  Aadhaar and PAN, Canadian SIN and Australian TFN, each with its check rule; international
+  and North American phone numbers; US ZIP, Canadian, EU and Brazilian postal codes; street
+  addresses in Portuguese, Spanish, Italian, French, German and Dutch; date-of-birth labels
+  in ten languages and ISO dates.
+- An identifier reference page generated from `sensitive.yaml`.
+
+### Fixed
+
+- When identifiers of equal length overlap, one found beside its own label wins.
+
 ## [0.4.2] — 2026-09-15
 
 ### Added

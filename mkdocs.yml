@@ -112,6 +112,7 @@ nav:
       - Python API: reference/api.md
       - Report JSON: reference/report.md
       - Configuration: reference/configuration.md
+      - Identifiers: reference/identifiers.md
   - Design notes:
       - Network isolation: explanation/offline.md
       - Unmeasured values: explanation/not-measured.md

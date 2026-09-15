@@ -37,8 +37,10 @@ stronger and put four digits of a card number back in the clear.
 
 Most identifier formats carry one: Luhn plus the issuing network's prefix and
 length for card numbers, mod-97 for IBAN and
-VAT, and national schemes for the UK, US, Ireland, the Netherlands, Portugal,
-Spain, France and Germany. A passing checksum moves a finding from `pattern` to
+VAT, and national schemes for the UK, US, Canada, Brazil, Ireland, the
+Netherlands, Belgium, Portugal, Spain, France, Germany, Italy, Switzerland,
+Poland, Sweden, India and Australia. The full list is in the
+[identifier reference](../reference/identifiers.md). A passing checksum moves a finding from `pattern` to
 `confirmed`, which changes both its ranking and its weight in the exposure
 score.
 

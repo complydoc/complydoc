@@ -61,7 +61,7 @@ OCR and name detection are optional extras. `complydoc doctor` shows what is ins
   extraction paths (text layer, OCR, vision).
 - **Extraction readiness**: measured signals such as text layer coverage, tables, columns,
   rotation, scan resolution, garbled characters, glyph codes and repeated headers.
-- **Identifiers**: personal and financial identifiers in UK, US and EU formats,
+- **Identifiers**: personal and financial identifiers from Europe, the Americas, India and Australia,
   checksum-validated where a checksum exists, masked in every output.
 - **Hidden content and prompt injection**: text a reader does not see and a model does
   (white or invisible text, hidden formatting, Unicode tag characters), and passages that
