@@ -1099,5 +1099,342 @@ def pricing_import(
     print(to_yaml(chosen))
 
 
+def _print_report_json(report: AuditReport) -> None:
+    import json as _json
+
+    from complydoc.report.json_writer import to_dict
+
+    sys.stdout.write(
+        _json.dumps(to_dict(report), indent=2, sort_keys=True, ensure_ascii=False) + "\n"
+    )
+
+
+def _link(label: str, path: Path) -> None:
+    path = path.resolve()
+    console.print(
+        f"[bold]{label:<7}[/] [link=file://{path}]{path}[/link]", no_wrap=True, crop=False
+    )
+
+
+@app.command("compare-loaders")
+def compare_loaders_command(
+    spec: Annotated[
+        Path,
+        typer.Argument(
+            help="A YAML file naming the loaders, the documents and the expected facts."
+        ),
+    ],
+    out: OutDirOpt = DEFAULT_OUT,
+    name: NameOpt = "complydoc-loaders",
+    config_dir: ConfigOpt = None,
+    print_json: PrintJsonOpt = False,
+    quiet: QuietOpt = False,
+) -> None:
+    """Run several document loaders on the same documents and report their differences.
+
+    The file names each loader as `module:attribute` or a parser preset, the
+    documents, and optionally the facts each loader's text should contain. The
+    first loader is the baseline. Loaders run with network access blocked unless
+    the file sets `allow_network: true`. See the Comparing loaders guide for the
+    format.
+    """
+    from complydoc.loaders.spec_file import compare_from_file, read_comparison_file
+
+    global console
+    if print_json:
+        console = errors
+        quiet = True
+    config = _load(config_dir)
+    try:
+        comparison = read_comparison_file(spec)
+    except ConfigError as exc:
+        errors.print(f"[bold red]Comparison file error[/]\n{exc}")
+        raise typer.Exit(code=2) from exc
+    if comparison.allow_network:
+        errors.print(
+            "[bold yellow]allow_network is set.[/] The loaders may send document content "
+            "over the network. complydoc's own processing still runs with it blocked."
+        )
+    try:
+        report = compare_from_file(spec, config=config)
+    except (ImportError, ValueError, FileNotFoundError) as exc:
+        errors.print(f"[bold red]Comparison failed[/] — {exc}")
+        raise typer.Exit(code=2) from exc
+
+    if not quiet and report.loader_comparison is not None:
+        table = Table(box=None, pad_edge=False)
+        for column in ("Loader", "Documents", "Pages", "Failed files", "Network attempts"):
+            table.add_column(column, justify="left" if column == "Loader" else "right")
+        with_facts = bool(comparison.facts)
+        if with_facts:
+            table.add_column("Facts found", justify="right")
+        for row in report.loader_comparison.loaders:
+            cells = [
+                row.name,
+                str(row.documents),
+                str(row.pages),
+                str(len(row.failures)),
+                str(len(row.network_attempts)),
+            ]
+            if with_facts:
+                cells.append(f"{row.facts_found or 0} of {len(comparison.facts)}")
+            table.add_row(*cells)
+        console.print(table)
+    _emit(report, config, out, name, quiet)
+    if print_json:
+        _print_report_json(report)
+
+
+def _splitter(reference: str) -> tuple[str, object]:
+    """A splitter from `module:attribute key=value ...`, and the name to show it by."""
+    import functools
+    import inspect
+    import shlex
+
+    import yaml
+
+    from complydoc.utils.imports import load_object
+
+    target, *pairs = shlex.split(reference)
+    options: dict[str, object] = {}
+    for pair in pairs:
+        key, separator, value = pair.partition("=")
+        if not separator or not key:
+            raise ValueError(f"expected key=value after the splitter, got {pair!r}")
+        options[key] = yaml.safe_load(value)
+    splitter = load_object(target)
+    if inspect.isclass(splitter):
+        splitter = splitter(**options)
+    elif options:
+        splitter = functools.partial(splitter, **options)
+    label = " ".join([target.partition(":")[2], *pairs])
+    return label, splitter
+
+
+@app.command()
+def chunks(
+    target: TargetArg,
+    splitter: Annotated[
+        list[str],
+        typer.Option(
+            "--splitter",
+            "-s",
+            help="A text splitter as module:attribute, followed by key=value arguments, "
+            "e.g. 'langchain_text_splitters:RecursiveCharacterTextSplitter chunk_size=800'. "
+            "A class is created with the arguments; a function is called with the "
+            "documents. Repeat to compare several.",
+        ),
+    ],
+    fact: Annotated[
+        list[str] | None,
+        typer.Option("--fact", help="Text a chunk should contain whole, repeatable."),
+    ] = None,
+    model: Annotated[
+        str | None, typer.Option("--model", "-m", help="Model whose tokenizer counts tokens.")
+    ] = None,
+    min_tokens: Annotated[
+        int, typer.Option("--min-tokens", help="Flag chunks with fewer tokens as tiny.")
+    ] = 20,
+    max_tokens: Annotated[
+        int | None, typer.Option("--max-tokens", help="Flag chunks with more tokens as oversized.")
+    ] = None,
+    out: OutDirOpt = DEFAULT_OUT,
+    name: NameOpt = "complydoc-chunks",
+    extractor: ExtractorOpt = None,
+    password: PasswordOpt = "",
+    config_dir: ConfigOpt = None,
+    ocr: OcrOpt = True,
+    recurse: RecurseOpt = True,
+    quiet: QuietOpt = False,
+) -> None:
+    """Split a folder's text with one or more splitters and inspect the chunks.
+
+    Each page's text is read as `extract_text` reads it and passed to the splitter
+    as documents with `source` and `page` metadata. Every chunk is scanned for
+    identifiers and hidden passages and flagged when it is tiny, oversized, cut
+    mid-sentence or mid-table, ends on a heading or repeats another chunk. The
+    reports hold masked previews only.
+    """
+    from complydoc.extraction.chunks import inspect_chunks
+    from complydoc.extraction.extract import extract_text
+    from complydoc.report.pages import write_chunks_html, write_chunks_json
+
+    offline.arm()
+    config = _load(config_dir)
+    try:
+        splitters = dict(_splitter(reference) for reference in splitter)
+    except (ImportError, ValueError) as exc:
+        errors.print(f"[bold red]Cannot load the splitter[/] — {exc}")
+        raise typer.Exit(code=2) from exc
+    if len(splitters) != len(splitter):
+        errors.print("[bold red]The same splitter is given twice.[/]")
+        raise typer.Exit(code=2)
+
+    try:
+        text = extract_text(
+            target,
+            config=config,
+            mask=False,
+            ocr=ocr,
+            recurse=recurse,
+            password=password,
+            extractor=extractor,
+            model=model,
+        )
+    except FileNotFoundError as exc:
+        errors.print(f"[bold red]No such path:[/] {target}")
+        raise typer.Exit(code=2) from exc
+    if not text.chunks:
+        reasons = sorted({f"{w.document}: {w.detail}" for w in text.warnings if w.document})
+        errors.print(f"[bold red]No text was read from[/] {target}")
+        for reason in reasons[:10]:
+            errors.print(f"  {reason}", markup=False)
+        raise typer.Exit(code=2)
+    documents = [
+        {"page_content": c.text, "metadata": {"source": c.document, "page": c.page}}
+        for c in text.chunks
+    ]
+    if not quiet and not text.complete:
+        console.print(
+            f"[yellow]{count(sum(w.hides_content for w in text.warnings), 'file or page')} "
+            f"could not be read[/] and are not in the chunks."
+        )
+
+    from complydoc.extraction.chunks import ChunkComparison, ChunkReport
+
+    def inspect(splitter_object: object, label: str) -> ChunkReport:
+        return inspect_chunks(
+            splitter_object,
+            documents,
+            name=label,
+            config=config,
+            model=model,
+            min_tokens=min_tokens,
+            max_tokens=max_tokens,
+            facts=fact,
+        )
+
+    result: ChunkReport | ChunkComparison
+    try:
+        if len(splitters) == 1:
+            [(label, only)] = splitters.items()
+            result = inspect(only, label)
+        else:
+            result = ChunkComparison(
+                {label: inspect(obj, label) for label, obj in splitters.items()}
+            )
+    except UnknownModelError as exc:
+        errors.print(f"[bold red]Unknown model[/] — {exc}")
+        raise typer.Exit(code=2) from exc
+    reports = list(result.reports.values()) if isinstance(result, ChunkComparison) else [result]
+
+    json_path = write_chunks_json(result, out / f"{name}.json")
+    html_path = write_chunks_html(result, out / f"{name}.html", source=str(target))
+    if quiet:
+        return
+    table = Table(box=None, pad_edge=False)
+    for column in ("Splitter", "Chunks", "Median tokens", "Max tokens", "Flagged"):
+        table.add_column(column, justify="left" if column == "Splitter" else "right")
+    if fact:
+        table.add_column("Facts whole", justify="right")
+    for report in reports:
+        cells = [
+            report.chunker,
+            str(report.stats.count),
+            f"{report.stats.tokens_median:g}",
+            str(report.stats.tokens_max),
+            str(sum(1 for c in report.chunks if c.flags)),
+        ]
+        if fact:
+            whole = sum(1 for f in report.facts if f.status == "whole")
+            cells.append(f"{whole} of {len(report.facts)}")
+        table.add_row(*cells)
+    console.print(table)
+    console.print()
+    _link("Report", html_path)
+    _link("Data", json_path)
+
+
+@app.command()
+def diff(
+    old: Annotated[Path, typer.Argument(help="The earlier report JSON, such as a baseline.")],
+    new: Annotated[Path, typer.Argument(help="The later report JSON.")],
+    tolerance: Annotated[
+        float,
+        typer.Option("--tolerance", help="Ignore score changes smaller than this many points."),
+    ] = 0.5,
+    fail_on_regression: Annotated[
+        bool,
+        typer.Option(
+            "--fail-on-regression/--no-fail-on-regression",
+            help="Exit with status 1 when anything got worse. On by default, for CI.",
+        ),
+    ] = True,
+    out: Annotated[
+        Path | None,
+        typer.Option("--out", "-o", help="Also write the changes as JSON and HTML here."),
+    ] = None,
+    name: NameOpt = "complydoc-diff",
+    print_json: PrintJsonOpt = False,
+    quiet: QuietOpt = False,
+) -> None:
+    """Compare two report JSON files and list what got worse and what got better.
+
+    Documents are matched by relative path. A regression is an identifier,
+    metadata finding or hidden passage that appeared, a score or text similarity
+    that fell, a fact a loader no longer finds, a new network attempt or failed
+    file, or a new important limitation. Exits 1 when there is a regression, 2
+    when a file cannot be read.
+    """
+    from rich.markup import escape
+
+    from complydoc.report.compare import diff_reports
+    from complydoc.report.json_reader import load_report
+    from complydoc.report.pages import diff_to_dict, write_diff_html, write_diff_json
+
+    global console
+    if print_json:
+        console = errors
+        quiet = True
+    reports = []
+    for path in (old, new):
+        try:
+            reports.append(load_report(path))
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            errors.print(f"[bold red]Cannot read the report[/] {path} — {exc}")
+            raise typer.Exit(code=2) from exc
+    changes = diff_reports(reports[0], reports[1], score_tolerance=tolerance)
+
+    if not quiet:
+        for change in changes.changes:
+            where = f"{change.document}: " if change.document else ""
+            values = f" ({change.before} → {change.after})" if change.kind == "changed" else ""
+            mark = "[red]worse [/]" if change.worse else "[green]better[/]"
+            console.print(
+                f"{mark} {change.area} {change.kind}: {escape(where + change.subject + values)}",
+                crop=False,
+            )
+        regressions = len(changes.regressions)
+        console.print(
+            f"\n[bold]{count(regressions, 'regression')}[/], "
+            f"{count(len(changes.improvements), 'improvement')}"
+            if changes
+            else "No changes."
+        )
+    if out is not None:
+        html_path = write_diff_html(changes, out / f"{name}.html", old=old.name, new=new.name)
+        json_path = write_diff_json(changes, out / f"{name}.json")
+        if not quiet:
+            console.print()
+            _link("Report", html_path)
+            _link("Data", json_path)
+    if print_json:
+        import json as _json
+
+        sys.stdout.write(_json.dumps(diff_to_dict(changes), indent=2, default=str) + "\n")
+    if fail_on_regression and changes.regressions:
+        raise typer.Exit(code=1)
+
+
 if __name__ == "__main__":  # pragma: no cover
     app()

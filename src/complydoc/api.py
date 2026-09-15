@@ -138,6 +138,7 @@ from complydoc.report.models import (
     LoaderSummary,
     MetadataFinding,
 )
+from complydoc.report.pages import write_chunks_html, write_diff_html
 from complydoc.sensitive.base import Detector, DetectorContext, Finding
 from complydoc.sensitive.registry import register as register_detector
 
@@ -229,6 +230,8 @@ __all__ = [
     "security_audit",
     "sha256_of",
     "supported_extensions",
+    "write_chunks_html",
+    "write_diff_html",
     "write_html",
     "write_json",
 ]

@@ -53,6 +53,14 @@ report = cd.compare_loaders(
 report.to_pandas("loaders")
 ```
 
+The same from the command line, for CI:
+
+```bash
+complydoc compare-loaders loaders.yaml
+complydoc chunks ./documents --splitter "langchain_text_splitters:RecursiveCharacterTextSplitter chunk_size=800"
+complydoc diff baseline.json .complydoc/complydoc.json
+```
+
 OCR and name detection are optional extras. `complydoc doctor` shows what is installed.
 
 ## What it reports

@@ -124,3 +124,37 @@ In addition to the baseline's own limitations, a comparison adds:
   findings from the name model
 - documents not returned by every loader
 - network attempts, failures and metadata findings from the other loaders
+
+## From the command line
+
+`complydoc compare-loaders FILE` runs a comparison described in YAML and writes
+the same JSON and HTML report as `complydoc audit`:
+
+```yaml title="loaders.yaml"
+loaders:
+  pypdf: langchain_community.document_loaders:PyPDFLoader
+  pdfplumber:
+    loader: langchain_community.document_loaders:PDFPlumberLoader
+    options: {extract_images: false}
+  docling:
+    preset: docling
+    options: {export: markdown}
+paths: ./contracts
+facts:
+  - Payment is due within thirty days
+```
+
+| Key | Default | Contents |
+| --- | --- | --- |
+| `loaders` | required | Two or more names mapped to `module:attribute`, or to `loader` or `preset` with keyword `options` |
+| `paths` | required | A folder, a file or a list, relative to the YAML file |
+| `facts` | none | Passages each loader's text should contain |
+| `fact_threshold` | 0.9 | Fuzzy match threshold |
+| `allow_network` | `false` | Let the loaders connect; the command prints a warning when set |
+| `cache_dir` | none | Cache loader output between runs |
+| `components` | all | `cost`, `readiness` and `sensitive` |
+| `models` | all priced | Models to price |
+
+The first loader is the baseline. A `loader` is called with each file path and its
+`options`; a `preset` is one of the parser presets above. An invalid file, or a
+loader that cannot be imported, exits with status 2.

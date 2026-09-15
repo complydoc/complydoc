@@ -15,6 +15,13 @@ versioned separately.
   addresses in Portuguese, Spanish, Italian, French, German and Dutch; date-of-birth labels
   in ten languages and ISO dates.
 - An identifier reference page generated from `sensitive.yaml`.
+- `complydoc compare-loaders FILE` runs a loader comparison described in YAML: loaders as
+  `module:attribute` or parser presets, paths, facts, `allow_network` and `cache_dir`.
+- `complydoc chunks PATH --splitter "module:attribute key=value"` inspects the chunks one
+  or more splitters make from a folder's text, and writes JSON and an HTML page.
+- `complydoc diff OLD NEW` lists the changes between two report JSON files and exits 1 on a
+  regression, for CI. `--out` writes JSON and an HTML page.
+- `cd.write_chunks_html` and `cd.write_diff_html`.
 
 ### Changed
 

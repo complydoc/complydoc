@@ -34,7 +34,20 @@ relative path. Each `Change` has an `area`, a `kind` (`added`, `removed` or
 
 `changes.regressions` and `changes.improvements` split the changes;
 `changes.summary()` prints one line each, and `changes.to_pandas()` returns a
-table.
+table. `cd.write_diff_html(changes, path)` writes them as an HTML page.
+
+## In CI
+
+```bash
+complydoc audit ./documents --out build --name current -q
+complydoc diff baseline.json build/current.json --out build
+```
+
+`complydoc diff OLD NEW` prints each change and exits with status 1 when there is
+a regression, 2 when either file cannot be read, and 0 otherwise.
+`--no-fail-on-regression` always exits 0 for readable files. `--tolerance` sets
+`score_tolerance`. `--out` also writes `complydoc-diff.json` and
+`complydoc-diff.html`; `--print-json` writes the JSON to stdout.
 
 ## Assertions
 

@@ -30,6 +30,9 @@ Run `complydoc` with no arguments to audit the current directory.
 | `complydoc sensitive <path>` | Identifiers only |
 | `complydoc models` | Which models can be priced against (`--new N` for the latest, `--all` for every one) |
 | `complydoc doctor` | What is installed |
+| `complydoc compare-loaders <file.yaml>` | Several document loaders on the same files, from a YAML description |
+| `complydoc chunks <path> --splitter module:attr` | Chunks a text splitter makes: sizes, cut sentences and tables, identifiers, facts |
+| `complydoc diff <old.json> <new.json>` | Changes between two reports; exits 1 when something got worse |
 
 Useful flags: `--monthly-volume N` extrapolates cost, `--model <id>` (repeatable)
 narrows the comparison, `--no-ocr` is faster, `--out <dir>` moves the reports,

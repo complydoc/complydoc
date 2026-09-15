@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ title }}</title>
+<link rel="icon" href="{{ favicon_uri }}">
+<style>
+{% include "report.css" %}
+</style>
+</head>
+<body>
+
+{% macro changes_table(changes) %}
+<div class="scroll"><table data-paginate="50" data-sortable>
+  <thead><tr>
+    <th data-sort="text">Area</th>
+    <th data-sort="text">Change</th>
+    <th data-sort="text">Document</th>
+    <th data-sort="text">Subject</th>
+    <th class="n">Before</th>
+    <th class="n">After</th>
+  </tr></thead>
+  <tbody>
+  {% for c in changes %}
+    <tr>
+      <td>{{ c.area }}</td>
+      <td>{{ c.kind }}</td>
+      <td class="mono">{{ c.document or "—" }}</td>
+      <td class="why">{{ c.subject }}</td>
+      <td class="n">{{ c.before if c.before is not none else "—" }}</td>
+      <td class="n">{{ c.after if c.after is not none else "—" }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% endmacro %}
+
+<div class="topline">
+  {{ logo_svg | safe }}
+  <button type="button" id="theme" hidden aria-pressed="false">Dark</button>
+</div>
+
+<div class="head">
+  <h1>Report changes<span class="of">{{ old }} → {{ new }}</span></h1>
+</div>
+
+<div class="tiles">
+  <div class="tile"><div class="k">Regressions</div>
+    <div class="v{% if diff.regressions %} r-poor{% endif %}">{{ diff.regressions | length }}</div>
+    <div class="s">identifiers or hidden passages added, scores fallen, facts lost,
+      network attempts or failures added, important limitations added</div></div>
+  <div class="tile"><div class="k">Improvements</div>
+    <div class="v">{{ diff.improvements | length }}</div>
+    <div class="s">every other change</div></div>
+  <div class="tile"><div class="k">Reports</div>
+    <div class="v"><span class="u">complydoc</span> {{ diff.old_version }} <span class="u">→</span> {{ diff.new_version }}</div>
+    <div class="s">documents are matched by relative path</div></div>
+</div>
+
+{% if not diff %}
+<div class="box"><strong>No changes.</strong>
+  <p>Nothing compared differs between the two reports.</p></div>
+{% endif %}
+
+{% if diff.regressions %}
+<h2>Regressions</h2>
+{{ changes_table(diff.regressions) }}
+{% endif %}
+
+{% if diff.improvements %}
+<h2>Improvements</h2>
+{{ changes_table(diff.improvements) }}
+{% endif %}
+
+<p class="note">Values are shown as the reports hold them, masked unless a report was made
+with <code>--reveal</code>.</p>
+
+<footer>
+  <div class="foot-main">
+    <div>{{ logo_svg | safe }}</div>
+  </div>
+  <div class="foot-rule">complydoc {{ tool_version }} · generated {{ generated_at }}</div>
+</footer>
+
+<script>
+{% include "report.js" %}
+</script>
+</body>
+</html>

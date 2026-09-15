@@ -97,6 +97,8 @@ def test_the_public_surface_is_exactly_what_was_promised():
         "TextResult",
         "ExtractionWarning",
         # writing a report somewhere
+        "write_chunks_html",
+        "write_diff_html",
         "write_html",
         "write_json",
         # configuration, and the errors a caller has to catch by name

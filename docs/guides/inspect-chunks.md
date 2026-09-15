@@ -47,3 +47,23 @@ above, metadata keys, a masked preview, and flags:
 
 `report.to_pandas()` returns one row per chunk; `comparison.to_pandas()` one row
 per splitter.
+
+## From the command line
+
+```bash
+complydoc chunks ./contracts \
+  --splitter "langchain_text_splitters:RecursiveCharacterTextSplitter chunk_size=800" \
+  --splitter "langchain_text_splitters:RecursiveCharacterTextSplitter chunk_size=1500" \
+  --fact "Payment is due within thirty days" --max-tokens 1000
+```
+
+Each page's text is read as `extract_text(mask=False)` reads it and passed to the
+splitter as documents with `source` and `page` metadata. `--splitter` takes a
+`module:attribute` followed by `key=value` arguments, read as YAML values. A class is
+created with the arguments; a function is called with the documents and the
+arguments. Repeating `--splitter` compares them.
+
+The command writes `complydoc-chunks.json` and `complydoc-chunks.html` to `--out`
+(`.complydoc` by default). Both hold masked previews and identifiers, not the
+document text. `cd.write_chunks_html(report, path)` writes the same page from
+Python, for a `ChunkReport` or a `ChunkComparison`.

@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ title }}</title>
+<link rel="icon" href="{{ favicon_uri }}">
+<style>
+{% include "report.css" %}
+</style>
+</head>
+<body>
+
+<div class="topline">
+  {{ logo_svg | safe }}
+  <button type="button" id="theme" hidden aria-pressed="false">Dark</button>
+</div>
+
+<div class="head">
+  <h1>Chunks{% if source %}<span class="of">{{ source }}</span>{% endif %}</h1>
+</div>
+<p class="note">Identifiers and previews are masked. Token counts use
+{{ reports[0].token_encoding }} ({{ reports[0].token_fidelity }}).</p>
+
+{% if comparison %}
+<h2>Splitters</h2>
+<div class="scroll"><table data-sortable>
+  <thead><tr>
+    <th data-sort="text">Splitter</th>
+    <th class="n" data-sort="num">Chunks</th>
+    <th class="n" data-sort="num">Median tokens</th>
+    <th class="n" data-sort="num">95th percentile</th>
+    <th class="n" data-sort="num">Max tokens</th>
+    {% for flag in flags %}<th class="n" data-sort="num" title="{{ flag_meaning[flag] }}">{{ flag }}</th>{% endfor %}
+    <th class="n" data-sort="num">Repeated identifiers</th>
+    <th class="n" data-sort="num">Facts whole</th>
+    <th class="n" data-sort="num">Facts split</th>
+    <th class="n" data-sort="num">Facts missing</th>
+  </tr></thead>
+  <tbody>
+  {% for row in comparison.rows() %}
+    <tr>
+      <td class="mono">{{ row.chunker }}</td>
+      <td class="n">{{ row.chunks }}</td>
+      <td class="n">{{ row.tokens_median }}</td>
+      <td class="n">{{ row.tokens_p95 }}</td>
+      <td class="n">{{ row.tokens_max }}</td>
+      {% for flag in flags %}<td class="n{% if row[flag] %} r-poor{% endif %}">{{ row[flag] }}</td>{% endfor %}
+      <td class="n">{{ row.repeated_identifiers }}</td>
+      <td class="n">{{ row.facts_whole }}</td>
+      <td class="n{% if row.facts_split %} r-poor{% endif %}">{{ row.facts_split }}</td>
+      <td class="n{% if row.facts_missing %} r-poor{% endif %}">{{ row.facts_missing }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% endif %}
+
+{% for report in reports %}
+{% set stats = report.stats %}
+{% set flagged = report.chunks | selectattr("flags") | list | length %}
+<h2>{% if comparison %}<span class="mono">{{ report.chunker }}</span>{% else %}Summary <span class="why mono">{{ report.chunker }}</span>{% endif %}</h2>
+
+<div class="tiles">
+  <div class="tile"><div class="k">Chunks</div><div class="v">{{ stats.count }}</div>
+    <div class="s">{{ stats.tokens_total }} tokens in total</div></div>
+  <div class="tile"><div class="k">Tokens per chunk</div><div class="v">{{ stats.tokens_median }}<span class="u"> median</span></div>
+    <div class="s">minimum {{ stats.tokens_min }}, 95th percentile {{ stats.tokens_p95 }}, maximum {{ stats.tokens_max }}</div></div>
+  <div class="tile"><div class="k">Flagged chunks</div><div class="v">{{ flagged }}</div>
+    <div class="s">{{ report.repeated_identifiers | length }} identifier{{ "" if report.repeated_identifiers | length == 1 else "s" }} in more than one chunk</div></div>
+</div>
+
+<h3>Flags</h3>
+<div class="scroll"><table>
+  <thead><tr><th>Flag</th><th>Set when a chunk</th><th class="n">Chunks</th></tr></thead>
+  <tbody>
+  {% for flag in flags %}
+    <tr><td class="mono">{{ flag }}</td><td>{{ flag_meaning[flag] }}</td>
+      <td class="n{% if report.flag_counts.get(flag) %} r-poor{% endif %}">{{ report.flag_counts.get(flag, 0) }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+
+{% if report.facts %}
+<h3>Expected facts</h3>
+<div class="scroll"><table>
+  <thead><tr><th>Fact</th><th>Status</th><th>Chunks</th></tr></thead>
+  <tbody>
+  {% for fact in report.facts %}
+    <tr><td>{{ fact.fact }}</td>
+      <td class="{{ 'r-poor' if fact.status != 'whole' else 'r-good' }}">{{ fact.status }}</td>
+      <td class="mono">{{ fact.chunks | join(", ") if fact.chunks else "—" }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+<p class="note"><code>whole</code>: one chunk contains the fact. <code>split</code>: only the
+document text before splitting contains it, so a chunk boundary cuts it.
+<code>missing</code>: not found.</p>
+{% endif %}
+
+{% if report.repeated_identifiers %}
+<h3>Identifiers in more than one chunk</h3>
+<div class="scroll"><table data-paginate="25" data-sortable>
+  <thead><tr><th data-sort="text">Identifier</th><th class="n" data-sort="num" data-sort-default="desc">Chunks</th></tr></thead>
+  <tbody>
+  {% for value, n in report.repeated_identifiers.items() %}
+    <tr><td class="mono">{{ value }}</td><td class="n">{{ n }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% endif %}
+
+<h3>Chunks</h3>
+<div class="scroll"><table data-paginate="50" data-sortable>
+  <thead><tr>
+    <th class="n" data-sort="num">#</th>
+    <th data-sort="text">Document</th>
+    <th class="n" data-sort="num">Page</th>
+    <th class="n" data-sort="num">Tokens</th>
+    <th class="n" data-sort="num">Identifiers</th>
+    <th class="n" data-sort="num">Hidden</th>
+    <th data-sort="text">Flags</th>
+    <th>Preview</th>
+  </tr></thead>
+  <tbody>
+  {% for chunk in report.chunks %}
+    <tr>
+      <td class="n">{{ chunk.index }}</td>
+      <td class="mono">{{ chunk.document or "—" }}</td>
+      <td class="n">{{ chunk.page if chunk.page is not none else "—" }}</td>
+      <td class="n">{{ chunk.tokens }}</td>
+      <td class="n"{% if chunk.identifiers %} title="{{ chunk.identifiers | join('; ') }}"{% endif %}>{{ chunk.identifiers | length }}</td>
+      <td class="n{% if chunk.hidden %} r-poor{% endif %}">{{ chunk.hidden }}</td>
+      <td class="mono">{{ chunk.flags | join(", ") }}</td>
+      <td class="why">{{ chunk.preview }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% endfor %}
+
+<footer>
+  <div class="foot-main">
+    <div>
+      {{ logo_svg | safe }}
+      <p class="foot-claim">Chunks were split and inspected with outbound network access
+      blocked.</p>
+    </div>
+  </div>
+  <div class="foot-rule">complydoc {{ tool_version }} · generated {{ generated_at }}</div>
+</footer>
+
+<script>
+{% include "report.js" %}
+</script>
+</body>
+</html>

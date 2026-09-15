@@ -106,6 +106,7 @@ def api_page() -> None:
         "Strings": {"scan_text", "mask_text", "find_hidden", "count_tokens"},
         "Reports and tests": {
             "load_report", "write_html", "write_json", "diff_reports", "expect", "load_config",
+            "write_chunks_html", "write_diff_html",
         },
         "Pipeline steps": {
             "Step", "StepChange", "MaskIdentifiers", "DropHiddenPassages", "StripPathMetadata",
