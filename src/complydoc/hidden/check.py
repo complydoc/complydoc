@@ -30,6 +30,12 @@ from complydoc.hidden.instructions import (
     matcher_for,
     registered_classifier,
 )
+from complydoc.hidden.markup import (
+    eml_hidden_runs,
+    html_hidden_runs,
+    markdown_hidden_runs,
+    pptx_hidden_runs,
+)
 from complydoc.hidden.office import docx_hidden_runs, xlsx_hidden_runs
 from complydoc.hidden.unicode import find_smuggled, strip_invisible
 from complydoc.hidden.visibility import HiddenRun, pdf_hidden_runs
@@ -91,6 +97,8 @@ def check_content(
         text = strip_invisible(run.text)
         score = classifier_score(text)
         instruction, reasons = _instruction(matcher.find(text), score, threshold)
+        if run.only_if_instruction and instruction == "none":
+            continue
         findings.append(
             _finding(
                 run.page,
@@ -242,6 +250,22 @@ def _file_runs(
         if suffix in (".xlsx", ".xlsm"):
             runs, notes, ok = xlsx_hidden_runs(path, visibility)
             return runs, notes, ok, set()
+        if suffix == ".pptx":
+            runs, notes, ok = pptx_hidden_runs(path, visibility)
+            return runs, notes, ok, set()
+        if suffix in (".html", ".htm"):
+            runs, notes, ok = html_hidden_runs(path, visibility)
+            return runs, notes, ok, set()
+        if suffix in (".md", ".markdown"):
+            runs, notes, ok = markdown_hidden_runs(path, visibility)
+            return runs, notes, ok, set()
+        if suffix == ".eml":
+            runs, notes, ok = eml_hidden_runs(path, visibility)
+            return runs, notes, ok, set()
+        if suffix == ".txt":
+            # Plain text has no formatting to hide text with. Invisible Unicode is
+            # checked on the text itself, below.
+            return [], [], True, set()
         if suffix in _IMAGES:
             # An image has no text layer to hide text in; what OCR reads is on the page.
             return [], [], True, set()

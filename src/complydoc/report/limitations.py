@@ -135,9 +135,11 @@ def build_limitations(
                 Limitation(
                     area="Hidden content",
                     statement=(
-                        "Hidden-text checks cover the text layer of PDFs and the formatting of "
-                        "Word and Excel files. Text inside images, which a vision model reads, "
-                        "is not checked. Instruction patterns are mostly English."
+                        "Hidden-text checks cover the text layer of PDFs and the markup of "
+                        "Word, Excel, PowerPoint, HTML, Markdown and email files. In HTML and "
+                        "Markdown, hidden passages are reported only when they read as "
+                        "instructions. Text inside images, which a vision model reads, is not "
+                        "checked. Instruction patterns are mostly English."
                     ),
                     severity="info",
                 )

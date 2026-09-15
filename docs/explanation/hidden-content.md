@@ -48,6 +48,38 @@ Read from the markup, including styles and their base styles:
 Hidden and very hidden sheets, hidden rows and columns, cells whose number
 format displays nothing (`;;;`), and white text on an unfilled cell.
 
+### PowerPoint
+
+Hidden slides, shapes placed entirely outside the slide area, and text below
+`visibility.min_font_size_pt`. Positions inside grouped shapes are not checked.
+
+### HTML
+
+Read from the markup and from `<style>` rules whose selector is a tag, a class,
+an id, or a tag with a class or id:
+
+- the `hidden` attribute
+- `display: none`, `visibility: hidden`, `opacity: 0`
+- transparent text, and white text with no background set on it or an ancestor
+- text below `visibility.min_font_size_pt`, and zero height with hidden overflow
+- comments
+
+Text positioned 500pt or more off screen is `suspected`. Web pages hide menus,
+dialogs, licence notices and comments routinely, so a hidden HTML passage is
+reported only when it reads as an instruction.
+
+### Markdown
+
+HTML comments and link references used as comments (`[//]: # (...)`), which are
+not rendered, and inline HTML hidden as above. Code blocks and inline code are
+ignored. As for HTML, a hidden passage is reported only when it reads as an
+instruction.
+
+### Email
+
+The HTML body of an `.eml` file is checked as HTML, whichever body part the page
+text came from.
+
 ### Any text
 
 - Unicode tag characters (U+E0000 to U+E007F) are decoded to the ASCII they
@@ -116,6 +148,8 @@ For loader output with a readable source file, each hidden passage records in
 ## Limits
 
 - Text inside images is not checked. A vision model reads it.
+- HTML styles from external stylesheets, scripts and complex selectors are not
+  applied.
 - Patterns miss phrasings they do not list and match documents that discuss
   prompt injection.
 - A document with no findings has not been shown to be safe.

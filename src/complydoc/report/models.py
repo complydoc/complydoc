@@ -85,7 +85,7 @@ def report_shape() -> dict[str, object]:
         "documents[]": {
             "relative_path": "str",
             "sha256": "str",
-            "format": "pdf | image | docx | xlsx | other",
+            "format": "pdf | image | docx | xlsx | pptx | html | markdown | text | email | other",
             "cost.models[]": "per-model text and vision token counts and USD",
             "readiness.signals[]": "id, value, rating, weight, why, status",
             "readiness.score": "value 0-100, higher is better; label; low_confidence",

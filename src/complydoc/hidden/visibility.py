@@ -49,6 +49,9 @@ class HiddenRun:
     visibility: str
     """`suspected` or `confirmed`."""
     reasons: list[str] = field(default_factory=list)
+    only_if_instruction: bool = False
+    """Hidden the way web pages routinely hide menus, dialogs and comments, so it is
+    reported only when it reads as an instruction."""
 
 
 @dataclass(frozen=True, slots=True)

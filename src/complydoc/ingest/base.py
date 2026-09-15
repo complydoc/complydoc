@@ -39,6 +39,11 @@ class DocumentFormat(StrEnum):
     IMAGE = "image"
     DOCX = "docx"
     XLSX = "xlsx"
+    PPTX = "pptx"
+    HTML = "html"
+    MARKDOWN = "markdown"
+    TEXT = "text"
+    EMAIL = "email"
     OTHER = "other"
     """For a third-party loader of a format complydoc does not know.
 

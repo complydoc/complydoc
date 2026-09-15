@@ -39,6 +39,7 @@ dependencies = [
     "pdfplumber>=0.11",
     "pypdfium2>=4.30",
     "python-docx>=1.1",
+    "lxml>=5.0",
     "openpyxl>=3.1",
     "tiktoken>=0.7",
     "py3langid>=0.4.0",
@@ -81,6 +82,7 @@ dev = [
     "mypy>=1.10",
     "ruff>=0.4",
     "reportlab>=4.2",
+    "python-pptx>=1.0",
     "pandas>=2.1",
     "types-pyyaml>=6.0",
     "cyclonedx-bom>=7.3.1",
@@ -147,6 +149,8 @@ module = [
     "openpyxl.*",
     "py3langid.*",
     "reportlab.*",
+    "lxml",
+    "lxml.*",
 ]
 ignore_missing_imports = true
 

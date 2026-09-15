@@ -59,8 +59,8 @@ are vendored as data files. See [Network isolation](explanation/offline.md).
 - **Masking is best effort.** Categories with a checksum are confirmed; names and
   organisations come from a statistical model and are missed at some rate.
 - **Unmeasured signals are reported as unmeasured** and excluded from scores.
-- **Hidden-content checks** cover PDF text layers and Word and Excel formatting,
-  not text inside images.
+- **Hidden-content checks** cover PDF text layers and the markup of Word, Excel,
+  PowerPoint, HTML, Markdown and email files, not text inside images.
 
 ## Contents
 

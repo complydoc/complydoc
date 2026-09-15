@@ -1,1 +1,0 @@
-complydoc does not read plain text files.

@@ -65,6 +65,8 @@ OCR and name detection are optional extras. `complydoc doctor` shows what is ins
 
 ## What it reports
 
+- **Formats**: PDF, scans and images, Word, Excel, PowerPoint, HTML, Markdown, plain text
+  and email (`.eml`).
 - **Token cost**: text and vision tokens per document, priced across models and three
   extraction paths (text layer, OCR, vision).
 - **Extraction readiness**: measured signals such as text layer coverage, tables, columns,

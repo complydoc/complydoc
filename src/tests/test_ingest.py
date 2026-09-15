@@ -40,8 +40,8 @@ def test_discovery_reports_unsupported_files_instead_of_dying():
     files, skipped = discover(FIXTURES)
     assert files
     reasons = {s.path.name: s.reason for s in skipped}
-    assert reasons.get("notes.txt") == "unsupported file type"
-    assert loader_for(FIXTURES / "notes.txt") is None
+    assert reasons.get("notes.rtf") == "unsupported file type"
+    assert loader_for(FIXTURES / "notes.rtf") is None
 
 
 def test_discovery_reports_a_missing_path():

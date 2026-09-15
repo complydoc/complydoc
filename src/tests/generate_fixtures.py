@@ -563,7 +563,7 @@ def broken_pdf(path: Path) -> None:
 
 
 def unsupported_file(path: Path) -> None:
-    path.write_text("complydoc does not read plain text files.\n", encoding="utf-8")
+    path.write_text("complydoc does not read RTF files.\n", encoding="utf-8")
 
 
 def main() -> None:
@@ -595,7 +595,7 @@ def main() -> None:
     sample_docx(out / "sample.docx")
     sample_xlsx(out / "sample.xlsx")
     broken_pdf(out / "broken.pdf")
-    unsupported_file(out / "notes.txt")
+    unsupported_file(out / "notes.rtf")
 
     print(f"wrote fixtures to {out}")
     for item in sorted(out.iterdir()):

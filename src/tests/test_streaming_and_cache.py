@@ -14,7 +14,7 @@ from tests.helpers import FIXTURES
 
 @pytest.fixture
 def folder(tmp_path):
-    for name in ("native_text.pdf", "sample.docx", "notes.txt"):
+    for name in ("native_text.pdf", "sample.docx", "notes.rtf"):
         shutil.copy(FIXTURES / name, tmp_path / name)
     return tmp_path
 

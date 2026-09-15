@@ -6,6 +6,21 @@ versioned separately.
 
 ## [Unreleased]
 
+### Added
+
+- PowerPoint (`.pptx`), HTML (`.html`, `.htm`), Markdown (`.md`, `.markdown`), plain text
+  (`.txt`) and email (`.eml`) documents. Slides are pages, with tables and speaker notes;
+  HTML, Markdown and email are one logical page each. Email attachments are counted and not
+  read.
+- Hidden-content checks for the new formats: hidden slides, shapes outside the slide and tiny
+  text in PowerPoint; hidden attributes, hiding styles and comments in HTML and email bodies;
+  comments and hidden inline HTML in Markdown. HTML and Markdown passages are reported only
+  when they read as instructions.
+
+### Changed
+
+- `lxml` is a direct dependency. It was already installed with `python-docx`.
+
 ## [0.4.4] — 2026-09-15
 
 ### Fixed

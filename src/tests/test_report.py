@@ -113,7 +113,7 @@ def test_weights_are_printed_whenever_a_score_is(report, html):
 def test_skipped_files_are_reported_not_silently_dropped(report):
     names = {s.path.name for s in report.skipped}
     assert "broken.pdf" in names
-    assert "notes.txt" in names
+    assert "notes.rtf" in names
 
 
 # --- limitations -----------------------------------------------------------
