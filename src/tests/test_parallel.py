@@ -19,8 +19,15 @@ from tests.helpers import FIXTURES
 def findings(report):
     """The report with everything that legitimately varies between runs removed."""
     data = to_dict(report)
-    for key in ("started_at", "finished_at", "duration_seconds", "jobs"):
+    for key in (
+        "started_at",
+        "finished_at",
+        "duration_seconds",
+        "jobs",
+        "documents_read_after_worker_failure",
+    ):
         data["run"].pop(key, None)
+    data["limitations"] = [x for x in data["limitations"] if x["area"] != "Parallel workers"]
     for document in data["documents"]:
         document.pop("timing", None)
         # How long an extractor took is wall clock, like the timings above it.
@@ -151,3 +158,31 @@ def test_the_report_records_that_a_password_was_supplied(config):
     assert report.run.password_used is True
     encrypted = next(d for d in report.documents if d.relative_path == "encrypted.pdf")
     assert encrypted.page_count > 0
+
+
+def test_a_worker_that_stops_is_recovered_in_the_main_process(config, serial, monkeypatch):
+    """A crashed worker breaks the pool; the documents it did not return are read here."""
+    from concurrent.futures.process import BrokenProcessPool
+
+    from complydoc.audit import run as audit_run
+
+    class StoppingPool:
+        def __init__(self, jobs, work):
+            self.work = work
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+        def map(self, function, files, chunksize=1):
+            yield audit_run._process(files[0], self.work)
+            raise BrokenProcessPool("a worker process stopped")
+
+    monkeypatch.setattr(audit_run, "_process_pool", StoppingPool)
+    recovered = run_audit(FIXTURES, config, ocr=False, jobs=3)
+
+    assert findings(recovered) == findings(serial)
+    assert recovered.run.documents_read_after_worker_failure > 0
+    assert any(item.area == "Parallel workers" for item in recovered.limitations)

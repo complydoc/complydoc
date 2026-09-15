@@ -14,12 +14,14 @@ multiprocessing. The console entry point already does.
 
 from __future__ import annotations
 
+import dataclasses
 import datetime as dt
 import os
 import platform
 import time
 from collections.abc import Callable, Iterator, Sequence
 from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures.process import BrokenProcessPool
 from dataclasses import dataclass
 from multiprocessing import get_all_start_methods, get_context
 from pathlib import Path
@@ -104,6 +106,8 @@ class _Outcome:
     skipped: SkipRecord | None
     ocr_pages: int = 0
     ocr_seconds: float = 0.0
+    recovered: bool = False
+    """Read in the main process after a worker process stopped."""
 
 
 def extractor_readings(document: Document) -> list[ExtractorReading]:
@@ -306,22 +310,37 @@ def _worker(path: Path) -> _Outcome:
     return _process(path, _WORKER_WORK)
 
 
+def _process_pool(jobs: int, work: Work) -> ProcessPoolExecutor:
+    return ProcessPoolExecutor(
+        max_workers=jobs,
+        mp_context=_pool_context(),
+        initializer=_worker_init,
+        initargs=(work,),
+    )
+
+
 def _outcomes(files: list[Path], work: Work, jobs: int) -> Iterator[_Outcome]:
-    """Results in the order the files were discovered, serial or parallel."""
+    """Results in the order the files were discovered, serial or parallel.
+
+    If a worker process stops, for example by crashing inside a native library, the
+    pool cannot continue. The documents that had not come back are then read in this
+    process and marked `recovered`, so the run completes with every document.
+    """
     if jobs <= 1 or len(files) < 2:
         for path in files:
             yield _process(path, work)
         return
 
-    with ProcessPoolExecutor(
-        max_workers=jobs,
-        mp_context=_pool_context(),
-        initializer=_worker_init,
-        initargs=(work,),
-    ) as pool:
-        for outcome in pool.map(_worker, files, chunksize=1):
-            ocr_module.add_stats(outcome.ocr_pages, outcome.ocr_seconds)
-            yield outcome
+    returned = 0
+    try:
+        with _process_pool(jobs, work) as pool:
+            for outcome in pool.map(_worker, files, chunksize=1):
+                ocr_module.add_stats(outcome.ocr_pages, outcome.ocr_seconds)
+                returned += 1
+                yield outcome
+    except BrokenProcessPool:
+        for path in files[returned:]:
+            yield dataclasses.replace(_process(path, work), recovered=True)
 
 
 _MIN_DOCUMENTS_PER_WORKER = 12
@@ -496,7 +515,9 @@ def run_audit(
     sampled = len(files) < found
 
     documents: list[DocumentReport] = []
+    recovered = 0
     for index, outcome in enumerate(_outcomes(files, work, jobs), start=1):
+        recovered += outcome.recovered
         if progress is not None:
             progress(index, len(files), files[index - 1])
         if outcome.skipped is not None:
@@ -532,6 +553,7 @@ def run_audit(
         extractor=chosen_extractor,
         compare_extractors=list(compare_extractors),
         compare_engines=list(compare_engines),
+        documents_read_after_worker_failure=recovered,
     )
 
     return assemble_report(

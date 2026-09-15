@@ -45,7 +45,7 @@ __all__ = [
     "RunMetadata",
 ]
 
-SCHEMA_VERSION = 6
+SCHEMA_VERSION = 7
 
 
 def report_shape() -> dict[str, object]:
@@ -79,6 +79,7 @@ def report_shape() -> dict[str, object]:
             "page_images_used": "bool",
             "extracted_text_used": "bool",
             "jobs": "worker processes used",
+            "documents_read_after_worker_failure": "documents re-read after a worker stopped",
             "config_digest": "identifies the config that produced these numbers",
         },
         "documents[]": {
@@ -342,6 +343,8 @@ class RunMetadata:
     sample_size: int | None = None
     """Documents the sample selected. Fewer may appear if one failed to parse."""
     password_used: bool = False
+    documents_read_after_worker_failure: int = 0
+    """Documents read in the main process after a worker process stopped."""
 
 
 @dataclass(frozen=True, slots=True)

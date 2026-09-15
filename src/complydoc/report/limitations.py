@@ -43,6 +43,21 @@ def build_limitations(
             )
         )
 
+    # --- A worker process stopped --------------------------------------------
+    if run.documents_read_after_worker_failure:
+        limitations.append(
+            Limitation(
+                area="Parallel workers",
+                statement=(
+                    f"A worker process stopped during the run, so "
+                    f"{count(run.documents_read_after_worker_failure, 'document')} were read "
+                    f"again in the main process. Every document is in the report; the timings "
+                    f"for those documents come from a single process."
+                ),
+                severity="info",
+            )
+        )
+
     # --- Extractors that read the same page differently --------------------
     differing = sorted(d.relative_path for d in documents if d.extractors_disagree)
     if differing:

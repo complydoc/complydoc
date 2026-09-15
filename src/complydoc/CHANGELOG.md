@@ -16,9 +16,17 @@ versioned separately.
   in ten languages and ISO dates.
 - An identifier reference page generated from `sensitive.yaml`.
 
+### Changed
+
+- Report `schema_version` 7 adds `run.documents_read_after_worker_failure`. `load_report`
+  reads versions 5 to 7.
+
 ### Fixed
 
 - When identifiers of equal length overlap, one found beside its own label wins.
+- A worker process that stops during a parallel run no longer ends the run. The documents
+  it had not returned are read in the main process, counted in
+  `run.documents_read_after_worker_failure` and noted under limitations.
 
 ## [0.4.2] — 2026-09-15
 
