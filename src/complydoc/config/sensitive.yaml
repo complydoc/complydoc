@@ -200,6 +200,9 @@ categories:
     region: international
     detector: ner
     severity: medium
+    # `name` is an installed spaCy package or a path to a saved pipeline. See the
+    # "Name detection models" guide for drop_short_acronyms, drop_multiline,
+    # spans_key and by_language.
     model:
       name: en_core_web_sm
       entity_labels: [PERSON]

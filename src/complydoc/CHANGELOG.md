@@ -6,6 +6,17 @@ versioned separately.
 
 ## [Unreleased]
 
+### Added
+
+- Name detection models are configurable per category: a spaCy package or a saved pipeline
+  path, `by_language` models chosen from each page's detected language, `spans_key` to read
+  scores from a span group and filter them with `min_confidence`, and `drop_short_acronyms`
+  and `drop_multiline` to turn off the English-form filters.
+
+### Changed
+
+- `complydoc doctor` and `run.ner_available` check every configured name-detection model.
+
 ## [0.4.1] — 2026-09-14
 
 ### Added

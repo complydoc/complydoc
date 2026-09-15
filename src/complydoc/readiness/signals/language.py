@@ -7,21 +7,10 @@ from collections import Counter
 from complydoc.ingest.base import Document
 from complydoc.readiness.base import ALL_FORMATS, Measurement
 from complydoc.readiness.registry import signal
+from complydoc.text import detect_language
 
 _MIN_LETTERS = 60
 _MIN_LETTER_RATIO = 0.5
-
-
-def _detect(text: str) -> str | None:
-    try:
-        import py3langid
-    except ImportError:  # pragma: no cover - a core dependency
-        return None
-    try:
-        language, _score = py3langid.classify(text)
-    except Exception:
-        return None
-    return str(language)
 
 
 @signal
@@ -44,7 +33,7 @@ class LanguageCountSignal:
             if letters < _MIN_LETTERS or not text or letters / len(text) < _MIN_LETTER_RATIO:
                 skipped += 1
                 continue
-            detected = _detect(text)
+            detected = detect_language(text)
             if detected:
                 per_page[str(page.number)] = detected
 

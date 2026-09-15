@@ -872,17 +872,14 @@ def doctor(config_dir: ConfigOpt = None) -> None:
     else:
         console.print(f"OCR: [yellow]unavailable[/] — {ocr_module.unavailable_reason()}")
 
-    from complydoc.sensitive.detectors.ner import model_available
+    from complydoc.sensitive.detectors.ner import configured_models, model_available
 
-    checked = False
-    for category in config.sensitive.enabled_categories.values():
-        if category.detector == "ner" and category.model is not None and not checked:
-            checked = True
-            ok, reason = model_available(category.model.name)
-            if ok:
-                console.print(f"Name detection: [green]available[/] ({category.model.name})")
-            else:
-                console.print(f"Name detection: [yellow]unavailable[/] — {reason}")
+    for name in configured_models(config.sensitive):
+        ok, reason = model_available(name)
+        if ok:
+            console.print(f"Name detection: [green]available[/] ({name})")
+        else:
+            console.print(f"Name detection: [yellow]unavailable[/] — {reason}")
 
     from complydoc.config.loader import check_staleness
 

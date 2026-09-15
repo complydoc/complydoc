@@ -361,10 +361,33 @@ class MaskingConfig(_Base):
     """Categories that stay masked even when --reveal is passed."""
 
 
+class NerLanguageModel(_Base):
+    name: str
+    """An installed spaCy package name or a path to a saved pipeline."""
+    entity_labels: list[str] | None = None
+    """Labels this model uses. The category's `entity_labels` when omitted."""
+
+
 class NerModelSpec(_Base):
     name: str
+    """An installed spaCy package name or a path to a saved pipeline."""
     version: str | None = None
     entity_labels: list[str]
+    drop_short_acronyms: bool = True
+    """Drop single all-caps tokens of up to five characters, such as `IBAN` or `VAT`."""
+    drop_multiline: bool = True
+    """Drop entities that span a line break."""
+    spans_key: str | None = None
+    """Read entities and scores from `doc.spans[spans_key]` instead of `doc.ents`.
+
+    Scores are taken from the group's `scores` attribute, as spaCy's span
+    categorizer sets it, and filtered by the category's `min_confidence`."""
+    by_language: dict[str, NerLanguageModel] = Field(default_factory=dict)
+    """Models by ISO 639-1 code, chosen from each page's detected language. Pages
+    whose language cannot be detected, or has no entry, use `name`."""
+
+    def model_names(self) -> list[str]:
+        return list(dict.fromkeys([self.name, *(m.name for m in self.by_language.values())]))
 
 
 class CategoryConfig(_Base):

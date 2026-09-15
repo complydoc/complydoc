@@ -106,6 +106,7 @@ nav:
       - Report tables: guides/report-tables.md
       - Baselines and tests: guides/baselines-and-tests.md
       - Streaming and steps: guides/streaming-and-steps.md
+      - Name detection models: guides/name-detection-models.md
   - Reference:
       - Command line: reference/cli.md
       - Python API: reference/api.md

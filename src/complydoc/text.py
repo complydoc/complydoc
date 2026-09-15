@@ -11,7 +11,15 @@ from __future__ import annotations
 import difflib
 import re
 
-__all__ = ["MAX_WORDS", "count", "plural", "reading_similarity", "same_words", "words"]
+__all__ = [
+    "MAX_WORDS",
+    "count",
+    "detect_language",
+    "plural",
+    "reading_similarity",
+    "same_words",
+    "words",
+]
 
 _WORD = re.compile(r"\S+\s*")
 
@@ -91,3 +99,26 @@ def duration(seconds: float | None) -> str:
     if hours < 48:
         return f"{hours:.1f}h"
     return f"{hours / 24:.1f} days"
+
+
+_MIN_LANGUAGE_LETTERS = 60
+_MIN_LETTER_RATIO = 0.5
+
+
+def detect_language(text: str) -> str | None:
+    """The ISO 639-1 code of `text`'s language, or None when there is too little prose.
+
+    Needs at least 60 letters making up at least half the characters; figures and
+    table rules are otherwise classified as an arbitrary language.
+    """
+    stripped = text.strip()
+    letters = sum(1 for c in stripped if c.isalpha())
+    if letters < _MIN_LANGUAGE_LETTERS or letters / len(stripped) < _MIN_LETTER_RATIO:
+        return None
+    try:
+        import py3langid
+
+        language, _score = py3langid.classify(stripped)
+    except Exception:
+        return None
+    return str(language)

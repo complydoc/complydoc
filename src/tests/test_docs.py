@@ -33,8 +33,17 @@ def test_every_example_in_the_guides_runs(example: Path, tmp_path: Path):
     import importlib.util
 
     source = example.read_text(encoding="utf-8")
-    if "langchain_community" in source and importlib.util.find_spec("langchain_community") is None:
-        pytest.skip("needs the integrations dependency group")
+    required = [
+        name.strip()
+        for line in source.splitlines()
+        if line.startswith("# requires:")
+        for name in line.removeprefix("# requires:").split(",")
+    ]
+    if "langchain_community" in source:
+        required.append("langchain_community")
+    missing = [name for name in required if importlib.util.find_spec(name) is None]
+    if missing:
+        pytest.skip(f"needs {', '.join(missing)}")
     result = subprocess.run(
         [sys.executable, str(example)],
         cwd=ROOT,

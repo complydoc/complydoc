@@ -62,14 +62,11 @@ _MAX_TEXT_CHARS = 20_000
 
 
 def ner_available(config: Config) -> bool:
-    """Whether the local NER model can be loaded, checked once per run."""
-    from complydoc.sensitive.detectors.ner import model_available
+    """Whether every configured name-detection model can be loaded."""
+    from complydoc.sensitive.detectors.ner import configured_models, model_available
 
-    for category in config.sensitive.enabled_categories.values():
-        if category.detector == "ner" and category.model is not None:
-            ok, _ = model_available(category.model.name)
-            return ok
-    return False
+    names = configured_models(config.sensitive)
+    return bool(names) and all(model_available(name)[0] for name in names)
 
 
 def _relative(path: Path, root: Path) -> str:

@@ -3,6 +3,10 @@
 spaCy is an optional extra. When it is missing, this raises DetectorUnavailableError
 so the affected categories are reported as not scanned.
 
+The model is set per category in `sensitive.yaml`: an installed spaCy package or a
+path to a saved pipeline, optionally one per language, with scores read from a span
+group when `spans_key` is set. See `NerModelSpec`.
+
 The model runs entirely locally. It is downloaded once at install time, like any
 other dependency, and never contacts anything at scan time.
 """
@@ -12,8 +16,12 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import Any
 
+from complydoc.config.schema import NerModelSpec, SensitiveConfig
 from complydoc.sensitive.base import DetectorContext, Finding
 from complydoc.sensitive.registry import DetectorUnavailableError, detector
+from complydoc.text import detect_language
+
+__all__ = ["NerDetector", "configured_models", "model_available"]
 
 _MAX_CHARS = 400_000
 """spaCy's default parser ceiling; longer pages are truncated and the scan says so."""
@@ -65,6 +73,44 @@ def _parse(model_name: str, text: str) -> Any:
     return _load(model_name)(text)
 
 
+def configured_models(config: SensitiveConfig) -> list[str]:
+    """Every model named by an enabled category that uses this detector, in order."""
+    names: list[str] = []
+    for category in config.enabled_categories.values():
+        if category.detector == "ner" and category.model is not None:
+            names.extend(category.model.model_names())
+    return list(dict.fromkeys(names))
+
+
+def _model_for(spec: NerModelSpec, text: str) -> tuple[str, list[str]]:
+    """The model and entity labels for this page's language."""
+    if spec.by_language:
+        language = detect_language(text)
+        chosen = spec.by_language.get(language) if language else None
+        if chosen is not None:
+            return chosen.name, chosen.entity_labels or spec.entity_labels
+    return spec.name, spec.entity_labels
+
+
+def _entities(document: Any, spec: NerModelSpec) -> list[tuple[str, int, int, float | None]]:
+    """(label, start, end, score) for each entity the model returned."""
+    if spec.spans_key is None:
+        return [(e.label_, e.start_char, e.end_char, None) for e in document.ents]
+    group = document.spans.get(spec.spans_key)
+    if group is None:
+        return []
+    scores = group.attrs.get("scores")
+    return [
+        (
+            span.label_,
+            span.start_char,
+            span.end_char,
+            float(scores[i]) if scores is not None else None,
+        )
+        for i, span in enumerate(group)
+    ]
+
+
 def model_available(model_name: str) -> tuple[bool, str | None]:
     try:
         _load(model_name)
@@ -83,30 +129,31 @@ class NerDetector:
             raise DetectorUnavailableError(
                 f"category {context.category_id!r} uses the NER detector but names no model"
             )
-        wanted = {label.upper() for label in spec.entity_labels}
+        name, labels = _model_for(spec, text)
+        wanted = {label.upper() for label in labels}
 
         findings: list[Finding] = []
-        document = _parse(spec.name, text[:_MAX_CHARS])
-        for entity in document.ents:
-            if entity.label_.upper() not in wanted:
+        document = _parse(name, text[:_MAX_CHARS])
+        for label, start, end, score in _entities(document, spec):
+            if label.upper() not in wanted:
                 continue
-            span = entity.text
-            # An entity straddling a line break is almost always an artefact of
-            # reading a laid-out page as flat text: the model has run the end of
-            # one line into the start of the next and named the result. Reporting
-            # "Jane Doe / Employer" as one name would be wrong.
-            if "\n" in span or "\r" in span:
+            span = text[start:end]
+            # An entity straddling a line break is usually an artefact of reading a
+            # laid-out page as flat text: the end of one line run into the next.
+            if spec.drop_multiline and ("\n" in span or "\r" in span):
                 continue
             if sum(1 for c in span if c.isalpha()) < _MIN_ALPHA:
                 continue
-            # Forms are full of short upper-case field labels — IBAN, VAT, UTR —
-            # and the model reliably mistakes them for organisation names. A real
-            # organisation written in capitals is virtually always more than one
-            # word, so single short all-caps tokens are dropped.
-            if len(span) <= _ACRONYM_MAX and span.isupper() and " " not in span.strip():
+            # Forms are full of short upper-case field labels, such as IBAN, VAT and
+            # UTR, which the small English model mistakes for organisation names.
+            if (
+                spec.drop_short_acronyms
+                and len(span) <= _ACRONYM_MAX
+                and span.isupper()
+                and " " not in span.strip()
+            ):
                 continue
-            # No score. The small English pipeline does not expose one through
-            # `doc.ents`, and recording 1.0 put a model's guess level with a
-            # passed checksum. The evidence tier says what this is instead.
-            findings.append(Finding(start=entity.start_char, end=entity.end_char, confidence=None))
+            # `doc.ents` carries no score, so confidence is None unless a span group
+            # with scores was configured.
+            findings.append(Finding(start=start, end=end, confidence=score))
         return findings
