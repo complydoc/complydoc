@@ -87,7 +87,7 @@ jobs:
 
       # Signed, verifiable provenance for the artefacts, tying each file to this
       # commit and this workflow. Check one with:
-      #   gh attestation verify <file> --repo duartecaldascardoso/complydoc
+      #   gh attestation verify <file> --repo complydoc/complydoc
       # GitHub will not store attestations for a user-owned private repository,
       # so this step is skipped while the repository is private. The release
       # notes say which it was.

@@ -119,10 +119,10 @@ The tag must match `complydoc.__version__` and have a changelog entry. `release.
 wheel and sdist, an SBOM and checksums, attests the artefacts, and drafts a release:
 
 ```bash
-gh attestation verify complydoc-0.4.0-py3-none-any.whl --repo duartecaldascardoso/complydoc
+gh attestation verify complydoc-0.4.0-py3-none-any.whl --repo complydoc/complydoc
 ```
 
 Publishing the draft runs `publish.yml`, which uploads the attached artefacts to PyPI through
-Trusted Publishing (owner `duartecaldascardoso`, repository `complydoc`, workflow
+Trusted Publishing (owner `complydoc`, repository `complydoc`, workflow
 `publish.yml`, environment `pypi`). `workflow_dispatch` with a tag re-runs a partial upload and
 skips files already present.

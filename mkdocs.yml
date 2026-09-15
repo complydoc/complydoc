@@ -14,9 +14,9 @@
 site_name: complydoc
 site_description: >-
   Offline analysis of documents and loader output before they reach an LLM.
-site_url: https://duartecaldascardoso.github.io/complydoc/
-repo_url: https://github.com/duartecaldascardoso/complydoc
-repo_name: duartecaldascardoso/complydoc
+site_url: https://complydoc.github.io/complydoc/
+repo_url: https://github.com/complydoc/complydoc
+repo_name: complydoc/complydoc
 edit_uri: edit/main/docs/
 copyright: MIT licensed
 

@@ -1,15 +1,15 @@
 <div align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/duartecaldascardoso/complydoc/main/.github/images/logo-dark.svg">
-    <img alt="complydoc" src="https://raw.githubusercontent.com/duartecaldascardoso/complydoc/main/.github/images/logo-light.svg" width="42%">
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/complydoc/complydoc/main/.github/images/logo-dark.svg">
+    <img alt="complydoc" src="https://raw.githubusercontent.com/complydoc/complydoc/main/.github/images/logo-light.svg" width="42%">
   </picture>
 
   <h3>Document analysis for LLM pipelines, fully offline.</h3>
 
   <a href="https://pypi.org/project/complydoc/"><img src="https://img.shields.io/pypi/v/complydoc?color=1a7f4b&cacheSeconds=3600" alt="PyPI version"></a>
   <a href="https://pypi.org/project/complydoc/"><img src="https://img.shields.io/pypi/dm/complydoc?color=1a7f4b&cacheSeconds=3600" alt="PyPI downloads"></a>
-  <a href="https://github.com/duartecaldascardoso/complydoc/actions/workflows/checks.yml"><img src="https://github.com/duartecaldascardoso/complydoc/actions/workflows/checks.yml/badge.svg?branch=main" alt="Tests"></a>
-  <a href="https://duartecaldascardoso.github.io/complydoc/"><img src="https://img.shields.io/badge/docs-complydoc-1a7f4b" alt="Documentation"></a>
+  <a href="https://github.com/complydoc/complydoc/actions/workflows/checks.yml"><img src="https://github.com/complydoc/complydoc/actions/workflows/checks.yml/badge.svg?branch=main" alt="Tests"></a>
+  <a href="https://complydoc.github.io/complydoc/"><img src="https://img.shields.io/badge/docs-complydoc-1a7f4b" alt="Documentation"></a>
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-1a7f4b" alt="License"></a>
 </div>
 
@@ -89,8 +89,8 @@ OCR and name detection are optional extras. `complydoc doctor` shows what is ins
   tokens.
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/duartecaldascardoso/complydoc/main/.github/images/complydoc-architecture-dark.svg">
-  <img alt="complydoc architecture: files and loader output feed four analyses (cost, readiness, identifiers, hidden content) that produce a report and masked text, inside a network guard" src="https://raw.githubusercontent.com/duartecaldascardoso/complydoc/main/.github/images/complydoc-architecture.svg" width="100%">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/complydoc/complydoc/main/.github/images/complydoc-architecture-dark.svg">
+  <img alt="complydoc architecture: files and loader output feed four analyses (cost, readiness, identifiers, hidden content) that produce a report and masked text, inside a network guard" src="https://raw.githubusercontent.com/complydoc/complydoc/main/.github/images/complydoc-architecture.svg" width="100%">
 </picture>
 
 ## How it works
@@ -107,12 +107,12 @@ OCR and name detection are optional extras. `complydoc doctor` shows what is ins
 
 ## Resources
 
-- [Documentation](https://duartecaldascardoso.github.io/complydoc/): guides and design notes
-- [Command line reference](https://duartecaldascardoso.github.io/complydoc/reference/cli/)
-- [Python API reference](https://duartecaldascardoso.github.io/complydoc/reference/api/)
-- [Report JSON](https://duartecaldascardoso.github.io/complydoc/reference/report/)
-- [Changelog](https://github.com/duartecaldascardoso/complydoc/blob/main/src/complydoc/CHANGELOG.md)
-- [Contributing](https://github.com/duartecaldascardoso/complydoc/blob/main/CONTRIBUTING.md)
+- [Documentation](https://complydoc.github.io/complydoc/): guides and design notes
+- [Command line reference](https://complydoc.github.io/complydoc/reference/cli/)
+- [Python API reference](https://complydoc.github.io/complydoc/reference/api/)
+- [Report JSON](https://complydoc.github.io/complydoc/reference/report/)
+- [Changelog](https://github.com/complydoc/complydoc/blob/main/src/complydoc/CHANGELOG.md)
+- [Contributing](https://github.com/complydoc/complydoc/blob/main/CONTRIBUTING.md)
 
 ## License
 

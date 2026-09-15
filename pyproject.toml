@@ -54,10 +54,10 @@ complydoc = "complydoc.cli:app"
 
 # Rendered as links down the side of the PyPI page.
 [project.urls]
-Homepage = "https://github.com/duartecaldascardoso/complydoc"
-Repository = "https://github.com/duartecaldascardoso/complydoc"
-Changelog = "https://github.com/duartecaldascardoso/complydoc/blob/main/src/complydoc/CHANGELOG.md"
-Issues = "https://github.com/duartecaldascardoso/complydoc/issues"
+Homepage = "https://github.com/complydoc/complydoc"
+Repository = "https://github.com/complydoc/complydoc"
+Changelog = "https://github.com/complydoc/complydoc/blob/main/src/complydoc/CHANGELOG.md"
+Issues = "https://github.com/complydoc/complydoc/issues"
 
 [dependency-groups]
 # Loaders from other frameworks, for the tests that run them for real. Kept out
