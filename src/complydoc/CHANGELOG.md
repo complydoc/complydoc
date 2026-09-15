@@ -6,6 +6,8 @@ versioned separately.
 
 ## [Unreleased]
 
+## [0.4.3] — 2026-09-15
+
 ### Added
 
 - Identifiers beyond the UK: Italian codice fiscale, Belgian national register number,
@@ -283,7 +285,8 @@ First release.
 - `complydoc` audits the current directory; `--jobs`, `--sample`, `--password`.
 - Packaged agent skill.
 
-[Unreleased]: https://github.com/complydoc/complydoc/compare/v0.4.2...HEAD
+[Unreleased]: https://github.com/complydoc/complydoc/compare/v0.4.3...HEAD
+[0.4.3]: https://github.com/complydoc/complydoc/compare/v0.4.2...v0.4.3
 [0.4.2]: https://github.com/complydoc/complydoc/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/complydoc/complydoc/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/complydoc/complydoc/compare/v0.3.1...v0.4.0
