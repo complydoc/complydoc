@@ -5,6 +5,12 @@ container (encryption, form fields, font descriptors), pdfplumber for page
 content (words, images, tables, fonts), and pypdfium2 for rasterising pages that
 have to be looked at as pixels. PyMuPDF would do all three, but it is AGPL and
 this tool is meant to be redistributable.
+
+Calls into these libraries on file content catch `Exception`. A malformed PDF
+makes them raise types they do not document (`KeyError`, `AssertionError` and
+`RecursionError` among them), and one bad object should cost one measurement, not
+the document. Opening a file with pypdfium2 catches only `PdfiumError` and
+`OSError`, the failures it documents.
 """
 
 from __future__ import annotations
@@ -316,7 +322,10 @@ def _open_pdfium(path: Path, password: str) -> Any:
         import pypdfium2 as pdfium
 
         return pdfium.PdfDocument(str(path), password=password or None)
-    except Exception:  # pragma: no cover - a file pdfplumber opened may still fail here
+    except (
+        pdfium.PdfiumError,
+        OSError,
+    ):  # pragma: no cover - a file pdfplumber opened may still fail here
         return None
 
 
@@ -332,7 +341,7 @@ def _render_pages(path: Path, password: str, indices: list[int], dpi: int) -> di
     rendered: dict[int, Any] = {}
     try:
         pdf = pdfium.PdfDocument(str(path), password=password or None)
-    except Exception:
+    except (pdfium.PdfiumError, OSError):
         return {}
     try:
         scale = dpi / 72.0

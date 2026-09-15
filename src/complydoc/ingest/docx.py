@@ -115,6 +115,8 @@ class DocxLoader:
                 if name:
                     fonts.add(str(name))
 
+        # python-docx raises undocumented types on malformed table markup. A table
+        # that cannot be read is noted and skipped.
         for table in source.tables:
             try:
                 page.tables.append(_table_info(table))

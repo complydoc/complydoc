@@ -16,7 +16,7 @@ want on your PATH. It also reinstalls the spaCy model and runs `complydoc doctor
 
 | Path | Contents |
 | --- | --- |
-| `src/complydoc/api.py`, `cli.py` | The Python API and the command line |
+| `src/complydoc/api.py`, `cli/` | The Python API, and the command line with a module per command group |
 | `src/complydoc/offline.py` | Network guard |
 | `src/complydoc/audit/` | Running an audit: discovery, sampling, worker processes, report assembly |
 | `src/complydoc/ingest/` | Per-format readers behind the `Loader` protocol, extractors and OCR engines |

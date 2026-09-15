@@ -119,6 +119,7 @@ def detect_language(text: str) -> str | None:
         import py3langid
 
         language, _score = py3langid.classify(stripped)
+    # Language detection is a hint. Any failure means no language, not a failed page.
     except Exception:
         return None
     return str(language)

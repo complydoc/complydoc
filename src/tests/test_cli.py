@@ -156,7 +156,7 @@ def test_models_command_lists_configured_models(monkeypatch):
     """
     # The console is built when the module is imported, so it has already read
     # the width; setting the environment here would be too late.
-    from complydoc import cli
+    from complydoc.cli import common as cli
 
     monkeypatch.setattr(cli.console, "width", 200)
     result = runner.invoke(app, ["models"])
@@ -330,7 +330,7 @@ def test_models_can_be_listed_newest_first(monkeypatch):
     Checked against the catalogue, since the table prints release and import
     dates in the same row.
     """
-    from complydoc import cli
+    from complydoc.cli import common as cli
     from complydoc.config.loader import load_config
     from complydoc.cost.price_table import released_on
 
@@ -348,7 +348,7 @@ def test_models_can_be_listed_newest_first(monkeypatch):
 
 
 def test_searching_the_catalogue_finds_imported_models(monkeypatch):
-    from complydoc import cli
+    from complydoc.cli import common as cli
 
     monkeypatch.setattr(cli.console, "width", 200)
     result = runner.invoke(app, ["models", "gemini"])

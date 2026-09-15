@@ -56,6 +56,7 @@ def classifier_score(text: str) -> float | None:
         return None
     try:
         value = float(_classifier(text))
+    # A registered classifier is caller code; whatever it raises means no score.
     except Exception:
         return None
     return round(min(1.0, max(0.0, value)), 3)

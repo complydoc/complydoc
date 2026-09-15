@@ -6,6 +6,7 @@ What it does not give is a box per word or any table structure, so a run using
 it reports the signals that need those as not measured.
 
 The library is already a dependency: it is what rasterises pages for OCR.
+Page content errors are caught broadly, for the reason given in `complydoc.ingest.pdf`.
 """
 
 from __future__ import annotations

@@ -327,6 +327,7 @@ def extract_text(
         relative = _relative(path, root)
         try:
             document = load_document(path, options)
+        # As in an audit, a parser failure on one file is a warning, not the end.
         except Exception as exc:
             warnings.append(
                 ExtractionWarning(

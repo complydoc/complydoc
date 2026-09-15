@@ -1,0 +1,260 @@
+"""What every command shares: the app, the consoles, option types and output helpers."""
+
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+from typing import Annotated
+
+import typer
+from rich.console import Console
+
+from complydoc.config.loader import ConfigError, load_config
+from complydoc.config.schema import Config
+from complydoc.report.html_writer import write_html
+from complydoc.report.json_writer import to_dict, write_json
+from complydoc.report.models import AuditReport
+from complydoc.utils.text import count
+
+__all__ = [
+    "DEFAULT_OUT",
+    "CompareEnginesOpt",
+    "CompareExtractorsOpt",
+    "ConfigOpt",
+    "ExtractedTextOpt",
+    "ExtractorOpt",
+    "JobsOpt",
+    "ModelOpt",
+    "NameOpt",
+    "OcrCompareOpt",
+    "OcrEngineOpt",
+    "OcrOpt",
+    "OutDirOpt",
+    "PageImagesOpt",
+    "PasswordOpt",
+    "PrintJsonOpt",
+    "QuietOpt",
+    "RecurseOpt",
+    "SampleOpt",
+    "SaveTextOpt",
+    "TargetArg",
+    "app",
+    "console",
+    "emit",
+    "errors",
+    "link",
+    "load_config_or_exit",
+    "print_report_json",
+    "route_output",
+]
+
+app = typer.Typer(
+    add_completion=False,
+    no_args_is_help=False,
+    help=(
+        "Audit a folder of business documents offline: what they would cost to process "
+        "with an LLM, how hard they are to extract from, and what sensitive information "
+        "they contain. No document content ever leaves this machine."
+    ),
+)
+console = Console()
+"""Progress, summaries and links. Written to stderr while stdout carries JSON."""
+errors = Console(stderr=True)
+
+
+def route_output(print_json: bool) -> None:
+    """Send `console` to stderr when stdout has to stay pure JSON, and back otherwise."""
+    console.stderr = print_json
+
+
+TargetArg = Annotated[Path, typer.Argument(help="A file or folder to audit.")]
+OutDirOpt = Annotated[
+    Path,
+    typer.Option("--out", "-o", help="Directory for the reports."),
+]
+DEFAULT_OUT = Path(".complydoc")
+"""Hidden, so a second run does not discover the first run's own reports."""
+ConfigOpt = Annotated[
+    Path | None, typer.Option("--config-dir", help="Override the config directory.")
+]
+OcrOpt = Annotated[
+    bool,
+    typer.Option(
+        "--ocr/--no-ocr",
+        help="Read scanned pages with local OCR. On by default, so a scanned page is "
+        "still readable; --no-ocr is faster.",
+    ),
+]
+RecurseOpt = Annotated[
+    bool, typer.Option("--recurse/--no-recurse", help="Descend into subfolders.")
+]
+NameOpt = Annotated[str, typer.Option("--name", help="Base filename for the reports.")]
+PageImagesOpt = Annotated[
+    bool,
+    typer.Option(
+        "--page-images/--no-page-images",
+        help="Embed a picture of each page beside what was extracted from it. "
+        "On by default; --no-page-images leaves the pictures out and makes the "
+        "report considerably smaller.",
+    ),
+]
+ExtractedTextOpt = Annotated[
+    bool,
+    typer.Option(
+        "--extracted-text/--no-extracted-text",
+        help="Include the text read off each page, so it can be read beside the "
+        "page it came from. On by default; --no-extracted-text leaves the report "
+        "carrying no document content.",
+    ),
+]
+OcrCompareOpt = Annotated[
+    bool,
+    typer.Option(
+        "--ocr-compare",
+        help="Also OCR pages that already have a text layer, so the text layer and "
+        "what OCR reads can be compared. Implies --extracted-text.",
+    ),
+]
+ExtractorOpt = Annotated[
+    str | None,
+    typer.Option(
+        "--extractor",
+        help="Which library reads the text layer. Defaults to pdfplumber, the "
+        "richest; pdfium is far quicker and reads no table structure. "
+        "See: complydoc extractors.",
+    ),
+]
+CompareExtractorsOpt = Annotated[
+    list[str] | None,
+    typer.Option(
+        "--compare-extractor",
+        help="Also read every page with this one and report where the two "
+        "disagree, repeatable. It never changes a finding.",
+    ),
+]
+CompareEnginesOpt = Annotated[
+    list[str] | None,
+    typer.Option(
+        "--compare-ocr-engine",
+        help="Also read every rasterised page with this engine and keep what it "
+        "read, repeatable. It never changes a finding.",
+    ),
+]
+OcrEngineOpt = Annotated[
+    str | None,
+    typer.Option("--ocr-engine", help="Which local OCR engine to read scans with."),
+]
+SaveTextOpt = Annotated[
+    Path | None,
+    typer.Option(
+        "--save-text",
+        help="Also write the text read off each document into this folder, one file "
+        "per document. Reading a scanned folder is the slow part; this keeps the "
+        "result so nothing has to OCR it again.",
+    ),
+]
+PrintJsonOpt = Annotated[
+    bool,
+    typer.Option(
+        "--print-json",
+        help="Write the JSON report to stdout and nothing else, for piping into "
+        "another tool or an agent. Progress goes to stderr.",
+    ),
+]
+QuietOpt = Annotated[bool, typer.Option("--quiet", "-q", help="Suppress progress output.")]
+JobsOpt = Annotated[
+    int,
+    typer.Option(
+        "--jobs",
+        "-j",
+        help="Documents to process at once. The default reads the size of the "
+        "folder and decides; 1 forces one process. Changes how long the run "
+        "takes and nothing about what it finds.",
+    ),
+]
+SampleOpt = Annotated[
+    int | None,
+    typer.Option(
+        "--sample",
+        help="Audit at most this many documents, keeping each file type's share of "
+        "the folder. The report says it is a sample.",
+    ),
+]
+PasswordOpt = Annotated[
+    str,
+    typer.Option(
+        "--password",
+        help="Password to try on encrypted PDFs. Passed on the command line, so it "
+        "will be in your shell history.",
+    ),
+]
+ModelOpt = Annotated[
+    list[str] | None,
+    typer.Option(
+        "--model",
+        "-m",
+        help="Model id to price, repeatable. Defaults to every priced model. "
+        "See: complydoc models.",
+    ),
+]
+
+
+def load_config_or_exit(config_dir: Path | None) -> Config:
+    try:
+        return load_config(config_dir)
+    except ConfigError as exc:
+        errors.print(f"[bold red]Configuration error[/]\n{exc}")
+        raise typer.Exit(code=2) from exc
+
+
+def link(label: str, path: Path) -> None:
+    """A file:// link, so terminals that support hyperlinks open it on a click."""
+    path = path.resolve()
+    console.print(
+        f"[bold]{label:<7}[/] [link=file://{path}]{path}[/link]", no_wrap=True, crop=False
+    )
+
+
+def emit(
+    report: AuditReport,
+    config: Config,
+    out: Path,
+    name: str,
+    quiet: bool,
+    save_text: Path | None = None,
+) -> None:
+    """Write the JSON and HTML reports, and the extracted text when asked, then link them."""
+    json_path = write_json(report, out / f"{name}.json").resolve()
+    html_path = write_html(report, config, out / f"{name}.html").resolve()
+
+    written: list[Path] = []
+    if save_text is not None:
+        from complydoc.report.text_writer import write_text
+
+        written = write_text(report, save_text)
+
+    if quiet:
+        return
+    console.print()
+    console.print(
+        f"[bold]Report[/]  [link=file://{html_path}]{html_path}[/link]", no_wrap=True, crop=False
+    )
+    console.print(
+        f"[bold]Data[/]    [link=file://{json_path}]{json_path}[/link]", no_wrap=True, crop=False
+    )
+    if save_text is not None:
+        folder = save_text.expanduser().resolve()
+        console.print(
+            f"[bold]Text[/]    [link=file://{folder}]{folder}[/link]  "
+            f"[dim]{count(len(written), 'file')} — these are the documents, "
+            f"identifiers and all[/]",
+            no_wrap=True,
+            crop=False,
+        )
+
+
+def print_report_json(report: AuditReport) -> None:
+    sys.stdout.write(
+        json.dumps(to_dict(report), indent=2, sort_keys=True, ensure_ascii=False) + "\n"
+    )

@@ -7,6 +7,7 @@ import json
 import pytest
 
 from complydoc.config.loader import load_config
+from complydoc.report import assets
 from complydoc.report.html_writer import page_preview_svg
 from complydoc.report.models import to_jsonable
 from complydoc.report.preview import build_previews
@@ -231,17 +232,15 @@ def test_a_sensitive_mark_answers_the_pointer_across_its_whole_area():
     On a mark six pixels tall that is two hairlines, so pointing at the middle
     of one did nothing at all.
     """
-    from complydoc.report import html_writer
 
-    styles = (html_writer._TEMPLATE_DIR / "report.css").read_text()
+    styles = (assets.TEMPLATE_DIR / "report.css").read_text()
     assert ".pv-mark rect { pointer-events: all; }" in styles
 
 
 def test_the_explanation_is_reachable_without_a_pointer():
     """Marks can be focused with the keyboard."""
-    from complydoc.report import html_writer
 
-    template = (html_writer._TEMPLATE_DIR / "report.js").read_text()
+    template = (assets.TEMPLATE_DIR / "report.js").read_text()
     assert 'mark.setAttribute("tabindex", "0")' in template
     assert 'mark.addEventListener("focus", show)' in template
 

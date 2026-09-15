@@ -8,6 +8,7 @@ What it does not return is geometry. There are no word boxes, no line boxes and
 no table structure, so a run using it reports coverage as not measured and the
 signals that need boxes say the same. Its use is the text itself: whether two
 libraries that share no code read the same words in the same order.
+Page content errors are caught broadly, for the reason given in `complydoc.ingest.pdf`.
 """
 
 from __future__ import annotations

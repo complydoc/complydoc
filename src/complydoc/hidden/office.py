@@ -13,6 +13,7 @@ confirmed.
 from __future__ import annotations
 
 import contextlib
+import zipfile
 from pathlib import Path
 from typing import Any
 
@@ -45,11 +46,12 @@ def docx_hidden_runs(
     path: Path, config: VisibilityConfig
 ) -> tuple[list[HiddenRun], list[str], bool]:
     import docx
+    from docx.opc.exceptions import PackageNotFoundError
     from docx.oxml.ns import qn
 
     try:
         source = docx.Document(str(path))
-    except Exception as exc:
+    except (PackageNotFoundError, zipfile.BadZipFile, OSError, KeyError, ValueError) as exc:
         return [], [f"the file could not be opened to check for hidden text ({exc})"], False
 
     styles = _styles(source, qn, config)
@@ -144,7 +146,7 @@ def _styles(source: Any, qn: Any, config: VisibilityConfig) -> dict[str, dict[st
     based_on: dict[str, str | None] = {}
     try:
         elements = source.styles.element.findall(qn("w:style"))
-    except Exception:
+    except (AttributeError, KeyError, ValueError):
         return {}
     for style in elements:
         style_id = style.get(qn("w:styleId"))
@@ -179,10 +181,11 @@ def xlsx_hidden_runs(
 ) -> tuple[list[HiddenRun], list[str], bool]:
     import openpyxl
     from openpyxl.utils import column_index_from_string
+    from openpyxl.utils.exceptions import InvalidFileException
 
     try:
         workbook = openpyxl.load_workbook(str(path), data_only=True, keep_links=False)
-    except Exception as exc:
+    except (InvalidFileException, zipfile.BadZipFile, OSError, KeyError, ValueError) as exc:
         return [], [f"the file could not be opened to check for hidden text ({exc})"], False
 
     runs: list[HiddenRun] = []

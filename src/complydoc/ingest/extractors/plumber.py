@@ -4,6 +4,7 @@ The default, and the richest. Several readiness signals exist only because it
 reports word geometry and table structure — text coverage, column detection, the
 whitespace-table discriminator, merged cells and header depth all read what this
 extractor produces and nothing else can supply.
+Page content errors are caught broadly, for the reason given in `complydoc.ingest.pdf`.
 """
 
 from __future__ import annotations

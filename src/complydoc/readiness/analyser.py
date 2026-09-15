@@ -93,6 +93,8 @@ def analyse(document: Document, config: ReadinessConfig) -> ReadinessReport:
 
         try:
             measurement = signal.measure(document)
+        # Signals include registered plugins. One that fails is reported as not
+        # measured, with the error.
         except Exception as exc:
             report.signals.append(
                 _result(

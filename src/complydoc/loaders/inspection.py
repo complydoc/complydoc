@@ -341,6 +341,7 @@ class FolderSource:
             try:
                 source = self.factory(str(path))
                 loaded = _load_items(source, _loading_call(source))
+            # The loader is caller code. Whatever it raises is recorded against the file.
             except Exception as exc:
                 self.failures[str(path)] = f"{type(exc).__name__}: {exc}"
                 continue

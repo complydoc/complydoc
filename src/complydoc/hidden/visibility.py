@@ -72,7 +72,7 @@ def pdf_hidden_runs(
 
     try:
         pdf = pdfium.PdfDocument(str(path), password=password or None)
-    except Exception as exc:
+    except (pdfium.PdfiumError, OSError) as exc:
         return [], [f"the file could not be opened to check for hidden text ({exc})"], set(), False
 
     runs: list[HiddenRun] = []
@@ -91,6 +91,7 @@ def pdf_hidden_runs(
                     rotated.append(index + 1)
                     continue
                 runs.extend(_page_runs(page, index + 1, config))
+            # Rendering and reading one malformed page must not stop the others.
             except Exception as exc:
                 notes.append(f"page {index + 1} could not be checked for hidden text ({exc})")
                 unchecked.add(index + 1)

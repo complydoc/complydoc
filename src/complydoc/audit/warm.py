@@ -43,7 +43,7 @@ def warm() -> None:
 
         for name in {m.tokenizer.encoding for m in load_config().pricing.usable_models}:
             _encoder(name)
-    except Exception:  # pragma: no cover
+    except Exception:  # pragma: no cover - a warm-up must never fail a run
         pass
 
     # The entity model is not warmed here. See the note at the top of the file:

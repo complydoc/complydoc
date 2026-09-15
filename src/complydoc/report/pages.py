@@ -13,12 +13,10 @@ import json
 from pathlib import Path
 from typing import Any
 
-from jinja2 import Environment, FileSystemLoader
-
 from complydoc import __version__
 from complydoc.extraction.chunks import FLAGS, ChunkComparison, ChunkReport
+from complydoc.report.assets import FAVICON_URI, LOGO_SVG, template_environment
 from complydoc.report.compare import ReportDiff
-from complydoc.report.html_writer import _FAVICON_URI, _LOGO_SVG, _TEMPLATE_DIR
 from complydoc.utils.text import count
 
 __all__ = [
@@ -43,20 +41,11 @@ _FLAG_MEANING = {
 }
 
 
-def _environment() -> Environment:
-    return Environment(
-        loader=FileSystemLoader(_TEMPLATE_DIR),
-        autoescape=True,
-        trim_blocks=True,
-        lstrip_blocks=True,
-    )
-
-
 def _common(title: str) -> dict[str, Any]:
     return {
         "title": title,
-        "logo_svg": _LOGO_SVG,
-        "favicon_uri": _FAVICON_URI,
+        "logo_svg": LOGO_SVG,
+        "favicon_uri": FAVICON_URI,
         "tool_version": __version__,
         "generated_at": dt.datetime.now(dt.UTC).isoformat(timespec="seconds"),
         "count": count,
@@ -71,7 +60,7 @@ def render_chunks_html(result: ChunkReport | ChunkComparison, *, source: str = "
     """One page for a chunk report, or for a comparison of several splitters."""
     reports = _reports(result)
     return (
-        _environment()
+        template_environment()
         .get_template("chunks.html.j2")
         .render(
             reports=reports,
@@ -87,7 +76,7 @@ def render_chunks_html(result: ChunkReport | ChunkComparison, *, source: str = "
 def render_diff_html(diff: ReportDiff, *, old: str = "", new: str = "") -> str:
     """One page listing regressions and improvements between two reports."""
     return (
-        _environment()
+        template_environment()
         .get_template("diff.html.j2")
         .render(
             diff=diff,

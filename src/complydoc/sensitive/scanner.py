@@ -170,6 +170,8 @@ def _scan_page(
         except DetectorUnavailableError as exc:
             unavailable[category_id] = str(exc)
             continue
+        # Detectors include registered plugins and model code. One that fails leaves
+        # its category unscanned, and the report says so.
         except Exception as exc:
             unavailable[category_id] = f"{type(exc).__name__}: {exc}"
             continue

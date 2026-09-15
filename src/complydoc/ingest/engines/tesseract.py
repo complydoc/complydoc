@@ -37,6 +37,7 @@ class TesseractEngine:
             return "pytesseract is not installed (uv pip install pytesseract)"
         try:
             pytesseract.get_tesseract_version()
+        # pytesseract reports a missing or unusable binary with several exception types.
         except Exception:
             return "the tesseract binary is not on PATH (brew install tesseract)"
         return None

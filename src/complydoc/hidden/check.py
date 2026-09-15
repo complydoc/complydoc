@@ -269,6 +269,8 @@ def _file_runs(
         if suffix in _IMAGES:
             # An image has no text layer to hide text in; what OCR reads is on the page.
             return [], [], True, set()
+    # Each check reopens the file with a third-party parser. A failure leaves the
+    # file unchecked and says so, rather than ending the scan.
     except Exception as exc:
         return [], [f"the hidden-text check failed ({type(exc).__name__}: {exc})"], False, set()
     kind = f"{suffix} files" if suffix else "files without an extension"

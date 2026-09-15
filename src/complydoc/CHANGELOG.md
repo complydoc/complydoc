@@ -25,6 +25,12 @@ versioned separately.
 ### Changed
 
 - `lxml` is a direct dependency. It was already installed with `python-docx`.
+- The command line is a `complydoc.cli` package with a module per command group. The
+  `complydoc` entry point and every command are unchanged; `--print-json` now routes progress
+  to stderr per command instead of for the rest of the process.
+- Broad exception handlers are narrowed where the failure types are documented (opening Word,
+  Excel and PDF files, opening the report), and the ones kept broad say why.
+- The logo, favicon and template setup shared by the HTML pages are in `complydoc.report.assets`.
 
 ## [0.4.4] — 2026-09-15
 

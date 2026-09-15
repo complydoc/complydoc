@@ -248,6 +248,8 @@ def _process(path: Path, work: Work) -> _Outcome:
         document = load_document(path, work.options)
     except LoaderError as exc:
         return _Outcome(None, SkipRecord(path=path, reason="could not be parsed", detail=str(exc)))
+    # Parsers raise their own exception types on malformed files. Any of them
+    # skips this one file, and the run continues.
     except Exception as exc:
         return _Outcome(
             None,
