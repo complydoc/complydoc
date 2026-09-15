@@ -36,6 +36,7 @@
     <th class="n" data-sort="num">Facts whole</th>
     <th class="n" data-sort="num">Facts split</th>
     <th class="n" data-sort="num">Facts missing</th>
+    {% if reports[0].retrieval %}<th class="n" data-sort="num">Retrieved</th><th class="n" data-sort="num" title="Mean reciprocal rank within the top {{ reports[0].top_k }}">MRR</th>{% endif %}
   </tr></thead>
   <tbody>
   {% for row in comparison.rows() %}
@@ -50,6 +51,7 @@
       <td class="n">{{ row.facts_whole }}</td>
       <td class="n{% if row.facts_split %} r-poor{% endif %}">{{ row.facts_split }}</td>
       <td class="n{% if row.facts_missing %} r-poor{% endif %}">{{ row.facts_missing }}</td>
+      {% if reports[0].retrieval %}<td class="n">{{ "%.0f%%"|format(row.retrieval_hit_rate * 100) }}</td><td class="n">{{ "%.2f"|format(row.mean_reciprocal_rank) }}</td>{% endif %}
     </tr>
   {% endfor %}
   </tbody>
@@ -96,6 +98,37 @@
 <p class="note"><code>whole</code>: one chunk contains the fact. <code>split</code>: only the
 document text before splitting contains it, so a chunk boundary cuts it.
 <code>missing</code>: not found.</p>
+{% endif %}
+
+{% if report.retrieval %}
+{% set retrieved = report.retrieval | selectattr("status", "equalto", "retrieved") | list | length %}
+<h3>Retrieval</h3>
+<p class="note">{{ retrieved }} of {{ report.retrieval | length }} questions retrieved within the top
+{{ report.top_k }} chunks by BM25 keyword ranking. Mean reciprocal rank
+{{ "%.2f"|format(report.mean_reciprocal_rank) }}.</p>
+<div class="scroll"><table data-sortable>
+  <thead><tr>
+    <th data-sort="text">Question</th><th>Fact</th><th data-sort="text">Status</th>
+    <th class="n" data-sort="num">Rank</th><th>Chunks holding the fact</th><th>Top chunks</th>
+  </tr></thead>
+  <tbody>
+  {% for result in report.retrieval %}
+    <tr>
+      <td>{{ result.question }}</td>
+      <td class="why">{{ result.fact }}</td>
+      <td class="{{ 'r-good' if result.status == 'retrieved' else 'r-poor' }}">{{ result.status | replace("_", " ") }}</td>
+      <td class="n" data-value="{{ result.rank if result.rank else 999999 }}">{{ result.rank if result.rank else "—" }}</td>
+      <td class="mono">{{ result.answer_chunks | join(", ") if result.answer_chunks else "—" }}</td>
+      <td class="mono">{{ result.top_chunks | join(", ") if result.top_chunks else "—" }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+<p class="note"><code>retrieved</code>: a chunk holding the fact ranks within the top {{ report.top_k }}.
+<code>ranked low</code>: it ranks below, or shares no word with the question. <code>split</code>:
+no single chunk holds the fact. <code>missing</code>: the text does not contain it. BM25 ranks by
+shared words, so these ranks compare splitters on the same questions; an embedding retriever
+can rank a differently worded question higher.</p>
 {% endif %}
 
 {% if report.repeated_identifiers %}

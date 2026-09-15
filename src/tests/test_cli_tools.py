@@ -116,6 +116,34 @@ def test_chunks_rejects_a_bad_splitter(folder, tmp_path, splitter, message):
     assert message in result.output
 
 
+def test_chunks_checks_retrieval_from_a_questions_file(folder, tmp_path):
+    questions = tmp_path / "questions.yaml"
+    questions.write_text(
+        "- question: When is payment due?\n  fact: Payment is due within thirty days\n"
+    )
+    out = tmp_path / "out"
+    result = runner.invoke(
+        app,
+        [
+            "chunks", str(folder), "--splitter", "tests.test_cli_tools:paragraphs",
+            "--questions", str(questions), "--top-k", "1", "--out", str(out), "--quiet",
+        ],
+    )  # fmt: skip
+    assert result.exit_code == 0, result.output
+    [report] = json.loads((out / "complydoc-chunks.json").read_text())["chunkers"]
+    assert report["retrieval"][0]["status"] == "retrieved"
+    assert report["retrieval_hit_rate"] == 1.0
+    assert "<h3>Retrieval</h3>" in (out / "complydoc-chunks.html").read_text()
+
+    questions.write_text("- question: only a question\n")
+    bad = runner.invoke(
+        app,
+        ["chunks", str(folder), "--splitter", "tests.test_cli_tools:paragraphs",
+         "--questions", str(questions), "--out", str(out)],
+    )  # fmt: skip
+    assert bad.exit_code == 2
+
+
 def audit(folder, out, name):
     result = runner.invoke(
         app, ["sensitive", str(folder), "--out", str(out), "--name", name, "--no-ocr", "-q"]

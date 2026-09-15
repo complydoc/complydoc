@@ -1238,6 +1238,17 @@ def chunks(
         list[str] | None,
         typer.Option("--fact", help="Text a chunk should contain whole, repeatable."),
     ] = None,
+    questions: Annotated[
+        Path | None,
+        typer.Option(
+            "--questions",
+            help="A YAML list of questions, each with `question`, `fact` and optionally "
+            "`document`. Chunks are ranked for each question with BM25 keyword search.",
+        ),
+    ] = None,
+    top_k: Annotated[
+        int, typer.Option("--top-k", help="How many top-ranked chunks count as retrieved.")
+    ] = 5,
     model: Annotated[
         str | None, typer.Option("--model", "-m", help="Model whose tokenizer counts tokens.")
     ] = None,
@@ -1261,11 +1272,13 @@ def chunks(
     Each page's text is read as `extract_text` reads it and passed to the splitter
     as documents with `source` and `page` metadata. Every chunk is scanned for
     identifiers and hidden passages and flagged when it is tiny, oversized, cut
-    mid-sentence or mid-table, ends on a heading or repeats another chunk. The
-    reports hold masked previews only.
+    mid-sentence or mid-table, ends on a heading or repeats another chunk. With
+    --questions, each question reports whether the chunk holding its answer ranks
+    within --top-k. The reports hold masked previews only.
     """
     from complydoc.extraction.chunks import inspect_chunks
     from complydoc.extraction.extract import extract_text
+    from complydoc.extraction.retrieval import Question, read_questions
     from complydoc.report.pages import write_chunks_html, write_chunks_json
 
     offline.arm()
@@ -1278,6 +1291,14 @@ def chunks(
     if len(splitters) != len(splitter):
         errors.print("[bold red]The same splitter is given twice.[/]")
         raise typer.Exit(code=2)
+
+    question_list: list[Question] = []
+    if questions is not None:
+        try:
+            question_list = read_questions(questions)
+        except (OSError, ValueError, TypeError) as exc:
+            errors.print(f"[bold red]Cannot read the questions[/] — {exc}")
+            raise typer.Exit(code=2) from exc
 
     try:
         text = extract_text(
@@ -1318,6 +1339,8 @@ def chunks(
             min_tokens=min_tokens,
             max_tokens=max_tokens,
             facts=fact,
+            questions=question_list,
+            top_k=top_k,
         )
 
     result: ChunkReport | ChunkComparison
@@ -1343,6 +1366,8 @@ def chunks(
         table.add_column(column, justify="left" if column == "Splitter" else "right")
     if fact:
         table.add_column("Facts whole", justify="right")
+    if question_list:
+        table.add_column(f"Retrieved in top {top_k}", justify="right")
     for report in reports:
         cells = [
             report.chunker,
@@ -1354,6 +1379,9 @@ def chunks(
         if fact:
             whole = sum(1 for f in report.facts if f.status == "whole")
             cells.append(f"{whole} of {len(report.facts)}")
+        if question_list:
+            retrieved = sum(1 for r in report.retrieval if r.status == "retrieved")
+            cells.append(f"{retrieved} of {len(report.retrieval)}")
         table.add_row(*cells)
     console.print(table)
     console.print()

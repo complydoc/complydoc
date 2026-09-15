@@ -16,6 +16,11 @@ versioned separately.
   text in PowerPoint; hidden attributes, hiding styles and comments in HTML and email bodies;
   comments and hidden inline HTML in Markdown. HTML and Markdown passages are reported only
   when they read as instructions.
+- Retrieval check: `inspect_chunks(..., questions=...)` and `compare_chunkers` rank the chunks
+  for each question with BM25 and report whether the chunk holding its answer is retrieved
+  within `top_k`, ranked lower, split across chunks or missing, with a hit rate and mean
+  reciprocal rank per splitter. `complydoc chunks --questions questions.yaml --top-k N` and
+  the chunks HTML page show the same. `cd.Question` and `cd.QuestionResult` are exported.
 
 ### Changed
 

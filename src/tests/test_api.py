@@ -125,6 +125,8 @@ def test_the_public_surface_is_exactly_what_was_promised():
         "Page",
         "DocumentFormat",
         "IngestOptions",
+        "Question",
+        "QuestionResult",
         "Rect",
         "TextBlock",
         "sha256_of",

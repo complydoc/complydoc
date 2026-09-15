@@ -121,7 +121,14 @@ def chunks_to_dict(result: ChunkReport | ChunkComparison) -> dict[str, Any]:
     """Every splitter's report, in the order given."""
     return {
         "tool_version": __version__,
-        "chunkers": [dataclasses.asdict(r) for r in _reports(result)],
+        "chunkers": [
+            {
+                **dataclasses.asdict(r),
+                "retrieval_hit_rate": r.retrieval_hit_rate,
+                "mean_reciprocal_rank": r.mean_reciprocal_rank,
+            }
+            for r in _reports(result)
+        ],
     }
 
 

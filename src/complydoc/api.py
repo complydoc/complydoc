@@ -79,6 +79,7 @@ from complydoc.extraction.chunks import (
 )
 from complydoc.extraction.extract import Chunk, ExtractionWarning, TextResult, extract_text
 from complydoc.extraction.facts import Fact, check_facts
+from complydoc.extraction.retrieval import Question, QuestionResult
 from complydoc.extraction.strings import (
     MaskedText,
     TextScan,
@@ -187,6 +188,8 @@ __all__ = [
     "NetworkAccessError",
     "Page",
     "PageSource",
+    "Question",
+    "QuestionResult",
     "Recognised",
     "Rect",
     "ReportDiff",

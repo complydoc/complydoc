@@ -15,7 +15,9 @@ takes chunks that were already made, with no documents.
 Each chunk is scanned for identifiers and hidden content and flagged when it is
 tiny, oversized, ends mid-sentence or mid-table, ends on a heading, repeats an
 earlier chunk, or carries an absolute file path in its metadata. Expected facts are
-located per chunk, including facts split across a chunk boundary.
+located per chunk, including facts split across a chunk boundary. `questions`
+ranks the chunks for each question with BM25 and reports whether the chunk holding
+its answer is retrieved; see `complydoc.extraction.retrieval`.
 """
 
 from __future__ import annotations
@@ -32,6 +34,7 @@ from complydoc.config.schema import Config
 from complydoc.cost.tokenizer import count_tokens as _count_tokens
 from complydoc.extraction.extract import tokenizer_for
 from complydoc.extraction.facts import FUZZY_THRESHOLD, Fact, as_facts, find_fact
+from complydoc.extraction.retrieval import Question, QuestionResult, as_questions, check_questions
 from complydoc.extraction.strings import find_hidden, mask_text, resolve_config, scan_text
 from complydoc.loaders.inspection import (
     ABSOLUTE_PATH,
@@ -117,6 +120,25 @@ class ChunkReport:
     repeated_identifiers: dict[str, int] = field(default_factory=dict)
     """Identifiers found in more than one chunk, with the number of chunks."""
     facts: list[FactLocation] = field(default_factory=list)
+    retrieval: list[QuestionResult] = field(default_factory=list)
+    """One result per question, when questions were given."""
+    top_k: int = 5
+
+    @property
+    def retrieval_hit_rate(self) -> float | None:
+        """Share of questions retrieved within `top_k`. None without questions."""
+        if not self.retrieval:
+            return None
+        retrieved = sum(1 for result in self.retrieval if result.status == "retrieved")
+        return round(retrieved / len(self.retrieval), 4)
+
+    @property
+    def mean_reciprocal_rank(self) -> float | None:
+        """Mean of 1/rank for questions retrieved within `top_k`, 0 for the rest."""
+        if not self.retrieval:
+            return None
+        total = sum(1 / r.rank for r in self.retrieval if r.status == "retrieved" and r.rank)
+        return round(total / len(self.retrieval), 4)
 
     def rows(self) -> list[dict[str, Any]]:
         return [
@@ -164,6 +186,8 @@ class ChunkComparison:
                     "facts_whole": sum(1 for f in report.facts if f.status == "whole"),
                     "facts_split": sum(1 for f in report.facts if f.status == "split"),
                     "facts_missing": sum(1 for f in report.facts if f.status == "missing"),
+                    "retrieval_hit_rate": report.retrieval_hit_rate,
+                    "mean_reciprocal_rank": report.mean_reciprocal_rank,
                 }
             )
         return rows
@@ -173,6 +197,7 @@ class ChunkComparison:
         columns = [
             "chunker", "chunks", "tokens_median", "tokens_p95", "tokens_max", *FLAGS,
             "repeated_identifiers", "facts_whole", "facts_split", "facts_missing",
+            "retrieval_hit_rate", "mean_reciprocal_rank",
         ]  # fmt: skip
         return to_frame(self.rows(), columns)
 
@@ -188,6 +213,8 @@ def inspect_chunks(
     max_tokens: int | None = None,
     facts: Iterable[Fact | str] | None = None,
     fact_threshold: float = FUZZY_THRESHOLD,
+    questions: Iterable[Question | Mapping[str, Any] | Sequence[str]] | None = None,
+    top_k: int = 5,
 ) -> ChunkReport:
     """Split `documents` with `splitter` and inspect the chunks.
 
@@ -197,6 +224,7 @@ def inspect_chunks(
     """
     settings = resolve_config(config)
     fact_list = as_facts(facts or ())
+    question_list = as_questions(questions or ())
     with offline.guarded():
         if documents is None:
             items, label = load_items(splitter), name or "chunks"
@@ -222,6 +250,16 @@ def inspect_chunks(
         flag_counts={flag: sum(flag in c.flags for c in inspected) for flag in FLAGS},
         repeated_identifiers={value: n for value, n in sorted(counts.items()) if n > 1},
         facts=_locate(fact_list, chunks, whole_texts, fact_threshold),
+        retrieval=check_questions(
+            question_list,
+            [(text, _source(metadata)) for text, metadata in chunks],
+            whole_texts,
+            top_k,
+            fact_threshold,
+        )
+        if question_list
+        else [],
+        top_k=top_k,
     )
 
 
