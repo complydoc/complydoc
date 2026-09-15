@@ -110,6 +110,7 @@ OCR and name detection are optional extras. `complydoc doctor` shows what is ins
 - [Documentation](https://complydoc.github.io/complydoc/): guides and design notes
 - [Command line reference](https://complydoc.github.io/complydoc/reference/cli/)
 - [Python API reference](https://complydoc.github.io/complydoc/reference/api/)
+- [Playground](https://github.com/complydoc/playground): runnable command line and Python examples, with a CI workflow
 - [Report JSON](https://complydoc.github.io/complydoc/reference/report/)
 - [Changelog](https://github.com/complydoc/complydoc/blob/main/src/complydoc/CHANGELOG.md)
 - [Contributing](https://github.com/complydoc/complydoc/blob/main/CONTRIBUTING.md)
