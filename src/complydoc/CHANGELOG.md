@@ -6,6 +6,8 @@ versioned separately.
 
 ## [Unreleased]
 
+## [0.4.5] — 2026-09-15
+
 ### Added
 
 - PowerPoint (`.pptx`), HTML (`.html`, `.htm`), Markdown (`.md`, `.markdown`), plain text
@@ -324,7 +326,8 @@ First release.
 - `complydoc` audits the current directory; `--jobs`, `--sample`, `--password`.
 - Packaged agent skill.
 
-[Unreleased]: https://github.com/complydoc/complydoc/compare/v0.4.4...HEAD
+[Unreleased]: https://github.com/complydoc/complydoc/compare/v0.4.5...HEAD
+[0.4.5]: https://github.com/complydoc/complydoc/compare/v0.4.4...v0.4.5
 [0.4.4]: https://github.com/complydoc/complydoc/compare/v0.4.3...v0.4.4
 [0.4.3]: https://github.com/complydoc/complydoc/compare/v0.4.2...v0.4.3
 [0.4.2]: https://github.com/complydoc/complydoc/compare/v0.4.1...v0.4.2

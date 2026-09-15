@@ -105,14 +105,14 @@ source and replace `price_source`/`imported_on` with `last_verified`.
 Work lands on `development`; `main` receives fast-forward merges for releases. Both run the
 full check suite.
 
-Releases increment the patch number: 0.4.4, 0.4.5, 0.4.6. The minor number changes
+Releases increment the patch number: 0.4.5, 0.4.6, 0.4.7. The minor number changes
 only for a breaking change to the report JSON or a config key. `schema_version` in the
 report JSON is versioned separately and moves whenever the JSON shape changes.
 
 ```bash
 make release-check
-git tag -a v0.4.5 -m "complydoc v0.4.5"
-git push origin v0.4.5
+git tag -a v0.4.6 -m "complydoc v0.4.6"
+git push origin v0.4.6
 ```
 
 The tag must match `complydoc.__version__` and have a changelog entry. `release.yml` builds the
