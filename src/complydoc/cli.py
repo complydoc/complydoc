@@ -9,6 +9,7 @@ The network guard is armed before any document is opened, on every path.
 from __future__ import annotations
 
 import contextlib
+import dataclasses
 import sys
 from collections.abc import Callable, Iterator
 from pathlib import Path
@@ -1185,6 +1186,14 @@ def compare_loaders_command(
         _print_report_json(report)
 
 
+@dataclasses.dataclass
+class _Page:
+    """A page of text with the attributes LangChain splitters read."""
+
+    page_content: str
+    metadata: dict[str, object]
+
+
 def _splitter(reference: str) -> tuple[str, object]:
     """A splitter from `module:attribute key=value ...`, and the name to show it by."""
     import functools
@@ -1290,10 +1299,7 @@ def chunks(
         for reason in reasons[:10]:
             errors.print(f"  {reason}", markup=False)
         raise typer.Exit(code=2)
-    documents = [
-        {"page_content": c.text, "metadata": {"source": c.document, "page": c.page}}
-        for c in text.chunks
-    ]
+    documents = [_Page(c.text, {"source": c.document, "page": c.page}) for c in text.chunks]
     if not quiet and not text.complete:
         console.print(
             f"[yellow]{count(sum(w.hides_content for w in text.warnings), 'file or page')} "

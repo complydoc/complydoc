@@ -17,9 +17,9 @@ EMAIL = "jane.doe@example.com"
 def paragraphs(documents):
     """A splitter that makes one chunk per paragraph."""
     return [
-        {"page_content": part, "metadata": dict(d["metadata"])}
+        {"page_content": part, "metadata": dict(d.metadata)}
         for d in documents
-        for part in d["page_content"].splitlines()
+        for part in d.page_content.splitlines()
         if part.strip()
     ]
 
@@ -31,10 +31,10 @@ class Halves:
     def split_documents(self, documents):
         chunks = []
         for d in documents:
-            text = d["page_content"]
+            text = d.page_content
             size = max(1, len(text) // self.parts)
             chunks += [
-                {"page_content": text[i : i + size], "metadata": dict(d["metadata"])}
+                {"page_content": text[i : i + size], "metadata": dict(d.metadata)}
                 for i in range(0, len(text), size)
             ]
         return chunks

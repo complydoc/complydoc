@@ -6,6 +6,11 @@ versioned separately.
 
 ## [Unreleased]
 
+### Fixed
+
+- `complydoc chunks` passes documents with `page_content` and `metadata` attributes, so
+  LangChain text splitters accept them. 0.4.3 passed dictionaries, which they reject.
+
 ## [0.4.3] — 2026-09-15
 
 ### Added
