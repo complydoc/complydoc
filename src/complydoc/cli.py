@@ -28,14 +28,14 @@ from rich.progress import (
 from rich.table import Column, Table
 
 from complydoc import __version__, offline
-from complydoc.audit import COMPONENTS, run_audit
+from complydoc.audit.run import COMPONENTS, run_audit
 from complydoc.config.loader import ConfigError, load_config
 from complydoc.config.schema import Config
 from complydoc.cost.estimator import UnknownModelError
 from complydoc.report.html_writer import write_html
 from complydoc.report.json_writer import write_json
 from complydoc.report.models import AuditReport
-from complydoc.text import count
+from complydoc.utils.text import count
 
 app = typer.Typer(
     add_completion=False,

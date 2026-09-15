@@ -6,7 +6,7 @@ import json
 
 import pytest
 
-from complydoc.audit import COMPONENTS, run_audit
+from complydoc.audit.run import COMPONENTS, run_audit
 from complydoc.report.html_writer import render_html
 from complydoc.report.json_writer import to_dict, write_json
 from tests.helpers import FIXTURES
@@ -258,7 +258,7 @@ def test_extracted_text_records_how_each_page_was_read(config):
 
 def test_very_long_pages_are_truncated_not_dropped(config):
     """One enormous document must not make the report unopenable."""
-    from complydoc.audit import _MAX_TEXT_CHARS
+    from complydoc.audit.run import _MAX_TEXT_CHARS
 
     with_text = run_audit(FIXTURES, config, COMPONENTS, extracted_text=True)
     for document in with_text.documents:
@@ -509,7 +509,7 @@ def test_masking_does_not_claim_more_than_it_covers(config):
 
     The notice says the page text and images carry unmasked values.
     """
-    from complydoc.audit import COMPONENTS, run_audit
+    from complydoc.audit.run import COMPONENTS, run_audit
     from complydoc.report.html_writer import render_html
     from tests.helpers import FIXTURES
 

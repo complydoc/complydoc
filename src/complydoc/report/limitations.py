@@ -14,7 +14,7 @@ from complydoc.config.schema import Config
 from complydoc.ingest.base import SkipRecord
 from complydoc.readiness.base import SignalStatus
 from complydoc.report.models import DocumentReport, Limitation, RunMetadata
-from complydoc.text import count, plural
+from complydoc.utils.text import count, plural
 
 __all__ = ["build_limitations"]
 

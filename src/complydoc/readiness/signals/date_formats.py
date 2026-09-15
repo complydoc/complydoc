@@ -8,7 +8,7 @@ from collections import Counter
 from complydoc.ingest.base import Document
 from complydoc.readiness.base import ALL_FORMATS, Measurement
 from complydoc.readiness.registry import signal
-from complydoc.text import count
+from complydoc.utils.text import count
 
 _MONTH = r"(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*"
 

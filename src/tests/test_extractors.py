@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import pytest
 
-from complydoc.audit import extractor_readings
+from complydoc.audit.run import extractor_readings
 from complydoc.config.loader import load_config
 from complydoc.ingest.base import IngestOptions
 from complydoc.ingest.extractors.registry import (

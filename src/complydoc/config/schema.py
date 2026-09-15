@@ -156,7 +156,7 @@ class FxRate(_Base):
 
 
 class ParserPricing(_Base):
-    """Per-page price of a document parser, for `complydoc.parsers` presets."""
+    """Per-page price of a document parser, for `complydoc.loaders.parsers` presets."""
 
     display_name: str
     usd_per_1000_pages: float | None = None

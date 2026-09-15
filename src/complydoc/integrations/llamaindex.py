@@ -10,7 +10,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Any
 
-from complydoc.steps import Step
+from complydoc.pipeline.steps import Step
 
 __all__ = ["as_transform"]
 

@@ -35,7 +35,7 @@ from complydoc.ingest.base import (
 from complydoc.ingest.extractors.base import Extraction, PageSource
 from complydoc.ingest.extractors.registry import extractor_by_id
 from complydoc.ingest.registry import register
-from complydoc.text import (
+from complydoc.utils.text import (
     MAX_WORDS,
     count,
     plural,

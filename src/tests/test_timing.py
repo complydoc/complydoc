@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from complydoc.audit import run_audit
-from complydoc.text import duration
+from complydoc.audit.run import run_audit
+from complydoc.utils.text import duration
 from tests.helpers import FIXTURES
 
 

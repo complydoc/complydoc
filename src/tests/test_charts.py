@@ -6,7 +6,7 @@ import re
 
 import pytest
 
-from complydoc.audit import run_audit
+from complydoc.audit.run import run_audit
 from complydoc.report.charts import SERIES, build_comparison, grouped_bars_svg
 from tests.helpers import FIXTURES
 

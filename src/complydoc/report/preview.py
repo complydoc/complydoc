@@ -355,7 +355,7 @@ def build_previews(
                 )
             )
 
-        from complydoc.geometry import coverage_fraction
+        from complydoc.utils.geometry import coverage_fraction
 
         preview.text_coverage_pct = round(
             coverage_fraction([b.bbox for b in page.text_blocks], width, height) * 100, 1

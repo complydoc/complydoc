@@ -88,7 +88,7 @@ Results are in `report.loader_comparison.facts`, each loader's count in
 
 ## Parser presets
 
-`complydoc.parsers` returns a `LoaderSpec` for each parser, used with `paths`:
+`complydoc.loaders.parsers` returns a `LoaderSpec` for each parser, used with `paths`:
 
 | Preset | Library | Hosted | Price entry |
 | --- | --- | --- | --- |

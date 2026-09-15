@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from complydoc.audit import COMPONENTS, run_audit
+from complydoc.audit.run import COMPONENTS, run_audit
 from complydoc.report.html_writer import render_html, sensitive_rows, severity_rank
 from tests.helpers import FIXTURES
 

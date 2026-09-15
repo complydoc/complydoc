@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import pytest
 
-from complydoc.audit import resolve_jobs, run_audit
+from complydoc.audit.run import resolve_jobs, run_audit
 from complydoc.ingest.base import IngestOptions
 from complydoc.ingest.registry import load_document
 from complydoc.report.json_writer import to_dict

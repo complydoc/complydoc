@@ -39,9 +39,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from complydoc.audit.discovery import discover
 from complydoc.config.schema import Config, TokenizerSpec
 from complydoc.cost.tokenizer import count_tokens
-from complydoc.discovery import discover
 from complydoc.ingest.base import IngestOptions
 from complydoc.ingest.registry import load_document
 from complydoc.sensitive.base import EVIDENCE_ORDER, SensitiveMatch

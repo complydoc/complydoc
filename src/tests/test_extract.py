@@ -11,7 +11,7 @@ and anything that could not be read or masked is reported.
 from __future__ import annotations
 
 import complydoc as cd
-from complydoc.extract import (
+from complydoc.extraction.extract import (
     MASKING_BEST_EFFORT,
     MASKING_INCOMPLETE,
     UNREADABLE_DOCUMENT,
@@ -47,7 +47,7 @@ def test_the_text_is_not_truncated_the_way_the_report_truncates_it():
 
     `extract_text` loads documents directly, so its text is not truncated.
     """
-    from complydoc.audit import _MAX_TEXT_CHARS
+    from complydoc.audit.run import _MAX_TEXT_CHARS
 
     long_page = FIXTURES / "dense_text.pdf"
     result = cd.extract_text(long_page, ocr=False, mask=False)
@@ -215,7 +215,7 @@ def test_an_overlapping_weaker_match_cannot_expose_a_confirmed_one(tmp_path):
 
 def test_the_strongest_evidence_claims_the_characters(tmp_path):
     """Where two matches want the same span, the checksum-backed one wins."""
-    from complydoc.extract import mask_matches
+    from complydoc.extraction.extract import mask_matches
     from complydoc.sensitive.base import SensitiveMatch
 
     def match(column, length, masked, evidence):

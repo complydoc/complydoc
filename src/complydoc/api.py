@@ -64,9 +64,11 @@ from collections.abc import AsyncIterator, Callable, Iterator, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, TypedDict, Unpack
 
-from complydoc import offline, parsers
-from complydoc.audit import COMPONENTS, iter_entries, plan_audit, run_audit
-from complydoc.chunks import (
+from complydoc import offline
+from complydoc.audit.run import COMPONENTS, iter_entries, plan_audit, run_audit
+from complydoc.config.loader import ConfigError, load_config
+from complydoc.cost.estimator import UnknownModelError
+from complydoc.extraction.chunks import (
     ChunkComparison,
     ChunkReport,
     ChunkStats,
@@ -75,11 +77,16 @@ from complydoc.chunks import (
     compare_chunkers,
     inspect_chunks,
 )
-from complydoc.config.loader import ConfigError, load_config
-from complydoc.cost.estimator import UnknownModelError
-from complydoc.expectations import Expectation, ExpectationError, expect
-from complydoc.extract import Chunk, ExtractionWarning, TextResult, extract_text
-from complydoc.facts import Fact, check_facts
+from complydoc.extraction.extract import Chunk, ExtractionWarning, TextResult, extract_text
+from complydoc.extraction.facts import Fact, check_facts
+from complydoc.extraction.strings import (
+    MaskedText,
+    TextScan,
+    count_tokens,
+    find_hidden,
+    mask_text,
+    scan_text,
+)
 from complydoc.hidden.instructions import register_instruction_classifier
 from complydoc.ingest.base import (
     Document,
@@ -101,12 +108,22 @@ from complydoc.ingest.extractors.registry import all_extractors
 from complydoc.ingest.extractors.registry import register as register_extractor
 from complydoc.ingest.registry import register as register_loader
 from complydoc.ingest.registry import supported_extensions
-from complydoc.loader_comparison import compare_loaders
-from complydoc.loaders import inspect_documents
+from complydoc.loaders import parsers
+from complydoc.loaders.compare import compare_loaders
+from complydoc.loaders.inspection import inspect_documents
+from complydoc.loaders.parsers import LoaderSpec
 from complydoc.offline import NetworkAccessError
-from complydoc.parsers import LoaderSpec
+from complydoc.pipeline.steps import (
+    DropHiddenPassages,
+    MaskIdentifiers,
+    Step,
+    StepChange,
+    StripPathMetadata,
+)
 from complydoc.readiness.base import Measurement, Signal
 from complydoc.readiness.registry import register as register_signal
+from complydoc.report.compare import Change, ReportDiff, diff_reports
+from complydoc.report.expectations import Expectation, ExpectationError, expect
 from complydoc.report.html_writer import write_html as _write_html
 from complydoc.report.json_reader import load_report
 from complydoc.report.json_writer import write_json as _write_json
@@ -121,17 +138,8 @@ from complydoc.report.models import (
     LoaderSummary,
     MetadataFinding,
 )
-from complydoc.report_diff import Change, ReportDiff, diff_reports
 from complydoc.sensitive.base import Detector, DetectorContext, Finding
 from complydoc.sensitive.registry import register as register_detector
-from complydoc.steps import (
-    DropHiddenPassages,
-    MaskIdentifiers,
-    Step,
-    StepChange,
-    StripPathMetadata,
-)
-from complydoc.strings import MaskedText, TextScan, count_tokens, find_hidden, mask_text, scan_text
 
 if TYPE_CHECKING:
     from complydoc.config.schema import Config

@@ -13,7 +13,7 @@ table.
 pip install 'complydoc[notebook]'
 ```
 
-`complydoc.notebook.table_rows(report, table)` returns the same rows as a list of
+`complydoc.report.tables.table_rows(report, table)` returns the same rows as a list of
 dictionaries and needs nothing installed.
 
 | Table | One row per |
@@ -30,5 +30,5 @@ dictionaries and needs nothing installed.
 | `differences` | Identifier found by some loaders only |
 | `facts` | Expected fact per loader in a `compare_loaders` report |
 
-Column names are listed in `complydoc.notebook.COLUMNS`. An empty table keeps its
+Column names are listed in `complydoc.report.tables.COLUMNS`. An empty table keeps its
 columns.

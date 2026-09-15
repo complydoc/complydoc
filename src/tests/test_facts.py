@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 import complydoc as cd
-from complydoc.facts import find_fact, normalise
+from complydoc.extraction.facts import find_fact, normalise
 
 CLAUSE = "Payment is due within thirty days of the invoice date."
 

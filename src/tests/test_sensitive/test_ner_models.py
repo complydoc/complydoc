@@ -9,7 +9,7 @@ from __future__ import annotations
 import pytest
 
 import complydoc as cd
-from complydoc.audit import ner_available
+from complydoc.audit.run import ner_available
 from complydoc.sensitive.detectors.ner import configured_models
 
 spacy = pytest.importorskip("spacy")

@@ -7,8 +7,8 @@ import sys
 import pytest
 
 import complydoc as cd
-from complydoc import parsers
-from complydoc.notebook import table_rows
+from complydoc.loaders import parsers
+from complydoc.report.tables import table_rows
 
 CLAUSE = "Payment is due within thirty days of the invoice date."
 

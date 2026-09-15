@@ -35,15 +35,20 @@ from collections.abc import Iterable, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
-from complydoc.audit import COMPONENTS
+from complydoc.audit.discovery import discover
+from complydoc.audit.run import COMPONENTS
 from complydoc.config.loader import load_config
 from complydoc.config.schema import Config, ParserPricing
-from complydoc.discovery import discover
-from complydoc.facts import FUZZY_THRESHOLD, Fact, as_facts, evaluate_facts
-from complydoc.loader_cache import LoaderCache
-from complydoc.loaders import FolderSource, Inspection, finish_report, inspect_run, loader_name
-from complydoc.parsers import LoaderSpec
-from complydoc.quickwins import quick_wins
+from complydoc.extraction.facts import FUZZY_THRESHOLD, Fact, as_facts, evaluate_facts
+from complydoc.loaders.cache import LoaderCache
+from complydoc.loaders.inspection import (
+    FolderSource,
+    Inspection,
+    finish_report,
+    inspect_run,
+    loader_name,
+)
+from complydoc.loaders.parsers import LoaderSpec
 from complydoc.report.models import (
     AuditReport,
     DocumentReport,
@@ -54,8 +59,9 @@ from complydoc.report.models import (
     LoaderComparison,
     LoaderSummary,
 )
+from complydoc.report.quickwins import quick_wins
 from complydoc.sensitive.base import SEVERITY_WEIGHT
-from complydoc.text import MAX_WORDS, count, reading_similarity, same_words, words
+from complydoc.utils.text import MAX_WORDS, count, reading_similarity, same_words, words
 
 __all__ = ["compare_loaders"]
 
@@ -90,14 +96,14 @@ def compare_loaders(
     recorded in its row of `report.loader_comparison.loaders`.
 
     With `paths`, a folder, a file or a list of files, each loader is a callable
-    taking a file path, such as a loader class or a `complydoc.parsers` preset, and
+    taking a file path, such as a loader class or a `complydoc.loaders.parsers` preset, and
     runs once per file. Files a loader raises on are recorded in its row.
 
     `cache_dir` stores each loader's output per file when `paths` is given, so a later
-    run does not parse unchanged files again; see `complydoc.loader_cache`.
+    run does not parse unchanged files again; see `complydoc.loaders.cache`.
 
     `facts` are passages the documents are expected to contain. Each is checked
-    against every loader's text; see `complydoc.facts`.
+    against every loader's text; see `complydoc.extraction.facts`.
     """
     named = _named(loaders)
     if len(named) < 2:

@@ -12,10 +12,10 @@ import os
 from collections.abc import Iterable, Sequence
 from typing import Any
 
-from complydoc.facts import FUZZY_THRESHOLD, Fact, check_facts
+from complydoc.extraction.facts import FUZZY_THRESHOLD, Fact, check_facts
+from complydoc.report.compare import diff_reports
 from complydoc.report.json_reader import load_report
 from complydoc.report.models import AuditReport
-from complydoc.report_diff import diff_reports
 from complydoc.sensitive.base import EVIDENCE_ORDER, SEVERITY_WEIGHT
 
 __all__ = ["Expectation", "ExpectationError", "expect"]

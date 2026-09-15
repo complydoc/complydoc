@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from complydoc.discovery import discover
+from complydoc.audit.discovery import discover
 from complydoc.ingest.base import DocumentFormat, IngestOptions, LoaderError
 from complydoc.ingest.registry import load_document, loader_for, supported_extensions
 from tests.helpers import FIXTURES

@@ -16,21 +16,19 @@ want on your PATH. It also reinstalls the spaCy model and runs `complydoc doctor
 
 | Path | Contents |
 | --- | --- |
-| `src/complydoc/ingest/` | Per-format loaders behind the `Loader` protocol |
+| `src/complydoc/api.py`, `cli.py` | The Python API and the command line |
+| `src/complydoc/offline.py` | Network guard |
+| `src/complydoc/audit/` | Running an audit: discovery, sampling, worker processes, report assembly |
+| `src/complydoc/ingest/` | Per-format readers behind the `Loader` protocol, extractors and OCR engines |
 | `src/complydoc/readiness/signals/` | One file per signal, registered by decorator |
-| `src/complydoc/sensitive/detectors/` | Regex, checksum and NER detectors |
+| `src/complydoc/sensitive/` | Detectors, validators, masking and the identifier scan |
 | `src/complydoc/hidden/` | Hidden content and instruction checks |
-| `src/complydoc/loaders.py`, `loader_comparison.py` | Loader inspection, folder sources and comparison |
-| `src/complydoc/facts.py` | Expected fact matching |
-| `src/complydoc/parsers.py` | Parser presets (`LoaderSpec`) |
-| `src/complydoc/notebook.py` | Report tables and Jupyter display |
-| `src/complydoc/strings.py` | Scanning, masking and token counts on strings |
-| `src/complydoc/chunks.py` | Chunk inspection |
-| `src/complydoc/report/json_reader.py`, `report_diff.py`, `expectations.py` | Loading, diffs and assertions |
-| `src/complydoc/loader_cache.py` | Cached loader output |
-| `src/complydoc/steps.py`, `integrations/` | Pipeline steps and framework adapters |
 | `src/complydoc/cost/` | Tokenizers, vision formulas, price catalogue |
-| `src/complydoc/report/` | JSON and HTML writers, previews, limitations |
+| `src/complydoc/loaders/` | Other frameworks' loaders: inspection, comparison, parser presets, cache |
+| `src/complydoc/extraction/` | Masked text extraction, string functions, expected facts, chunk inspection |
+| `src/complydoc/report/` | Report models, JSON and HTML, scores, quick wins, tables, diffs, expectations |
+| `src/complydoc/pipeline/`, `integrations/` | Pipeline steps and framework adapters |
+| `src/complydoc/utils/` | General helpers: text, geometry, DataFrames |
 | `src/complydoc/ui/` | Report template, stylesheet and script |
 | `src/complydoc/config/` | YAML configuration |
 | `src/tests/` | Tests and fixtures; `integration/` needs the `integrations` group |

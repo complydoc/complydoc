@@ -22,7 +22,7 @@ from pathlib import PurePath
 
 from complydoc.hidden.unicode import strip_invisible
 from complydoc.report.models import AuditReport, DocumentReport, FactCheck
-from complydoc.text import MAX_WORDS
+from complydoc.utils.text import MAX_WORDS
 
 __all__ = ["FUZZY_THRESHOLD", "Fact", "as_facts", "check_facts", "evaluate_facts", "find_fact"]
 

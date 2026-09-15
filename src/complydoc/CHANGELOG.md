@@ -16,6 +16,9 @@ versioned separately.
 ### Changed
 
 - `complydoc doctor` and `run.ner_available` check every configured name-detection model.
+- Internal modules are grouped into `audit`, `loaders`, `extraction`, `report`, `pipeline` and
+  `utils` packages. The public API (`import complydoc as cd`, `complydoc.integrations`) is
+  unchanged; code importing internal module paths needs the new paths.
 
 ## [0.4.1] — 2026-09-14
 

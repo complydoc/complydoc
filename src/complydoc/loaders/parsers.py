@@ -28,7 +28,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any, Literal
 
-from complydoc.loaders import SOURCE_KEYS
+from complydoc.loaders.inspection import SOURCE_KEYS
 
 __all__ = [
     "LoaderSpec",

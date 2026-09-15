@@ -24,11 +24,11 @@ from dataclasses import dataclass
 from typing import Any
 
 from complydoc.config.schema import Config
+from complydoc.extraction.strings import mask_text, resolve_config
 from complydoc.hidden.check import instruction_spans
 from complydoc.hidden.unicode import strip_invisible
-from complydoc.loaders import ABSOLUTE_PATH, SOURCE_KEYS, document_content
-from complydoc.strings import mask_text, resolve_config
-from complydoc.text import count
+from complydoc.loaders.inspection import ABSOLUTE_PATH, SOURCE_KEYS, document_content
+from complydoc.utils.text import count
 
 __all__ = ["DropHiddenPassages", "MaskIdentifiers", "Step", "StepChange", "StripPathMetadata"]
 

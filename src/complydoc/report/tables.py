@@ -14,6 +14,8 @@ from collections.abc import Callable, Iterator
 from html import escape
 from typing import TYPE_CHECKING, Any
 
+from complydoc.utils.frames import to_frame
+
 if TYPE_CHECKING:
     from complydoc.report.models import AuditReport
 
@@ -271,11 +273,7 @@ def table_rows(report: AuditReport, table: str = "documents") -> list[Row]:
 def to_pandas(report: AuditReport, table: str = "documents") -> Any:
     """`table` as a pandas DataFrame. Requires the `notebook` extra."""
     rows = table_rows(report, table)
-    try:
-        import pandas as pd
-    except ImportError as exc:
-        raise ImportError("to_pandas needs pandas: pip install 'complydoc[notebook]'") from exc
-    return pd.DataFrame(rows, columns=list(COLUMNS[table]))
+    return to_frame(rows, columns=list(COLUMNS[table]))
 
 
 def summary_html(report: AuditReport) -> str:

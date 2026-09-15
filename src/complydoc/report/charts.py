@@ -22,7 +22,7 @@ from typing import Final
 from markupsafe import escape
 
 from complydoc.report.models import AuditReport
-from complydoc.text import count
+from complydoc.utils.text import count
 
 __all__ = ["ArchitectureCost", "ModelComparison", "build_comparison", "grouped_bars_svg"]
 

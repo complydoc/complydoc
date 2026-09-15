@@ -26,8 +26,8 @@ from complydoc.report.preview import PagePreview
 from complydoc.sensitive.scanner import ScanResult
 
 if TYPE_CHECKING:  # pragma: no cover - type-checking imports only
-    from complydoc.overall import OverallReadiness
-    from complydoc.quickwins import QuickWin
+    from complydoc.report.overall import OverallReadiness
+    from complydoc.report.quickwins import QuickWin
 
 __all__ = [
     "SCHEMA_VERSION",
@@ -545,7 +545,7 @@ class AuditReport:
     checker, which keeps the dependency one-way at runtime.
     """
     quick_wins: list[QuickWin] = field(default_factory=list)
-    """What to do next, ranked. See `complydoc.quickwins`."""
+    """What to do next, ranked. See `complydoc.report.quickwins`."""
     loader: LoaderRun | None = None
     """Set when the documents came from an external loader."""
     loader_comparison: LoaderComparison | None = None
@@ -554,14 +554,14 @@ class AuditReport:
     def to_pandas(self, table: str = "documents") -> Any:
         """One table of this report as a pandas DataFrame.
 
-        Table names are in `complydoc.notebook.TABLES`. Requires the `notebook` extra.
+        Table names are in `complydoc.report.tables.TABLES`. Requires the `notebook` extra.
         """
-        from complydoc.notebook import to_pandas
+        from complydoc.report.tables import to_pandas
 
         return to_pandas(self, table)
 
     def _repr_html_(self) -> str:
-        from complydoc.notebook import summary_html
+        from complydoc.report.tables import summary_html
 
         return summary_html(self)
 

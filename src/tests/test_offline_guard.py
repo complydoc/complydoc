@@ -7,7 +7,7 @@ import socket
 import pytest
 
 from complydoc import offline
-from complydoc.audit import run_audit
+from complydoc.audit.run import run_audit
 from tests.helpers import FIXTURES
 
 

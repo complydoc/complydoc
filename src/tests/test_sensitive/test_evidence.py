@@ -6,7 +6,7 @@ four tiers, computed from the checks each finding passed.
 
 from __future__ import annotations
 
-from complydoc.audit import run_audit
+from complydoc.audit.run import run_audit
 from complydoc.sensitive.base import EVIDENCE_ORDER, evidence_of
 from tests.helpers import FIXTURES, requires_ner
 

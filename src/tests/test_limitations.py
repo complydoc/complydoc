@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from complydoc.audit import run_audit
+from complydoc.audit.run import run_audit
 from complydoc.readiness.analyser import analyse
 from complydoc.readiness.base import SignalStatus
 from tests.helpers import FIXTURES

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from complydoc.audit import COMPONENTS, run_audit
+from complydoc.audit.run import COMPONENTS, run_audit
 from complydoc.ingest.base import IngestOptions
 from complydoc.ingest.engines.base import Recognised
 from complydoc.ingest.registry import load_document

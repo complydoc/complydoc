@@ -18,9 +18,9 @@ from pathlib import Path
 from complydoc.config.schema import ModelPricing, PricingConfig
 from complydoc.cost.tokenizer import TokenCount, count_tokens
 from complydoc.cost.vision import RenderedSize, rendered_size, vision_tokens
-from complydoc.geometry import coverage_fraction
 from complydoc.ingest.base import Document
-from complydoc.text import count
+from complydoc.utils.geometry import coverage_fraction
+from complydoc.utils.text import count
 
 __all__ = [
     "DocumentCostEstimate",

@@ -10,7 +10,7 @@ import difflib
 from dataclasses import dataclass, field
 from typing import Literal
 
-from complydoc.text import MAX_WORDS, reading_similarity, words
+from complydoc.utils.text import MAX_WORDS, reading_similarity, words
 
 __all__ = ["ReadingDiff", "Segment", "compare_readings"]
 

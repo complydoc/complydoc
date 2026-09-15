@@ -13,7 +13,7 @@ import re
 
 import pytest
 
-from complydoc.audit import COMPONENTS, run_audit
+from complydoc.audit.run import COMPONENTS, run_audit
 from complydoc.report.html_writer import page_rows, render_html
 from tests.helpers import FIXTURES
 

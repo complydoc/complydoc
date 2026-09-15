@@ -19,7 +19,7 @@ from typing import Any
 from complydoc.config.schema import NerModelSpec, SensitiveConfig
 from complydoc.sensitive.base import DetectorContext, Finding
 from complydoc.sensitive.registry import DetectorUnavailableError, detector
-from complydoc.text import detect_language
+from complydoc.utils.text import detect_language
 
 __all__ = ["NerDetector", "configured_models", "model_available"]
 

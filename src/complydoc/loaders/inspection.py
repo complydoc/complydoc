@@ -48,7 +48,7 @@ from pathlib import Path, PurePath
 from typing import TYPE_CHECKING, Any
 
 from complydoc import __version__, offline
-from complydoc.audit import COMPONENTS, Work, assemble_report, build_entry, ner_available
+from complydoc.audit.run import COMPONENTS, Work, assemble_report, build_entry, ner_available
 from complydoc.config.loader import load_config
 from complydoc.config.schema import Config
 from complydoc.cost.estimator import resolve_models
@@ -71,10 +71,10 @@ from complydoc.report.models import (
     RunMetadata,
 )
 from complydoc.sensitive.scanner import scan_text
-from complydoc.text import count
+from complydoc.utils.text import count
 
 if TYPE_CHECKING:
-    from complydoc.loader_cache import LoaderCache
+    from complydoc.loaders.cache import LoaderCache
 
 __all__ = [
     "ABSOLUTE_PATH",

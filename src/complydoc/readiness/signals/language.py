@@ -7,7 +7,7 @@ from collections import Counter
 from complydoc.ingest.base import Document
 from complydoc.readiness.base import ALL_FORMATS, Measurement
 from complydoc.readiness.registry import signal
-from complydoc.text import detect_language
+from complydoc.utils.text import detect_language
 
 _MIN_LETTERS = 60
 _MIN_LETTER_RATIO = 0.5

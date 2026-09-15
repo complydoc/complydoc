@@ -10,7 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from complydoc.report.models import AuditReport
-from complydoc.text import count
+from complydoc.utils.text import count
 
 __all__ = ["QuickWin", "quick_wins"]
 

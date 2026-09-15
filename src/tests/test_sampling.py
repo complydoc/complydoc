@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from complydoc.sampling import sample_files
+from complydoc.audit.sampling import sample_files
 
 
 def folder(pdfs: int = 90, sheets: int = 9, images: int = 1) -> list[Path]:

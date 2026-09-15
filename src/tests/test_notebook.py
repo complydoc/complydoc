@@ -7,7 +7,7 @@ import sys
 import pytest
 
 import complydoc as cd
-from complydoc.notebook import COLUMNS, TABLES, summary_html, table_rows
+from complydoc.report.tables import COLUMNS, TABLES, summary_html, table_rows
 from tests.helpers import FIXTURES
 
 

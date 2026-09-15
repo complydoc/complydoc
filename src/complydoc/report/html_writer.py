@@ -16,8 +16,6 @@ from markupsafe import escape
 
 from complydoc.config.schema import Config
 from complydoc.hidden.check import severity_of
-from complydoc.overall import overall_readiness
-from complydoc.quickwins import quick_wins
 from complydoc.report.charts import (
     BAND_SERIES,
     SERIES,
@@ -28,9 +26,11 @@ from complydoc.report.charts import (
 )
 from complydoc.report.diffing import ReadingDiff, compare_readings
 from complydoc.report.models import AuditReport, DocumentReport
+from complydoc.report.overall import overall_readiness
 from complydoc.report.preview import Box, PagePreview
+from complydoc.report.quickwins import quick_wins
 from complydoc.sensitive.base import EVIDENCE_ORDER, SEVERITY_WEIGHT
-from complydoc.text import count, duration
+from complydoc.utils.text import count, duration
 
 __all__ = [
     "PageRow",

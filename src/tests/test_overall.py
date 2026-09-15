@@ -6,8 +6,8 @@ result states which factors it used.
 
 from __future__ import annotations
 
-from complydoc.audit import run_audit
-from complydoc.overall import band_of, overall_readiness
+from complydoc.audit.run import run_audit
+from complydoc.report.overall import band_of, overall_readiness
 from tests.helpers import FIXTURES
 
 ALL = ("cost", "readiness", "sensitive")

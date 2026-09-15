@@ -13,7 +13,7 @@ from dataclasses import dataclass
 
 from complydoc.config.schema import ScoringConfig
 from complydoc.readiness.base import SignalResult
-from complydoc.text import count
+from complydoc.utils.text import count
 
 __all__ = ["ReadinessScore", "ScoreComponent", "band_label", "compute_score"]
 

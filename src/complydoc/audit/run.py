@@ -26,17 +26,16 @@ from pathlib import Path
 from typing import Any
 
 from complydoc import __version__, offline
+from complydoc.audit.discovery import discover
+from complydoc.audit.sampling import sample_files
 from complydoc.config.loader import check_staleness
 from complydoc.config.schema import Config, ModelPricing
 from complydoc.cost.estimator import estimate_document, folder_from_estimates, resolve_models
-from complydoc.discovery import discover
 from complydoc.hidden.check import check_content
 from complydoc.ingest import ocr as ocr_module
 from complydoc.ingest.base import Document, IngestOptions, LoaderError, SkipRecord
 from complydoc.ingest.extractors.registry import DEFAULT_EXTRACTOR
 from complydoc.ingest.registry import load_document
-from complydoc.overall import overall_readiness
-from complydoc.quickwins import quick_wins
 from complydoc.readiness.analyser import analyse
 from complydoc.report.limitations import build_limitations
 from complydoc.report.models import (
@@ -49,8 +48,9 @@ from complydoc.report.models import (
     RunMetadata,
     build_aggregate,
 )
+from complydoc.report.overall import overall_readiness
 from complydoc.report.preview import build_previews
-from complydoc.sampling import sample_files
+from complydoc.report.quickwins import quick_wins
 from complydoc.sensitive.scanner import scan
 
 __all__ = ["COMPONENTS", "resolve_jobs", "run_audit"]
@@ -277,7 +277,7 @@ def _pool_context() -> Any:
     """
     if "forkserver" in get_all_start_methods():
         context = get_context("forkserver")
-        context.set_forkserver_preload(["complydoc.warm"])
+        context.set_forkserver_preload(["complydoc.audit.warm"])
         return context
     return get_context("spawn")
 

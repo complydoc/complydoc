@@ -12,7 +12,7 @@ import json
 
 import pytest
 
-from complydoc.audit import run_audit
+from complydoc.audit.run import run_audit
 from complydoc.cost.estimator import estimate_document, resolve_models
 from complydoc.cost.price_table import TABLE_PATH, imported_models, table_provenance
 from complydoc.ingest.base import IngestOptions

@@ -30,10 +30,17 @@ from typing import Any
 from complydoc import offline
 from complydoc.config.schema import Config
 from complydoc.cost.tokenizer import count_tokens as _count_tokens
-from complydoc.extract import tokenizer_for
-from complydoc.facts import FUZZY_THRESHOLD, Fact, as_facts, find_fact
-from complydoc.loaders import ABSOLUTE_PATH, SOURCE_KEYS, document_content, load_items, loader_name
-from complydoc.strings import find_hidden, mask_text, resolve_config, scan_text
+from complydoc.extraction.extract import tokenizer_for
+from complydoc.extraction.facts import FUZZY_THRESHOLD, Fact, as_facts, find_fact
+from complydoc.extraction.strings import find_hidden, mask_text, resolve_config, scan_text
+from complydoc.loaders.inspection import (
+    ABSOLUTE_PATH,
+    SOURCE_KEYS,
+    document_content,
+    load_items,
+    loader_name,
+)
+from complydoc.utils.frames import to_frame
 
 __all__ = [
     "FLAGS",
@@ -129,7 +136,7 @@ class ChunkReport:
 
     def to_pandas(self) -> Any:
         """One row per chunk. Requires the `notebook` extra."""
-        return _frame(self.rows(), list(_CHUNK_COLUMNS))
+        return to_frame(self.rows(), list(_CHUNK_COLUMNS))
 
 
 _CHUNK_COLUMNS = (
@@ -167,7 +174,7 @@ class ChunkComparison:
             "chunker", "chunks", "tokens_median", "tokens_p95", "tokens_max", *FLAGS,
             "repeated_identifiers", "facts_whole", "facts_split", "facts_missing",
         ]  # fmt: skip
-        return _frame(self.rows(), columns)
+        return to_frame(self.rows(), columns)
 
 
 def inspect_chunks(
@@ -388,11 +395,3 @@ def _locate(
             status = "missing"
         locations.append(FactLocation(fact.text, status, holding))
     return locations
-
-
-def _frame(rows: list[dict[str, Any]], columns: list[str]) -> Any:
-    try:
-        import pandas as pd
-    except ImportError as exc:
-        raise ImportError("to_pandas needs pandas: pip install 'complydoc[notebook]'") from exc
-    return pd.DataFrame(rows, columns=columns)

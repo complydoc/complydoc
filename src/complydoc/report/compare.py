@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from complydoc.report.models import AuditReport, DocumentReport
+from complydoc.utils.frames import to_frame
 
 __all__ = ["Change", "ReportDiff", "diff_reports"]
 
@@ -70,12 +71,8 @@ class ReportDiff:
 
     def to_pandas(self) -> Any:
         """The changes as a DataFrame. Requires the `notebook` extra."""
-        try:
-            import pandas as pd
-        except ImportError as exc:
-            raise ImportError("to_pandas needs pandas: pip install 'complydoc[notebook]'") from exc
         columns = ["area", "kind", "document", "subject", "before", "after", "worse"]
-        return pd.DataFrame(self.rows(), columns=columns)
+        return to_frame(self.rows(), columns=columns)
 
     def summary(self) -> str:
         """One line per change."""

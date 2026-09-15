@@ -23,7 +23,7 @@ from complydoc.config.loader import load_config
 from complydoc.config.schema import Config
 from complydoc.cost.tokenizer import TokenCount
 from complydoc.cost.tokenizer import count_tokens as _count_tokens
-from complydoc.extract import mask_matches, tokenizer_for
+from complydoc.extraction.extract import mask_matches, tokenizer_for
 from complydoc.hidden.check import check_content
 from complydoc.report.models import ContentFinding
 from complydoc.sensitive.base import SensitiveMatch

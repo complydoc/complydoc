@@ -284,7 +284,7 @@ def test_a_mark_never_carries_a_value_the_run_did_not_reveal(config, tmp_path):
     """
     import re
 
-    from complydoc.audit import run_audit
+    from complydoc.audit.run import run_audit
 
     report = run_audit(FIXTURES, config, ("sensitive",), ocr=False)
     revealed = {
@@ -304,7 +304,7 @@ def test_a_mark_never_carries_a_value_the_run_did_not_reveal(config, tmp_path):
 
 
 def _rendered(config, tmp_path) -> str:
-    from complydoc.audit import run_audit
+    from complydoc.audit.run import run_audit
     from complydoc.report.html_writer import write_html
 
     report = run_audit(FIXTURES, config, ("sensitive",), ocr=False, page_images=False)

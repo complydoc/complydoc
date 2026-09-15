@@ -7,8 +7,8 @@ it cannot know, and it always says who has to act.
 
 from __future__ import annotations
 
-from complydoc.audit import run_audit
-from complydoc.quickwins import quick_wins
+from complydoc.audit.run import run_audit
+from complydoc.report.quickwins import quick_wins
 from tests.helpers import FIXTURES
 
 ALL = ("cost", "readiness", "sensitive")
