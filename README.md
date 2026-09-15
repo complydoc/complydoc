@@ -93,7 +93,8 @@ OCR and name detection are optional extras. `complydoc doctor` shows what is ins
   out of scores.
 - **Evidence tiers**: every finding states how it was established, whether by checksum,
   corroboration, pattern or model.
-- **Configurable**: prices, signal weights and detection patterns are YAML files.
+- **Configurable**: prices, signal weights and detection patterns are YAML files, and name
+  detection can use your own spaCy models, per language, or any other model as a detector.
 - **One report**: a self-contained HTML file and a JSON file with a versioned schema.
 
 ## Resources

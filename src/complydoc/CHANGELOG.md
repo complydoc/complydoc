@@ -6,6 +6,8 @@ versioned separately.
 
 ## [Unreleased]
 
+## [0.4.2] — 2026-09-15
+
 ### Added
 
 - Name detection models are configurable per category: a spaCy package or a saved pipeline
@@ -252,7 +254,8 @@ First release.
 - `complydoc` audits the current directory; `--jobs`, `--sample`, `--password`.
 - Packaged agent skill.
 
-[Unreleased]: https://github.com/duartecaldascardoso/complydoc/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/duartecaldascardoso/complydoc/compare/v0.4.2...HEAD
+[0.4.2]: https://github.com/duartecaldascardoso/complydoc/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/duartecaldascardoso/complydoc/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/duartecaldascardoso/complydoc/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/duartecaldascardoso/complydoc/compare/v0.3.0...v0.3.1
