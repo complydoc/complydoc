@@ -136,7 +136,7 @@ page, and identifiers only some of them returned are listed on the Security page
   <tbody>
   {% for l in lc.loaders %}
     <tr{% if loop.first %} class="d-head"{% endif %}>
-      <td class="mono">{{ l.name }}{% if loop.first %} <span class="flag">baseline</span>{% endif %}{% if l.error %}
+      <td class="mono">{{ l.name }}{% for tag in l.tags %} <span class="ltag">{{ tag }}</span>{% endfor %}{% if loop.first %} <span class="flag">baseline</span>{% endif %}{% if l.error %}
         <span class="attn">did not finish</span>{% endif %}</td>
       <td class="n">{{ l.documents }}</td>
       <td class="n">{{ l.pages }}</td>
@@ -203,7 +203,7 @@ whitespace and words split at line breaks; a fuzzy match shows its similarity.</
 <h3>Loader</h3>
 <div class="scroll"><table>
   <tbody>
-    <tr><th>Loader</th><td class="mono">{{ report.loader.name }}</td></tr>
+    <tr><th>Loader</th><td class="mono">{{ report.loader.name }}{% for tag in report.loader.tags %} <span class="ltag">{{ tag }}</span>{% endfor %}</td></tr>
     <tr><th>Documents returned</th><td>{{ report.loader.documents_returned }}</td></tr>
     <tr><th>Load time</th><td>{% if report.loader.seconds is none %}passed in already
       loaded{% else %}{{ duration(report.loader.seconds) }}{% endif %}</td></tr>

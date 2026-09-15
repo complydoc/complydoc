@@ -19,6 +19,15 @@ list of documents already loaded.
 At least two are required. Every loader runs with the same `config`,
 `components`, `reveal`, `models` and `allow_network`.
 
+## Loader tags
+
+Each loader is tagged with the framework and library it comes from, read from its
+module and class: `PyPDFLoader` from `langchain_community` is tagged `LangChain` and
+`pypdf`, and a LlamaIndex reader is tagged `LlamaIndex`. Parser presets declare their
+tags, and hosted presets are also tagged `hosted`. Loaders from other modules get no
+tags. The tags are in `LoaderSummary.tags` and `LoaderRun.tags`, in the `tags` column of
+`report.to_pandas("loaders")`, and beside each loader's name in the HTML report.
+
 ## Baseline
 
 The first loader is the baseline. The report's findings, readiness score,

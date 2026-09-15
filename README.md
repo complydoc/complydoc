@@ -53,6 +53,15 @@ report = cd.compare_loaders(
 report.to_pandas("loaders")
 ```
 
+Works with [LangChain](https://github.com/langchain-ai/langchain),
+[LlamaIndex](https://github.com/run-llama/llama_index),
+[Unstructured](https://github.com/Unstructured-IO/unstructured),
+[Docling](https://github.com/docling-project/docling),
+[LlamaParse](https://github.com/run-llama/llama_cloud_services) and
+[Azure AI Document Intelligence](https://learn.microsoft.com/azure/ai-services/document-intelligence/),
+and with any loader that has a `load` method or is a callable. Reports tag each loader with the
+framework and library it comes from.
+
 The same from the command line, for CI:
 
 ```bash

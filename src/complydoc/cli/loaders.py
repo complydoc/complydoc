@@ -79,7 +79,7 @@ def compare_loaders_command(
             table.add_column("Facts found", justify="right")
         for row in report.loader_comparison.loaders:
             cells = [
-                row.name,
+                f"{row.name} [dim]{', '.join(row.tags)}[/]" if row.tags else row.name,
                 str(row.documents),
                 str(row.pages),
                 str(len(row.failures)),

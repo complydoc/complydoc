@@ -48,6 +48,7 @@ from complydoc.loaders.inspection import (
     inspect_run,
     loader_name,
 )
+from complydoc.loaders.origin import loader_tags
 from complydoc.loaders.parsers import LoaderSpec
 from complydoc.report.models import (
     AuditReport,
@@ -229,7 +230,7 @@ def _source(name: str, value: Any, files: list[Path] | None, cache: LoaderCache 
     factory = value.factory if isinstance(value, LoaderSpec) else value
     if not callable(factory):
         raise TypeError(f"with paths, {name} must be a callable taking a file path")
-    return FolderSource(factory, files, name=name, cache=cache)
+    return FolderSource(factory, files, name=name, cache=cache, tags=loader_tags(value))
 
 
 def _network(name: str, value: Any, allow_network: bool) -> bool:
@@ -447,6 +448,7 @@ def _summary(
         text_path_usd=report.aggregate.total_text_path_usd if report.aggregate else None,
         failures=dict(loader.failures),
         cached_files=loader.cached_files,
+        tags=list(loader.tags),
         facts_found=(
             sum(1 for check in fact_checks if check.found.get(loader.name))
             if fact_checks is not None

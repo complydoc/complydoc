@@ -21,9 +21,15 @@ versioned separately.
   within `top_k`, ranked lower, split across chunks or missing, with a hit rate and mean
   reciprocal rank per splitter. `complydoc chunks --questions questions.yaml --top-k N` and
   the chunks HTML page show the same. `cd.Question` and `cd.QuestionResult` are exported.
+- Loaders are tagged with the framework and library they come from (`LangChain`, `LlamaIndex`,
+  `Unstructured`, `Docling`, `LlamaParse`, `pypdf`, `pdfplumber` and others), and hosted parser
+  presets with `hosted`. The tags appear beside each loader in the HTML report, the
+  `compare-loaders` output and `report.to_pandas("loaders")`.
 
 ### Changed
 
+- Report `schema_version` 8 adds `tags` to `report.loader` and to each loader in
+  `loader_comparison`. `load_report` reads versions 5 to 8.
 - `lxml` is a direct dependency. It was already installed with `python-docx`.
 - The command line is a `complydoc.cli` package with a module per command group. The
   `complydoc` entry point and every command are unchanged; `--print-json` now routes progress

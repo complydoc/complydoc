@@ -61,6 +61,7 @@ from complydoc.ingest.base import (
     Page,
     sha256_of,
 )
+from complydoc.loaders.origin import loader_tags
 from complydoc.report.models import (
     SCHEMA_VERSION,
     AuditReport,
@@ -303,6 +304,7 @@ def _run_loader(source: Any, name: str | None, allow_network: bool) -> tuple[lis
         network_allowed=allow_network,
         failures=dict(source.failures) if isinstance(source, FolderSource) else {},
         cached_files=source.cached_files if isinstance(source, FolderSource) else 0,
+        tags=loader_tags(source),
     )
 
 
@@ -321,11 +323,13 @@ class FolderSource:
         *,
         name: str = "",
         cache: LoaderCache | None = None,
+        tags: Iterable[str] = (),
     ) -> None:
         self.factory = factory
         self.files = list(files)
         self.name = name
         self.cache = cache
+        self.tags = list(tags)
         self.failures: dict[str, str] = {}
         self.cached_files = 0
 

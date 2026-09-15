@@ -151,6 +151,7 @@ def _loaders(report: AuditReport) -> Iterator[Row]:
     for row in comparison.loaders:
         yield {
             "loader": row.name,
+            "tags": ", ".join(row.tags),
             "baseline": row.name == comparison.baseline,
             "documents": row.documents,
             "pages": row.pages,
@@ -244,7 +245,8 @@ COLUMNS: dict[str, tuple[str, ...]] = {
     "limitations": ("area", "severity", "statement", "affected"),
     "quick_wins": ("id", "title", "actor", "documents", "effect", "saving_usd_per_1000"),
     "loaders": (
-        "loader", "baseline", "documents", "pages", "characters", "seconds", "network_allowed",
+        "loader", "tags", "baseline", "documents", "pages", "characters", "seconds",
+        "network_allowed",
         "network_attempts", "error", "metadata_keys", "identifiers_in_text",
         "identifiers_in_metadata", "readiness_score", "global_score", "failed_files",
         "cached_files",

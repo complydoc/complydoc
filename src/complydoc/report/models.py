@@ -45,7 +45,7 @@ __all__ = [
     "RunMetadata",
 ]
 
-SCHEMA_VERSION = 7
+SCHEMA_VERSION = 8
 
 
 def report_shape() -> dict[str, object]:
@@ -112,12 +112,12 @@ def report_shape() -> dict[str, object]:
         "quick_wins[]": "id, title, detail, documents[], actor (complydoc | you), effect",
         "loader": (
             "null unless documents came from an external loader: name, "
-            "documents_returned, seconds, network_allowed, network_attempts[], error, "
+            "documents_returned, seconds, network_allowed, network_attempts[], error, tags[], "
             "metadata_keys[]"
         ),
         "loader_comparison": (
             "null unless compare_loaders ran: baseline, loaders[] (per-loader totals, "
-            "network, scores, failures, facts_found, parser_usd), facts[], "
+            "network, scores, failures, facts_found, parser_usd, tags[]), facts[], "
             "identifier_differences[] (found_by[], missed_by[]), "
             "metadata_keys (key -> loaders returning it), documents (path -> loaders)"
         ),
@@ -181,6 +181,8 @@ class LoaderRun:
     network_allowed: bool = False
     """The caller passed `allow_network=True`, so the loader's connections went
     through. complydoc's own processing stays behind the guard either way."""
+    tags: list[str] = field(default_factory=list)
+    """The framework and library the loader comes from, such as `LangChain` and `pypdf`."""
 
 
 VISIBILITY_LEVELS = ("visible", "not_measured", "suspected", "confirmed")
@@ -237,6 +239,8 @@ class LoaderSummary:
     facts_found: int | None = None
     """Expected facts found in this loader's text, when facts were given."""
     parser_usd: float | None = None
+    tags: list[str] = field(default_factory=list)
+    """The framework and library the loader comes from, such as `LangChain` and `pypdf`."""
     """Estimated parser cost for these pages, from `parsers` in `pricing.yaml`."""
 
 

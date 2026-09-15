@@ -50,6 +50,8 @@ class LoaderSpec:
     """True when the parser sends documents to a hosted service."""
     price_key: str | None = None
     """Entry under `parsers` in `pricing.yaml`, for the cost per page."""
+    tags: tuple[str, ...] = ()
+    """Framework and library names shown beside the loader in reports."""
 
 
 class _WithSource:
@@ -92,7 +94,9 @@ def docling(export: Literal["markdown", "chunks"] = "markdown", **options: Any) 
         loader = loader_module.DoclingLoader(file_path=path, export_type=export_type, **options)
         return _WithSource(loader.load, path)
 
-    return LoaderSpec(name="docling", factory=factory, price_key="docling")
+    return LoaderSpec(
+        name="docling", factory=factory, price_key="docling", tags=("LangChain", "Docling")
+    )
 
 
 def unstructured(
@@ -119,6 +123,7 @@ def unstructured(
     return LoaderSpec(
         name="unstructured-api" if api else "unstructured",
         factory=factory,
+        tags=("LangChain", "Unstructured"),
         network=api,
         price_key="unstructured_api" if api else None,
     )
@@ -152,6 +157,7 @@ def llamaparse(
     return LoaderSpec(
         name=f"llamaparse-{tier.replace('_', '-')}",
         factory=factory,
+        tags=("LlamaParse",),
         network=True,
         price_key=f"llamaparse_{tier}",
     )
@@ -185,6 +191,7 @@ def azure_document_intelligence(
     return LoaderSpec(
         name=f"azure-{model}",
         factory=factory,
+        tags=("LangChain", "Azure Document Intelligence"),
         network=True,
         price_key=_AZURE_PRICES.get(model),
     )
