@@ -105,21 +105,21 @@ source and replace `price_source`/`imported_on` with `last_verified`.
 Work lands on `development`; `main` receives fast-forward merges for releases. Both run the
 full check suite.
 
-Releases increment the patch number: 0.4.6, 0.4.7, 0.4.8. The minor number changes
+Releases increment the patch number. The minor number changes
 only for a breaking change to the report JSON or a config key. `schema_version` in the
 report JSON is versioned separately and moves whenever the JSON shape changes.
 
 ```bash
 make release-check
-git tag -a v0.4.7 -m "complydoc v0.4.7"
-git push origin v0.4.7
+git tag -a "v$VERSION" -m "complydoc v$VERSION"
+git push origin "v$VERSION"
 ```
 
 The tag must match `complydoc.__version__` and have a changelog entry. `release.yml` builds the
 wheel and sdist, an SBOM and checksums, attests the artefacts, and drafts a release:
 
 ```bash
-gh attestation verify complydoc-0.4.0-py3-none-any.whl --repo complydoc/complydoc
+gh attestation verify complydoc-$VERSION-py3-none-any.whl --repo complydoc/complydoc
 ```
 
 Publishing the draft runs `publish.yml`, which uploads the attached artefacts to PyPI through
