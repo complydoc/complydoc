@@ -24,11 +24,17 @@ with tempfile.TemporaryDirectory() as folder:
 
     config = cd.load_config().override(
         {
+            # The shipped configuration tries a transformer first and keeps spaCy
+            # as the fallback. This is about spaCy, so the category is pointed at
+            # it and the rest of the chain cleared: otherwise the pipeline built
+            # above is handed to a detector that cannot read it.
+            "sensitive.categories.person_name.detector": "ner",
+            "sensitive.categories.person_name.fallback": [],
             "sensitive.categories.person_name.model": {
                 "name": english,
                 "entity_labels": ["PERSON"],
                 "by_language": {"pt": {"name": portuguese, "entity_labels": ["PER"]}},
-            }
+            },
         }
     )
 
