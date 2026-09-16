@@ -45,7 +45,7 @@ __all__ = [
     "RunMetadata",
 ]
 
-SCHEMA_VERSION = 8
+SCHEMA_VERSION = 9
 
 
 def report_shape() -> dict[str, object]:
@@ -79,6 +79,7 @@ def report_shape() -> dict[str, object]:
             "page_images_used": "bool",
             "extracted_text_used": "bool",
             "jobs": "worker processes used",
+            "timeout_seconds": "seconds each document was given, when --timeout was used",
             "documents_read_after_worker_failure": "documents re-read after a worker stopped",
             "config_digest": "identifies the config that produced these numbers",
         },
@@ -342,6 +343,8 @@ class RunMetadata:
     compare_engines: list[str] = field(default_factory=list)
     jobs: int = 1
     """Worker processes used. More than one changes nothing about the findings."""
+    timeout_seconds: float | None = None
+    """Seconds each document was given, when --timeout was used."""
     sampled_from: int | None = None
     """Documents found, when --sample meant only some of them were opened."""
     sample_size: int | None = None

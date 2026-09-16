@@ -19,8 +19,9 @@ import datetime as dt
 import os
 import platform
 import time
+from collections import deque
 from collections.abc import Callable, Iterator, Sequence
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import Future, ProcessPoolExecutor
 from concurrent.futures.process import BrokenProcessPool
 from dataclasses import dataclass
 from multiprocessing import get_all_start_methods, get_context
@@ -35,7 +36,7 @@ from complydoc.config.schema import Config, ModelPricing
 from complydoc.cost.estimator import estimate_document, folder_from_estimates, resolve_models
 from complydoc.hidden.check import check_content
 from complydoc.ingest import ocr as ocr_module
-from complydoc.ingest.base import Document, IngestOptions, LoaderError, SkipRecord
+from complydoc.ingest.base import TIMED_OUT, Document, IngestOptions, LoaderError, SkipRecord
 from complydoc.ingest.extractors.registry import DEFAULT_EXTRACTOR
 from complydoc.ingest.registry import load_document
 from complydoc.readiness.analyser import analyse
@@ -321,13 +322,82 @@ def _process_pool(jobs: int, work: Work) -> ProcessPoolExecutor:
     )
 
 
-def _outcomes(files: list[Path], work: Work, jobs: int) -> Iterator[_Outcome]:
+def _kill(pool: ProcessPoolExecutor) -> None:
+    """Stop a pool whose worker has hung inside a parser.
+
+    `shutdown` waits for the running document, which is the one that has stopped
+    responding, so the workers are killed first. `_processes` is private to the
+    executor, and there is no public way to reach them.
+    """
+    for process in list(getattr(pool, "_processes", {}).values()):
+        process.kill()
+    pool.shutdown(wait=False, cancel_futures=True)
+
+
+def _timed(files: list[Path], work: Work, jobs: int, timeout: float) -> Iterator[_Outcome]:
+    """Outcomes in order, giving each document `timeout` seconds of its own.
+
+    Only killing the process stops a document stuck inside a parser's native code,
+    so a run with a timeout always uses workers, even with one job. One document
+    per worker is in flight and the oldest is always waited on, so results keep the
+    order the files were discovered. A document that passes its deadline is
+    recorded as skipped, the workers are killed, the documents that were in flight
+    go back in the queue, and a new pool carries on with them.
+    """
+    queue = deque(files)
+    in_flight: dict[Future[_Outcome], tuple[Path, float]] = {}
+    pool = _process_pool(jobs, work)
+    try:
+        while queue or in_flight:
+            while queue and len(in_flight) < jobs:
+                path = queue.popleft()
+                in_flight[pool.submit(_worker, path)] = (path, time.monotonic())
+            future, (path, began) = next(iter(in_flight.items()))
+            try:
+                outcome = future.result(timeout=max(0.0, timeout - (time.monotonic() - began)))
+            except TimeoutError:
+                del in_flight[future]
+                queue.extendleft(reversed([p for p, _began in in_flight.values()]))
+                in_flight.clear()
+                _kill(pool)
+                pool = _process_pool(jobs, work)
+                yield _Outcome(
+                    None,
+                    SkipRecord(
+                        path=path,
+                        reason=TIMED_OUT,
+                        detail=f"no result after {timeout:g}s",
+                    ),
+                )
+            except BrokenProcessPool:
+                waiting = [path, *(p for p, _began in in_flight.values()), *queue]
+                in_flight.clear()
+                queue.clear()
+                for remaining in waiting:
+                    yield dataclasses.replace(_process(remaining, work), recovered=True)
+            else:
+                del in_flight[future]
+                ocr_module.add_stats(outcome.ocr_pages, outcome.ocr_seconds)
+                yield outcome
+    finally:
+        pool.shutdown(wait=False, cancel_futures=True)
+
+
+def _outcomes(
+    files: list[Path], work: Work, jobs: int, timeout: float | None = None
+) -> Iterator[_Outcome]:
     """Results in the order the files were discovered, serial or parallel.
 
     If a worker process stops, for example by crashing inside a native library, the
     pool cannot continue. The documents that had not come back are then read in this
     process and marked `recovered`, so the run completes with every document.
+
+    With `timeout`, each document is given that many seconds and the run always uses
+    workers, because a document can only be stopped by killing the process reading it.
     """
+    if timeout is not None and timeout > 0 and files:
+        yield from _timed(files, work, max(1, jobs), timeout)
+        return
     if jobs <= 1 or len(files) < 2:
         for path in files:
             yield _process(path, work)
@@ -370,6 +440,7 @@ class AuditPlan:
     skipped: list[SkipRecord]
     work: Work
     jobs: int
+    timeout: float | None
     requested: list[str]
     found: int
     extractor: str
@@ -395,6 +466,7 @@ def plan_audit(
     compare_engines: Sequence[str] = (),
     jobs: int = 1,
     sample: int | None = None,
+    timeout: float | None = None,
 ) -> AuditPlan:
     """Discover the files and settle how each will be read, before opening any."""
     requested = [c for c in COMPONENTS if c in set(components)]
@@ -441,6 +513,7 @@ def plan_audit(
         skipped=skipped,
         work=work,
         jobs=resolve_jobs(jobs, len(files)),
+        timeout=timeout,
         requested=requested,
         found=found,
         extractor=extractor or DEFAULT_EXTRACTOR,
@@ -453,7 +526,7 @@ def iter_entries(plan: AuditPlan, *, guard: bool = True) -> Iterator[DocumentRep
     The network guard is armed only while a document is being read.
     """
     yield from plan.skipped
-    outcomes = _outcomes(plan.files, plan.work, plan.jobs)
+    outcomes = _outcomes(plan.files, plan.work, plan.jobs, plan.timeout)
     while True:
         with offline.guarded(guard):
             outcome = next(outcomes, None)
@@ -487,6 +560,7 @@ def run_audit(
     compare_engines: Sequence[str] = (),
     jobs: int = 1,
     sample: int | None = None,
+    timeout: float | None = None,
     progress: Callable[[int, int, Path], None] | None = None,
 ) -> AuditReport:
     started = time.monotonic()
@@ -510,6 +584,7 @@ def run_audit(
         compare_engines=compare_engines,
         jobs=jobs,
         sample=sample,
+        timeout=timeout,
     )
     files, skipped, work, jobs = plan.files, plan.skipped, plan.work, plan.jobs
     requested, found, chosen_extractor = plan.requested, plan.found, plan.extractor
@@ -518,7 +593,7 @@ def run_audit(
 
     documents: list[DocumentReport] = []
     recovered = 0
-    for index, outcome in enumerate(_outcomes(files, work, jobs), start=1):
+    for index, outcome in enumerate(_outcomes(files, work, jobs, plan.timeout), start=1):
         recovered += outcome.recovered
         if progress is not None:
             progress(index, len(files), files[index - 1])
@@ -549,6 +624,7 @@ def run_audit(
         python_version=platform.python_version(),
         monthly_volume=monthly_volume,
         jobs=jobs,
+        timeout_seconds=timeout,
         sampled_from=found if sampled else None,
         sample_size=len(files) if sampled else None,
         password_used=bool(password),

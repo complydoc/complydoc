@@ -11,7 +11,7 @@ from collections import defaultdict
 
 from complydoc.config.loader import StalenessWarning
 from complydoc.config.schema import Config
-from complydoc.ingest.base import SkipRecord
+from complydoc.ingest.base import TIMED_OUT, SkipRecord
 from complydoc.readiness.base import SignalStatus
 from complydoc.report.models import DocumentReport, Limitation, RunMetadata
 from complydoc.utils.text import count, plural
@@ -171,13 +171,22 @@ def build_limitations(
         for record in skipped:
             by_reason[record.reason].append(record.path.name)
         for reason, files in sorted(by_reason.items()):
+            if reason == TIMED_OUT:
+                # These opened; they were stopped part way, which is a different fact.
+                limit = f"{run.timeout_seconds:g}s" if run.timeout_seconds else "the time limit"
+                statement = (
+                    f"{count(len(files), 'file')} were still being read after {limit} and were "
+                    f"stopped. Nothing in this report says anything about them."
+                )
+            else:
+                statement = (
+                    f"{count(len(files), 'file')} were not examined because they could not be "
+                    f"opened ({reason}). Nothing in this report says anything about them."
+                )
             limitations.append(
                 Limitation(
                     area="Files not examined",
-                    statement=(
-                        f"{count(len(files), 'file')} were not examined because they could not be "
-                        f"opened ({reason}). Nothing in this report says anything about them."
-                    ),
+                    statement=statement,
                     affected=sorted(files),
                     severity="important",
                 )

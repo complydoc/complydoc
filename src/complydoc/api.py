@@ -265,6 +265,10 @@ class AuditOptions(TypedDict, total=False):
     """Audit this many documents, keeping each file type's share of the folder."""
     jobs: int
     """Worker processes. 1 by default; 0 reads the folder and decides."""
+    timeout: float | None
+    """Seconds to give each document. A document still being read when the time
+    passes is stopped and reported as skipped. Enforced by reading in a worker
+    process, so a run with a timeout always uses one."""
     page_images: bool
     extracted_text: bool
     """Keep the text read off each page. It is the document, so it is off by default."""
@@ -306,6 +310,7 @@ def _audit(
             compare_engines=tuple(options.get("compare_engines") or ()),
             jobs=options.get("jobs", 1),
             sample=options.get("sample"),
+            timeout=options.get("timeout"),
             progress=options.get("progress"),
         )
 
@@ -398,6 +403,7 @@ def iter_audit(
         compare_engines=tuple(options.get("compare_engines") or ()),
         jobs=options.get("jobs", 1),
         sample=options.get("sample"),
+        timeout=options.get("timeout"),
     )
     return iter_entries(plan, guard=options.get("offline_guard", True))
 

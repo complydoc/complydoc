@@ -39,6 +39,7 @@ __all__ = [
     "SampleOpt",
     "SaveTextOpt",
     "TargetArg",
+    "TimeoutOpt",
     "app",
     "console",
     "emit",
@@ -171,6 +172,15 @@ JobsOpt = Annotated[
         help="Documents to process at once. The default reads the size of the "
         "folder and decides; 1 forces one process. Changes how long the run "
         "takes and nothing about what it finds.",
+    ),
+]
+TimeoutOpt = Annotated[
+    float,
+    typer.Option(
+        "--timeout",
+        help="Seconds to give each document. A document still being read when the "
+        "time passes is stopped and listed as skipped. 0 means no limit. Reading "
+        "happens in a worker process when this is set, even with --jobs 1.",
     ),
 ]
 SampleOpt = Annotated[

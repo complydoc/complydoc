@@ -6,6 +6,18 @@ versioned separately.
 
 ## [Unreleased]
 
+### Added
+
+- `--timeout SECONDS` on `audit`, `compare`, `cost`, `readiness` and `sensitive`, and
+  `timeout=` in the Python API. A document still being read when the time passes is stopped
+  and listed as skipped with the reason `timed out`, and the report says so under
+  limitations. A document can only be stopped by killing the process reading it, so a run
+  with a timeout always uses a worker process, even with `--jobs 1`.
+
+### Changed
+
+- Report `schema_version` 9 adds `run.timeout_seconds`. `load_report` reads versions 5 to 9.
+
 ## [0.4.5] — 2026-09-15
 
 ### Added

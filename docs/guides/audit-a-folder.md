@@ -51,6 +51,20 @@ pdfplumber walks the text layer in file order, crossing both columns, and
 returns the same character count as a reader that follows the columns. The
 report labels this `same words, different order`.
 
+## Documents that never finish
+
+A parser can hang on a malformed file. `--timeout` gives each document a number of
+seconds and stops the ones that pass it:
+
+```bash
+complydoc audit ~/contracts --timeout 120
+```
+
+A stopped document is listed as skipped with the reason `timed out`, and the report
+states how many were stopped and after how long. Reading happens in a worker process
+whenever a timeout is set, because that is the only way to stop a parser that has
+stopped responding. Without `--timeout` there is no limit.
+
 `complydoc compare ~/contracts` uses every reader and OCR engine you have
 installed.
 

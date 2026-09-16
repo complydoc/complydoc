@@ -17,6 +17,7 @@ if TYPE_CHECKING:  # pragma: no cover - typing only
     from PIL.Image import Image
 
 __all__ = [
+    "TIMED_OUT",
     "Document",
     "DocumentFormat",
     "ExtractionSummary",
@@ -54,6 +55,9 @@ class DocumentFormat(StrEnum):
     appears together as "other".
     """
 
+
+TIMED_OUT = "timed out"
+"""Skip reason for a document still being read when the time limit passed."""
 
 TextSource = Literal["native", "ocr", "none", "loader"]
 """Where a page's text came from.
@@ -248,7 +252,7 @@ class Document:
 
 @dataclass(frozen=True, slots=True)
 class SkipRecord:
-    """A file complydoc could not open. It is reported and the run continues."""
+    """A file complydoc could not open, or could not finish. Reported; the run continues."""
 
     path: Path
     reason: str

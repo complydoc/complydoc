@@ -46,6 +46,7 @@ from complydoc.cli.common import (
     SampleOpt,
     SaveTextOpt,
     TargetArg,
+    TimeoutOpt,
     app,
     console,
     emit,
@@ -195,6 +196,7 @@ def run(
     password: str = "",
     jobs: int = 0,
     sample: int | None = None,
+    timeout: float | None = None,
     save_text: Path | None = None,
     extractor: str | None = None,
     compare_extractors: list[str] | None = None,
@@ -243,6 +245,7 @@ def run(
                 compare_engines=tuple(compare_engines or ()),
                 jobs=jobs,
                 sample=sample,
+                timeout=timeout,
                 progress=progress,
             )
     except UnknownModelError as exc:
@@ -281,6 +284,7 @@ def audit(
     password: PasswordOpt = "",
     jobs: JobsOpt = 0,
     sample: SampleOpt = None,
+    timeout: TimeoutOpt = 0.0,
     config_dir: ConfigOpt = None,
     ocr: OcrOpt = True,
     recurse: RecurseOpt = True,
@@ -318,6 +322,7 @@ def audit(
         password=password,
         jobs=jobs,
         sample=sample,
+        timeout=timeout or None,
     )
 
 
@@ -402,6 +407,7 @@ def compare(
     password: PasswordOpt = "",
     jobs: JobsOpt = 0,
     sample: SampleOpt = None,
+    timeout: TimeoutOpt = 0.0,
     config_dir: ConfigOpt = None,
     ocr: OcrOpt = True,
     recurse: RecurseOpt = True,
@@ -470,6 +476,7 @@ def compare(
         password=password,
         jobs=jobs,
         sample=sample,
+        timeout=timeout or None,
     )
 
 
@@ -489,6 +496,7 @@ def cost(
     password: PasswordOpt = "",
     jobs: JobsOpt = 0,
     sample: SampleOpt = None,
+    timeout: TimeoutOpt = 0.0,
     config_dir: ConfigOpt = None,
     ocr: OcrOpt = True,
     recurse: RecurseOpt = True,
@@ -522,6 +530,7 @@ def cost(
         password=password,
         jobs=jobs,
         sample=sample,
+        timeout=timeout or None,
     )
 
 
@@ -535,6 +544,7 @@ def readiness(
     password: PasswordOpt = "",
     jobs: JobsOpt = 0,
     sample: SampleOpt = None,
+    timeout: TimeoutOpt = 0.0,
     config_dir: ConfigOpt = None,
     ocr: OcrOpt = True,
     recurse: RecurseOpt = True,
@@ -567,6 +577,7 @@ def readiness(
         password=password,
         jobs=jobs,
         sample=sample,
+        timeout=timeout or None,
     )
 
 
@@ -587,6 +598,7 @@ def sensitive(
     password: PasswordOpt = "",
     jobs: JobsOpt = 0,
     sample: SampleOpt = None,
+    timeout: TimeoutOpt = 0.0,
     config_dir: ConfigOpt = None,
     ocr: OcrOpt = True,
     recurse: RecurseOpt = True,
@@ -620,4 +632,5 @@ def sensitive(
         password=password,
         jobs=jobs,
         sample=sample,
+        timeout=timeout or None,
     )
