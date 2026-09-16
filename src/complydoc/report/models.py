@@ -240,9 +240,9 @@ class LoaderSummary:
     facts_found: int | None = None
     """Expected facts found in this loader's text, when facts were given."""
     parser_usd: float | None = None
+    """Estimated parser cost for these pages, from `parsers` in `pricing.yaml`."""
     tags: list[str] = field(default_factory=list)
     """The framework and library the loader comes from, such as `LangChain` and `pypdf`."""
-    """Estimated parser cost for these pages, from `parsers` in `pricing.yaml`."""
 
 
 @dataclass(frozen=True, slots=True)

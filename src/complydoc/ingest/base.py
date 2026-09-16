@@ -159,8 +159,6 @@ class Page:
     fonts: set[str] = field(default_factory=set)
     embedded_fonts: bool | None = None
     ocr_text: str = ""
-    ocr_confidence: float | None = None
-    """The engine's mean confidence in what it read, 0 to 1. None if it did not run."""
     """What OCR read, kept separately from `text`.
 
     Normally OCR only runs where there is no text layer, and its output becomes
@@ -168,6 +166,8 @@ class Page:
     and the recognised text can be put side by side — which is how you tell a
     document that extracts badly from an extractor that reads it badly.
     """
+    ocr_confidence: float | None = None
+    """The engine's mean confidence in what it read, 0 to 1. None if it did not run."""
     raw_chars: str = ""
     """Page characters as stored, before any unicode normalisation.
 
