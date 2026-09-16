@@ -107,11 +107,16 @@ def test_a_name_past_the_token_ceiling_is_still_found(config):
 def test_a_missing_model_is_reported_rather_than_downloaded():
     """A scan runs inside the network guard, so nothing is fetched to fix this.
 
-    Which exception the library raises for a model it cannot find varies, so
-    what is checked here is the contract: unavailable, and the reason names the
-    model so the reader knows which one to fetch.
+    There are two ways to be unavailable and each has its own thing to say: the
+    extra is not installed, or it is and the model is not on the machine. Which
+    exception the library raises for a model it cannot find varies, so what is
+    checked is that the reason tells the reader what to do about it.
     """
     ok, reason = model_available("complydoc/no-such-model-exists")
 
     assert not ok
-    assert reason and "complydoc/no-such-model-exists" in reason
+    assert reason
+    if importlib.util.find_spec("transformers") is None:
+        assert "multilingual-names" in reason, "say which extra is missing"
+    else:
+        assert "complydoc/no-such-model-exists" in reason, "say which model to fetch"

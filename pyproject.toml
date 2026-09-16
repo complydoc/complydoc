@@ -147,6 +147,8 @@ module = [
     "pypdfium2.*",
     "rapidocr_onnxruntime.*",
     "spacy.*",
+    "torch.*",
+    "transformers.*",
     "tiktoken.*",
     "docx.*",
     "openpyxl.*",
