@@ -65,10 +65,14 @@ framework and library it comes from.
 The same from the command line, for CI:
 
 ```bash
+complydoc routing ./documents
 complydoc compare-loaders loaders.yaml
 complydoc chunks ./documents --splitter "langchain_text_splitters:RecursiveCharacterTextSplitter chunk_size=800"
 complydoc diff baseline.json .complydoc/complydoc.json
 ```
+
+A parser can hang on a malformed file: `--timeout 120` gives each document a deadline and
+lists the ones it stopped.
 
 OCR and name detection are optional extras. `complydoc doctor` shows what is installed.
 
@@ -78,6 +82,9 @@ OCR and name detection are optional extras. `complydoc doctor` shows what is ins
   and email (`.eml`).
 - **Token cost**: text and vision tokens per document, priced across models and three
   extraction paths (text layer, OCR, vision).
+- **Page routing**: the path each page needs — its text layer, local OCR or a vision model —
+  with the reason, priced as a mix against sending everything one way, and written as a
+  manifest an ingestion job can read.
 - **Extraction readiness**: measured signals such as text layer coverage, tables, columns,
   rotation, scan resolution, garbled characters, glyph codes and repeated headers.
 - **Identifiers**: personal and financial identifiers from Europe, the Americas, India and Australia,

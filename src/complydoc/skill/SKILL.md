@@ -24,13 +24,14 @@ Run `complydoc` with no arguments to audit the current directory.
 
 | Command | Scope |
 | --- | --- |
-| `complydoc audit <path>` | All three components |
+| `complydoc audit <path>` | All three components; `--timeout N` stops a document that hangs |
 | `complydoc cost <path>` | Cost only |
 | `complydoc readiness <path>` | Extraction readiness only |
 | `complydoc sensitive <path>` | Identifiers only |
 | `complydoc models` | Which models can be priced against (`--new N` for the latest, `--all` for every one) |
 | `complydoc doctor` | What is installed |
 | `complydoc compare-loaders <file.yaml>` | Several document loaders on the same files, from a YAML description |
+| `complydoc routing <path>` | Which pages need the text layer, local OCR or a vision model, priced as a mix, written as a manifest |
 | `complydoc chunks <path> --splitter module:attr` | Chunks a text splitter makes: sizes, cut sentences and tables, identifiers, facts |
 | `complydoc diff <old.json> <new.json>` | Changes between two reports; exits 1 when something got worse |
 

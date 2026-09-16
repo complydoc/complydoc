@@ -6,6 +6,8 @@ versioned separately.
 
 ## [Unreleased]
 
+## [0.4.6] — 2026-09-16
+
 ### Added
 
 - Page routing. Every page carries the extraction path it needs — its text layer, local OCR,
@@ -26,6 +28,8 @@ versioned separately.
   top-level `routing` summary. `load_report` reads versions 5 to 10.
 - Figures compared with each other in the report share one precision, so a routed mix and
   an all-vision total are read against each other rather than at different scales.
+- `compare-loaders` shows each loader's framework and library in their own column, which no
+  longer wraps the loader's name in a narrow terminal.
 
 ## [0.4.5] — 2026-09-15
 
@@ -347,7 +351,8 @@ First release.
 - `complydoc` audits the current directory; `--jobs`, `--sample`, `--password`.
 - Packaged agent skill.
 
-[Unreleased]: https://github.com/complydoc/complydoc/compare/v0.4.5...HEAD
+[Unreleased]: https://github.com/complydoc/complydoc/compare/v0.4.6...HEAD
+[0.4.6]: https://github.com/complydoc/complydoc/compare/v0.4.5...v0.4.6
 [0.4.5]: https://github.com/complydoc/complydoc/compare/v0.4.4...v0.4.5
 [0.4.4]: https://github.com/complydoc/complydoc/compare/v0.4.3...v0.4.4
 [0.4.3]: https://github.com/complydoc/complydoc/compare/v0.4.2...v0.4.3
