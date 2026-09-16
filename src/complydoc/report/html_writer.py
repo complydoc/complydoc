@@ -169,10 +169,18 @@ def _diffs_for(text: object) -> list[ReadingDiff]:
     return compare_readings(kept, others)
 
 
-def _money(value: float | None, currency: str = "USD") -> str:
+def _money(value: float | None, currency: str = "USD", places: int | None = None) -> str:
+    """A figure with its currency symbol.
+
+    Without `places`, small figures get five decimals and larger ones two, which
+    keeps a fraction of a cent readable. With `places`, every figure gets the same
+    precision, for a set of numbers that exist to be compared with each other.
+    """
     if value is None:
         return "—"
     symbol = {"USD": "$", "GBP": "£", "EUR": "€"}.get(currency.upper(), f"{currency} ")
+    if places is not None:
+        return f"{symbol}{value:,.{places}f}"
     if value and abs(value) < 0.01:
         return f"{symbol}{value:.5f}"
     return f"{symbol}{value:,.2f}"
@@ -330,6 +338,8 @@ def render_html(report: AuditReport, config: Config) -> str:
         page_rows=page_rows,
         sensitive_rows=sensitive_rows,
         money=lambda v: _money(v, currency),
+        # One precision across a set of figures being compared with each other.
+        money_compared=lambda v: _money(v, currency, places=4),
         category_meta=category_meta,
         duration=duration,
         count=count,

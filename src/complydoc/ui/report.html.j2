@@ -404,17 +404,17 @@ are in <span class="mono">readiness.yaml</span> under <span class="mono">routing
 <div class="scroll"><table>
   <thead><tr><th>Every page</th><th class="n">Cost for this folder</th></tr></thead>
   <tbody>
-    <tr class="d-head"><td>by the route it needs</td><td class="n">{{ money(routing.routed_usd) }}</td></tr>
+    <tr class="d-head"><td>by the route it needs</td><td class="n">{{ money_compared(routing.routed_usd) }}</td></tr>
     <tr><td>from its text layer</td>
-      <td class="n">{{ "—" if routing.text_layer_usd is none else money(routing.text_layer_usd) }}</td></tr>
+      <td class="n">{{ "—" if routing.text_layer_usd is none else money_compared(routing.text_layer_usd) }}</td></tr>
     <tr><td>text layer, scans through local OCR</td>
-      <td class="n">{{ "—" if routing.text_ocr_usd is none else money(routing.text_ocr_usd) }}</td></tr>
+      <td class="n">{{ "—" if routing.text_ocr_usd is none else money_compared(routing.text_ocr_usd) }}</td></tr>
     <tr><td>as an image to a vision model</td>
-      <td class="n">{{ "—" if routing.vision_usd is none else money(routing.vision_usd) }}</td></tr>
+      <td class="n">{{ "—" if routing.vision_usd is none else money_compared(routing.vision_usd) }}</td></tr>
   </tbody>
 </table></div>
 {% if routing.saved_against_vision_usd %}
-<p class="note">Routing saves {{ money(routing.saved_against_vision_usd) }} against sending
+<p class="note">Routing saves {{ money_compared(routing.saved_against_vision_usd) }} against sending
 every page as an image, with {{ routing.vision_pages_pct }}% of pages still needing one.</p>
 {% endif %}
 <p class="note">{{ routing.basis }}</p>
