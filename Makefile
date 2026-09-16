@@ -150,4 +150,7 @@ sample: ## Refresh the sample documents the demo audits, from the fixtures
 	cp $(TESTS)/fixtures/scanned_page.pdf        src/complydoc/sample/invoice-scan.pdf
 	cp $(TESTS)/fixtures/sample.docx             src/complydoc/sample/supplier-list.docx
 	cp $(TESTS)/fixtures/hidden_instructions.pdf src/complydoc/sample/vendor-assessment.pdf
+	cp $(TESTS)/fixtures/supplier_contract_pt.pdf src/complydoc/sample/supplier-contract-pt.pdf
+	cp $(TESTS)/fixtures/invoice_de.pdf          src/complydoc/sample/invoice-de.pdf
+	cp $(TESTS)/fixtures/injection_fr.pdf        src/complydoc/sample/vendor-assessment-fr.pdf
 	@echo "Only documents belong in that folder: anything else is reported as skipped."

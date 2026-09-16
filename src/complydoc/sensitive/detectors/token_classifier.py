@@ -55,6 +55,14 @@ def _install_hint(model_name: str) -> str:
 
 @lru_cache(maxsize=2)
 def _load(model_name: str) -> Any:
+    # Set before the library is imported. `huggingface_hub` reads these once, as
+    # it is imported, and a value set afterwards is never seen: the weights come
+    # from the cache either way, but the tokenizer asks the hub for its templates
+    # and a scan's network guard stops the run there.
+    os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
+    os.environ["HF_HUB_OFFLINE"] = "1"
+    os.environ["TRANSFORMERS_OFFLINE"] = "1"
+
     try:
         from transformers import pipeline
     except ImportError as exc:
@@ -62,13 +70,6 @@ def _load(model_name: str) -> Any:
             "the token classifier needs the optional extra "
             "(install with: uv sync --extra multilingual-names)"
         ) from exc
-
-    # A scan runs inside the network guard, so the weights have to be on disk
-    # already. This is set as the environment variable the library reads rather
-    # than passed as an argument: recent versions pass `local_files_only` to the
-    # config loader themselves, and supplying it again is a TypeError.
-    os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
-    os.environ["HF_HUB_OFFLINE"] = "1"
 
     from complydoc.offline import NetworkAccessError
 

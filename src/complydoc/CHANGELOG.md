@@ -15,6 +15,11 @@ versioned separately.
   measured comparison of four models, including a multilingual one that finds every name in
   the corpus where the shipped English model finds two thirds.
 
+- Three example documents in the fixtures, and in the folder `complydoc demo` audits: a
+  Portuguese supplier contract, a German invoice and a French vendor assessment with an
+  instruction to a model hidden in white text. Everything shipped before was English, which
+  is not what these documents are.
+
 - A `token_classifier` detector reads names with a local token-classification model, for the
   European languages the shipped English model does not. It is the recommended setting where
   names matter: measured against the benchmark corpus it finds every name where the shipped
@@ -24,6 +29,12 @@ versioned separately.
   hundred tokens at a time and a name past that point would otherwise be missed.
 
 ### Fixed
+
+- The token classifier reached the network on its first load, and a scan's own guard then
+  stopped it: every audit reported names as a category that could not be scanned. The
+  offline switch is read by `huggingface_hub` as it is imported, so it is now set before the
+  import rather than after it. The weights were always in the cache; what went to the hub
+  was the tokenizer asking for its templates.
 
 - A category pointed at a detector of the caller's own was scored as a pattern, which let a
   name model move the published numbers. A category is model-backed when it carries a model,

@@ -356,7 +356,7 @@ def demo(
         typer.Option("--open/--no-open", help="Open the report when it is written."),
     ] = True,
 ) -> None:
-    """Audit seven sample documents, so you can see a report without finding a folder.
+    """Audit the sample documents, so you can see a report without finding a folder.
 
     The samples ship with the tool and are synthetic: every identifier in them
     was invented. Between them they carry a scan with no text layer, a
@@ -369,7 +369,7 @@ def demo(
         raise typer.Exit(code=2)
 
     console.print(
-        "[dim]Auditing the seven sample documents that ship with complydoc. "
+        "[dim]Auditing the sample documents that ship with complydoc. "
         "They are synthetic — no real person is described in them.[/]"
     )
     run(

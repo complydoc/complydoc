@@ -120,3 +120,45 @@ def test_a_missing_model_is_reported_rather_than_downloaded():
         assert "multilingual-names" in reason, "say which extra is missing"
     else:
         assert "complydoc/no-such-model-exists" in reason, "say which model to fetch"
+
+
+def test_the_offline_switch_is_set_before_the_library_is_imported(tmp_path):
+    """The bug this guards: a scan reached the hub and the guard stopped it.
+
+    `huggingface_hub` reads its offline setting once, as it is imported, so a
+    value set afterwards is never seen. The weights come from the cache either
+    way; what went to the network was the tokenizer asking for its templates.
+
+    It has to be a fresh process. By the time this suite reaches here another
+    test may have imported the library already, and then the ordering under
+    test no longer happens.
+    """
+    import subprocess
+    import sys
+
+    script = """
+import sys
+from complydoc import offline
+from complydoc.sensitive.detectors.token_classifier import model_available
+
+offline.arm()                      # armed first, exactly as an audit does
+assert "transformers" not in sys.modules, "the library must not be imported yet"
+ok, reason = model_available("Babelscape/wikineural-multilingual-ner")
+print("OK" if ok else f"FAILED {reason}")
+"""
+    import os
+
+    # The real HOME: the model cache lives under it, and a fresh HOME would
+    # hide the weights and pass this test for the wrong reason.
+    environment = dict(os.environ)
+    environment["PYTHONPATH"] = ":".join(sys.path)
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        capture_output=True,
+        text=True,
+        cwd=str(tmp_path),
+        env=environment,
+    )
+    if "FAILED" in result.stdout and "not on this machine" in result.stdout:
+        pytest.skip("the model is not on this machine")
+    assert "OK" in result.stdout, f"{result.stdout}\n{result.stderr[-2000:]}"

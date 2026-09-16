@@ -363,7 +363,12 @@ def test_the_demo_audits_the_samples_that_ship_with_the_tool(tmp_path):
     result = runner.invoke(app, ["demo", "--no-open", "--no-ocr", "--out", str(tmp_path)])
     assert result.exit_code == 0, result.output
     report = json.loads((tmp_path / "complydoc-demo.json").read_text())
-    assert len(report["documents"]) == 7
+    # Counted from the folder rather than written down here: documents get
+    # added to it, and a number in a test is one more thing to remember.
+    from importlib.resources import files
+
+    shipped = [item.name for item in files("complydoc.sample").iterdir() if item.is_file()]
+    assert len(report["documents"]) == len(shipped)
     by_name = {d["relative_path"]: d for d in report["documents"]}
     assessment = by_name["vendor-assessment.pdf"]
     assert [f["severity"] for f in assessment["content_findings"]] == ["high"]
