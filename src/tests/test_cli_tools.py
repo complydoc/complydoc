@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 
 import pytest
 from typer.testing import CliRunner
@@ -203,3 +204,29 @@ def test_compare_loaders_runs_a_comparison_file(tmp_path):
 
     spec.write_text("loaders: {only: tests.test_spec_file:fake_loader}\npaths: docs\n")
     assert runner.invoke(app, ["compare-loaders", str(spec)]).exit_code == 2
+
+
+def test_the_schema_command_emits_json_a_caller_can_parse():
+    """It exists to be piped, and the console wraps to the terminal width.
+
+    Wrapping cut a long string in half and the document stopped parsing, which
+    nothing noticed because the command was only ever read by eye.
+    """
+    import json
+    import pathlib
+    import subprocess
+    import sys
+
+    # Through the console script, with a narrow terminal: the bug was the
+    # console wrapping to that width, so calling the function directly would
+    # not reproduce it.
+    script = pathlib.Path(sys.executable).with_name("complydoc")
+    result = subprocess.run(
+        [str(script), "schema"],
+        capture_output=True,
+        text=True,
+        env={**os.environ, "COLUMNS": "80"},
+    )
+    assert result.returncode == 0, result.stderr[-500:]
+    shape = json.loads(result.stdout)
+    assert shape["schema_version"] >= 11

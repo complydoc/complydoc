@@ -51,7 +51,10 @@ def schema() -> None:
 
     from complydoc.report.models import report_shape
 
-    console.print(json.dumps(report_shape(), indent=2))
+    # Printed rather than sent through the console: that wraps to the width of
+    # the terminal, which breaks a long string across two lines and hands a
+    # caller a document that will not parse.
+    print(json.dumps(report_shape(), indent=2))
 
 
 @app.command()
