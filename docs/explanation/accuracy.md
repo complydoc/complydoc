@@ -85,7 +85,7 @@ carries them.
 | `en_core_web_sm` (shipped) | 10/15 | 25 | 66.7% | 28.6% |
 | `en_core_web_md` | 12/15 | 23 | 80.0% | 34.3% |
 | `xx_ent_wiki_sm` | 12/15 | 21 | 80.0% | 36.4% |
-| `Babelscape/wikineural-multilingual-ner` | 15/15 | 13 | 100.0% | 53.6% |
+| `Babelscape/wikineural-multilingual-ner` | 15/15 | 5 | 100.0% | 75.0% |
 
 The pattern figures above are identical under all four, which is the point of
 scoring them apart.
@@ -93,8 +93,14 @@ scoring them apart.
 The shipped English model misses every non-English organisation in the corpus —
 `Müller Maschinenbau GmbH`, `Hermanos García SL`, `Rossi Costruzioni Srl` — and
 reads field labels such as `KUNDENDATEN` and `Telefono` as names. The
-multilingual model finds every name, and all 13 of its wrong flags are
-organisations: it found all 8 people with none.
+multilingual model finds every name, and all 5 of its wrong flags are
+organisations: it found all 8 people with none. Setting `min_confidence` to 0.9
+drops two of those five, for 83.3% precision at the same recall.
+
+The multilingual row is measured through the `token_classifier` detector, which
+drops entities spanning a line break and short all-caps tokens before they are
+reported. The same model read without those filters scores 53.6%, so most of
+what it gets wrong is the kind of thing the filters are there for.
 
 Read the precision column with the corpus in mind. Many of these passages are
 terse field labels rather than prose, which is the setting a name model is worst

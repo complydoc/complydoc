@@ -100,13 +100,21 @@ EVIDENCE_ORDER: Final = ("confirmed", "corroborated", "pattern", "model")
 """Strongest first. The order the security page sorts by within a severity."""
 
 
-def evidence_of(detector: str, validators_passed: list[str], context_term: str | None) -> Evidence:
-    """The tier a finding earned from the checks it passed."""
+def evidence_of(
+    model_backed: bool, validators_passed: list[str], context_term: str | None
+) -> Evidence:
+    """The tier a finding earned from the checks it passed.
+
+    `model_backed` says a statistical model named this rather than a pattern
+    matching it. It is passed as the fact rather than as a detector's name: a
+    detector registered by a caller is no more a pattern match than the one
+    that ships, and keying on the name reported its findings as `pattern`.
+    """
     if validators_passed:
         return "confirmed"
     if context_term:
         return "corroborated"
-    if detector == "ner":
+    if model_backed:
         return "model"
     return "pattern"
 

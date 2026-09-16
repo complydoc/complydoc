@@ -283,7 +283,7 @@ def _why_sensitive(match: SensitiveMatch, config: SensitiveConfig | None) -> str
         lines.append(f"Reported because it passed {', '.join(match.validators_passed)}.")
     elif match.context_term:
         lines.append(f'Reported because it sits near "{match.context_term}".')
-    elif entry is not None and entry.detector == "ner":
+    elif entry is not None and entry.model_backed:
         lines.append("Recognised by the local name model, which carries no checksum to pass.")
     else:
         lines.append("Reported on the pattern alone, with nothing else to confirm it.")

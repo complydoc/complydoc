@@ -15,6 +15,14 @@ versioned separately.
   measured comparison of four models, including a multilingual one that finds every name in
   the corpus where the shipped English model finds two thirds.
 
+- A `token_classifier` detector reads names with a local token-classification model, for the
+  European languages the shipped English model does not. It is the recommended setting where
+  names matter: measured against the benchmark corpus it finds every name where the shipped
+  model finds two thirds, at better precision. `transformers` is an optional extra
+  (`multilingual-names`) and the weights are read from files already on the machine, so a
+  scan still reaches nothing. A page is cut into windows first, since the model reads a few
+  hundred tokens at a time and a name past that point would otherwise be missed.
+
 ### Fixed
 
 - A category pointed at a detector of the caller's own was scored as a pattern, which let a

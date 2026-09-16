@@ -401,7 +401,7 @@ def extract_text(
     guessed = sorted(
         entry.label
         for entry in settings.sensitive.enabled_categories.values()
-        if entry.detector == "ner"
+        if entry.model_backed
     )
     if mask and guessed and chunks:
         warnings.append(

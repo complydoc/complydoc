@@ -48,6 +48,9 @@ dependencies = [
 [project.optional-dependencies]
 ocr = ["rapidocr-onnxruntime>=1.3"]
 ner = ["spacy>=3.7"]
+# Names in the languages these documents are written in. Heavier than `ner` by
+# an order of magnitude, and measurably better at them: see Detection accuracy.
+multilingual-names = ["transformers>=4.40", "torch>=2.2"]
 notebook = ["pandas>=2.1"]
 
 [project.scripts]

@@ -23,27 +23,33 @@ def matches(config, categories: set[str] | None = None):
 
 
 def test_a_passed_checksum_is_confirmed():
-    assert evidence_of("regex", ["luhn"], None) == "confirmed"
+    assert evidence_of(False, ["luhn"], None) == "confirmed"
 
 
 def test_a_checksum_outranks_a_nearby_label():
     """Both can be true; the checksum is the stronger of the two."""
-    assert evidence_of("regex", ["iban_mod97"], "IBAN") == "confirmed"
+    assert evidence_of(False, ["iban_mod97"], "IBAN") == "confirmed"
 
 
 def test_a_nearby_label_is_corroboration():
-    assert evidence_of("regex", [], "Sort code") == "corroborated"
+    assert evidence_of(False, [], "Sort code") == "corroborated"
 
 
 def test_a_shape_on_its_own_is_only_a_pattern():
-    assert evidence_of("regex", [], None) == "pattern"
+    assert evidence_of(False, [], None) == "pattern"
 
 
 def test_a_model_naming_something_is_the_weakest_tier():
     """No checksum exists for a person's name, so this is both the best
     evidence available for the category and the least of the four."""
-    assert evidence_of("ner", [], None) == "model"
+    assert evidence_of(True, [], None) == "model"
     assert EVIDENCE_ORDER[-1] == "model"
+
+
+def test_any_model_earns_the_model_tier_not_only_the_shipped_one():
+    """A detector registered by a caller is no more a pattern match than ours."""
+    assert evidence_of(True, [], None) == "model"
+    assert evidence_of(False, [], None) == "pattern"
 
 
 @requires_ner

@@ -45,6 +45,53 @@ removes field labels such as `IBAN` or `VAT` that the small English model tags a
 organisations; `drop_multiline` removes entities that join the end of one line to
 the start of the next. Turn them off for models that do not make those mistakes.
 
+## Recommended: a multilingual model
+
+`en_core_web_sm` is small and English. On the benchmark corpus it finds two
+thirds of the names and reads field labels such as `KUNDENDATEN` as
+organisations; a multilingual token-classification model finds all of them, at
+better precision. The numbers are in
+[Detection accuracy](../explanation/accuracy.md).
+
+Install the extra and fetch the weights once. Fetching reaches the network, so
+it happens here rather than during a scan:
+
+```bash
+uv sync --extra multilingual-names
+uv run python -c "from transformers import pipeline; \
+    pipeline('token-classification', model='Babelscape/wikineural-multilingual-ner')"
+```
+
+Then point the two categories at the `token_classifier` detector:
+
+```yaml title="sensitive.yaml"
+categories:
+  person_name:
+    detector: token_classifier
+    min_confidence: 0.9
+    model:
+      name: Babelscape/wikineural-multilingual-ner
+      entity_labels: [PER]
+  organisation_name:
+    detector: token_classifier
+    min_confidence: 0.9
+    model:
+      name: Babelscape/wikineural-multilingual-ner
+      entity_labels: [ORG]
+```
+
+A confidence floor is worth setting here, which it is not for spaCy's `doc.ents`:
+this detector reports the model's own score, so `min_confidence` applies. On the
+corpus 0.9 removes two wrong flags and costs no names.
+
+The weights are read from files already on the machine. A model that is not
+there is reported as a category that could not be scanned, with how to fetch it,
+because a scan runs inside the network guard and downloads nothing. Pages are
+cut into windows first: the model reads a few hundred tokens at a time, and a
+name further down the page would otherwise never be seen.
+
+`complydoc doctor` reports whichever model the configuration names.
+
 ## Models from other libraries
 
 A model from another library is added as a detector. The detector receives the

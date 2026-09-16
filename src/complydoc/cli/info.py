@@ -74,14 +74,17 @@ def doctor(config_dir: ConfigOpt = None) -> None:
     else:
         console.print(f"OCR: [yellow]unavailable[/] — {ocr_module.unavailable_reason()}")
 
-    from complydoc.sensitive.detectors.ner import configured_models, model_available
+    from complydoc.sensitive.detectors import ner, token_classifier
 
-    for name in configured_models(config.sensitive):
-        ok, reason = model_available(name)
-        if ok:
-            console.print(f"Name detection: [green]available[/] ({name})")
-        else:
-            console.print(f"Name detection: [yellow]unavailable[/] — {reason}")
+    # A category can be pointed at either detector, so both are asked. Reporting
+    # only the shipped one would leave a configured model out of this list.
+    for module in (ner, token_classifier):
+        for name in module.configured_models(config.sensitive):
+            ok, reason = module.model_available(name)
+            if ok:
+                console.print(f"Name detection: [green]available[/] ({name})")
+            else:
+                console.print(f"Name detection: [yellow]unavailable[/] — {reason}")
 
     from complydoc.config.loader import check_staleness
 

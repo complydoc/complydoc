@@ -207,7 +207,7 @@ def _scan_page(
                 revealed=revealed,
                 confidence=finding.confidence,
                 evidence=evidence_of(
-                    candidate.category.detector,
+                    candidate.category.model_backed,
                     candidate.validators_passed,
                     finding.context_term,
                 ),

@@ -432,6 +432,15 @@ class CategoryConfig(_Base):
     gdpr_note: str | None = None
     model: NerModelSpec | None = None
 
+    @property
+    def model_backed(self) -> bool:
+        """Whether a statistical model reads this category rather than a pattern.
+
+        Keyed on carrying a model rather than on the detector's name, so a
+        detector of the caller's own is treated as what it is.
+        """
+        return self.model is not None or self.detector == "ner"
+
 
 class SensitiveConfig(_Base):
     schema_version: int
