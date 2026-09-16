@@ -121,6 +121,19 @@ signals:
       fair: { lt: 10 }
       poor: { gte: 10 }
 
+  table_fidelity:
+    # What reaches a model is the extracted text. A row whose cells end up on
+    # different lines has lost the thing that made it a row. Only tables with
+    # ruling lines are scored; an alignment-detected table is a guess about where
+    # the columns are, so its rows prove nothing either way.
+    enabled: true
+    weight: 0.06
+    direction: higher_is_better
+    thresholds:
+      good: { gte: 90 }
+      fair: { gte: 60 }
+      poor: { lt: 60 }
+
   table_max_header_depth:
     enabled: true
     weight: 0.06

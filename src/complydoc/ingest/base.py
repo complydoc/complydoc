@@ -108,6 +108,22 @@ class TableInfo:
     detected_by: Literal["lines", "alignment"] = "lines"
     """How the table was found. Alignment carries no ruling lines, so its header
     depth and merged-cell counts cannot be measured and are reported as unknown."""
+    rows_intact: int | None = None
+    """Rows whose cells survive in the extracted text, in order, on one line.
+
+    None when the text could not be compared against the grid. A row that is
+    split across lines, or whose cells ran together into prose, is not intact:
+    a model reading that text cannot tell which value belongs to which column.
+    """
+    rows_compared: int | None = None
+    """Rows the comparison could look for. None when it did not run."""
+
+    @property
+    def fidelity_pct(self) -> float | None:
+        """Share of rows that survived extraction as rows."""
+        if not self.rows_compared or self.rows_intact is None:
+            return None
+        return round(self.rows_intact / self.rows_compared * 100, 1)
 
 
 @dataclass(frozen=True, slots=True)

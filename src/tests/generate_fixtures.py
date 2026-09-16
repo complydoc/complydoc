@@ -203,6 +203,50 @@ def whitespace_table(path: Path) -> None:
     c.save()
 
 
+def column_major_table(path: Path) -> None:
+    """A ruled table whose cells are written column by column.
+
+    A PDF has no rows, only text placed on a page in the order the producer
+    wrote it. Tools that build a table one column at a time — and several
+    reporting tools do — leave a page where the grid is visible to a reader and
+    gone from the extracted text: every cell of a column arrives together, so no
+    line holds a row. It is what `table_fidelity` exists to catch.
+    """
+    _register_font()
+    c = canvas.Canvas(str(path), pagesize=A4)
+    c.setFont(FONT, 9)
+    c.drawString(22 * mm, A4[1] - 30 * mm, "SUPPLIER REVIEW, SECOND QUARTER")
+
+    grid = [
+        ("Supplier", "Rating", "Spend"),
+        ("Acme Holdings", "B", "48,200"),
+        ("Northwind Supplies", "A", "12,750"),
+        ("Globex Partners", "C", "96,400"),
+        ("Initech Services", "B", "31,900"),
+    ]
+    left, top = 22 * mm, A4[1] - 45 * mm
+    widths = (60 * mm, 25 * mm, 30 * mm)
+    row_height = 8 * mm
+
+    # Column by column: this is the whole point of the fixture.
+    for column, width_before in enumerate([0, widths[0], widths[0] + widths[1]]):
+        for row, cells in enumerate(grid):
+            c.drawString(
+                left + width_before + 2 * mm, top - row * row_height - 5 * mm, cells[column]
+            )
+
+    c.setLineWidth(0.4)
+    for row in range(len(grid) + 1):
+        y = top - row * row_height
+        c.line(left, y, left + sum(widths), y)
+    x = left
+    for width in (0, *widths):
+        x += width
+        c.line(x, top, x, top - len(grid) * row_height)
+    c.showPage()
+    c.save()
+
+
 def merged_header_table(path: Path) -> None:
     """A table whose header is three stacked rows of merged cells."""
     _register_font()
@@ -596,6 +640,7 @@ def main() -> None:
     sample_xlsx(out / "sample.xlsx")
     broken_pdf(out / "broken.pdf")
     unsupported_file(out / "notes.rtf")
+    column_major_table(out / "column_major_table.pdf")
 
     print(f"wrote fixtures to {out}")
     for item in sorted(out.iterdir()):

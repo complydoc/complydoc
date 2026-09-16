@@ -8,6 +8,13 @@ versioned separately.
 
 ### Added
 
+- A `table_fidelity` readiness signal: whether each ruled table's rows survive in the
+  extracted text as rows. A row counts when its cells appear on one line, in order, matched
+  as whole words. It describes the text the extractor this run used produced, not a verdict
+  on extractors that were not used, and tables found by alignment are reported but not
+  scored, since where their columns lie is a guess. Weight and thresholds are in
+  `readiness.yaml` under `table_fidelity`.
+
 - `complydoc check PATH --policy policy.yaml` holds documents to rules written in YAML: the
   checks `cd.expect` offers, named in a file. Every rule runs, so one run lists everything
   that failed. `level: warning` reports a rule without failing the gate. Exits 1 on a

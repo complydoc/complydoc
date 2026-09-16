@@ -120,3 +120,56 @@ class TableMergedCellsSignal:
                 "tables_with_merges": sum(1 for t in ruled if t.merged_cells),
             },
         )
+
+
+@signal
+class TableFidelitySignal:
+    id = "table_fidelity"
+    name = "Table rows that survived"
+    unit = "% of rows"
+    # The scope — that this describes the extractor that ran, and that alignment
+    # tables are not scored — is in `complydoc.ingest.fidelity` and in the report's
+    # own wording; `why` is one sentence by convention and a test enforces it.
+    why = "A row split across lines no longer says which value belongs to which column."
+    applies_to = ALL_FORMATS
+
+    def measure(self, document: Document) -> Measurement:
+        if not _tables_were_searched(document):
+            return Measurement.na(
+                "the extractor this run used does not read table structure, so nothing "
+                "looked for tables on this document"
+            )
+        # Only ruled tables are scored. A table found by alignment is a guess about
+        # where the columns are, so its rows are weak evidence either way.
+        ruled = [t for t in _tables(document) if t.detected_by == "lines"]
+        measured = [t for t in ruled if t.rows_compared]
+        if not measured:
+            aligned = sum(1 for t in _tables(document) if t.detected_by == "alignment")
+            guessed = (
+                f"; {aligned} were found by alignment, which is too weak to score"
+                if aligned
+                else ""
+            )
+            return Measurement.na(
+                f"no ruled table on this document could be checked against the "
+                f"extracted text{guessed}"
+            )
+
+        intact = sum(t.rows_intact or 0 for t in measured)
+        compared = sum(t.rows_compared or 0 for t in measured)
+        share = intact / compared * 100
+        worst = min(measured, key=lambda t: t.fidelity_pct or 0.0)
+        return Measurement(
+            value=round(share, 1),
+            display=f"{share:.0f}% of rows",
+            detail={
+                "tables_measured": len(measured),
+                "rows_intact": intact,
+                "rows_compared": compared,
+                "worst_table_pct": worst.fidelity_pct,
+                "per_table_pct": [t.fidelity_pct for t in measured],
+                "aligned_tables_not_scored": sum(
+                    1 for t in _tables(document) if t.detected_by == "alignment"
+                ),
+            },
+        )

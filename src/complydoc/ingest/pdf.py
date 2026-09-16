@@ -16,6 +16,7 @@ the document. Opening a file with pypdfium2 catches only `PdfiumError` and
 from __future__ import annotations
 
 import contextlib
+import dataclasses
 import logging
 import time
 from bisect import bisect_right
@@ -40,6 +41,7 @@ from complydoc.ingest.base import (
 )
 from complydoc.ingest.extractors.base import Extraction, PageSource
 from complydoc.ingest.extractors.registry import extractor_by_id
+from complydoc.ingest.fidelity import compare_rows
 from complydoc.ingest.registry import register
 from complydoc.utils.text import (
     MAX_WORDS,
@@ -245,7 +247,21 @@ def _cuts_too_many_words(words: list[Any], interior: list[float]) -> bool:
     return False
 
 
-def _aligned_tables(plumber_page: Any, words: list[Any]) -> list[TableInfo]:
+def _with_fidelity(info: TableInfo, table: Any, text: str) -> TableInfo:
+    """The table with its rows checked against the text the run kept.
+
+    Pulling the grid out is a fraction of the cost of finding the table, and it
+    is the only way to say whether the rows survived as rows.
+    """
+    try:
+        grid = table.extract()
+    except Exception:
+        return info
+    intact, compared = compare_rows(grid, text)
+    return dataclasses.replace(info, rows_intact=intact, rows_compared=compared)
+
+
+def _aligned_tables(plumber_page: Any, words: list[Any], text: str = "") -> list[TableInfo]:
     """Tables aligned by whitespace, with no ruling lines.
 
     Most invoices align their columns with spacing and draw no rules at all, so
@@ -292,10 +308,13 @@ def _aligned_tables(plumber_page: Any, words: list[Any]) -> list[TableInfo]:
         if len(filled) < _MIN_ALIGNED_ROWS or columns < _MIN_ALIGNED_COLS:
             continue
 
+        intact, compared = compare_rows(grid, text)
         found.append(
             TableInfo(
                 rows=len(filled),
                 cols=columns,
+                rows_intact=intact,
+                rows_compared=compared,
                 # Without ruling lines there is nothing to read a span from, so
                 # neither header depth nor merged cells can be measured here.
                 header_depth=1,
@@ -592,9 +611,9 @@ class PdfLoader:
                 for table in plumber_page.find_tables():
                     info = _table_shape(table)
                     if info is not None:
-                        page.tables.append(info)
+                        page.tables.append(_with_fidelity(info, table, page.text))
                 if not page.tables:
-                    page.tables.extend(_aligned_tables(plumber_page, words))
+                    page.tables.extend(_aligned_tables(plumber_page, words, page.text))
             except Exception as exc:
                 page.notes.append(f"table detection failed: {exc}")
                 document.load_warnings.append(

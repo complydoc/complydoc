@@ -59,6 +59,8 @@ are vendored as data files. See [Network isolation](explanation/offline.md).
 - **Masking is best effort.** Categories with a checksum are confirmed; names and
   organisations come from a statistical model and are missed at some rate.
 - **Unmeasured signals are reported as unmeasured** and excluded from scores.
+- **Table fidelity describes the extractor that ran.** Only an extractor that reads table
+  structure detects a table at all, so the measurement is of that reader's own text.
 - **Hidden-content checks** cover PDF text layers and the markup of Word, Excel,
   PowerPoint, HTML, Markdown and email files, not text inside images.
 
