@@ -81,6 +81,7 @@ are vendored as data files. See [Network isolation](explanation/offline.md).
 | [Streaming and steps](guides/streaming-and-steps.md) | Streaming audits, cached loader output, pipeline steps |
 | [Name detection models](guides/name-detection-models.md) | Your own spaCy or other models for names and organisations |
 | [Hidden content](explanation/hidden-content.md) | Visibility and instruction evidence |
+| [Detection accuracy](explanation/accuracy.md) | What detection finds and wrongly flags, measured |
 | [Command line](reference/cli.md) | Every command and flag |
 | [Python API](reference/api.md) | `import complydoc as cd` |
 | [Report JSON](reference/report.md) | The shape a run writes |

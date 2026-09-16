@@ -1,0 +1,318 @@
+# A labelled corpus for measuring identifier detection.
+#
+# Every value here is fake, a published test value, or a documented example. No
+# passage came from a real document.
+#
+# Each passage carries the identifiers it contains, as (category, value) pairs.
+# A passage with `expect: []` holds nothing that should be reported: those are
+# the ones that measure false flags, and they are deliberately full of the
+# reference numbers a business document actually carries.
+passages:
+
+  # ---------------------------------------------------------------- UK
+  - id: uk-employee-record
+    note: Labelled UK identifiers, the shape a HR export has.
+    text: |
+      EMPLOYEE RECORD
+      National Insurance number: AB123456C
+      Date of birth: 14/03/1985
+      Sort code: 12-34-56
+      Account number: 12345678
+      Email: jane.doe@example.com
+      Postcode: EC1A 1BB
+    expect:
+      - [ni_number, "AB123456C"]
+      - [date_of_birth, "14/03/1985"]
+      - [sort_code, "12-34-56"]
+      - [bank_account_number, "12345678"]
+      - [email_address, "jane.doe@example.com"]
+      - [uk_postcode, "EC1A 1BB"]
+
+  - id: uk-payment-details
+    note: A card that satisfies Luhn, an IBAN, and a VAT number that satisfies mod-97.
+    text: |
+      PAYMENT DETAILS
+      Card on file: 4111 1111 1111 1111
+      IBAN: GB82 WEST 1234 5698 7654 32
+      VAT number: GB123456782
+      UTR: 1234567890
+    expect:
+      - [card_number, "4111 1111 1111 1111"]
+      - [iban, "GB82 WEST 1234 5698 7654 32"]
+      - [vat_number, "GB123456782"]
+      - [utr, "1234567890"]
+
+  - id: uk-unlabelled-account
+    note: >
+      Eight bare digits with no label nearby. The configuration says outright that
+      an unlabelled account number is not reported, so this measures the recall
+      cost of that choice rather than a defect.
+    text: |
+      Remittance summary
+      Reference 12345678 was settled on the ninth.
+    expect: []
+
+  # ---------------------------------------------------------- adversarial
+  - id: invoice-reference-numbers
+    note: The document a false-positive hunt is actually about.
+    text: |
+      INVOICE 00012345
+      Purchase order: 987654321
+      Order reference: 4111111111111112
+      Delivery note: 12-34-99
+      Job number: 1234567890123
+      Our reference: 20240115
+      Contract ref: 987-65-4329
+    expect: []
+
+  - id: technical-identifiers
+    text: |
+      CHANGE RECORD
+      Build 12345678 promoted to production.
+      Checksum 4532015112830368 recorded for the archive.
+      Ticket 123-45-6789 closed by the platform team.
+      Port 8080, timeout 30000, batch size 100000.
+    expect: []
+
+  - id: prices-and-quantities
+    text: |
+      QUARTERLY SUMMARY
+      Revenue 1,234,567 against a forecast of 1,200,000.
+      Headcount moved from 1985 to 2024 over the period.
+      Unit price 49.99, quantity 100000, total 4999000.
+    expect: []
+
+  # ------------------------------------------------------------ Europe
+  - id: portugal
+    text: |
+      FICHA DE CLIENTE
+      NIF: 501442600
+      Código postal: 1000-001
+      Email: cliente@exemplo.pt
+    expect:
+      - [pt_nif, "501442600"]
+      - [eu_postal_code, "1000-001"]
+      - [email_address, "cliente@exemplo.pt"]
+
+  - id: spain
+    text: |
+      FICHA DE CLIENTE
+      DNI: 12345678Z
+      Teléfono: +34 612 345 678
+    expect:
+      - [es_dni, "12345678Z"]
+      - [international_phone, "+34 612 345 678"]
+
+  - id: netherlands
+    text: |
+      KLANTGEGEVENS
+      BSN: 111222333
+      Postcode: 1012 AB
+    expect:
+      - [nl_bsn, "111222333"]
+      - [eu_postal_code, "1012 AB"]
+
+  - id: germany
+    text: |
+      KUNDENDATEN
+      Steuer-ID: 36574261809
+      E-Mail: kunde@beispiel.de
+    expect:
+      - [de_steuer_id, "36574261809"]
+      - [email_address, "kunde@beispiel.de"]
+
+  - id: france
+    text: |
+      FICHE CLIENT
+      Numéro de sécurité sociale : 180077505600496
+      Courriel : client@exemple.fr
+    expect:
+      - [fr_nir, "180077505600496"]
+      - [email_address, "client@exemple.fr"]
+
+  - id: italy
+    text: |
+      SCHEDA CLIENTE
+      Codice fiscale: RSSMRA85T10A562S
+    expect:
+      - [it_codice_fiscale, "RSSMRA85T10A562S"]
+
+  - id: belgium
+    text: |
+      KLANTFICHE
+      Rijksregisternummer: 85.07.30-001.60
+    expect:
+      - [be_national_number, "85.07.30-001.60"]
+
+  - id: poland
+    text: |
+      DANE KLIENTA
+      PESEL: 44051401359
+    expect:
+      - [pl_pesel, "44051401359"]
+
+  - id: sweden
+    text: |
+      KUNDUPPGIFTER
+      Personnummer: 811218-9876
+    expect:
+      - [se_personnummer, "811218-9876"]
+
+  - id: denmark
+    text: |
+      KUNDEOPLYSNINGER
+      CPR-nummer: 010190-1239
+    expect:
+      - [dk_cpr, "010190-1239"]
+
+  - id: switzerland
+    text: |
+      KUNDENDATEN
+      AHV-Nummer: 756.1234.5678.97
+    expect:
+      - [ch_ahv, "756.1234.5678.97"]
+
+  - id: ireland
+    text: |
+      CUSTOMER RECORD
+      PPS number: 1234567FA
+    expect:
+      - [ie_pps, "1234567FA"]
+
+  - id: eu-vat
+    text: |
+      SUPPLIER DETAILS
+      VAT: DE811907980
+    expect:
+      - [eu_vat_number, "DE811907980"]
+
+  # ------------------------------------------------------- Americas, APAC
+  - id: united-states
+    text: |
+      EMPLOYEE FILE
+      SSN: 123-45-6789
+      EIN: 12-3456789
+      Routing number: 021000021
+      ZIP: 10001
+      Phone: (212) 555-0147
+    expect:
+      - [us_ssn, "123-45-6789"]
+      - [us_ein, "12-3456789"]
+      - [us_routing_number, "021000021"]
+      - [us_zip_code, "10001"]
+      - [us_phone, "(212) 555-0147"]
+
+  - id: brazil
+    text: |
+      CADASTRO DE CLIENTE
+      CPF: 111.444.777-35
+      CNPJ: 11.222.333/0001-81
+      CEP: 01310-100
+    expect:
+      - [br_cpf, "111.444.777-35"]
+      - [br_cnpj, "11.222.333/0001-81"]
+      - [br_cep, "01310-100"]
+
+  - id: india
+    text: |
+      CUSTOMER KYC
+      Aadhaar: 2234 5678 9018
+      PAN: ABCAE1234F
+    expect:
+      - [in_aadhaar, "2234 5678 9018"]
+      - [in_pan, "ABCAE1234F"]
+
+  - id: canada
+    text: |
+      EMPLOYEE FILE
+      SIN: 130 692 544
+      Postal code: K1A 0B1
+    expect:
+      - [ca_sin, "130 692 544"]
+      - [ca_postal_code, "K1A 0B1"]
+
+  - id: australia
+    text: |
+      EMPLOYEE FILE
+      Tax file number: 123 456 782
+    expect:
+      - [au_tfn, "123 456 782"]
+
+  # ------------------------------------------------- harder negatives
+  # Reference numbers that carry an identifier's own label, which is what
+  # defeats a detector that trusts nearby words.
+  - id: mislabelled-references
+    note: >
+      Every value here sits beside a label for a different kind of identifier, or
+      is a reference number that happens to fit an identifier's shape.
+    text: |
+      REMITTANCE ADVICE
+      Invoice number: 4111 1111 1111 1111
+      Account number: PO-99881
+      Customer reference: AB123456C7890
+      Our VAT-exempt ref: GB999999999
+      Batch: 123-45-6789-01
+    expect:
+      - [card_number, "4111 1111 1111 1111"]
+
+  - id: dates-that-are-not-births
+    text: |
+      PROJECT PLAN
+      Contract start date: 14/03/1985
+      Review date: 01/01/2024
+      The date of birth field was left blank by the applicant.
+    expect: []
+
+  - id: identifier-shaped-codes
+    text: |
+      ASSET REGISTER
+      Serial 756.1234.5678.97 fitted to unit 12.
+      Licence RSSMRA85T10A562S issued for the northern region.
+      Meter 111222333 replaced in March.
+    expect: []
+
+  # -------------------------------------------------- harder positives
+  - id: ocr-spacing
+    note: A card number as OCR tends to space it, beside its own label.
+    text: |
+      PAYMENT
+      Card number: 4 111 1111 1111 1111
+      Sort code: 12 34 56
+    expect:
+      - [card_number, "4 111 1111 1111 1111"]
+      - [sort_code, "12 34 56"]
+
+  - id: identifier-inside-prose
+    note: An identifier in a sentence rather than a field, which is how contracts carry them.
+    text: |
+      The employee, whose National Insurance number is AB123456C, transferred to
+      the Manchester office. Payment should reach the account ending 12345678,
+      quoting sort code 12-34-56 on the remittance.
+    expect:
+      - [ni_number, "AB123456C"]
+      - [sort_code, "12-34-56"]
+
+  - id: multiple-per-line
+    text: |
+      CONTACT SHEET
+      j.smith@example.com / 020 7946 0958 / EC1A 1BB
+    expect:
+      - [email_address, "j.smith@example.com"]
+      - [phone_number, "020 7946 0958"]
+      - [uk_postcode, "EC1A 1BB"]
+
+  # ------------------------------------------------------------- prose
+  - id: ordinary-contract-prose
+    text: |
+      This agreement is governed by the laws of England and Wales. The supplier
+      shall maintain records of processing and shall notify the customer of any
+      incident within 72 hours. Clause 14 sets out the renewal terms, and the
+      schedule of charges is attached as Annex II.
+    expect: []
+
+  - id: meeting-notes
+    text: |
+      Attendees agreed to move the review to the second week of March. The team
+      will publish the updated figures once the audit closes. No decision was
+      taken on the renewal.
+    expect: []

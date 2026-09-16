@@ -120,6 +120,7 @@ nav:
       - Unmeasured values: explanation/not-measured.md
       - Evidence tiers: explanation/evidence.md
       - Hidden content: explanation/hidden-content.md
+      - Detection accuracy: explanation/accuracy.md
 
 not_in_nav: |
   examples/

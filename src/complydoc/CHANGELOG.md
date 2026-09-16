@@ -8,6 +8,12 @@ versioned separately.
 
 ### Added
 
+- `complydoc benchmark` scores identifier detection against a labelled corpus that ships with
+  the package, and the measured numbers are published in Detection accuracy. A finding counts
+  as a hit when it overlaps a labelled value and names the same category, so the score
+  measures the detectors rather than the resolver that picks between overlapping candidates.
+  Categories backed by a model that is not installed are reported as unmeasured.
+
 - A run that could not scan a category now says so where the count is read: the CLI summary
   names the categories nothing was looked for, and the report's Sensitive information page
   opens with them, above the findings. Without a name model installed a folder full of names
