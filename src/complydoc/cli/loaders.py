@@ -72,14 +72,16 @@ def compare_loaders_command(
 
     if not quiet and report.loader_comparison is not None:
         table = Table(box=None, pad_edge=False)
-        for column in ("Loader", "Documents", "Pages", "Failed files", "Network attempts"):
-            table.add_column(column, justify="left" if column == "Loader" else "right")
+        columns = ("Loader", "From", "Documents", "Pages", "Failed files", "Network attempts")
+        for column in columns:
+            table.add_column(column, justify="left" if column in ("Loader", "From") else "right")
         with_facts = bool(comparison.facts)
         if with_facts:
             table.add_column("Facts found", justify="right")
         for row in report.loader_comparison.loaders:
             cells = [
-                f"{row.name} [dim]{', '.join(row.tags)}[/]" if row.tags else row.name,
+                row.name,
+                f"[dim]{', '.join(row.tags)}[/]" if row.tags else "[dim]—[/]",
                 str(row.documents),
                 str(row.pages),
                 str(len(row.failures)),
