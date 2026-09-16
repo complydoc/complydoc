@@ -82,15 +82,19 @@ carries them.
 
 | Model | Found | Wrongly flagged | Recall | Precision |
 | --- | --- | --- | --- | --- |
-| `en_core_web_sm` (shipped) | 10/15 | 25 | 66.7% | 28.6% |
+| `en_core_web_sm` (the fallback) | 10/15 | 25 | 66.7% | 28.6% |
 | `en_core_web_md` | 12/15 | 23 | 80.0% | 34.3% |
 | `xx_ent_wiki_sm` | 12/15 | 21 | 80.0% | 36.4% |
-| `Babelscape/wikineural-multilingual-ner` | 15/15 | 5 | 100.0% | 75.0% |
+| `Babelscape/wikineural-multilingual-ner` (shipped) | 15/15 | 5 | 100.0% | 75.0% |
 
 The pattern figures above are identical under all four, which is the point of
 scoring them apart.
 
-The shipped English model misses every non-English organisation in the corpus —
+The shipped configuration prefers the multilingual model and falls back to
+`en_core_web_sm` when it is not installed, so which row describes a given run
+depends on what is on that machine. The report says which model answered.
+
+The English model misses every non-English organisation in the corpus —
 `Müller Maschinenbau GmbH`, `Hermanos García SL`, `Rossi Costruzioni Srl` — and
 reads field labels such as `KUNDENDATEN` and `Telefono` as names. The
 multilingual model finds every name, and all 5 of its wrong flags are
@@ -112,6 +116,24 @@ Swapping the model is configuration, not code: see
 [Name detection models](../guides/name-detection-models.md). A model from another
 library is registered as a detector, and its weights have to be on disk, since
 the network guard is armed while a scan runs.
+
+### On real documents
+
+The corpus above is short labelled passages. Run the same models over the
+fixture folder, which is whole documents, and the difference is larger than the
+precision column suggests:
+
+| Model | Names reported | Obviously not a name |
+| --- | --- | --- |
+| `en_core_web_sm` | 41 | 9 |
+| `xx_ent_wiki_sm` | 24 | 7 |
+| `Babelscape/wikineural-multilingual-ner` | 9 | 0 |
+
+The fixtures carry no name labels, so this counts what is obviously wrong rather
+than what is right: a finding with digits in it, or a colon, or a single
+character. `en_core_web_sm` reported `Rechnung RE-2026-0188` as a person,
+`Subtotal 4,250.00` as a person and `Steuer` as an organisation. That is the
+cost of a small English model on documents that are neither small nor English.
 
 ## What these numbers do not say
 

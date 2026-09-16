@@ -207,14 +207,23 @@ categories:
     enabled: true
     label: Person name
     region: international
-    detector: ner
+    detector: token_classifier
+    min_confidence: 0.9
     severity: medium
     # `name` is an installed spaCy package or a path to a saved pipeline. See the
     # "Name detection models" guide for drop_short_acronyms, drop_multiline,
     # spans_key and by_language.
     model:
-      name: en_core_web_sm
-      entity_labels: [PERSON]
+      name: Babelscape/wikineural-multilingual-ner
+      entity_labels: [PER]
+    # Tried when the model above is not installed, so a plain install
+    # still finds names. It reads English only: see Detection accuracy.
+    fallback:
+      - detector: ner
+        min_confidence: 0.0
+        model:
+          name: en_core_web_sm
+          entity_labels: [PERSON]
     gdpr_note: >
       Found by a local statistical model. Expect misses and false positives; the
       count indicates scale.
@@ -223,11 +232,20 @@ categories:
     enabled: true
     label: Organisation name
     region: international
-    detector: ner
+    detector: token_classifier
+    min_confidence: 0.9
     severity: low
     model:
-      name: en_core_web_sm
+      name: Babelscape/wikineural-multilingual-ner
       entity_labels: [ORG]
+    # Tried when the model above is not installed, so a plain install
+    # still finds names. It reads English only: see Detection accuracy.
+    fallback:
+      - detector: ner
+        min_confidence: 0.0
+        model:
+          name: en_core_web_sm
+          entity_labels: [ORG]
     gdpr_note: >
       Not personal data on its own. Reported because organisation names are often
       what makes an otherwise anonymous document re-identifiable.

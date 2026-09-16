@@ -32,7 +32,17 @@ def test_preview_carries_no_document_text(loader, config):
     """A thumbnail of the page would undo the masking. Geometry must be numbers only."""
     _, previews = previews_for(loader, config, "sensitive_sample.pdf")
     serialised = json.dumps(to_jsonable(previews))
-    for secret in ("4111", "AB123456C", "jane.doe", "GB82", "Jane", "Doe", "Acme"):
+    # Whole values, not fragments: masking keeps the last few characters of a
+    # value on purpose, so "Doe" appears inside the mask of "Jane Doe" and
+    # says nothing about whether the preview leaked anything.
+    for secret in (
+        "4111 1111 1111 1111",
+        "AB123456C",
+        "jane.doe@example.com",
+        "GB82 WEST",
+        "Jane Doe",
+        "Acme Holdings",
+    ):
         assert secret not in serialised, f"{secret!r} reached the preview data"
 
 

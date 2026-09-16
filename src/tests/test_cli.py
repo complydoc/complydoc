@@ -402,6 +402,11 @@ def test_a_category_nothing_was_looked_for_is_named_in_the_summary(tmp_path, mon
         raise DetectorUnavailableError("model removed for this test")
 
     monkeypatch.setattr(ner_module, "_load", unavailable)
+    # The shipped chain tries a transformer before spaCy, and it would answer
+    # for the category, leaving nothing for the summary to report as unscanned.
+    from complydoc.sensitive.detectors import token_classifier
+
+    monkeypatch.setattr(token_classifier, "_load", unavailable)
     try:
         result = runner.invoke(
             app,

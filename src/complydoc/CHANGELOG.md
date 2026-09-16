@@ -6,6 +6,19 @@ versioned separately.
 
 ## [Unreleased]
 
+### Changed
+
+- Names are read by `Babelscape/wikineural-multilingual-ner` where it is installed, and by
+  `en_core_web_sm` where it is not. A category now names the detectors to try in order, so
+  the better model is the default for anyone with the `multilingual-names` extra and a plain
+  install keeps working unchanged. On the benchmark corpus the preferred model finds every
+  name against two thirds, and on whole documents it reports 9 names to the English model's
+  41, of which 9 were not names at all.
+
+- `schema_version` is 11. `sensitive.models_used` records the detector and model that
+  answered for each category, because two runs of the same documents read by different
+  models should not produce reports that look identical. `load_report` still reads 5 to 11.
+
 ### Added
 
 - The accuracy benchmark scores person and organisation names as their own group, against 15

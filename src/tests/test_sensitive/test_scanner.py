@@ -133,8 +133,21 @@ def test_unavailable_detectors_are_reported_as_unscanned_not_zero(loader, config
         raise DetectorUnavailableError("model removed for this test")
 
     ner_module._load = unavailable  # type: ignore[assignment]
+    # A category names several detectors, tried in order, so taking one away
+    # leaves the others to answer. Every link has to go for the category to be
+    # the unscanned one this is about.
+    settings = config.override(
+        {
+            f"sensitive.categories.{category}.fallback": []
+            for category in ("person_name", "organisation_name")
+        }
+        | {
+            f"sensitive.categories.{category}.detector": "ner"
+            for category in ("person_name", "organisation_name")
+        }
+    )
     try:
-        result = scan(loader("sensitive_sample.pdf"), config.sensitive)
+        result = scan(loader("sensitive_sample.pdf"), settings.sensitive)
     finally:
         ner_module._load = original  # type: ignore[assignment]
         ner_module._load.cache_clear()

@@ -26,7 +26,7 @@ from pydantic import BaseModel
 
 from complydoc.report.models import SCHEMA_VERSION, AuditReport
 
-READABLE_SCHEMA_VERSIONS = (5, 6, 7, 8, SCHEMA_VERSION)
+READABLE_SCHEMA_VERSIONS = (5, 6, 7, 8, 10, SCHEMA_VERSION)
 """Schema versions `load_report` reads. Versions that only added fields are included."""
 
 __all__ = ["READABLE_SCHEMA_VERSIONS", "from_jsonable", "load_report"]

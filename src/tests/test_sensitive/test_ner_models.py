@@ -53,6 +53,27 @@ def pipeline(tmp_path, name, lang, label, scored=False):
     return str(path)
 
 
+def spacy_only(config, overrides=None):
+    """The two name categories read by spaCy alone.
+
+    The shipped configuration prefers a multilingual transformer and keeps spaCy
+    as the fallback. Everything in this file is about what spaCy does, so the
+    chain is collapsed to that one link rather than tested through whichever
+    model happens to be installed.
+    """
+    settings = {}
+    for category in ("person_name", "organisation_name"):
+        settings[f"sensitive.categories.{category}.detector"] = "ner"
+        settings[f"sensitive.categories.{category}.fallback"] = []
+        settings[f"sensitive.categories.{category}.min_confidence"] = 0.0
+        settings[f"sensitive.categories.{category}.model"] = {
+            "name": "en_core_web_sm",
+            "entity_labels": ["PERSON"] if category == "person_name" else ["ORG"],
+        }
+    settings.update(overrides or {})
+    return config.override(settings)
+
+
 def names_found(config, text):
     return [
         m.category
@@ -63,11 +84,12 @@ def names_found(config, text):
 
 def test_a_saved_pipeline_path_is_used(config, tmp_path):
     model = pipeline(tmp_path, "english", "en", "PERSON")
-    changed = config.override(
+    changed = spacy_only(
+        config,
         {
             "sensitive.categories.person_name.model.name": model,
             "sensitive.categories.organisation_name.model.name": model,
-        }
+        },
     )
     found = names_found(changed, ENGLISH)
     assert found.count("person_name") == 1
@@ -76,11 +98,12 @@ def test_a_saved_pipeline_path_is_used(config, tmp_path):
 
 def test_the_acronym_filter_can_be_turned_off(config, tmp_path):
     model = pipeline(tmp_path, "english", "en", "PERSON")
-    changed = config.override(
+    changed = spacy_only(
+        config,
         {
             "sensitive.categories.organisation_name.model.name": model,
             "sensitive.categories.organisation_name.model.drop_short_acronyms": False,
-        }
+        },
     )
     assert names_found(changed, ENGLISH).count("organisation_name") == 2
 
@@ -88,14 +111,15 @@ def test_the_acronym_filter_can_be_turned_off(config, tmp_path):
 def test_a_model_is_chosen_per_language(config, tmp_path):
     english = pipeline(tmp_path, "english", "en", "PERSON")
     portuguese = pipeline(tmp_path, "portuguese", "pt", "PER")
-    changed = config.override(
+    changed = spacy_only(
+        config,
         {
             "sensitive.categories.person_name.model": {
                 "name": english,
                 "entity_labels": ["PERSON"],
                 "by_language": {"pt": {"name": portuguese, "entity_labels": ["PER"]}},
             }
-        }
+        },
     )
     assert names_found(changed, PORTUGUESE).count("person_name") == 1
     assert names_found(changed, ENGLISH).count("person_name") == 1
@@ -104,13 +128,14 @@ def test_a_model_is_chosen_per_language(config, tmp_path):
 
 def test_scores_from_a_span_group_are_filtered(config, tmp_path):
     model = pipeline(tmp_path, "scored", "en", "PERSON", scored=True)
-    changed = config.override(
+    changed = spacy_only(
+        config,
         {
             "sensitive.categories.organisation_name.model.name": model,
             "sensitive.categories.organisation_name.model.spans_key": "sc",
             "sensitive.categories.organisation_name.model.drop_short_acronyms": False,
             "sensitive.categories.organisation_name.min_confidence": 0.5,
-        }
+        },
     )
     matches = [
         m
@@ -129,11 +154,12 @@ def test_scores_from_a_span_group_are_filtered(config, tmp_path):
 
 def test_every_configured_model_is_checked(config, tmp_path):
     model = pipeline(tmp_path, "english", "en", "PERSON")
-    working = config.override(
+    working = spacy_only(
+        config,
         {
             "sensitive.categories.person_name.model.name": model,
             "sensitive.categories.organisation_name.model.name": model,
-        }
+        },
     )
     assert ner_available(working)
     broken = working.override(

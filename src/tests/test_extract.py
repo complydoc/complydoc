@@ -131,6 +131,11 @@ def test_a_category_that_could_not_run_is_not_silently_unmasked(monkeypatch):
 
     monkeypatch.setattr(ner, "_load", unavailable)
     monkeypatch.setattr(ner, "_parse", unavailable)
+    # The shipped chain tries a transformer first, which would answer for the
+    # category and leave nothing unscanned.
+    from complydoc.sensitive.detectors import token_classifier
+
+    monkeypatch.setattr(token_classifier, "_load", unavailable)
 
     result = cd.extract_text(SENSITIVE, ocr=False)
     assert MASKING_INCOMPLETE in kinds(result)

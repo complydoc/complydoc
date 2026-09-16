@@ -55,9 +55,14 @@ def test_windows_are_cut_at_line_boundaries():
         assert text.endswith("\n")
 
 
-def test_no_model_is_configured_by_default(config):
-    """The shipped configuration uses spaCy; this detector is opt in."""
-    assert configured_models(config.sensitive) == []
+def test_this_detector_is_what_the_shipped_configuration_prefers(config):
+    """And spaCy is the fallback, so a plain install still finds names."""
+    assert configured_models(config.sensitive) == [MODEL]
+    for category in ("person_name", "organisation_name"):
+        chain = config.sensitive.categories[category].chain()
+        assert [detector for detector, _ in chain] == ["token_classifier", "ner"]
+        assert chain[-1][1].model is not None
+        assert chain[-1][1].model.name == "en_core_web_sm"
 
 
 @requires_model

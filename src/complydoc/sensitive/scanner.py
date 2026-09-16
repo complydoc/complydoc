@@ -91,6 +91,13 @@ class ScanResult:
     pages_scanned: int = 0
     reveal_used: bool = False
     reveal_blocked_categories: list[str] = field(default_factory=list)
+    models_used: dict[str, str] = field(default_factory=dict)
+    """Category to the detector and model that answered for it.
+
+    A category can name several detectors, tried in order, so two runs of the
+    same documents can be read by different models. A report that did not say
+    which would make those two runs look like the same run.
+    """
 
     @property
     def counts_by_category(self) -> dict[str, int]:
@@ -155,26 +162,45 @@ def _scan_page(
     config: SensitiveConfig,
     reveal: bool,
     unavailable: dict[str, str],
+    models_used: dict[str, str] | None = None,
 ) -> list[SensitiveMatch]:
     candidates: list[Candidate] = []
 
     for category_id, category in config.enabled_categories.items():
         if category_id in unavailable:
             continue
-        engine = detector_by_id(category.detector)
-        if engine is None:
-            unavailable[category_id] = f"no detector named {category.detector!r} is registered"
+        # A category can name several detectors, tried in order. The shipped
+        # configuration prefers a multilingual model and falls back to the small
+        # one, so a plain install still finds names. Only when every link fails
+        # is the category reported as unscanned, with the last reason given.
+        findings: list[Finding] | None = None
+        effective = category
+        reason = f"no detector named {category.detector!r} is registered"
+        for detector_id, link in category.chain():
+            engine = detector_by_id(detector_id)
+            if engine is None:
+                reason = f"no detector named {detector_id!r} is registered"
+                continue
+            try:
+                findings = engine.find(text, DetectorContext(category_id, link))
+            except DetectorUnavailableError as exc:
+                reason = str(exc)
+                continue
+            # Detectors include registered plugins and model code. One that fails
+            # leaves its category unscanned, and the report says so.
+            except Exception as exc:
+                reason = f"{type(exc).__name__}: {exc}"
+                continue
+            effective = link
+            if models_used is not None and link.model_backed:
+                model = link.model.name if link.model is not None else detector_id
+                models_used[category_id] = f"{detector_id}: {model}"
+            break
+
+        if findings is None:
+            unavailable[category_id] = reason
             continue
-        try:
-            findings: list[Finding] = engine.find(text, DetectorContext(category_id, category))
-        except DetectorUnavailableError as exc:
-            unavailable[category_id] = str(exc)
-            continue
-        # Detectors include registered plugins and model code. One that fails leaves
-        # its category unscanned, and the report says so.
-        except Exception as exc:
-            unavailable[category_id] = f"{type(exc).__name__}: {exc}"
-            continue
+        category = effective
 
         for finding in findings:
             # A detector with no score of its own cannot be filtered on one.
@@ -245,7 +271,9 @@ def scan(document: Document, config: SensitiveConfig, reveal: bool = False) -> S
             result.unreadable_pages.append(page.number)
             continue
         result.pages_scanned += 1
-        result.matches.extend(_scan_page(page.number, page.text, config, reveal, unavailable))
+        result.matches.extend(
+            _scan_page(page.number, page.text, config, reveal, unavailable, result.models_used)
+        )
 
     for category_id, reason in unavailable.items():
         category = config.categories.get(category_id)

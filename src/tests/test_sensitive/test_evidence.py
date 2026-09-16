@@ -59,7 +59,21 @@ def test_the_model_reports_no_score_rather_than_a_perfect_one(config):
     Recording 1.0 was not a measurement, and it is exactly the thing this tool
     refuses to do everywhere else.
     """
-    guessed = matches(config, {"person_name", "organisation_name"})
+    # spaCy's `doc.ents` carries no score; the transformer the shipped
+    # configuration prefers does, so this pins the category to spaCy.
+    settings: dict[str, object] = {}
+    for category, label in (("person_name", "PERSON"), ("organisation_name", "ORG")):
+        settings[f"sensitive.categories.{category}.detector"] = "ner"
+        settings[f"sensitive.categories.{category}.fallback"] = []
+        settings[f"sensitive.categories.{category}.min_confidence"] = 0.0
+        # The model goes with the detector: spaCy cannot load the transformer
+        # the shipped configuration prefers, and would report nothing at all.
+        settings[f"sensitive.categories.{category}.model"] = {
+            "name": "en_core_web_sm",
+            "entity_labels": [label],
+        }
+    spacy_config = config.override(settings)
+    guessed = matches(spacy_config, {"person_name", "organisation_name"})
     assert guessed, "the fixtures carry names"
     assert all(m.confidence is None for m in guessed)
     assert all(m.evidence == "model" for m in guessed)

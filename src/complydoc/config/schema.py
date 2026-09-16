@@ -412,6 +412,22 @@ class NerModelSpec(_Base):
         return list(dict.fromkeys([self.name, *(m.name for m in self.by_language.values())]))
 
 
+class FallbackSpec(_Base):
+    """A detector to try when the one before it cannot run.
+
+    Names are read by whichever model is installed. The shipped configuration
+    prefers a multilingual transformer and falls back to spaCy, so a plain
+    install still finds names and an install with the extra finds more of them.
+    Each link carries its own model: the labels differ between them, and a
+    model named for one detector means nothing to another.
+    """
+
+    detector: str
+    model: NerModelSpec | None = None
+    min_confidence: float | None = None
+    """The category's own when omitted."""
+
+
 class CategoryConfig(_Base):
     enabled: bool = True
     label: str
@@ -431,6 +447,8 @@ class CategoryConfig(_Base):
     min_confidence: float = 0.0
     gdpr_note: str | None = None
     model: NerModelSpec | None = None
+    fallback: list[FallbackSpec] = Field(default_factory=list)
+    """Detectors to try, in order, when the one before cannot run."""
 
     @property
     def model_backed(self) -> bool:
@@ -439,7 +457,29 @@ class CategoryConfig(_Base):
         Keyed on carrying a model rather than on the detector's name, so a
         detector of the caller's own is treated as what it is.
         """
-        return self.model is not None or self.detector == "ner"
+        if self.model is not None or self.detector == "ner":
+            return True
+        return any(link.model is not None or link.detector == "ner" for link in self.fallback)
+
+    def chain(self) -> list[tuple[str, CategoryConfig]]:
+        """Each detector to try, with the category as that detector should see it.
+
+        A detector reads its model off the category it is handed, so every link
+        past the first is given a copy carrying its own model rather than the
+        preferred one.
+        """
+        links: list[tuple[str, CategoryConfig]] = [(self.detector, self)]
+        for spec in self.fallback:
+            updates: dict[str, object] = {"detector": spec.detector}
+            if spec.model is not None:
+                updates["model"] = spec.model
+            if spec.min_confidence is not None:
+                updates["min_confidence"] = spec.min_confidence
+            # The fallbacks of the copy are dropped: the chain is already flat,
+            # and a link that carried the rest of the list would run it twice.
+            updates["fallback"] = []
+            links.append((spec.detector, self.model_copy(update=updates)))
+        return links
 
 
 class SensitiveConfig(_Base):

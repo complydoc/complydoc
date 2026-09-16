@@ -47,7 +47,7 @@ __all__ = [
     "RunMetadata",
 ]
 
-SCHEMA_VERSION = 10
+SCHEMA_VERSION = 11
 
 
 def report_shape() -> dict[str, object]:
@@ -98,6 +98,10 @@ def report_shape() -> dict[str, object]:
                 "confirmed | corroborated | pattern | model"
             ),
             "sensitive.unreadable_pages": "pages that were not searched at all",
+            "sensitive.models_used": (
+                "category -> the detector and model that answered for it, where a "
+                "model rather than a pattern read it"
+            ),
             "extractions[]": "one per reader asked for; the first is the one kept",
             "metadata_findings[]": "key, category, severity, evidence, masked (from metadata)",
             "content_findings[]": (

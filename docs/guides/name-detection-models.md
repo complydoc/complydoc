@@ -1,9 +1,15 @@
 # Name detection models
 
-Person and organisation names are found by a named entity recognition model. The
-shipped configuration uses spaCy's `en_core_web_sm` (the `ner` extra). Each category
-that uses the `ner` detector names its model in `sensitive.categories.<id>.model`,
-and any setting can be changed with `Config.override`.
+Person and organisation names are found by a named entity recognition model. A
+category names the detectors to try, in order: the shipped configuration prefers
+the multilingual `Babelscape/wikineural-multilingual-ner` and falls back to
+spaCy's `en_core_web_sm`, so a plain install still finds names and an install
+with the `multilingual-names` extra finds more of them. Each link names its own
+model in `sensitive.categories.<id>.model`, and any setting can be changed with
+`Config.override`.
+
+`complydoc doctor` reports which model is available, and every report records
+which one answered for each category.
 
 ## Your own spaCy model
 
@@ -45,13 +51,16 @@ removes field labels such as `IBAN` or `VAT` that the small English model tags a
 organisations; `drop_multiline` removes entities that join the end of one line to
 the start of the next. Turn them off for models that do not make those mistakes.
 
-## Recommended: a multilingual model
+## The multilingual model, which ships as the preferred one
 
 `en_core_web_sm` is small and English. On the benchmark corpus it finds two
 thirds of the names and reads field labels such as `KUNDENDATEN` as
-organisations; a multilingual token-classification model finds all of them, at
-better precision. The numbers are in
+organisations; the multilingual model finds all of them, at better precision.
+On whole documents the gap is wider still. The numbers are in
 [Detection accuracy](../explanation/accuracy.md).
+
+It is preferred by the shipped configuration, so this is what to install to get
+it. Without the extra the fallback runs instead and nothing breaks.
 
 Install the extra and fetch the weights once. Fetching reaches the network, so
 it happens here rather than during a scan:

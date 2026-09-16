@@ -32,7 +32,7 @@ from complydoc import __version__, offline
 from complydoc.audit.discovery import discover
 from complydoc.audit.sampling import sample_files
 from complydoc.config.loader import check_staleness
-from complydoc.config.schema import Config, ModelPricing
+from complydoc.config.schema import CategoryConfig, Config, ModelPricing
 from complydoc.cost.estimator import estimate_document, folder_from_estimates, resolve_models
 from complydoc.extraction.routing import plan_routes
 from complydoc.hidden.check import check_content
@@ -67,11 +67,36 @@ _MAX_TEXT_CHARS = 20_000
 
 
 def ner_available(config: Config) -> bool:
-    """Whether every configured name-detection model can be loaded."""
-    from complydoc.sensitive.detectors.ner import configured_models, model_available
+    """Whether every category read by a model has a model that loads.
 
-    names = configured_models(config.sensitive)
-    return bool(names) and all(model_available(name)[0] for name in names)
+    A category can name several detectors, to be tried in order, so this asks
+    whether any link of each chain can run rather than whether one particular
+    library is installed.
+    """
+    from complydoc.sensitive.registry import detector_by_id
+
+    categories = [c for c in config.sensitive.enabled_categories.values() if c.model_backed]
+    if not categories:
+        return False
+
+    def runs(detector_id: str, category: CategoryConfig) -> bool:
+        if detector_by_id(detector_id) is None:
+            return False
+        if category.model is None:
+            return True
+        return _model_loads(detector_id, category.model.name)
+
+    return all(any(runs(d, cat) for d, cat in c.chain()) for c in categories)
+
+
+def _model_loads(detector_id: str, model_name: str) -> bool:
+    """Whether the named model can be loaded by the detector that wants it."""
+    from complydoc.sensitive.detectors import ner, token_classifier
+
+    module = {"ner": ner, "token_classifier": token_classifier}.get(detector_id)
+    if module is None:
+        return True
+    return bool(module.model_available(model_name)[0])
 
 
 def _relative(path: Path, root: Path) -> str:
