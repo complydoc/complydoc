@@ -22,7 +22,10 @@ versioned separately.
 
 ### Changed
 
-- Report `schema_version` 9 adds `run.timeout_seconds`. `load_report` reads versions 5 to 9.
+- Report `schema_version` 10 adds `run.timeout_seconds`, `documents[].routing` and a
+  top-level `routing` summary. `load_report` reads versions 5 to 10.
+- Figures compared with each other in the report share one precision, so a routed mix and
+  an all-vision total are read against each other rather than at different scales.
 
 ## [0.4.5] — 2026-09-15
 
