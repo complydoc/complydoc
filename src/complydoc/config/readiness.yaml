@@ -47,6 +47,21 @@ scoring:
     fair: 0.5
     poor: 0.0
 
+# Which extraction path each page needs. The numbers match the signals below, so a
+# page those call poor is a page routed somewhere more expensive.
+routing:
+  # Below this many characters, a page counts as having no text layer.
+  min_characters: 40
+  # A page that is mostly picture and carries less text than this is a caption on
+  # an image, not a page of text.
+  min_text_coverage_pct: 30
+  picture_share_pct: 50
+  # Under 200 dpi OCR returns characters that are not the ones on the page.
+  min_ocr_dpi: 200
+  min_ocr_confidence: 75
+  # A table with merged or stacked header cells loses its shape in plain text.
+  vision_for_complex_tables: true
+
 signals:
 
   encrypted:

@@ -6,6 +6,7 @@ Each module registers its commands on `app` when imported:
 - `info`: `skill`, `schema`, `doctor`, `models`, `extractors`, `engines`, `pricing-import`
 - `loaders`: `compare-loaders`
 - `chunks`: `chunks`
+- `routing`: `routing`
 - `diff`: `diff`
 
 `common` holds the app, the consoles, the option types and the output helpers.
@@ -16,11 +17,11 @@ from __future__ import annotations
 
 # isort: off
 # Imported for the commands they register, in the order `--help` lists them.
-from complydoc.cli import audits, info, loaders, chunks, diff
+from complydoc.cli import audits, info, loaders, chunks, routing, diff
 
 # isort: on
 from complydoc.cli.common import app
 
 __all__ = ["app"]
 
-COMMAND_MODULES = (audits, info, loaders, chunks, diff)
+COMMAND_MODULES = (audits, info, loaders, chunks, routing, diff)

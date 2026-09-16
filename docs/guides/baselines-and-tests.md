@@ -10,7 +10,7 @@ report, and checked with assertions in a test suite or CI.
 ## Reading a report
 
 `cd.load_report(path)` returns the same `AuditReport` the run produced. It also
-accepts the parsed JSON as a dictionary. It reads `schema_version` 5 to 9; fields
+accepts the parsed JSON as a dictionary. It reads `schema_version` 5 to 10; fields
 added since a report was written take their defaults. Any other version raises
 `ValueError`.
 

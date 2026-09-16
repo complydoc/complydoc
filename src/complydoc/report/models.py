@@ -26,8 +26,10 @@ from complydoc.report.preview import PagePreview
 from complydoc.sensitive.scanner import ScanResult
 
 if TYPE_CHECKING:  # pragma: no cover - type-checking imports only
+    from complydoc.extraction.routing import DocumentRouting
     from complydoc.report.overall import OverallReadiness
     from complydoc.report.quickwins import QuickWin
+    from complydoc.report.routing import RoutingSummary
 
 __all__ = [
     "SCHEMA_VERSION",
@@ -45,7 +47,7 @@ __all__ = [
     "RunMetadata",
 ]
 
-SCHEMA_VERSION = 9
+SCHEMA_VERSION = 10
 
 
 def report_shape() -> dict[str, object]:
@@ -67,6 +69,7 @@ def report_shape() -> dict[str, object]:
             "quick_wins",
             "loader",
             "loader_comparison",
+            "routing",
             "limitations",
             "staleness_warnings",
             "signal_weights",
@@ -420,6 +423,8 @@ class DocumentReport:
     cost: DocumentCostEstimate | None = None
     readiness: ReadinessReport | None = None
     sensitive: ScanResult | None = None
+    routing: DocumentRouting | None = None
+    """The route each page needs: its text layer, OCR, or a vision model."""
     previews: list[PagePreview] = field(default_factory=list)
     """Per-page wireframes. Geometry only — never document content."""
     timing: DocumentTiming | None = None
@@ -560,6 +565,9 @@ class AuditReport:
     """Set when the documents came from an external loader."""
     loader_comparison: LoaderComparison | None = None
     """Set by `compare_loaders`. `loader` is then the baseline's run."""
+    routing: RoutingSummary | None = None
+    """Pages per route for the folder, and what that mix costs. See
+    `complydoc.report.routing`."""
 
     def to_pandas(self, table: str = "documents") -> Any:
         """One table of this report as a pandas DataFrame.

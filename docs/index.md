@@ -44,7 +44,7 @@ cd.write_html(report, "report.html")
 ## Output
 
 An HTML report and a JSON file with the same data. The JSON carries
-`schema_version`, currently 9.
+`schema_version`, currently 10.
 
 ## Network access
 
@@ -67,6 +67,7 @@ are vendored as data files. See [Network isolation](explanation/offline.md).
 | | |
 | --- | --- |
 | [Audit a folder](guides/audit-a-folder.md) | Running it, and reading the report |
+| [Page routing](guides/routing.md) | Which pages need OCR or a vision model, and what the mix costs |
 | [Python API](guides/python-api.md) | Conventions, strings, configuration in code, extending |
 | [Extracting masked text](guides/extract-masked-text.md) | Masked text, token counts, warnings |
 | [Inspecting a loader](guides/inspect-a-loader.md) | LangChain and LlamaIndex output, metadata, network attempts |

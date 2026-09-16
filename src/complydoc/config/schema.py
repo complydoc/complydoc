@@ -339,10 +339,32 @@ class OverallConfig(_Base):
         return self
 
 
+class RoutingConfig(_Base):
+    """When a page needs OCR or a vision model instead of its own text layer.
+
+    The numbers match the readiness signals they come from, so a page the signals
+    call poor is a page routing sends somewhere more expensive.
+    """
+
+    min_characters: int = 40
+    """Below this many characters, a page counts as having no text layer."""
+    min_text_coverage_pct: float = 30.0
+    """Coverage below which a page that is mostly picture reads as a caption."""
+    picture_share_pct: float = 50.0
+    """Image coverage at which a page counts as a picture rather than a page with pictures."""
+    min_ocr_dpi: float = 200.0
+    """Scan resolution below which OCR is not worth running."""
+    min_ocr_confidence: float = 75.0
+    """OCR confidence below which the recognised characters are not the page's."""
+    vision_for_complex_tables: bool = True
+    """Send a page with merged or stacked header cells to a vision model."""
+
+
 class ReadinessConfig(_Base):
     schema_version: int
     scoring: ScoringConfig
     overall: OverallConfig = OverallConfig()
+    routing: RoutingConfig = RoutingConfig()
     signals: dict[str, SignalConfig]
 
     def for_signal(self, signal_id: str) -> SignalConfig | None:

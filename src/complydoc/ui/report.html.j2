@@ -380,6 +380,46 @@ A folder of longer or heavier scans takes longer.</p>
 {{ annual_chart | safe }}
 {% endif %}
 
+{% if report.routing and report.routing.routed_usd is not none %}
+{% set routing = report.routing %}
+<h3>How each page should be read</h3>
+<p class="note">Every page carries the cheapest path that can read it. A page goes to a
+vision model when plain text would lose it: a table with merged or stacked headers, a page
+that is mostly picture, a scan too coarse for OCR, or one OCR read poorly. The thresholds
+are in <span class="mono">readiness.yaml</span> under <span class="mono">routing</span>.</p>
+<div class="scroll"><table>
+  <thead><tr><th>Route</th><th class="n">Pages</th><th class="n">Documents</th><th>What it means</th></tr></thead>
+  <tbody>
+    <tr><td>text</td><td class="n">{{ routing.pages.get("text", 0) }}</td>
+      <td class="n">{{ routing.documents.get("text", 0) }}</td>
+      <td class="why">read from the page's own text layer</td></tr>
+    <tr><td>ocr</td><td class="n">{{ routing.pages.get("ocr", 0) }}</td>
+      <td class="n">{{ routing.documents.get("ocr", 0) }}</td>
+      <td class="why">recognised locally first, then sent as text</td></tr>
+    <tr><td>vision</td><td class="n">{{ routing.pages.get("vision", 0) }}</td>
+      <td class="n">{{ routing.documents.get("vision", 0) }}</td>
+      <td class="why">sent to a vision model as an image</td></tr>
+  </tbody>
+</table></div>
+<div class="scroll"><table>
+  <thead><tr><th>Every page</th><th class="n">Cost for this folder</th></tr></thead>
+  <tbody>
+    <tr class="d-head"><td>by the route it needs</td><td class="n">{{ money(routing.routed_usd) }}</td></tr>
+    <tr><td>from its text layer</td>
+      <td class="n">{{ "—" if routing.text_layer_usd is none else money(routing.text_layer_usd) }}</td></tr>
+    <tr><td>text layer, scans through local OCR</td>
+      <td class="n">{{ "—" if routing.text_ocr_usd is none else money(routing.text_ocr_usd) }}</td></tr>
+    <tr><td>as an image to a vision model</td>
+      <td class="n">{{ "—" if routing.vision_usd is none else money(routing.vision_usd) }}</td></tr>
+  </tbody>
+</table></div>
+{% if routing.saved_against_vision_usd %}
+<p class="note">Routing saves {{ money(routing.saved_against_vision_usd) }} against sending
+every page as an image, with {{ routing.vision_pages_pct }}% of pages still needing one.</p>
+{% endif %}
+<p class="note">{{ routing.basis }}</p>
+{% endif %}
+
 {% set batched = comparisons | selectattr("batch_per_1000_usd") | list %}
 {% if batched %}
 <h3>Through a batch endpoint</h3>

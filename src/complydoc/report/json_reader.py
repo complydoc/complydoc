@@ -57,10 +57,17 @@ def load_report(source: str | os.PathLike[str] | Mapping[str, Any]) -> AuditRepo
 @cache
 def _hints(cls: type) -> dict[str, Any]:
     # Resolved on first use: `models` imports these two only for type checking.
+    from complydoc.extraction.routing import DocumentRouting
     from complydoc.report.overall import OverallReadiness
     from complydoc.report.quickwins import QuickWin
+    from complydoc.report.routing import RoutingSummary
 
-    extra = {"OverallReadiness": OverallReadiness, "QuickWin": QuickWin}
+    extra = {
+        "OverallReadiness": OverallReadiness,
+        "QuickWin": QuickWin,
+        "DocumentRouting": DocumentRouting,
+        "RoutingSummary": RoutingSummary,
+    }
     return typing.get_type_hints(cls, globalns=vars(sys.modules[cls.__module__]), localns=extra)
 
 

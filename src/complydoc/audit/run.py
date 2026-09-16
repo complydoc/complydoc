@@ -34,6 +34,7 @@ from complydoc.audit.sampling import sample_files
 from complydoc.config.loader import check_staleness
 from complydoc.config.schema import Config, ModelPricing
 from complydoc.cost.estimator import estimate_document, folder_from_estimates, resolve_models
+from complydoc.extraction.routing import plan_routes
 from complydoc.hidden.check import check_content
 from complydoc.ingest import ocr as ocr_module
 from complydoc.ingest.base import TIMED_OUT, Document, IngestOptions, LoaderError, SkipRecord
@@ -54,6 +55,7 @@ from complydoc.report.models import (
 from complydoc.report.overall import overall_readiness
 from complydoc.report.preview import build_previews
 from complydoc.report.quickwins import quick_wins
+from complydoc.report.routing import summarise_routes
 from complydoc.sensitive.scanner import scan
 
 __all__ = ["COMPONENTS", "resolve_jobs", "run_audit"]
@@ -183,6 +185,7 @@ def build_entry(
     )
 
     entry.extractions = extractor_readings(document)
+    entry.routing = plan_routes(document, work.config.readiness.routing)
 
     analyse_started = time.perf_counter()
     if "readiness" in work.requested:
@@ -689,4 +692,5 @@ def assemble_report(
     # Computed from the finished report so both the JSON and HTML carry them.
     report.overall = overall_readiness(report, config.readiness.overall)
     report.quick_wins = quick_wins(report)
+    report.routing = summarise_routes(report, config.pricing)
     return report

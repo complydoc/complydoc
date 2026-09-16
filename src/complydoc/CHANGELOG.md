@@ -8,6 +8,12 @@ versioned separately.
 
 ### Added
 
+- Page routing. Every page carries the extraction path it needs — its text layer, local OCR,
+  or a vision model — with the reason, in `document.routing`. `report.routing` counts the
+  pages per route and prices that mix against the three architectures the cost comparison
+  already shows. `complydoc routing PATH` writes a manifest an ingestion job can read.
+  Thresholds are in `readiness.yaml` under `routing`.
+
 - `--timeout SECONDS` on `audit`, `compare`, `cost`, `readiness` and `sensitive`, and
   `timeout=` in the Python API. A document still being read when the time passes is stopped
   and listed as skipped with the reason `timed out`, and the report says so under
