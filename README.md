@@ -68,12 +68,20 @@ complydoc routing ./documents
 complydoc compare-loaders loaders.yaml
 complydoc chunks ./documents --splitter "langchain_text_splitters:RecursiveCharacterTextSplitter chunk_size=800"
 complydoc diff baseline.json .complydoc/complydoc.json
+complydoc check ./documents --policy policy.yaml --markdown summary.md --sarif results.sarif
+complydoc clean ./documents --out clean/
 ```
+
+`check` holds a folder to rules written in YAML and exits non-zero when they fail, with a
+summary for a pull request comment and SARIF for code scanning. `clean` writes safe copies:
+the identifiers masked, the metadata removed, and PDFs rasterised on request.
 
 A parser can hang on a malformed file: `--timeout 120` gives each document a deadline and
 lists the ones it stopped.
 
-OCR and name detection are optional extras. `complydoc doctor` shows what is installed.
+OCR and name detection are optional extras. `complydoc doctor` shows what is installed, and
+`complydoc benchmark` prints what detection finds and what it wrongly flags, measured against
+a labelled corpus that ships with the package.
 
 ## What it reports
 
@@ -104,6 +112,11 @@ OCR and name detection are optional extras. `complydoc doctor` shows what is ins
   LangChain and LlamaIndex.
 - **Masked text**: the documents' text with identifiers covered, chunked and counted in
   tokens.
+- **Safe copies**: the same document with its identifiers masked and its metadata removed,
+  for text, Markdown, HTML, email and Office files. A PDF copy has its metadata stripped and
+  can be rasterised, which leaves no text layer to read.
+- **Measured accuracy**: what identifier detection finds and what it wrongly flags, scored
+  against a labelled corpus that ships with the package and published with the numbers.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/complydoc/complydoc/main/.github/images/complydoc-architecture-dark.svg">

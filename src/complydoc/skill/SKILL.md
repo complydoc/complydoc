@@ -34,6 +34,9 @@ Run `complydoc` with no arguments to audit the current directory.
 | `complydoc routing <path>` | Which pages need the text layer, local OCR or a vision model, priced as a mix, written as a manifest |
 | `complydoc chunks <path> --splitter module:attr` | Chunks a text splitter makes: sizes, cut sentences and tables, identifiers, facts |
 | `complydoc diff <old.json> <new.json>` | Changes between two reports; exits 1 when something got worse |
+| `complydoc check <path> --policy policy.yaml` | Rules written in YAML; exits 1 when one fails and 2 when the policy will not load; `--markdown`, `--sarif` |
+| `complydoc clean <path> --out <dir>` | Safe copies: identifiers masked, metadata removed, `--rasterise` for PDFs |
+| `complydoc benchmark` | What identifier detection finds and what it wrongly flags, against a labelled corpus |
 
 Useful flags: `--monthly-volume N` extrapolates cost, `--model <id>` (repeatable)
 narrows the comparison, `--no-ocr` is faster, `--out <dir>` moves the reports,

@@ -6,6 +6,8 @@ versioned separately.
 
 ## [Unreleased]
 
+## [0.4.7] — 2026-09-16
+
 ### Changed
 
 - Report pages, chart tooltips and command line output separate values with commas and
