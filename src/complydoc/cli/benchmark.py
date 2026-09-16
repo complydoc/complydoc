@@ -56,10 +56,30 @@ def benchmark(
     headline.add_row("Evidence", tiers)
     console.print(headline)
 
+    if result.names_measured:
+        names = Table(show_header=False, box=None, pad_edge=False)
+        names.add_column(style="dim")
+        names.add_column()
+        names.add_row("Names found by", f"{result.model_name}")
+        names.add_row("Labelled names", f"{result.names_labelled}")
+        names.add_row("Found", f"{result.names_found}")
+        missed_names = result.names_labelled - result.names_found
+        names.add_row("Missed", f"[yellow]{missed_names}[/]" if missed_names else "0")
+        flagged_names = result.names_wrongly_flagged
+        names.add_row("Wrongly flagged", f"[yellow]{flagged_names}[/]" if flagged_names else "0")
+        names.add_row("Recall", f"{result.names_recall_pct}%")
+        names.add_row("Precision", f"{result.names_precision_pct}%")
+        console.print()
+        console.print(names)
+        console.print(
+            "[dim]A name score describes the model installed on this machine, so it is kept "
+            "out of the figures above.[/]"
+        )
+
     imperfect = [
         score
-        for score in sorted(result.categories.values(), key=lambda s: s.category)
-        if not score.unmeasured and (score.missed or score.wrongly_flagged)
+        for score in sorted(result.measured, key=lambda s: s.category)
+        if score.missed or score.wrongly_flagged
     ]
     if imperfect:
         table = Table(
@@ -87,9 +107,8 @@ def benchmark(
     unmeasured = [s.category for s in result.categories.values() if s.unmeasured]
     if unmeasured:
         console.print(
-            f"[yellow]Not measured:[/] {', '.join(sorted(unmeasured))} — the corpus labels "
-            f"no names, and a detector that cannot run scores nothing, so these are left "
-            f"out of the totals."
+            f"[yellow]Not measured:[/] {', '.join(sorted(unmeasured))} — the detector "
+            f"could not run, so nothing of that kind was scored."
         )
 
     if json_out is not None:
@@ -104,6 +123,15 @@ def benchmark(
             "by_evidence": result.by_evidence,
             "clean_passages": result.clean_passages,
             "clean_passages_with_a_flag": result.clean_passages_with_a_flag,
+            "names": {
+                "measured": result.names_measured,
+                "model": result.model_name,
+                "labelled": result.names_labelled,
+                "found": result.names_found,
+                "wrongly_flagged": result.names_wrongly_flagged,
+                "recall_pct": result.names_recall_pct,
+                "precision_pct": result.names_precision_pct,
+            },
             "categories": {
                 score.category: {
                     "found": score.found,

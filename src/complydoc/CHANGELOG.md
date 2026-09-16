@@ -6,6 +6,21 @@ versioned separately.
 
 ## [Unreleased]
 
+### Added
+
+- The accuracy benchmark scores person and organisation names as their own group, against 15
+  labelled names in seven languages. The published figures still cover the pattern-backed
+  categories alone, so they say the same thing on every machine; a name score describes the
+  model that is installed and is reported beside them. Detection accuracy carries the
+  measured comparison of four models, including a multilingual one that finds every name in
+  the corpus where the shipped English model finds two thirds.
+
+### Fixed
+
+- A category pointed at a detector of the caller's own was scored as a pattern, which let a
+  name model move the published numbers. A category is model-backed when it carries a model,
+  whichever detector reads it.
+
 ## [0.4.7] — 2026-09-16
 
 ### Changed

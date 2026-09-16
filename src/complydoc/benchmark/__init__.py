@@ -73,10 +73,54 @@ class BenchmarkResult:
     clean_passages: int = 0
     clean_passages_with_a_flag: int = 0
     """Passages labelled as holding nothing where something was reported anyway."""
+    model_backed: set[str] = field(default_factory=set)
+    """Categories a statistical model finds, scored apart from the patterns."""
+    model_name: str | None = None
+    """Which model produced the name scores, when one ran."""
 
     @property
     def measured(self) -> list[CategoryScore]:
-        return [s for s in self.categories.values() if not s.unmeasured]
+        """The pattern-backed categories, which is what the published numbers cover."""
+        return [
+            s
+            for s in self.categories.values()
+            if not s.unmeasured and s.category not in self.model_backed
+        ]
+
+    @property
+    def names(self) -> list[CategoryScore]:
+        """The model-backed categories, measured only when the detector ran."""
+        return [
+            s
+            for s in self.categories.values()
+            if not s.unmeasured and s.category in self.model_backed
+        ]
+
+    @property
+    def names_measured(self) -> bool:
+        return bool(self.names)
+
+    @property
+    def names_labelled(self) -> int:
+        return sum(s.labelled for s in self.names)
+
+    @property
+    def names_found(self) -> int:
+        return sum(s.found for s in self.names)
+
+    @property
+    def names_wrongly_flagged(self) -> int:
+        return sum(s.wrongly_flagged for s in self.names)
+
+    @property
+    def names_recall_pct(self) -> float | None:
+        total = self.names_labelled
+        return round(100 * self.names_found / total, 1) if total else None
+
+    @property
+    def names_precision_pct(self) -> float | None:
+        reported = self.names_found + self.names_wrongly_flagged
+        return round(100 * self.names_found / reported, 1) if reported else None
 
     @property
     def labelled_total(self) -> int:
@@ -131,20 +175,37 @@ def _spans(text: str, expect: list[tuple[str, str]]) -> list[tuple[str, int, int
     return located
 
 
+def _model_name(config: SensitiveConfig, categories: list[str]) -> str | None:
+    """What produced the name scores: the model, or the detector standing in for it."""
+    for category_id in categories:
+        category = config.categories[category_id]
+        if category.detector != "ner":
+            return f"detector: {category.detector}"
+        if category.model is not None:
+            return str(category.model.name)
+    return None
+
+
 def run_benchmark(config: SensitiveConfig, corpus: list[Passage] | None = None) -> BenchmarkResult:
     """Score the shipped detectors against the labelled corpus."""
     passages = load_corpus() if corpus is None else corpus
     result = BenchmarkResult(passages=len(passages))
 
-    # The corpus labels no names, so a name the model finds is neither a hit nor
-    # a wrong flag: it is something this corpus cannot judge. Scoring it either
-    # way would make the numbers depend on whether a model happens to be
-    # installed, so these categories are left out and reported as unmeasured.
+    # Names come from a statistical model rather than a pattern, so they are
+    # scored in their own group. The published numbers cover the patterns, which
+    # score the same on every machine; a name score describes the model that
+    # happens to be installed and is reported beside them.
+    # A category is model-backed when it carries a model, whichever detector
+    # reads it. Keying on the detector's name would drop a category the caller
+    # pointed at a detector of their own, and its findings would then be scored
+    # as patterns, which is what the published numbers must never include.
     model_backed = {
         category_id
         for category_id, category in config.categories.items()
-        if category.detector == "ner"
+        if category.model is not None or category.detector == "ner"
     }
+    result.model_backed = set(model_backed)
+    result.model_name = _model_name(config, sorted(model_backed))
 
     def score(category: str) -> CategoryScore:
         return result.categories.setdefault(category, CategoryScore(category=category))
@@ -153,15 +214,13 @@ def run_benchmark(config: SensitiveConfig, corpus: list[Passage] | None = None) 
         matches, unavailable = scan_text(passage.text, config)
         for category in unavailable:
             score(category).unmeasured = True
-        for category in model_backed:
-            score(category).unmeasured = True
-        matches = [m for m in matches if m.category not in model_backed]
 
         labels = _spans(passage.text, passage.expect)
         claimed: set[int] = set()
 
         for match in matches:
-            result.by_evidence[match.evidence] = result.by_evidence.get(match.evidence, 0) + 1
+            if match.category not in model_backed:
+                result.by_evidence[match.evidence] = result.by_evidence.get(match.evidence, 0) + 1
             start = _offset(passage.text, match.line, match.column)
             end = start + match.length
             hit = next(
@@ -191,7 +250,9 @@ def run_benchmark(config: SensitiveConfig, corpus: list[Passage] | None = None) 
 
         if not passage.expect:
             result.clean_passages += 1
-            if matches:
+            # A name a model thought it saw is reported with the names, so that
+            # this count says the same thing on a machine without one.
+            if any(m.category not in model_backed for m in matches):
                 result.clean_passages_with_a_flag += 1
 
     return result

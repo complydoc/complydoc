@@ -301,6 +301,91 @@ passages:
       - [phone_number, "020 7946 0958"]
       - [uk_postcode, "EC1A 1BB"]
 
+  # ----------------------------------------------------------- names
+  # Names are found by a statistical model rather than a pattern, so these
+  # passages are scored separately: what they measure is the model that happens
+  # to be installed, not the shipped patterns.
+  - id: names-contract-parties
+    text: |
+      This agreement is made between Acme Holdings Limited and Northwind
+      Supplies Limited. The signatory for the customer is Jane Doe, Finance
+      Director, and for the supplier John Smith.
+    expect:
+      - [organisation_name, "Acme Holdings Limited"]
+      - [person_name, "Jane Doe"]
+      - [person_name, "John Smith"]
+
+  - id: names-portuguese
+    text: |
+      O presente contrato é celebrado entre a Silva & Costa Lda e a Martins
+      Transportes SA. O responsável pela faturação é Maria Ferreira.
+    expect:
+      - [organisation_name, "Silva & Costa Lda"]
+      - [person_name, "Maria Ferreira"]
+
+  - id: names-german
+    text: |
+      Der Vertrag wird zwischen der Müller Maschinenbau GmbH und der Nordwind
+      Logistik AG geschlossen. Ansprechpartner ist Thomas Schmidt.
+    expect:
+      - [organisation_name, "Müller Maschinenbau GmbH"]
+      - [person_name, "Thomas Schmidt"]
+
+  - id: names-french
+    text: |
+      Le contrat est conclu entre la société Dupont Industries SARL et
+      Vent du Nord Logistique. Le responsable est Claire Moreau.
+    expect:
+      - [organisation_name, "Dupont Industries SARL"]
+      - [person_name, "Claire Moreau"]
+
+  - id: names-spanish
+    text: |
+      El contrato se celebra entre Hermanos García SL y Viento Norte
+      Logística SA. La responsable es Carmen Rodríguez.
+    expect:
+      - [organisation_name, "Hermanos García SL"]
+      - [person_name, "Carmen Rodríguez"]
+
+  - id: names-italian
+    text: |
+      Il contratto è stipulato tra Rossi Costruzioni Srl e Vento del Nord
+      Logistica SpA. Il referente è Giulia Bianchi.
+    expect:
+      - [organisation_name, "Rossi Costruzioni Srl"]
+      - [person_name, "Giulia Bianchi"]
+
+  - id: names-dutch
+    text: |
+      De overeenkomst is gesloten tussen De Vries Techniek BV en Noordwind
+      Logistiek NV. De contactpersoon is Sanne Jansen.
+    expect:
+      - [organisation_name, "De Vries Techniek BV"]
+      - [person_name, "Sanne Jansen"]
+
+  - id: names-field-labels-are-not-organisations
+    note: >
+      Field labels are what a small model tags as organisations. The shipped
+      configuration drops short all-caps tokens for exactly this reason, so a
+      candidate model is measured on it rather than credited for avoiding it.
+    text: |
+      IBAN: GB82 WEST 1234 5698 7654 32
+      VAT: GB123456782
+      NI number: AB123456C
+      PAYMENT DETAILS
+      TOTAL DUE ON RECEIPT
+    expect:
+      - [iban, "GB82 WEST 1234 5698 7654 32"]
+      - [vat_number, "GB123456782"]
+      - [ni_number, "AB123456C"]
+
+  - id: names-places-are-not-people
+    note: A place and a job title are neither a person nor an organisation.
+    text: |
+      The goods were delivered to the Manchester depot on Tuesday. The delivery
+      was signed for by the warehouse supervisor on duty that morning.
+    expect: []
+
   # ------------------------------------------------------------- prose
   - id: ordinary-contract-prose
     text: |
