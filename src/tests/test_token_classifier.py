@@ -122,6 +122,7 @@ def test_a_missing_model_is_reported_rather_than_downloaded():
         assert "complydoc/no-such-model-exists" in reason, "say which model to fetch"
 
 
+@requires_model
 def test_the_offline_switch_is_set_before_the_library_is_imported(tmp_path):
     """The bug this guards: a scan reached the hub and the guard stopped it.
 
@@ -159,6 +160,7 @@ print("OK" if ok else f"FAILED {reason}")
         cwd=str(tmp_path),
         env=environment,
     )
-    if "FAILED" in result.stdout and "not on this machine" in result.stdout:
-        pytest.skip("the model is not on this machine")
+    unavailable = ("not on this machine", "needs the optional extra")
+    if "FAILED" in result.stdout and any(text in result.stdout for text in unavailable):
+        pytest.skip("the extra or the model is not installed in the subprocess")
     assert "OK" in result.stdout, f"{result.stdout}\n{result.stderr[-2000:]}"
