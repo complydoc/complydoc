@@ -248,7 +248,7 @@ def grouped_bars_svg(
                 reach = f"{architecture.documents_served}/{architecture.documents_total}"
                 parts.append(
                     f'<path d="{_bar_path(label_w, row_y, bar_w, bar_h)}" fill="{colour}">'
-                    f"<title>{comparison.display_name} · {label} · {money(amount)} · "
+                    f"<title>{comparison.display_name}, {label}, {money(amount)}, "
                     f"reaches {reach} documents. {architecture.note}</title></path>"
                 )
                 # The money only. How many documents each architecture reached

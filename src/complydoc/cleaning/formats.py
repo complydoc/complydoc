@@ -121,11 +121,21 @@ def clean_html_file(source: Path, target: Path, settings: Config) -> CleanResult
     return result
 
 
-_ADDRESS_HEADERS = ("From", "To", "Cc", "Bcc", "Reply-To", "Subject")
+_MASKED_HEADERS = ("Subject",)
+"""Headers whose value is free text, where a masked value is still a value."""
+
+_REMOVED_HEADERS = ("From", "To", "Cc", "Bcc", "Reply-To")
+"""Headers whose value is an address, which a masked value cannot be."""
 
 
 def clean_email_file(source: Path, target: Path, settings: Config) -> CleanResult:
-    """An .eml copy with its text parts and address headers masked.
+    """An .eml copy with its text parts masked and its address headers removed.
+
+    An address is an identifier, and a masked address is not an address: the
+    mask characters are not allowed in an addr-spec, and an encoded word is not
+    allowed there either, so a masked `From` is a header that some versions of
+    the email library refuse to write at all. The copy drops those headers and
+    reports them rather than writing something malformed into them.
 
     Attachments are carried over untouched. They are separate documents, and a
     copy that quietly rewrote them would say nothing about what it had changed.
@@ -166,7 +176,7 @@ def clean_email_file(source: Path, target: Path, settings: Config) -> CleanResul
         confirmed += sure
         unavailable.update(missing)
 
-    for header in _ADDRESS_HEADERS:
+    for header in _MASKED_HEADERS:
         value = message.get(header)
         if not value:
             continue
@@ -178,6 +188,10 @@ def clean_email_file(source: Path, target: Path, settings: Config) -> CleanResul
             confirmed += sure
         unavailable.update(missing)
 
+    removed = [header for header in _REMOVED_HEADERS if message.get(header)]
+    for header in removed:
+        del message[header]
+
     target.write_bytes(message.as_bytes())
 
     result.output = target
@@ -185,6 +199,8 @@ def clean_email_file(source: Path, target: Path, settings: Config) -> CleanResul
     result.masked_confirmed = confirmed
     result.unscanned_categories = unavailable
     result.notes.append(_SPLIT_NOTE)
+    if removed:
+        result.metadata_removed.extend(f"{header} header" for header in removed)
     if attachments:
         result.notes.append(
             f"{attachments} attachment(s) were copied unchanged; audit and clean them separately."

@@ -178,7 +178,7 @@ def watching(quiet: bool) -> Iterator[Callable[[int, int, Path], None] | None]:
         TextColumn("{task.fields[name]}", table_column=Column(width=28, no_wrap=True)),
         BarColumn(bar_width=24, complete_style="green", finished_style="green"),
         MofNCompleteColumn(),
-        TextColumn("[dim]·[/]"),
+        TextColumn("[dim]|[/]"),
         TimeElapsedColumn(),
         TextColumn("[dim]elapsed,[/]"),
         TimeRemainingColumn(),

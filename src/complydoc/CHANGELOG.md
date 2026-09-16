@@ -6,6 +6,11 @@ versioned separately.
 
 ## [Unreleased]
 
+### Changed
+
+- Report pages, chart tooltips and command line output separate values with commas and
+  words rather than a middle dot.
+
 ### Added
 
 - `complydoc clean` writes safe copies: text, Markdown, HTML, email, Word, Excel and

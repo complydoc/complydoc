@@ -24,7 +24,7 @@ print(result.metadata_removed)
 | --- | --- | --- |
 | `.txt`, `.md` | masked in place | — |
 | `.html` | masked in every text node; comments removed | — |
-| `.eml` | masked in every text part, and in the address headers | — |
+| `.eml` | masked in every text part and in the subject | `From`, `To`, `Cc`, `Bcc` and `Reply-To` removed |
 | `.docx` | masked in runs, tables, headers and footers | core properties and the thumbnail |
 | `.xlsx` | masked in every string cell | core properties |
 | `.pptx` | masked in slide and notes text | `docProps` parts |
@@ -58,6 +58,10 @@ Two limits apply to every copy and are reported on the result:
 - A category that could not be scanned at all masks nothing anywhere in the
   file. Running without a name model means no name was masked in any copy, and
   the run says which categories those were.
+
+An address is an identifier, and a masked address is not an address: the mask
+characters are not allowed in an addr-spec, so the copy drops the address
+headers and lists them rather than writing something malformed into them.
 
 Attachments inside an `.eml` are copied unchanged. They are separate documents,
 and a copy that quietly rewrote them would say nothing about what it changed;

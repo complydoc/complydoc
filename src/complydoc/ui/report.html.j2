@@ -165,7 +165,7 @@ whitespace and words split at line breaks; a fuzzy match shows its similarity.</
   {% for f in lc.facts %}
     <tr><td>{{ f.fact }}</td><td class="mono">{{ f.document or "any" }}</td>
     {% for l in lc.loaders %}{% set kind = f.found.get(l.name) %}
-      <td>{% if kind == "exact" %}found{% elif kind == "fuzzy" %}fuzzy, {{ "%.2f" | format(f.scores[l.name]) }}{% else %}<span class="attn">missing</span>{% endif %}{% if kind and f.pages.get(l.name) %} · p{{ f.pages[l.name] }}{% endif %}</td>
+      <td>{% if kind == "exact" %}found{% elif kind == "fuzzy" %}fuzzy, {{ "%.2f" | format(f.scores[l.name]) }}{% else %}<span class="attn">missing</span>{% endif %}{% if kind and f.pages.get(l.name) %} on p{{ f.pages[l.name] }}{% endif %}</td>
     {% endfor %}</tr>
   {% endfor %}
   </tbody>
@@ -238,7 +238,7 @@ whitespace and words split at line breaks; a fuzzy match shows its similarity.</
     </summary>
     <p class="wdetail">{{ w.detail }}</p>
     {% if w.effect %}<p class="weffect">{{ w.effect }}</p>{% endif %}
-    <p class="wfiles mono">{{ w.documents | join(" · ") }}</p>
+    <p class="wfiles mono">{{ w.documents | join(", ") }}</p>
   </details>
   {% endfor %}
 </div>
@@ -255,7 +255,7 @@ whitespace and words split at line breaks; a fuzzy match shows its similarity.</
       <div class="s">
         {% set bands = agg.readiness_bands %}
         {{ bands.get("ready", 0) + bands.get("workable", 0) }} of
-        {{ agg.documents_audited }} workable or better · content only</div>
+        {{ agg.documents_audited }} workable or better, content only</div>
     {% else %}<div class="v">—</div><div class="s">readiness was not part of this run</div>{% endif %}
   </div>
 
@@ -523,7 +523,7 @@ strength of evidence. Select a cell to filter the table.</p>
   <button type="button" class="cm-cell{% if column == 'not_measured' %} cm-na{% endif %}{% if n %} cm-{{ sev }}{% endif %}"
     data-cm-cell="{{ row }}:{{ column }}"{% if not n %} disabled{% endif %}
     aria-label="{{ label }} instruction evidence, {{ column | replace('_', ' ') }}: {{ n }}">
-    <strong>{{ n if n else "·" }}</strong>{% if n %}<span>{{ sev }}</span>{% endif %}</button>
+    <strong>{{ n if n else "-" }}</strong>{% if n %}<span>{{ sev }}</span>{% endif %}</button>
     {% endif %}
   {% endfor %}
   {% endfor %}
@@ -772,7 +772,7 @@ that text afterwards. Greyed rows are low-severity findings from the name model.
               {% endif %}
               <div class="pcap">
                 <span class="flags">
-                  {%- for level, label in row.flags %}<span class="flag {{ level }}">{{ label }}</span>{% if not loop.last %} · {% endif %}{% endfor -%}
+                  {%- for level, label in row.flags %}<span class="flag {{ level }}">{{ label }}</span>{% if not loop.last %}, {% endif %}{% endfor -%}
                 </span>
                 {# Filled in while pointing at a mark on the layout. #}
 
@@ -825,10 +825,10 @@ that text afterwards. Greyed rows are low-severity findings from the name model.
                   <p class="pcap">
                     {% if body.differs %}<mark class="added">only {{ label }}</mark>
                       <mark class="missing">only {{ kept_label }}</mark>
-                      · {{ body.added_words }} added, {{ body.missing_words }} missing ·
+                      {{ body.added_words }} added, {{ body.missing_words }} missing,
                       {{ "{:.0f}%".format(body.similarity * 100) }} the same
                     {% else %}the same words as {{ kept_label }}, differently spaced{% endif %}
-                    {%- if body.truncated %} · compared up to the first few thousand words
+                    {%- if body.truncated %}, compared up to the first few thousand words
                     {%- endif %}</p>
                 {% endif %}
                 </div>
@@ -892,14 +892,14 @@ that text afterwards. Greyed rows are low-severity findings from the name model.
           <div class="notice"><strong>Reading this document was incomplete.</strong>
             <ul>{% for w in doc.load_warnings %}<li>{{ w }}</li>{% endfor %}</ul></div>
         {% endif %}
-        <p class="doc-meta">{{ doc.format }} · {{ plural(doc.page_count, "page") }}{% if not doc.page_count_known %} (unpaginated){% endif %}{% if doc.readiness and doc.readiness.score %} ·
-          <span class="{{ 'attn' if score_band(doc.readiness.score.value) == 'poor' else '' }}">{{ doc.readiness.score.label }}, {{ doc.readiness.score.value }}/100</span>{% endif %}{% if doc.timing %} ·
+        <p class="doc-meta">{{ doc.format }}, {{ plural(doc.page_count, "page") }}{% if not doc.page_count_known %} (unpaginated){% endif %}{% if doc.readiness and doc.readiness.score %},
+          <span class="{{ 'attn' if score_band(doc.readiness.score.value) == 'poor' else '' }}">{{ doc.readiness.score.label }}, {{ doc.readiness.score.value }}/100</span>{% endif %}{% if doc.timing %},
           {{ duration(doc.timing.total_seconds) }} to read and analyse{% endif %}</p>
         {% set concerns = doc.readiness.signals | selectattr("rating", "equalto", "poor") | list if doc.readiness else [] %}
         {% if concerns or (doc.sensitive and doc.sensitive.unreadable_pages) %}
         <p class="concerns">
-          {%- for s in concerns %}<span title="{{ s.why }}">{{ s.name | lower }} — {{ s.display }}</span>{% if not loop.last %} · {% endif %}{% endfor -%}
-          {%- if doc.sensitive and doc.sensitive.unreadable_pages %}{% if concerns %} · {% endif %}<span>{{ plural(doc.sensitive.unreadable_pages | length, "page") }} not read</span>{% endif -%}
+          {%- for s in concerns %}<span title="{{ s.why }}">{{ s.name | lower }} — {{ s.display }}</span>{% if not loop.last %}, {% endif %}{% endfor -%}
+          {%- if doc.sensitive and doc.sensitive.unreadable_pages %}{% if concerns %}, {% endif %}<span>{{ plural(doc.sensitive.unreadable_pages | length, "page") }} not read</span>{% endif -%}
         </p>
         {% endif %}
         {% if doc.sensitive and doc.sensitive.unreadable_pages %}
@@ -987,8 +987,8 @@ that text afterwards. Greyed rows are low-severity findings from the name model.
     </dl>
   </div>
   <div class="foot-rule">
-    complydoc {{ report.run.tool_version }} · report schema v{{ report.run.schema_version }} ·
-    config {{ report.run.config_digest }} · Python {{ report.run.python_version }} ·
+    complydoc {{ report.run.tool_version }}, report schema v{{ report.run.schema_version }},
+    config {{ report.run.config_digest }}, Python {{ report.run.python_version }},
     network guard {{ report.run.offline_guard }}
   </div>
 </footer>

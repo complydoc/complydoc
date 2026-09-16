@@ -63,7 +63,7 @@ def doctor(config_dir: ConfigOpt = None) -> None:
     from complydoc.ingest.registry import supported_extensions
 
     config = load_config_or_exit(config_dir)
-    console.print(f"[bold]complydoc {__version__}[/] · Python {sys.version.split()[0]}")
+    console.print(f"[bold]complydoc {__version__}[/] on Python {sys.version.split()[0]}")
     console.print(f"Network guard: [green]{offline.guard_status()}[/]")
     console.print(f"Config: {config.source_dir} (digest {config.digest})")
     console.print(f"Formats: {', '.join(supported_extensions())}")

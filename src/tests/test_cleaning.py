@@ -86,7 +86,13 @@ def test_html_comments_do_not_survive(folder, tmp_path, config):
     assert result.metadata_removed
 
 
-def test_the_email_headers_are_masked_too(folder, tmp_path, config):
+def test_the_email_address_headers_are_removed(folder, tmp_path, config):
+    """A masked address is not an address, so the copy carries none.
+
+    The mask characters are not allowed in an addr-spec, and neither is an
+    encoded word, so a masked `From` is a header some versions of the email
+    library refuse to write.
+    """
     from email import policy
     from email.parser import BytesParser
 
@@ -94,7 +100,10 @@ def test_the_email_headers_are_masked_too(folder, tmp_path, config):
     message = BytesParser(policy=policy.default).parse(result.output.open("rb"))
 
     assert message["subject"] == "Payslip", "a subject with nothing in it is left alone"
-    assert "jane.doe@example.com" not in str(message["to"])
+    assert message["to"] is None
+    assert message["from"] is None
+    assert "To header" in result.metadata_removed
+    assert "From header" in result.metadata_removed
 
 
 def test_a_pdf_keeps_its_text_and_says_so(tmp_path, config):
