@@ -6,6 +6,8 @@ versioned separately.
 
 ## [Unreleased]
 
+## [0.4.8] — 2026-09-16
+
 ### Changed
 
 - Names are read by `Babelscape/wikineural-multilingual-ner` where it is installed, and by

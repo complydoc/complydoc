@@ -79,9 +79,33 @@ the identifiers masked, the metadata removed, and PDFs rasterised on request.
 A parser can hang on a malformed file: `--timeout 120` gives each document a deadline and
 lists the ones it stopped.
 
-OCR and name detection are optional extras. `complydoc doctor` shows what is installed, and
-`complydoc benchmark` prints what detection finds and what it wrongly flags, measured against
-a labelled corpus that ships with the package.
+### Optional extras
+
+A plain install reads documents, prices them, measures extraction readiness and finds
+identifiers by pattern. Two things are optional because they are large:
+
+| Extra | Size | What it adds | Without it |
+| --- | --- | --- | --- |
+| `ocr` | ~80 MB | Reads scans and images | Pages with no text layer are reported as unread |
+| `multilingual-names` | ~2 GB | Finds people and companies in European languages | Names are found by a small English model instead |
+
+```bash
+uv tool install "complydoc[ocr,multilingual-names]"
+uv run python -c "from transformers import pipeline; \
+    pipeline('token-classification', model='Babelscape/wikineural-multilingual-ner')"
+```
+
+The second command downloads the name model once. Nothing is downloaded while a scan runs,
+so the model has to be fetched before it can be used.
+
+Names are the part worth understanding before choosing. With `multilingual-names` they are
+read by a multilingual model; without it, by spaCy's small English one, which misses names
+in other languages and mistakes field labels for companies. Neither is a checksum, so both
+miss some names: [Detection accuracy](https://complydoc.github.io/complydoc/explanation/accuracy/)
+publishes the measured numbers for each.
+
+`complydoc doctor` shows what is installed, and `complydoc benchmark` prints what detection
+finds and what it wrongly flags against a labelled corpus that ships with the package.
 
 ## What it reports
 
