@@ -6,6 +6,15 @@ versioned separately.
 
 ## [Unreleased]
 
+### Added
+
+- `complydoc check PATH --policy policy.yaml` holds documents to rules written in YAML: the
+  checks `cd.expect` offers, named in a file. Every rule runs, so one run lists everything
+  that failed. `level: warning` reports a rule without failing the gate. Exits 1 on a
+  failure and 2 on a policy that will not load. `--markdown` writes a summary for a pull
+  request comment and `--sarif` writes SARIF 2.1.0 for code scanning. `--report` checks a
+  report JSON that was already written.
+
 ## [0.4.6] — 2026-09-16
 
 ### Added

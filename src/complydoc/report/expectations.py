@@ -4,6 +4,8 @@
 
 Each check returns the expectation, so checks chain. A failed check raises
 `ExpectationError`, a subclass of `AssertionError`, listing what failed it.
+
+The same checks are what a policy file names; see `complydoc.report.policy`.
 """
 
 from __future__ import annotations
@@ -33,10 +35,16 @@ def expect(report: AuditReport) -> Expectation:
 
 
 class Expectation:
-    def __init__(self, report: AuditReport) -> None:
+    def __init__(self, report: AuditReport, *, collect: bool = False) -> None:
         self.report = report
+        self.collect = collect
+        """Gather results instead of raising, so every check runs. Used by policies."""
+        self.collected: list[tuple[str, list[str]]] = []
 
     def _check(self, description: str, failures: Sequence[str]) -> Expectation:
+        if self.collect:
+            self.collected.append((description, list(failures)))
+            return self
         if failures:
             shown = "\n".join(f"  - {item}" for item in failures[:_SHOWN])
             more = f"\n  and {len(failures) - _SHOWN} more" if len(failures) > _SHOWN else ""

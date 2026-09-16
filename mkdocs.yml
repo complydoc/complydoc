@@ -106,6 +106,7 @@ nav:
       - Inspecting chunks: guides/inspect-chunks.md
       - Report tables: guides/report-tables.md
       - Baselines and tests: guides/baselines-and-tests.md
+      - Policy files: guides/policy.md
       - Streaming and steps: guides/streaming-and-steps.md
       - Name detection models: guides/name-detection-models.md
   - Reference:
