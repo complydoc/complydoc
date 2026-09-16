@@ -198,6 +198,9 @@ def run_benchmark(config: SensitiveConfig, corpus: list[Passage] | None = None) 
 
 
 def _offset(text: str, line: int, column: int) -> int:
-    """A one-based line and column as an offset into `text`."""
+    """A match's line and column as an offset into `text`.
+
+    The scanner reports a 1-indexed line and a 0-indexed column.
+    """
     lines = text.splitlines(keepends=True)
-    return sum(len(x) for x in lines[: line - 1]) + (column - 1)
+    return sum(len(x) for x in lines[: line - 1]) + column
