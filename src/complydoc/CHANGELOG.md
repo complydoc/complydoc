@@ -6,6 +6,13 @@ versioned separately.
 
 ## [Unreleased]
 
+### Fixed
+
+- `complydoc doctor` said name detection was unavailable on an install where it works. It
+  asked each detector for the models named on a category's first link, so the model doing
+  the finding went unmentioned whenever it sat further down the chain. It now reports the
+  model that answers, with the others listed under it.
+
 ## [0.4.8] — 2026-09-16
 
 ### Changed

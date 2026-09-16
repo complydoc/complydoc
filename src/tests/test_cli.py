@@ -435,3 +435,29 @@ def test_a_category_nothing_was_looked_for_is_named_in_the_summary(tmp_path, mon
     # And the report page says it above the findings, not only in the limitations.
     html = (tmp_path / "s.html").read_text()
     assert "categories were not scanned" in html
+
+
+def test_doctor_calls_a_working_fallback_working(monkeypatch):
+    """The question is whether names are being found, not whether one model loaded.
+
+    A missing preferred model beside a working fallback used to read as a broken
+    install, which is what a plain install looks like.
+    """
+    from complydoc.sensitive.detectors import token_classifier
+    from complydoc.sensitive.registry import DetectorUnavailableError
+
+    def unavailable(name: str):
+        raise DetectorUnavailableError(f"the model {name!r} is not on this machine")
+
+    monkeypatch.setattr(token_classifier, "_load", unavailable)
+
+    result = runner.invoke(app, ["doctor"])
+    assert result.exit_code == 0, result.output
+    output = " ".join(result.output.split())
+
+    if "en_core_web_sm" in output and "not installed: en_core_web_sm" not in output:
+        assert "Name detection: en_core_web_sm" in output, output
+        assert "unavailable — no configured model loads" not in output
+    else:
+        # Neither model on this machine, which is a fair thing to report.
+        assert "unavailable" in output

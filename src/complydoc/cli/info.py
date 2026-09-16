@@ -3,6 +3,11 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from complydoc.config.schema import Config
+
 import sys
 from pathlib import Path
 from typing import Annotated
@@ -57,6 +62,55 @@ def schema() -> None:
     print(json.dumps(report_shape(), indent=2))
 
 
+def _report_name_detection(config: Config) -> None:
+    """What reads names, in the order the configuration tries them.
+
+    A category names several detectors and uses the first that can run, so the
+    question this answers is "are names being found, and by what". Listing each
+    configured model on its own line answered neither: a missing preferred model
+    beside a working fallback read as a broken install when nothing was wrong.
+    """
+    from complydoc.sensitive.detectors import ner, token_classifier
+
+    modules = {"ner": ner, "token_classifier": token_classifier}
+    seen: set[tuple[str, str]] = set()
+
+    for category in config.sensitive.enabled_categories.values():
+        if not category.model_backed:
+            continue
+        links = [(d, link) for d, link in category.chain() if link.model is not None]
+        if not any(link for _, link in links):
+            continue
+        key = tuple(link.model.name for _, link in links if link.model)
+        if key in seen:
+            continue
+        seen.add(key)  # type: ignore[arg-type]
+
+        # Gathered before anything is printed: the model that answers goes
+        # first, and the rest under it. Printed in chain order, a missing
+        # preferred model is the first thing read and looks like the answer.
+        answering: str | None = None
+        others: list[str] = []
+        for detector_id, link in links:
+            if link.model is None:
+                continue
+            module = modules.get(detector_id)
+            ok, _ = module.model_available(link.model.name) if module else (True, None)
+            if ok and answering is None:
+                answering = link.model.name
+            elif ok:
+                others.append(f"spare: {link.model.name}")
+            else:
+                others.append(f"not installed: {link.model.name}")
+
+        if answering is None:
+            console.print("Name detection: [yellow]unavailable[/] — no configured model loads")
+        else:
+            console.print(f"Name detection: [green]{answering}[/]")
+        for line in others:
+            console.print(f"[dim]  {line}[/]")
+
+
 @app.command()
 def doctor(config_dir: ConfigOpt = None) -> None:
     """Report what is installed, what is not, and what that costs you."""
@@ -77,17 +131,7 @@ def doctor(config_dir: ConfigOpt = None) -> None:
     else:
         console.print(f"OCR: [yellow]unavailable[/] — {ocr_module.unavailable_reason()}")
 
-    from complydoc.sensitive.detectors import ner, token_classifier
-
-    # A category can be pointed at either detector, so both are asked. Reporting
-    # only the shipped one would leave a configured model out of this list.
-    for module in (ner, token_classifier):
-        for name in module.configured_models(config.sensitive):
-            ok, reason = module.model_available(name)
-            if ok:
-                console.print(f"Name detection: [green]available[/] ({name})")
-            else:
-                console.print(f"Name detection: [yellow]unavailable[/] — {reason}")
+    _report_name_detection(config)
 
     from complydoc.config.loader import check_staleness
 

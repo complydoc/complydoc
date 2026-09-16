@@ -77,8 +77,11 @@ def configured_models(config: SensitiveConfig) -> list[str]:
     """Every model named by an enabled category that uses this detector, in order."""
     names: list[str] = []
     for category in config.enabled_categories.values():
-        if category.detector == "ner" and category.model is not None:
-            names.extend(category.model.model_names())
+        # Every link, not just the first: a category names the detectors to try
+        # in order, and a model further down the chain is still configured.
+        for detector_id, link in category.chain():
+            if detector_id == "ner" and link.model is not None:
+                names.extend(link.model.model_names())
     return list(dict.fromkeys(names))
 
 
