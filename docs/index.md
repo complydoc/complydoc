@@ -71,6 +71,7 @@ are vendored as data files. See [Network isolation](explanation/offline.md).
 | [Audit a folder](guides/audit-a-folder.md) | Running it, and reading the report |
 | [Page routing](guides/routing.md) | Which pages need OCR or a vision model, and what the mix costs |
 | [Policy files](guides/policy.md) | Rules in YAML, checked in CI, with Markdown and SARIF output |
+| [Safe copies](guides/clean.md) | Masked copies of documents, with their metadata removed |
 | [Python API](guides/python-api.md) | Conventions, strings, configuration in code, extending |
 | [Extracting masked text](guides/extract-masked-text.md) | Masked text, token counts, warnings |
 | [Inspecting a loader](guides/inspect-a-loader.md) | LangChain and LlamaIndex output, metadata, network attempts |

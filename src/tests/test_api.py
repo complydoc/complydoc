@@ -130,6 +130,9 @@ def test_the_public_surface_is_exactly_what_was_promised():
         "Rect",
         "TextBlock",
         "sha256_of",
+        # safe copies
+        "clean_document",
+        "CleanResult",
         # options and version
         "AuditOptions",
         "__version__",

@@ -66,6 +66,7 @@ from typing import TYPE_CHECKING, TypedDict, Unpack
 
 from complydoc import offline
 from complydoc.audit.run import COMPONENTS, iter_entries, plan_audit, run_audit
+from complydoc.cleaning import CleanResult, clean_document
 from complydoc.config.loader import ConfigError, load_config
 from complydoc.cost.estimator import UnknownModelError
 from complydoc.extraction.chunks import (
@@ -154,6 +155,7 @@ __all__ = [
     "ChunkComparison",
     "ChunkReport",
     "ChunkStats",
+    "CleanResult",
     "ConfigError",
     "ContentFinding",
     "Detector",
@@ -206,6 +208,7 @@ __all__ = [
     "all_engines",
     "all_extractors",
     "check_facts",
+    "clean_document",
     "compare_chunkers",
     "compare_loaders",
     "cost_audit",

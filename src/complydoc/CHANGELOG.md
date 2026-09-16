@@ -8,6 +8,13 @@ versioned separately.
 
 ### Added
 
+- `complydoc clean` writes safe copies: text, Markdown, HTML, email, Word, Excel and
+  PowerPoint files are copied with every identifier that was found replaced by its masked
+  form, and the metadata parts removed. A PDF cannot have its text rewritten in place, so a
+  PDF copy has its metadata stripped, and `--rasterise` renders each page to an image and
+  rebuilds the file without a text layer. Black rectangles over live text are never drawn:
+  the characters survive underneath one, where any reader can still select them.
+
 - `complydoc benchmark` scores identifier detection against a labelled corpus that ships with
   the package, and the measured numbers are published in Detection accuracy. A finding counts
   as a hit when it overlaps a labelled value and names the same category, so the score
