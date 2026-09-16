@@ -64,3 +64,8 @@ use it.
 `complydoc doctor` lists every configured model and whether it loads. A category
 whose model cannot be loaded is reported as not scanned, and `run.ner_available` is
 true only when every configured model loads.
+
+Where the count is read, the run says which categories nothing was looked for: a
+row in the CLI summary beside the item count, and a notice above the findings on
+the report's Sensitive information page. A category that was never scanned counts
+zero findings, which on its own reads the same as a category that is clean.

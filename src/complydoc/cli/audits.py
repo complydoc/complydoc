@@ -78,6 +78,15 @@ def main(ctx: typer.Context) -> None:
     run(here, COMPONENTS, DEFAULT_OUT, "complydoc", None, True, True, False)
 
 
+def unscanned_labels(report: AuditReport) -> list[str]:
+    """Labels of the categories nothing was looked for, in a stable order."""
+    labels: dict[str, str] = {}
+    for document in report.documents:
+        for entry in document.sensitive.unscanned_categories if document.sensitive else []:
+            labels[entry.category] = entry.label
+    return [labels[key] for key in sorted(labels)]
+
+
 def summary(report: AuditReport) -> None:
     aggregate = report.aggregate
     if aggregate is None:
@@ -108,11 +117,23 @@ def summary(report: AuditReport) -> None:
             f"{report.overall.score}/100 {report.overall.label}{of}",
         )
     if "sensitive" in report.run.components_run:
-        table.add_row(
-            "Sensitive items",
+        not_scanned = unscanned_labels(report)
+        counted = (
             f"{aggregate.sensitive_total} in "
-            f"{aggregate.documents_with_sensitive_data}/{aggregate.documents_audited} docs",
+            f"{aggregate.documents_with_sensitive_data}/{aggregate.documents_audited} docs"
         )
+        if not_scanned:
+            plural = "category" if len(not_scanned) == 1 else "categories"
+            counted += f", {len(not_scanned)} {plural} not scanned"
+        table.add_row("Sensitive items", counted)
+        if not_scanned:
+            # A category nothing was looked for reads as a category with nothing
+            # in it, so the count above is said to be incomplete where it is read.
+            table.add_row(
+                "Not scanned",
+                f"[yellow]{', '.join(not_scanned)}[/] — nothing was looked for, so no "
+                f"conclusion about these can be drawn",
+            )
         passages = aggregate.content_findings_total
         high = aggregate.content_findings_high
         found = count(passages, "passage") if passages else "none found"

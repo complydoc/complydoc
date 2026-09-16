@@ -381,3 +381,47 @@ def test_the_sample_folder_holds_documents_and_nothing_else():
     names = [entry.name for entry in folder.iterdir() if entry.is_file()]
     assert names, "the samples ship with the package"
     assert all(pathlib.PurePath(name).suffix.lower() in allowed for name in names), names
+
+
+def test_a_category_nothing_was_looked_for_is_named_in_the_summary(tmp_path, monkeypatch):
+    """A missing name model reads as "no names found" unless the run says otherwise."""
+    import complydoc.sensitive.detectors.ner as ner_module
+    from complydoc.sensitive.registry import DetectorUnavailableError
+
+    # Two caches sit in front of the model: the loaded pipeline and the parse of
+    # the page in hand. Both have to go, or the run is served an earlier answer.
+    ner_module._load.cache_clear()
+    ner_module._parse.cache_clear()
+
+    def unavailable(name: str):
+        raise DetectorUnavailableError("model removed for this test")
+
+    monkeypatch.setattr(ner_module, "_load", unavailable)
+    try:
+        result = runner.invoke(
+            app,
+            [
+                "sensitive",
+                "src/complydoc/sample",
+                "--no-ocr",
+                "--out",
+                str(tmp_path),
+                "--name",
+                "s",
+            ],
+        )
+    finally:
+        # Undo first: while the patch stands, `_load` is a plain function.
+        monkeypatch.undo()
+        ner_module._load.cache_clear()
+        ner_module._parse.cache_clear()
+
+    assert result.exit_code == 0, result.output
+    output = " ".join(result.output.split())
+    assert "Not scanned" in output
+    assert "Person name" in output
+    assert "categories not scanned" in output
+
+    # And the report page says it above the findings, not only in the limitations.
+    html = (tmp_path / "s.html").read_text()
+    assert "categories were not scanned" in html

@@ -474,6 +474,16 @@ above for any other.</p>
 {% if "sensitive" not in report.run.components_run %}
 <p class="note">The sensitive data scan was not part of this run.</p>
 {% else %}
+{% if agg.categories_not_scanned %}
+{% set missing = agg.categories_not_scanned | dictsort %}
+<div class="notice"><strong>{{ missing | length }}
+  categor{{ "y was" if missing | length == 1 else "ies were" }} not scanned.</strong>
+  <p>{% for cat, _ in missing %}{{ category_meta(cat).label }}{{ ", " if not loop.last }}{% endfor %}
+  {{ "was" if missing | length == 1 else "were" }} not looked for anywhere in this run, so the
+  findings below do not count {{ "it" if missing | length == 1 else "them" }} and a count of
+  zero for {{ "it" if missing | length == 1 else "them" }} would mean only that nothing was
+  searched for. Categories not scanned, at the end of this page, says why.</p></div>
+{% endif %}
 <p class="note">Masked to the last {{ report.config_masking.reveal_tail_chars }} characters{% if report.config_masking.never_reveal %};
 {{ report.config_masking.never_reveal | join(" and ") }} never shown in full{% endif %}.</p>
 {# The report also carries page text and images, where values are unmasked. #}

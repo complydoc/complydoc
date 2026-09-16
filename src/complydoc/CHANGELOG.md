@@ -8,6 +8,11 @@ versioned separately.
 
 ### Added
 
+- A run that could not scan a category now says so where the count is read: the CLI summary
+  names the categories nothing was looked for, and the report's Sensitive information page
+  opens with them, above the findings. Without a name model installed a folder full of names
+  reported zero of them, and only the limitations at the end of the report said why.
+
 - Instruction patterns in Portuguese, Spanish, French, German, Italian and Dutch for the
   `role`, `addressed_to_model`, `conceal`, `steer_output` and `exfiltration` families, which
   matched English only. `languages` on a pattern records which languages its regexes were
