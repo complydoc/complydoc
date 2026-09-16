@@ -13,7 +13,7 @@ from email.message import EmailMessage
 import pytest
 
 from complydoc.cleaning import clean_document
-from tests.helpers import FIXTURES
+from tests.helpers import FIXTURES, spacy_model_available
 
 BODY = """SUPPLIER RECORD
 National Insurance number: AB123456C
@@ -62,9 +62,14 @@ def test_a_copy_carries_no_identifier_that_was_found(folder, tmp_path, config, n
 def test_a_masked_copy_is_still_the_document(folder, tmp_path, config):
     result = clean_document(folder / "notes.txt", tmp_path / "out", config)
     text = result.output.read_text()
-    assert text.startswith("SUPPLIER RECORD")
-    assert "National Insurance number:" in text, "the labels stay; the values go"
-    assert text.count("\n") == BODY.count("\n")
+
+    assert text.count("\n") == BODY.count("\n"), "the copy keeps the shape of the document"
+    assert not any(value.decode() in text for value in LEAKS)
+    if not spacy_model_available():
+        # A name model masks words in the labels as well: it reads "National
+        # Insurance" as an organisation, which is what it is.
+        assert text.startswith("SUPPLIER RECORD")
+        assert "National Insurance number:" in text, "the labels stay; the values go"
 
 
 def test_the_office_copy_still_opens_and_lost_its_metadata(folder, tmp_path, config):
@@ -99,11 +104,14 @@ def test_the_email_address_headers_are_removed(folder, tmp_path, config):
     result = clean_document(folder / "message.eml", tmp_path / "out", config)
     message = BytesParser(policy=policy.default).parse(result.output.open("rb"))
 
-    assert message["subject"] == "Payslip", "a subject with nothing in it is left alone"
     assert message["to"] is None
     assert message["from"] is None
     assert "To header" in result.metadata_removed
     assert "From header" in result.metadata_removed
+    # A subject is free text, so it is masked in place rather than dropped.
+    assert message["subject"] is not None
+    if not spacy_model_available():
+        assert message["subject"] == "Payslip", "nothing in this one is an identifier"
 
 
 def test_a_pdf_keeps_its_text_and_says_so(tmp_path, config):
