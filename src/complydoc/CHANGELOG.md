@@ -8,6 +8,12 @@ versioned separately.
 
 ### Added
 
+- Instruction patterns in Portuguese, Spanish, French, German, Italian and Dutch for the
+  `role`, `addressed_to_model`, `conceal`, `steer_output` and `exfiltration` families, which
+  matched English only. `languages` on a pattern records which languages its regexes were
+  written for; every pattern still runs against every document, since an injected
+  instruction can be in a language the document is not.
+
 - A `table_fidelity` readiness signal: whether each ruled table's rows survive in the
   extracted text as rows. A row counts when its cells appear on one line, in order, matched
   as whole words. It describes the text the extractor this run used produced, not a verdict

@@ -100,9 +100,14 @@ These apply to loader output and extracted text as well as files.
 | `none` | Neither |
 
 Patterns run on the text with invisible characters removed, so
-`ig​nore previous instructions` still matches. The `override` pattern
-covers English, Portuguese, Spanish, French, German, Italian and Dutch; the
-others are English.
+`ig​nore previous instructions` still matches.
+
+Every pattern runs against every document. `languages` on a pattern in
+`hidden.yaml` records which languages its regexes were written for; it does not
+restrict where they run, because an injected instruction can be written in a
+language the surrounding document is not. The shipped patterns cover English,
+Portuguese, Spanish, French, German, Italian and Dutch, apart from
+`role_marker`, which matches markup rather than words.
 
 ### Classifier
 

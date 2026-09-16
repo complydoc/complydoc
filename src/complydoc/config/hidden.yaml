@@ -26,6 +26,10 @@ visibility:
   max_pages: 500
 
 instructions:
+  # `languages` on a pattern says which languages its regexes cover. It is not a
+  # filter: every pattern runs against every document, because the language of an
+  # injected instruction has nothing to do with the language of the document it
+  # was hidden in.
   # Used only when a classifier is registered with
   # cd.register_instruction_classifier().
   classifier_threshold: 0.8
@@ -44,12 +48,36 @@ instructions:
 
     - id: role
       label: reassigns the model's role
-      languages: [en]
+      languages: [en, pt, es, fr, de, it, nl]
       regexes:
         - '\byou are (?:now|no longer)\b'
         - '\bfrom now on,? you\b'
         - '\bpretend (?:to be|you are)\b'
         - '\bnew (?:system )?instructions?\s*:'
+        # Portuguese: "a partir de agora, você é", "finja ser", "novas instruções:"
+        - '\b(?:a partir de agora|de agora em diante)\b[^.\n]{0,20}\b(?:voc[êe]|tu)\b'
+        - '\b(?:finja|fin[jg]e|aja como|comporte-se como)\b'
+        - '\bnovas instru[çc][õo]es\s*:'
+        # Spanish: "a partir de ahora eres", "finge ser", "nuevas instrucciones:"
+        - '\b(?:a partir de ahora|de ahora en adelante)\b[^.\n]{0,20}\b(?:eres|act[úu]a)\b'
+        - '\b(?:finge ser|act[úu]a como)\b'
+        - '\bnuevas instrucciones\s*:'
+        # French: "à partir de maintenant, tu es", "fais comme si", "nouvelles consignes :"
+        - '\b(?:[àa] partir de maintenant|d[ée]sormais)\b[^.\n]{0,20}\b(?:tu es|vous [êe]tes|agis|agissez)\b'
+        - '\b(?:fais comme si|comporte-toi comme|agis comme)\b'
+        - '\bnouvelles (?:instructions|consignes)\s*:'
+        # German: "ab jetzt bist du", "verhalte dich wie", "neue Anweisungen:"
+        - '\b(?:ab (?:jetzt|sofort)|von nun an)\b[^.\n]{0,20}\b(?:bist du|sind sie|handelst du)\b'
+        - '\b(?:verhalte dich wie|tu so,? als)\b'
+        - '\bneue anweisungen\s*:'
+        # Italian: "d'ora in poi sei", "fingi di essere", "nuove istruzioni:"
+        - '\b(?:d.ora in poi|da adesso)\b[^.\n]{0,20}\b(?:sei|agisci)\b'
+        - '\b(?:fingi di essere|comportati come)\b'
+        - '\bnuove istruzioni\s*:'
+        # Dutch: "vanaf nu ben je", "doe alsof je", "nieuwe instructies:"
+        - '\bvanaf nu\b[^.\n]{0,20}\b(?:ben je|bent u)\b'
+        - '\bdoe alsof (?:je|u)\b'
+        - '\bnieuwe instructies\s*:'
 
     - id: role_marker
       label: contains chat-template or role markers
@@ -63,29 +91,73 @@ instructions:
 
     - id: addressed_to_model
       label: addresses an AI model directly
-      languages: [en]
+      languages: [en, pt, es, fr, de, it, nl]
       regexes:
         - '\b(?:if|when) you are an? (?:ai|artificial intelligence|language model|large language model|llm|chatbot|ai assistant)\b'
         - '\b(?:note|message|instructions?|attention) (?:to|for) (?:the |any )?(?:ai|llm|language model|model|assistant|chatbot)\b'
         - '\b(?:dear|hey|hello|attention)\s*,?\s+(?:ai|llm|chatgpt|gpt|claude|gemini|copilot|assistant)\b'
+        # The model is named the same way in every language; what changes is the address.
+        - '\b(?:nota|mensagem|instru[çc][õo]es|aten[çc][ãa]o) (?:para|ao|[àa]) (?:a |o )?(?:ia|ai|llm|modelo|assistente|chatbot)\b'
+        - '\bse (?:voc[êe]|tu) (?:for|fores|[ée]) (?:uma? )?(?:ia|ai|intelig[êe]ncia artificial|modelo de linguagem|assistente)\b'
+        - '\b(?:nota|mensaje|instrucciones|atenci[óo]n) (?:para|al|a la) (?:la |el )?(?:ia|ai|llm|modelo|asistente|chatbot)\b'
+        - '\bsi eres una? (?:ia|ai|inteligencia artificial|modelo de lenguaje|asistente)\b'
+        - '\b(?:note|message|instructions?|attention) (?:pour|[àa]) (?:l.|la |le )?(?:ia|ai|llm|mod[èe]le|assistant|agent conversationnel)\b'
+        - '\bsi (?:tu es|vous [êe]tes) une? (?:ia|ai|intelligence artificielle|mod[èe]le de langage|assistant)\b'
+        - '\b(?:hinweis|nachricht|anweisungen?|achtung) (?:an|f[üu]r) (?:die |das |den )?(?:ki|ai|llm|sprachmodell|modell|assistent(?:en)?|chatbot)\b'
+        - '\bwenn du eine? (?:ki|ai|k[üu]nstliche intelligenz|sprachmodell|assistent)\b'
+        - '\b(?:nota|messaggio|istruzioni|attenzione) (?:per|al|alla|all.)\s*(?:l.)?\s*(?:ia|ai|llm|modello|assistente|chatbot)\b'
+        - '\bse sei una? (?:ia|ai|intelligenza artificiale|modello linguistico|assistente)\b'
+        - '\b(?:opmerking|bericht|instructies?|let op) (?:voor|aan) (?:de |het )?(?:ai|ki|llm|taalmodel|model|assistent|chatbot)\b'
+        - '\bals (?:je|u) een (?:ai|kunstmatige intelligentie|taalmodel|assistent)\b'
 
     - id: conceal
       label: asks for something to be kept from the user
-      languages: [en]
+      languages: [en, pt, es, fr, de, it, nl]
       regexes:
         - '\b(?:do not|don.t|never)\s+(?:tell|inform|mention|reveal|disclose|show)\b[^.\n]{0,20}\b(?:the user|the reader|the human|anyone)\b'
         - '\bwithout (?:telling|informing|alerting) (?:the user|the reader|anyone)\b'
         - '\bkeep (?:this|these instructions) (?:secret|hidden|confidential)\b'
+        - '\b(?:n[ãa]o|nunca)\s+(?:diga|conte|informe|mencione|revele|mostre)\b[^.\n]{0,25}\b(?:ao? usu[áa]rio|ao? leitor|a ningu[ée]m)\b'
+        - '\bsem (?:avisar|informar|contar) (?:ao? )?(?:usu[áa]rio|leitor|ningu[ée]m)\b'
+        - '\bmantenha (?:isto|isso|estas instru[çc][õo]es) (?:em segredo|secreto|oculto|confidencial)\b'
+        - '\bno (?:le )?(?:digas|informes|menciones|reveles|muestres)\b[^.\n]{0,25}\b(?:al usuario|al lector|a nadie)\b'
+        - '\bsin (?:avisar|informar|decirle) (?:al usuario|al lector|a nadie)\b'
+        - '\bmant[ée]n (?:esto|estas instrucciones) (?:en secreto|oculto|confidencial)\b'
+        - '\bne (?:dis|informe|mentionne|r[ée]v[èe]le|montre)\b[^.\n]{0,25}\b(?:pas )?(?:[àa] l.utilisateur|au lecteur|[àa] personne)\b'
+        - '\bsans (?:le dire|informer|pr[ée]venir) (?:[àa] )?(?:l.utilisateur|le lecteur|personne)\b'
+        - '\bgarde[rz]? (?:ceci|ces instructions) (?:secr[èe]te?s?|confidentiel(?:le)?s?)\b'
+        - '\b(?:sage|erw[äa]hne|zeige|verrate)\s+(?:dem|der)?\s*(?:nutzer|benutzer|leser|niemandem)\b[^.\n]{0,20}\bnichts?\b'
+        - '\bohne (?:den |die )?(?:nutzer|benutzer|leser)\b[^.\n]{0,20}\b(?:zu informieren|zu sagen|mitzuteilen)\b'
+        - '\b(?:halte|behalte) (?:dies|diese anweisungen)\b[^.\n]{0,20}\b(?:geheim|vertraulich|f[üu]r dich)\b'
+        - '\bnon (?:dire|informare|menzionare|rivelare|mostrare)\b[^.\n]{0,25}\b(?:all.utente|al lettore|a nessuno)\b'
+        - '\bsenza (?:dirlo|informare|avvisare) (?:all.utente|al lettore|nessuno)\b'
+        - '\bmantieni (?:questo|queste istruzioni) (?:segret[oi]|riservat[oi]|nascost[oi])\b'
+        - '\b(?:vertel|meld|noem|toon) (?:de |het )?(?:gebruiker|lezer|niemand)\b[^.\n]{0,20}\bniets?\b'
+        - '\bzonder (?:de |het )?(?:gebruiker|lezer)\b[^.\n]{0,20}\b(?:te informeren|te vertellen)\b'
+        - '\bhoud (?:dit|deze instructies) (?:geheim|vertrouwelijk)\b'
 
     - id: steer_output
       label: dictates what a summary or assessment should say
-      languages: [en]
+      languages: [en, pt, es, fr, de, it, nl]
       regexes:
         - '\bwhen (?:summari[sz]ing|reviewing|screening|evaluating|analy[sz]ing|assessing|processing|ranking|grading) (?:this|the)\b[^.\n]{0,80}\b(?:say|state|respond|reply|answer|rate|score|recommend|approve|conclude|mention|report|output|classify)\b'
+        - '\bao (?:resumir|avaliar|analisar|rever|revisar|classificar|processar)\b[^.\n]{0,80}\b(?:diga|afirme|declare|responda|recomende|aprove|conclua|classifique)\b'
+        - '\bal (?:resumir|evaluar|analizar|revisar|clasificar|procesar)\b[^.\n]{0,80}\b(?:afirma|declara|responde|recomienda|aprueba|concluye|clasifica)\b'
+        - '\b(?:lors|au moment) (?:de|du) (?:la |l.)?(?:r[ée]sum[ée]|synth[èe]se|[ée]valuation|analyse|revue|classement)\b[^.\n]{0,80}\b(?:dis|d[ée]clare|r[ée]ponds|recommande|approuve|conclus)\b'
+        - '\b(?:beim|bei der) (?:zusammenfassen|zusammenfassung|bewerten|bewertung|analysieren|analyse|pr[üu]fen|pr[üu]fung|einstufung)\b[^.\n]{0,80}\b(?:sage|gib an|erkl[äa]re|antworte|empfiehl|genehmige|schlie[ßs]e)\b'
+        - '\b(?:quando|nel) (?:riassumi|riassumere|valuti|valutare|analizzi|analizzare|rivedi|classificare)\b[^.\n]{0,80}\b(?:afferma|dichiara|rispondi|raccomanda|approva|concludi|classifica)\b'
+        - '\b(?:bij het|wanneer je) (?:samenvatten|samenvat|beoordelen|beoordeelt|analyseren|analyseert|controleren|classificeren)\b[^.\n]{0,80}\b(?:zeg|vermeld|verklaar|antwoord|beveel|keur|concludeer|classificeer)\b'
 
     - id: exfiltration
       label: tries to move data out through a link or the conversation
-      languages: [en]
+      languages: [en, pt, es, fr, de, it, nl]
       regexes:
+        # A tracking image is markup, not language, so it needs no translation.
         - '!\[[^\]\n]*\]\(\s*https?://[^)\s]*[?&][^)\s]*=[^)\s]*\)'
         - '\b(?:include|append|insert|repeat)\b[^.\n]{0,30}\b(?:the |your )?(?:conversation|chat history|system prompt|previous messages)\b'
+        - '\b(?:inclua|anexe|insira|repita)\b[^.\n]{0,30}\b(?:a |o |as |os )?(?:conversa|hist[óo]rico|prompt do sistema|mensagens anteriores)\b'
+        - '\b(?:incluye|a[ñn]ade|inserta|repite)\b[^.\n]{0,30}\b(?:la |el |las |los )?(?:conversaci[óo]n|historial|prompt del sistema|mensajes anteriores)\b'
+        - '\b(?:inclus|ajoute|ins[èe]re|r[ée]p[èe]te)\b[^.\n]{0,30}\b(?:la |le |les )?(?:conversation|historique|invite syst[èe]me|messages pr[ée]c[ée]dents)\b'
+        - '\b(?:f[üu]ge|h[äa]nge|wiederhole)\b[^.\n]{0,30}\b(?:das |die |den )?(?:gespr[äa]ch|verlauf|systemprompt|vorherigen nachrichten)\b'
+        - '\b(?:includi|aggiungi|inserisci|ripeti)\b[^.\n]{0,30}\b(?:la |il |le |i )?(?:conversazione|cronologia|prompt di sistema|messaggi precedenti)\b'
+        - '\b(?:voeg toe|neem op|herhaal)\b[^.\n]{0,30}\b(?:de |het )?(?:conversatie|gesprek|geschiedenis|systeemprompt|vorige berichten)\b'
