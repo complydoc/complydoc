@@ -13,7 +13,7 @@
 
 site_name: complydoc
 site_description: >-
-  Offline analysis of documents and loader output before they reach an LLM.
+  Check documents before they reach an LLM, offline.
 site_url: https://complydoc.github.io/complydoc/
 repo_url: https://github.com/complydoc/complydoc
 repo_name: complydoc/complydoc
@@ -107,6 +107,7 @@ nav:
       - Report tables: guides/report-tables.md
       - Baselines and tests: guides/baselines-and-tests.md
       - Policy files: guides/policy.md
+      - GitHub Action: guides/github-action.md
       - Safe copies: guides/clean.md
       - Streaming and steps: guides/streaming-and-steps.md
       - Name detection models: guides/name-detection-models.md
