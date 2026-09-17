@@ -4,6 +4,20 @@ Newest first. Releases increment the patch number; the minor number changes only
 breaking change to the report JSON or a config key. `schema_version` in the JSON is
 versioned separately.
 
+## [Unreleased]
+
+### Added
+
+- `--classifier` on `audit`, `sensitive` and `check` registers an instruction classifier for
+  the length of the command, so scoring passages no longer needs a Python script.
+  `--classifier jev` is TypeSafe's hosted model and sends the passages it judges to
+  api.typesafe.ai, which the command says before it runs and the report records;
+  `--classifier module:function` calls code of your own. Two adjustments are made and
+  announced rather than left as traps: the threshold becomes the 0.5 measured for Jev where
+  none was given, and an automatic job count becomes one process, because a classifier
+  registered in one process cannot follow documents into a worker.
+  `--classifier-threshold` and `--jobs` override either.
+
 ## [0.4.9] — 2026-09-17
 
 ### Added

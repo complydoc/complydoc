@@ -131,6 +131,28 @@ time, and the connections made are returned so a run can record them. A folder
 large enough to be split across worker processes will not use it: a classifier is
 registered in one process. `jobs=1` keeps it in reach.
 
+From the command line, `--classifier` registers one for the run:
+
+```bash
+complydoc audit ~/contracts --classifier jev
+```
+
+```bash
+complydoc check ~/contracts --policy policy.yaml --classifier jev
+```
+
+It needs the `typesafe` extra and `JEV_KEY` in the environment. Two things
+happen without being asked for, both stated on screen before the run starts: the
+threshold becomes 0.5, the value measured for Jev rather than the 0.8 that
+applies to a classifier in general, and the run uses one process, because a
+classifier registered in this one cannot follow documents into a worker.
+`--classifier-threshold` and `--jobs` override either.
+
+`--classifier module:function` uses code of your own instead. The function is
+imported and called with no arguments, and what it returns is the classifier:
+complydoc does not know where it sends anything, so it is announced as yours
+rather than vouched for.
+
 ```python title="jev_classifier.py"
 --8<-- "examples/jev_classifier.py"
 ```

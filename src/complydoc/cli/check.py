@@ -10,8 +10,11 @@ from rich.table import Table
 
 from complydoc import offline
 from complydoc.audit.run import COMPONENTS, run_audit
+from complydoc.cli.classifiers import ClassifierError, classifying
 from complydoc.cli.common import (
     DEFAULT_OUT,
+    ClassifierOpt,
+    ClassifierThresholdOpt,
     ConfigOpt,
     ExtractorOpt,
     JobsOpt,
@@ -67,6 +70,8 @@ def check(
     ocr: OcrOpt = True,
     recurse: RecurseOpt = True,
     quiet: QuietOpt = False,
+    classifier: ClassifierOpt = None,
+    classifier_threshold: ClassifierThresholdOpt = None,
 ) -> None:
     """Check documents against a policy file, and exit non-zero when they fail it.
 
@@ -110,18 +115,28 @@ def check(
             errors.print(f"[bold red]No such path:[/] {target}")
             raise typer.Exit(code=2)
         try:
-            audit = run_audit(
-                target,
+            with classifying(classifier, classifier_threshold, jobs=jobs, config=config) as (
                 config,
-                COMPONENTS,
-                ocr=ocr,
-                recurse=recurse,
-                password=password,
-                extractor=extractor,
-                jobs=jobs,
-                sample=sample,
-                timeout=timeout or None,
-            )
+                jobs,
+                notes,
+            ):
+                for note in notes:
+                    errors.print(note)
+                audit = run_audit(
+                    target,
+                    config,
+                    COMPONENTS,
+                    ocr=ocr,
+                    recurse=recurse,
+                    password=password,
+                    extractor=extractor,
+                    jobs=jobs,
+                    sample=sample,
+                    timeout=timeout or None,
+                )
+        except ClassifierError as exc:
+            errors.print(f"[bold red]Cannot use that classifier[/] — {exc}")
+            raise typer.Exit(code=2) from exc
         except UnknownModelError as exc:
             errors.print(f"[bold red]Unknown model[/] — {exc}")
             raise typer.Exit(code=2) from exc

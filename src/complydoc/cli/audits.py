@@ -24,8 +24,11 @@ from rich.table import Column, Table
 
 from complydoc import offline
 from complydoc.audit.run import COMPONENTS, run_audit
+from complydoc.cli.classifiers import ClassifierError, classifying
 from complydoc.cli.common import (
     DEFAULT_OUT,
+    ClassifierOpt,
+    ClassifierThresholdOpt,
     CompareEnginesOpt,
     CompareExtractorsOpt,
     ConfigOpt,
@@ -236,6 +239,8 @@ def run(
     compare_extractors: list[str] | None = None,
     ocr_engine: str | None = None,
     compare_engines: list[str] | None = None,
+    classifier: str | None = None,
+    classifier_threshold: float | None = None,
 ) -> None:
     """Audit `target` and write the reports: what every audit command does."""
     offline.arm()
@@ -259,29 +264,39 @@ def run(
         )
 
     try:
-        with watching(quiet) as progress:
-            report = run_audit(
-                target,
-                config,
-                components,
-                ocr=ocr,
-                reveal=reveal,
-                monthly_volume=monthly_volume,
-                resolution=resolution,
-                select_models=select_models,
-                page_images=page_images,
-                extracted_text=extracted_text or ocr_compare,
-                ocr_compare=ocr_compare,
-                recurse=recurse,
-                password=password,
-                extractor=extractor,
-                compare_extractors=tuple(compare_extractors or ()),
-                compare_engines=tuple(compare_engines or ()),
-                jobs=jobs,
-                sample=sample,
-                timeout=timeout,
-                progress=progress,
-            )
+        with classifying(classifier, classifier_threshold, jobs=jobs, config=config) as (
+            config,
+            jobs,
+            notes,
+        ):
+            for note in notes:
+                errors.print(note)
+            with watching(quiet) as progress:
+                report = run_audit(
+                    target,
+                    config,
+                    components,
+                    ocr=ocr,
+                    reveal=reveal,
+                    monthly_volume=monthly_volume,
+                    resolution=resolution,
+                    select_models=select_models,
+                    page_images=page_images,
+                    extracted_text=extracted_text or ocr_compare,
+                    ocr_compare=ocr_compare,
+                    recurse=recurse,
+                    password=password,
+                    extractor=extractor,
+                    compare_extractors=tuple(compare_extractors or ()),
+                    compare_engines=tuple(compare_engines or ()),
+                    jobs=jobs,
+                    sample=sample,
+                    timeout=timeout,
+                    progress=progress,
+                )
+    except ClassifierError as exc:
+        errors.print(f"[bold red]Cannot use that classifier[/] — {exc}")
+        raise typer.Exit(code=2) from exc
     except UnknownModelError as exc:
         errors.print(f"[bold red]Unknown model[/] — {exc}\n\nRun 'complydoc models' to list them.")
         raise typer.Exit(code=2) from exc
@@ -329,6 +344,8 @@ def audit(
     save_text: SaveTextOpt = None,
     print_json: PrintJsonOpt = False,
     quiet: QuietOpt = False,
+    classifier: ClassifierOpt = None,
+    classifier_threshold: ClassifierThresholdOpt = None,
 ) -> None:
     """Run all three components and write both reports."""
     run(
@@ -357,6 +374,8 @@ def audit(
         jobs=jobs,
         sample=sample,
         timeout=timeout or None,
+        classifier=classifier,
+        classifier_threshold=classifier_threshold,
     )
 
 
@@ -643,6 +662,8 @@ def sensitive(
     save_text: SaveTextOpt = None,
     print_json: PrintJsonOpt = False,
     quiet: QuietOpt = False,
+    classifier: ClassifierOpt = None,
+    classifier_threshold: ClassifierThresholdOpt = None,
 ) -> None:
     """Scan for personal and financial identifiers only."""
     run(
@@ -667,4 +688,6 @@ def sensitive(
         jobs=jobs,
         sample=sample,
         timeout=timeout or None,
+        classifier=classifier,
+        classifier_threshold=classifier_threshold,
     )

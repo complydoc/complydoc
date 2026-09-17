@@ -19,6 +19,8 @@ from complydoc.utils.text import count
 
 __all__ = [
     "DEFAULT_OUT",
+    "ClassifierOpt",
+    "ClassifierThresholdOpt",
     "CompareEnginesOpt",
     "CompareExtractorsOpt",
     "ConfigOpt",
@@ -56,7 +58,8 @@ app = typer.Typer(
     help=(
         "Audit a folder of business documents offline: what they would cost to process "
         "with an LLM, how hard they are to extract from, and what sensitive information "
-        "they contain. No document content ever leaves this machine."
+        "they contain. No document content leaves this machine unless you pass "
+        "--classifier, which sends the passages it judges to the service you name."
     ),
 )
 console = Console()
@@ -161,6 +164,24 @@ PrintJsonOpt = Annotated[
         "--print-json",
         help="Write the JSON report to stdout and nothing else, for piping into "
         "another tool or an agent. Progress goes to stderr.",
+    ),
+]
+ClassifierOpt = Annotated[
+    str | None,
+    typer.Option(
+        "--classifier",
+        help="Score passages for hidden instructions with a classifier as well as the "
+        "patterns. 'jev' is TypeSafe's hosted model and SENDS THE PASSAGES IT JUDGES "
+        "to api.typesafe.ai; 'module:function' is code of your own. The report names "
+        "where anything was sent. Nothing is registered by default.",
+    ),
+]
+ClassifierThresholdOpt = Annotated[
+    float | None,
+    typer.Option(
+        "--classifier-threshold",
+        help="Score at or above which a passage is reported, 0 to 1. Defaults to the "
+        "value in hidden.yaml, except for 'jev', which uses the 0.5 measured for it.",
     ),
 ]
 QuietOpt = Annotated[bool, typer.Option("--quiet", "-q", help="Suppress progress output.")]
