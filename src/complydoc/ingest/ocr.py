@@ -1,6 +1,6 @@
 """Optional local OCR.
 
-OCR is an optional extra (`uv sync --extra ocr`) because it is a large download
+OCR is an optional extra (`complydoc[ocr]`) because it is a large download
 and a diagnostic run is still useful without it. When it is missing, every page
 that could not be read is listed in the report's limitations.
 

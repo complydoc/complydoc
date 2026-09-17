@@ -13,6 +13,9 @@ from pathlib import Path
 from typing import Annotated
 
 import typer
+
+# Install hints carry `complydoc[ocr]`, which Rich would read as markup and drop.
+from rich.markup import escape
 from rich.table import Table
 
 from complydoc import __version__, offline
@@ -20,7 +23,7 @@ from complydoc.cli.common import ConfigOpt, app, console, errors, load_config_or
 from complydoc.utils.text import count
 
 
-@app.command()
+@app.command(rich_help_panel="Information")
 def skill(
     install: Annotated[
         bool,
@@ -49,7 +52,7 @@ def skill(
     console.print("[dim]Start a new agent session for it to be picked up.[/]")
 
 
-@app.command()
+@app.command(rich_help_panel="Information")
 def schema() -> None:
     """Print the JSON schema of the report, for a caller that needs to parse it."""
     import json
@@ -91,27 +94,32 @@ def _report_name_detection(config: Config) -> None:
         # preferred model is the first thing read and looks like the answer.
         answering: str | None = None
         others: list[str] = []
+        fixes: list[str] = []
         for detector_id, link in links:
             if link.model is None:
                 continue
             module = modules.get(detector_id)
-            ok, _ = module.model_available(link.model.name) if module else (True, None)
+            ok, reason = module.model_available(link.model.name) if module else (True, None)
             if ok and answering is None:
                 answering = link.model.name
             elif ok:
                 others.append(f"spare: {link.model.name}")
             else:
                 others.append(f"not installed: {link.model.name}")
+                if reason:
+                    fixes.append(f"{link.model.name}: {reason}")
 
         if answering is None:
             console.print("Name detection: [yellow]unavailable[/] — no configured model loads")
+            # Nothing reads names, so say how to fix that rather than only what is missing.
+            others = [*others, *(f"to add {fix}" for fix in fixes)]
         else:
             console.print(f"Name detection: [green]{answering}[/]")
         for line in others:
-            console.print(f"[dim]  {line}[/]")
+            console.print(f"[dim]  {escape(line)}[/]")
 
 
-@app.command()
+@app.command(rich_help_panel="Information")
 def doctor(config_dir: ConfigOpt = None) -> None:
     """Report what is installed, what is not, and what that costs you."""
     offline.arm()
@@ -129,21 +137,35 @@ def doctor(config_dir: ConfigOpt = None) -> None:
     if ocr_module.available():
         console.print(f"OCR: [green]available[/] ({ocr_module.engine_name()})")
     else:
-        console.print(f"OCR: [yellow]unavailable[/] — {ocr_module.unavailable_reason()}")
+        console.print(
+            f"OCR: [yellow]unavailable[/] — {escape(ocr_module.unavailable_reason() or '')}"
+        )
 
     _report_name_detection(config)
 
     from complydoc.config.loader import check_staleness
 
     warnings = check_staleness(config.pricing)
-    if warnings:
-        for warning in warnings:
-            console.print(f"[yellow]Price provenance:[/] {warning.message}")
-    else:
+    for warning in warnings:
+        console.print(f"[yellow]Price provenance:[/] {escape(warning.message)}")
+    # Imported prices are left out of the staleness check, which covers them with
+    # one limitation in the report instead. Saying "all verified" here while the
+    # report of the same install lists them as unchecked told two stories.
+    enabled = [m for m in config.pricing.models if m.enabled]
+    imported = [m for m in enabled if m.price_source == "imported"]
+    if imported:
+        taken = max((m.imported_on for m in imported if m.imported_on), default=None)
+        console.print(
+            f"Price provenance: {len(enabled) - len(imported)} of {len(enabled)} enabled "
+            f"models verified at the provider; [yellow]{len(imported)} imported from a "
+            f"third-party table{f' on {taken.isoformat()}' if taken else ''}[/] and not "
+            f"checked"
+        )
+    elif not warnings:
         console.print("Price provenance: [green]all enabled models verified recently[/]")
 
 
-@app.command()
+@app.command(rich_help_panel="Information")
 def models(
     match: Annotated[
         str | None,
@@ -248,7 +270,7 @@ def models(
     )
 
 
-@app.command()
+@app.command(rich_help_panel="Compare readers and loaders")
 def extractors() -> None:
     """List the libraries that can read a PDF's text layer, and what each provides."""
     from complydoc.ingest.extractors.registry import DEFAULT_EXTRACTOR, all_extractors
@@ -274,7 +296,7 @@ def extractors() -> None:
     )
 
 
-@app.command()
+@app.command(rich_help_panel="Compare readers and loaders")
 def engines() -> None:
     """List the local OCR engines."""
     from complydoc.ingest.engines.registry import DEFAULT_ENGINE, all_engines
@@ -289,13 +311,14 @@ def engines() -> None:
         table.add_row(
             f"{engine.id}[dim] (default)[/]" if engine.id == DEFAULT_ENGINE else engine.id,
             engine.name,
-            "yes" if reason is None else f"[yellow]{reason}[/]",
+            "yes" if reason is None else f"[yellow]{escape(reason)}[/]",
         )
     console.print(table)
     console.print("\n[dim]Pick one with [/][bold]--ocr-engine <id>[/][dim].[/]")
 
 
-@app.command("pricing-import")
+# A maintainer's tool for refreshing the vendored prices: kept, but off the help.
+@app.command("pricing-import", hidden=True)
 def pricing_import(
     source: Annotated[
         Path | None,

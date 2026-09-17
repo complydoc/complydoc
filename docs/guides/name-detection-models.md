@@ -66,10 +66,15 @@ Install the extra and fetch the weights once. Fetching reaches the network, so
 it happens here rather than during a scan:
 
 ```bash
-uv sync --extra multilingual-names
-uv run python -c "from transformers import pipeline; \
+uv tool install --force "complydoc[multilingual-names]"
+"$(uv tool dir)/complydoc/bin/python" -c "from transformers import pipeline; \
     pipeline('token-classification', model='Babelscape/wikineural-multilingual-ner')"
 ```
+
+With pip, `pip install "complydoc[multilingual-names]"` and run the second command
+with your own `python`. In a checkout of this repository, `uv sync --extra
+multilingual-names` and `uv run python`. `complydoc doctor` prints the command for
+whichever piece is missing.
 
 Then point the two categories at the `token_classifier` detector:
 

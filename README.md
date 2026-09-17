@@ -4,7 +4,7 @@
     <img alt="complydoc" src="https://raw.githubusercontent.com/complydoc/complydoc/main/.github/images/logo-light.svg" width="42%">
   </picture>
 
-  <h3>Document analysis for LLM pipelines, fully offline.</h3>
+  <h3>Check documents before they reach an LLM, offline.</h3>
 
   <a href="https://pypi.org/project/complydoc/"><img src="https://img.shields.io/pypi/dm/complydoc?color=1a7f4b&cacheSeconds=3600" alt="PyPI downloads"></a>
   <a href="https://github.com/complydoc/complydoc/actions/workflows/checks.yml"><img src="https://github.com/complydoc/complydoc/actions/workflows/checks.yml/badge.svg?branch=main" alt="Tests"></a>
@@ -73,7 +73,18 @@ complydoc clean ./documents --out clean/
 ```
 
 `check` holds a folder to rules written in YAML and exits non-zero when they fail, with a
-summary for a pull request comment and SARIF for code scanning. `clean` writes safe copies:
+summary for a pull request comment and SARIF for code scanning. On GitHub, the repository
+is also an action that does all three:
+
+```yaml
+- uses: complydoc/complydoc@v0.4.10
+  with:
+    path: documents
+    policy: policy.yaml
+```
+
+See [GitHub Action](https://complydoc.github.io/complydoc/guides/github-action/) for the
+inputs, permissions and code scanning. `clean` writes safe copies:
 the identifiers masked, the metadata removed, and PDFs rasterised on request.
 
 A parser can hang on a malformed file: `--timeout 120` gives each document a deadline and
@@ -81,28 +92,33 @@ lists the ones it stopped.
 
 ### Optional extras
 
-A plain install reads documents, prices them, measures extraction readiness and finds
-identifiers by pattern. Two things are optional because they are large:
+A plain install reads documents, prices them, measures extraction readiness, finds
+identifiers by pattern and checks for hidden content. It does not read scans or find
+names, and every report says so. Those are optional because they are large:
 
 | Extra | Size | What it adds | Without it |
 | --- | --- | --- | --- |
 | `ocr` | ~80 MB | Reads scans and images | Pages with no text layer are reported as unread |
-| `multilingual-names` | ~2 GB | Finds people and companies in European languages | Names are found by a small English model instead |
+| `multilingual-names` | ~2 GB | Finds people and companies in European languages | Names are not scanned for, unless `ner` is installed |
+| `ner` | ~50 MB | Finds names with spaCy's small English model | Names are not scanned for, unless `multilingual-names` is installed |
 | `typesafe` | small | Judges passages that read as instructions to a model, with a hosted service | Instructions are found by pattern alone |
 
 ```bash
 uv tool install "complydoc[ocr,multilingual-names]"
-uv run python -c "from transformers import pipeline; \
+"$(uv tool dir)/complydoc/bin/python" -c "from transformers import pipeline; \
     pipeline('token-classification', model='Babelscape/wikineural-multilingual-ner')"
 ```
 
-The second command downloads the name model once. Nothing is downloaded while a scan runs,
-so the model has to be fetched before it can be used.
+The second command downloads the name model once, into the Hugging Face cache. Nothing is
+downloaded while a scan runs, so the model has to be fetched before it can be used. With
+pip, install `"complydoc[ocr,multilingual-names]"` and run the same line with your own
+`python`. The `ner` extra needs its model too, `en_core_web_sm`. `complydoc doctor` prints
+the command for whatever is missing.
 
-Names are the part worth understanding before choosing. With `multilingual-names` they are
-read by a multilingual model; without it, by spaCy's small English one, which misses names
-in other languages and mistakes field labels for companies. Neither is a checksum, so both
-miss some names: [Detection accuracy](https://complydoc.github.io/complydoc/explanation/accuracy/)
+Names are the part worth understanding before choosing. The multilingual model is the
+better reader; spaCy's small English one misses names in other languages and mistakes
+field labels for companies. Neither is a checksum, so both miss some names:
+[Detection accuracy](https://complydoc.github.io/complydoc/explanation/accuracy/)
 publishes the measured numbers for each.
 
 `typesafe` is the one extra that changes where your documents go: it sends the passages it
@@ -124,7 +140,8 @@ finds and what it wrongly flags against a labelled corpus that ships with the pa
 - **Extraction readiness**: measured signals such as text layer coverage, tables, columns,
   rotation, scan resolution, garbled characters, glyph codes and repeated headers.
 - **Identifiers**: personal and financial identifiers from Europe, the Americas, India and Australia,
-  checksum-validated where a checksum exists, masked in every output.
+  checksum-validated where a checksum exists, masked in every output, the page text
+  included, unless `--reveal` is passed.
 - **Hidden content and prompt injection**: text a reader does not see and a model does
   (white or invisible text, hidden formatting, Unicode tag characters), and passages that
   read as instructions to a model.
@@ -162,7 +179,9 @@ finds and what it wrongly flags against a labelled corpus that ships with the pa
   corroboration, pattern or model.
 - **Configurable**: prices, signal weights and detection patterns are YAML files, and name
   detection can use your own spaCy models, per language, or any other model as a detector.
-- **One report**: a self-contained HTML file and a JSON file with a versioned schema.
+- **One report**: a self-contained HTML file and a JSON file with a versioned schema,
+  safe to share: identifiers are masked throughout and pages are drawn as wireframes.
+  `--page-images` embeds a picture of each page instead, and says that it shows them.
 
 ## Resources
 

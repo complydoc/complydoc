@@ -31,6 +31,7 @@ from typing import Any
 from complydoc.config.schema import SensitiveConfig
 from complydoc.sensitive.base import DetectorContext, Finding
 from complydoc.sensitive.registry import DetectorUnavailableError, detector
+from complydoc.utils.install import extra_hint, hf_model_hint
 
 __all__ = ["TokenClassifierDetector", "configured_models", "model_available"]
 
@@ -45,12 +46,7 @@ _WINDOW_CHARS = 1200
 
 
 def _install_hint(model_name: str) -> str:
-    return (
-        f"the token-classification model {model_name!r} is not on this machine. "
-        f"Install the extra (uv sync --extra multilingual-names) and fetch the model "
-        f'once with: uv run python -c "from transformers import pipeline; '
-        f"pipeline('token-classification', model='{model_name}')\""
-    )
+    return f"{hf_model_hint(model_name)}, after you {extra_hint('multilingual-names')}"
 
 
 @lru_cache(maxsize=2)
@@ -67,8 +63,7 @@ def _load(model_name: str) -> Any:
         from transformers import pipeline
     except ImportError as exc:
         raise DetectorUnavailableError(
-            "the token classifier needs the optional extra "
-            "(install with: uv sync --extra multilingual-names)"
+            f"the token classifier needs the optional extra ({extra_hint('multilingual-names')})"
         ) from exc
 
     from complydoc.offline import NetworkAccessError

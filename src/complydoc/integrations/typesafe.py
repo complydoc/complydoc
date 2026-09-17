@@ -118,11 +118,13 @@ def jev_classifier(
             "part of complydoc does. Pass allow_network=True to accept that."
         )
 
+    from complydoc.utils.install import extra_hint
+
     try:
         from typesafe_sdk import Noul, NoulCriteria, TypeSafeClient
     except ImportError as exc:  # pragma: no cover - depends on the extra
         raise ImportError(
-            "the Jev classifier needs the optional extra: uv sync --extra typesafe"
+            f"the Jev classifier needs the optional extra: {extra_hint('typesafe')}"
         ) from exc
 
     key = _api_key(api_key)

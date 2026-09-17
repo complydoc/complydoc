@@ -19,6 +19,7 @@ from typing import Any
 from complydoc.config.schema import NerModelSpec, SensitiveConfig
 from complydoc.sensitive.base import DetectorContext, Finding
 from complydoc.sensitive.registry import DetectorUnavailableError, detector
+from complydoc.utils.install import spacy_model_hint
 from complydoc.utils.text import detect_language
 
 __all__ = ["NerDetector", "configured_models", "model_available"]
@@ -38,10 +39,7 @@ def _load(model_name: str) -> Any:
     try:
         import spacy
     except ImportError as exc:
-        raise DetectorUnavailableError(
-            "named entity recognition needs the optional NER extra "
-            "(install with: uv sync --extra ner)"
-        ) from exc
+        raise DetectorUnavailableError(spacy_model_hint(model_name)) from exc
     try:
         # Entity recognition needs the embeddings and the entity head; the
         # tagger, the dependency parser, the attribute ruler and the lemmatiser
@@ -52,13 +50,8 @@ def _load(model_name: str) -> Any:
         )
     except OSError as exc:
         # `spacy download` shells out to pip, which a uv tool environment does
-        # not have, so the instruction that works in a checkout does nothing for
-        # anyone who installed complydoc as a tool. The README carries that one.
-        raise DetectorUnavailableError(
-            f"the local spaCy model {model_name!r} is not installed. In a checkout: "
-            f"uv run python -m spacy download {model_name}. For a tool install, see "
-            f"Install in the README"
-        ) from exc
+        # not have, so the hint names the tool's own interpreter for that case.
+        raise DetectorUnavailableError(spacy_model_hint(model_name)) from exc
 
 
 @lru_cache(maxsize=2)

@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any
 
 from complydoc.ingest.engines.base import Recognised
 from complydoc.ingest.engines.registry import register
+from complydoc.utils.install import extra_hint
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
     from PIL.Image import Image
@@ -68,7 +69,7 @@ class RapidOcrEngine:
             return None
         return (
             "the optional OCR extra is not installed "
-            f"(install with: uv sync --extra ocr)"
+            f"({extra_hint('ocr')})"
             f"{f' [{_IMPORT_ERROR}]' if _IMPORT_ERROR else ''}"
         )
 
