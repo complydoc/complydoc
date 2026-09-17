@@ -18,6 +18,7 @@ import re
 import unicodedata
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import PurePath
 
 from complydoc.hidden.unicode import strip_invisible
@@ -109,6 +110,36 @@ def _applies(document: DocumentReport, name: str | None) -> bool:
     }
 
 
+@lru_cache(maxsize=256)
+def _as_reported(text: str) -> str:
+    """The fact as a report's masked page text would show it.
+
+    A report's page text has its identifiers masked, so a fact that is, or holds,
+    an identifier — an email address a loader should keep — is never in it as
+    written. Masked the same way, it is. Masking uses the default configuration:
+    a report written with a different mask length matches only the unmasked form.
+    """
+    # Imported here: extract builds on the audit, which builds on the report.
+    from complydoc.config.loader import load_config
+    from complydoc.extraction.extract import mask_matches
+    from complydoc.sensitive.scanner import scan_text
+
+    matches, _unavailable = scan_text(text, load_config().sensitive, reveal=False)
+    return mask_matches(text, matches)[0]
+
+
+def _find_reported(pages: Sequence[tuple[int | None, str]], text: str, threshold: float) -> Match:
+    """`find_fact` against page text that may be masked."""
+    match = find_fact(pages, text, threshold)
+    if match.kind == "exact":
+        return match
+    masked = _as_reported(text)
+    if masked == text:
+        return match
+    other = find_fact(pages, masked, threshold)
+    return other if other.score > match.score else match
+
+
 def evaluate_facts(
     documents: Mapping[str, Sequence[DocumentReport]],
     facts: Sequence[Fact],
@@ -127,7 +158,7 @@ def evaluate_facts(
                 if not _applies(document, fact.document):
                     continue
                 pairs = [(page.number, page.text) for page in document.extracted_text]
-                match = find_fact(pairs, fact.text, threshold)
+                match = _find_reported(pairs, fact.text, threshold)
                 if match.score > best.score or (match.kind == "exact" and best.kind != "exact"):
                     best, where = match, document.relative_path
                 if best.kind == "exact":

@@ -5,9 +5,10 @@ paid for it by the time the report is written. Throwing that away means the next
 tool to want the text runs OCR over the same pages again, so `--save-text` keeps
 it: one file per document, in a folder the caller names.
 
-These files are the documents. They carry every identifier the report takes care
-to mask, in full, because that is what the text of the page says. The caller is
-told where they went.
+The text is the report's own, so it is masked the way the report is: every
+identifier that was found is replaced by its masked form, unless the run used
+`--reveal`. Masking is only as complete as detection, so a name the model missed
+is still there. The caller is told where the files went.
 """
 
 from __future__ import annotations

@@ -1,4 +1,4 @@
-"""Commands that audit files: `audit`, `demo`, `compare`, `cost`, `readiness`,
+"""Commands that audit files: `audit`, `demo`, `compare-readers`, `cost`, `readiness`,
 `sensitive`, and the bare `complydoc`, which audits the working directory."""
 
 from __future__ import annotations
@@ -109,15 +109,22 @@ def summary(report: AuditReport) -> None:
         table.add_row("Annual (text)", f"${aggregate.annual_text_usd:,.2f}")
     if aggregate.annual_vision_usd is not None:
         table.add_row("Annual (vision)", f"${aggregate.annual_vision_usd:,.2f}")
-    if aggregate.mean_readiness_score is not None:
-        table.add_row("AI readiness", f"{aggregate.mean_readiness_score}/100 (content)")
+    # Two scores sat side by side as "AI readiness" and "Global readiness" with
+    # nothing to say how they differ. The global one is the answer; the content
+    # score is one of its parts, and is labelled as the part it is.
     if report.overall is not None and report.overall.score is not None:
-        measured = len(report.overall.measured_factors)
-        total = len(report.overall.factors)
-        of = "" if measured == total else f", {measured} of {total} factors"
+        names = [f.name for f in report.overall.measured_factors]
+        made_of = ", ".join(names) if names else "no factor"
+        if len(names) != len(report.overall.factors):
+            made_of += f"; {len(names)} of {len(report.overall.factors)} factors measured"
         table.add_row(
-            "Global readiness",
-            f"{report.overall.score}/100 {report.overall.label}{of}",
+            "Readiness",
+            f"{report.overall.score}/100 {report.overall.label} [dim]({made_of})[/]",
+        )
+    if aggregate.mean_readiness_score is not None:
+        table.add_row(
+            "  Extraction",
+            f"{aggregate.mean_readiness_score}/100 [dim](can the text be read off the page)[/]",
         )
     if "sensitive" in report.run.components_run:
         not_scanned = unscanned_labels(report)
@@ -135,14 +142,18 @@ def summary(report: AuditReport) -> None:
             table.add_row(
                 "Not scanned",
                 f"[yellow]{', '.join(not_scanned)}[/] — nothing was looked for, so no "
-                f"conclusion about these can be drawn",
+                f"conclusion about these can be drawn. [bold]complydoc doctor[/] shows "
+                f"how to add them",
             )
         passages = aggregate.content_findings_total
         high = aggregate.content_findings_high
         found = count(passages, "passage") if passages else "none found"
         table.add_row("Hidden content", f"[red]{found}, {high} high[/]" if high else found)
     if aggregate.pages_unreadable:
-        table.add_row("Unread pages", f"[yellow]{aggregate.pages_unreadable}[/]")
+        why = ""
+        if report.run.ocr_requested and not report.run.ocr_available:
+            why = " [dim](no OCR engine installed; complydoc doctor shows how to add one)[/]"
+        table.add_row("Unread pages", f"[yellow]{aggregate.pages_unreadable}[/]{why}")
     console.print(table)
 
     if report.run.content_sent_to:
@@ -233,7 +244,7 @@ def run(
     monthly_volume: int | None = None,
     resolution: str = "medium",
     select_models: list[str] | None = None,
-    page_images: bool = True,
+    page_images: bool = False,
     extracted_text: bool = True,
     ocr_compare: bool = False,
     print_json: bool = False,
@@ -268,6 +279,12 @@ def run(
         errors.print(
             "[bold yellow]--reveal is set.[/] The reports will contain unmasked sensitive "
             "values. Treat them as sensitive documents in their own right."
+        )
+    elif page_images:
+        errors.print(
+            "[bold yellow]--page-images is set.[/] Each page is embedded as a picture, "
+            "and a picture shows every value on it unmasked. Treat the HTML report as "
+            "a sensitive document in its own right."
         )
 
     try:
@@ -315,7 +332,7 @@ def run(
         print_report_json(report)
 
 
-@app.command()
+@app.command(rich_help_panel="Audit")
 def audit(
     target: TargetArg,
     out: OutDirOpt = DEFAULT_OUT,
@@ -335,7 +352,7 @@ def audit(
         ),
     ] = False,
     model: ModelOpt = None,
-    page_images: PageImagesOpt = True,
+    page_images: PageImagesOpt = False,
     extracted_text: ExtractedTextOpt = True,
     ocr_compare: OcrCompareOpt = False,
     password: PasswordOpt = "",
@@ -355,7 +372,7 @@ def audit(
     classifier: ClassifierOpt = None,
     classifier_threshold: ClassifierThresholdOpt = None,
 ) -> None:
-    """Run all three components and write both reports."""
+    """Run every check: cost, readiness, identifiers and hidden content."""
     run(
         target,
         COMPONENTS,
@@ -387,7 +404,7 @@ def audit(
     )
 
 
-@app.command()
+@app.command(rich_help_panel="Audit")
 def demo(
     out: OutDirOpt = DEFAULT_OUT,
     ocr: OcrOpt = True,
@@ -421,7 +438,6 @@ def demo(
         ocr,
         True,
         False,
-        page_images=True,
         extracted_text=True,
         # The comparison is most of what makes the sample worth looking at:
         # one of these documents is read differently by different libraries.
@@ -458,11 +474,12 @@ def _open(path: Path) -> None:
         console.print(f"[dim]Open it yourself: {path}[/]")
 
 
-@app.command()
+@app.command("compare-readers", rich_help_panel="Compare readers and loaders")
 def compare(
     target: TargetArg,
     out: OutDirOpt = DEFAULT_OUT,
     name: NameOpt = "complydoc-compare",
+    page_images: PageImagesOpt = False,
     extractor: ExtractorOpt = None,
     ocr_engine: OcrEngineOpt = None,
     password: PasswordOpt = "",
@@ -523,7 +540,7 @@ def compare(
         ocr,
         recurse,
         quiet,
-        page_images=True,
+        page_images=page_images,
         extracted_text=True,
         # Text against the OCR of the same page is a comparison too, and the
         # one that most often disagrees.
@@ -541,7 +558,12 @@ def compare(
     )
 
 
-@app.command()
+# The old name, kept working. `compare` beside `compare-loaders` read as the
+# same command twice; the new name says what is compared.
+app.command("compare", hidden=True)(compare)
+
+
+@app.command(rich_help_panel="Audit")
 def cost(
     target: TargetArg,
     out: OutDirOpt = DEFAULT_OUT,
@@ -595,7 +617,7 @@ def cost(
     )
 
 
-@app.command()
+@app.command(rich_help_panel="Audit")
 def readiness(
     target: TargetArg,
     out: OutDirOpt = DEFAULT_OUT,
@@ -642,7 +664,7 @@ def readiness(
     )
 
 
-@app.command()
+@app.command(rich_help_panel="Audit")
 def sensitive(
     target: TargetArg,
     out: OutDirOpt = DEFAULT_OUT,
@@ -654,7 +676,7 @@ def sensitive(
             help="Print sensitive values in full. Off by default, and the report says so.",
         ),
     ] = False,
-    page_images: PageImagesOpt = True,
+    page_images: PageImagesOpt = False,
     extracted_text: ExtractedTextOpt = True,
     password: PasswordOpt = "",
     jobs: JobsOpt = 0,

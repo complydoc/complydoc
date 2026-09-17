@@ -56,10 +56,11 @@ app = typer.Typer(
     add_completion=False,
     no_args_is_help=False,
     help=(
-        "Audit a folder of business documents offline: what they would cost to process "
-        "with an LLM, how hard they are to extract from, and what sensitive information "
-        "they contain. No document content leaves this machine unless you pass "
-        "--classifier, which sends the passages it judges to the service you name."
+        "Check documents before they reach an LLM, offline: what they would cost to "
+        "process, how reliably their text can be read, which personal and financial "
+        "identifiers they hold, and whether anything hidden in them is addressed to a "
+        "model. No document content leaves this machine unless you pass --classifier, "
+        "which sends the passages it judges to the service you name."
     ),
 )
 console = Console()
@@ -99,17 +100,17 @@ PageImagesOpt = Annotated[
     typer.Option(
         "--page-images/--no-page-images",
         help="Embed a picture of each page beside what was extracted from it. "
-        "On by default; --no-page-images leaves the pictures out and makes the "
-        "report considerably smaller.",
+        "Off by default: a picture shows every value on the page, so a report "
+        "built with it carries the identifiers the rest of the report masks.",
     ),
 ]
 ExtractedTextOpt = Annotated[
     bool,
     typer.Option(
         "--extracted-text/--no-extracted-text",
-        help="Include the text read off each page, so it can be read beside the "
-        "page it came from. On by default; --no-extracted-text leaves the report "
-        "carrying no document content.",
+        help="Include the text read off each page, with its identifiers masked, so "
+        "it can be read beside the page it came from. On by default; "
+        "--no-extracted-text leaves the report carrying no document content.",
     ),
 ]
 OcrCompareOpt = Annotated[
@@ -154,8 +155,9 @@ SaveTextOpt = Annotated[
     typer.Option(
         "--save-text",
         help="Also write the text read off each document into this folder, one file "
-        "per document. Reading a scanned folder is the slow part; this keeps the "
-        "result so nothing has to OCR it again.",
+        "per document, with identifiers masked unless --reveal is set. Reading a "
+        "scanned folder is the slow part; this keeps the result so nothing has to "
+        "OCR it again.",
     ),
 ]
 PrintJsonOpt = Annotated[
@@ -276,10 +278,14 @@ def emit(
     )
     if save_text is not None:
         folder = save_text.expanduser().resolve()
+        held = (
+            "these are the documents, identifiers and all"
+            if report.run.reveal_used
+            else "identifiers masked, as in the report"
+        )
         console.print(
             f"[bold]Text[/]    [link=file://{folder}]{folder}[/link]  "
-            f"[dim]{count(len(written), 'file')} — these are the documents, "
-            f"identifiers and all[/]",
+            f"[dim]{count(len(written), 'file')} — {held}[/]",
             no_wrap=True,
             crop=False,
         )

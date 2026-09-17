@@ -192,7 +192,8 @@ def build_limitations(
                         "Word, Excel, PowerPoint, HTML, Markdown and email files. In HTML and "
                         "Markdown, hidden passages are reported only when they read as "
                         "instructions. Text inside images, which a vision model reads, is not "
-                        "checked. Instruction patterns are mostly English."
+                        "checked. Instruction patterns cover English and six other European "
+                        "languages; wording outside those is found only by a classifier."
                     ),
                     severity="info",
                 )
@@ -214,7 +215,10 @@ def build_limitations(
                     f"checked against the provider's own page."
                 ),
                 affected=imported,
-                severity="important",
+                # A caveat on a cost estimate, not on what the documents hold: it
+                # sat among the important limitations of every run, beside unread
+                # pages and unscanned categories, and drowned them out.
+                severity="info",
             )
         )
 
@@ -300,20 +304,29 @@ def build_limitations(
         for entry in document.sensitive.unscanned_categories:
             label, affected = unscanned.setdefault(entry.category, (entry.reason, []))
             affected.append(document.relative_path)
+    # Categories held back for the same reason are one limitation, not one each:
+    # a missing name model skips people and organisations together, and listing
+    # the same cause twice read as two separate problems.
+    same_cause: dict[tuple[str, tuple[str, ...]], list[str]] = {}
     for category, (reason, affected) in sorted(unscanned.items()):
         label = (
             config.sensitive.categories[category].label
             if category in config.sensitive.categories
             else category
         )
+        same_cause.setdefault((reason, tuple(sorted(set(affected)))), []).append(label)
+    for (reason, affected_docs), labels in same_cause.items():
+        names = " and ".join([", ".join(labels[:-1]), labels[-1]] if len(labels) > 1 else labels)
         limitations.append(
             Limitation(
                 area="Categories not scanned",
                 statement=(
-                    f"{label} was not scanned for at all, because {reason}. No conclusion "
-                    f"about this category can be drawn from this report."
+                    f"{names} {'were' if len(labels) > 1 else 'was'} not scanned for at all, "
+                    f"because {reason}. No conclusion about "
+                    f"{'these categories' if len(labels) > 1 else 'this category'} can be "
+                    f"drawn from this report."
                 ),
-                affected=sorted(set(affected)),
+                affected=list(affected_docs),
                 severity="important",
             )
         )
@@ -480,6 +493,20 @@ def build_limitations(
                 statement=(
                     "This report was generated with --reveal, so it contains unmasked "
                     "sensitive values. Treat this file with the same care as the documents "
+                    "it describes."
+                ),
+                severity="important",
+            )
+        )
+
+    if run.page_images_used and not run.reveal_used:
+        limitations.append(
+            Limitation(
+                area="Masking",
+                statement=(
+                    "This report embeds a picture of each page, and a picture shows every "
+                    "value on the page unmasked. The findings and the text are masked; the "
+                    "pictures are not. Treat this file with the same care as the documents "
                     "it describes."
                 ),
                 severity="important",

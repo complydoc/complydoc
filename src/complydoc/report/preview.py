@@ -1,11 +1,12 @@
 """Per-page wireframes showing text, images and findings.
 
-A page is drawn as geometry only: rectangles for the words, shaded blocks for
-the images, marks where sensitive values were found. No pixels from the document
-are ever rendered, and no character of its text reaches the output.
+By default a page is drawn as geometry only: rectangles for the words, shaded
+blocks for the images, marks where sensitive values were found. No pixels from
+the document are rendered, and no character of its text reaches the output.
 
-A thumbnail of the page would show the values the scan masks. The geometry shows
-which pages are dense or image-heavy and where findings are, without the content.
+A picture of the page would show the values the scan masks, so one is embedded
+only when the caller asks for it with `page_images`, and the command line warns
+when it is.
 """
 
 from __future__ import annotations

@@ -188,7 +188,8 @@ def test_a_batch_price_is_never_invented(config):
 def test_using_an_imported_price_is_disclosed(config):
     report = run_audit(FIXTURES, config, ("cost",), ocr=False, select_models=["gpt-4.1-mini"])
     entry = next(x for x in report.limitations if x.area == "Price provenance")
-    assert entry.severity == "important"
+    # Disclosed, but as a caveat on cost: it is not among the important ones.
+    assert entry.severity == "info"
     assert entry.affected, "it names the models it is talking about"
     assert "third-party" in entry.statement
 

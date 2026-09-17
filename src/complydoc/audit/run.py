@@ -44,7 +44,14 @@ from complydoc.hidden.instructions import (
     resolve_classifier,
 )
 from complydoc.ingest import ocr as ocr_module
-from complydoc.ingest.base import TIMED_OUT, Document, IngestOptions, LoaderError, SkipRecord
+from complydoc.ingest.base import (
+    TIMED_OUT,
+    Document,
+    IngestOptions,
+    LoaderError,
+    Page,
+    SkipRecord,
+)
 from complydoc.ingest.extractors.registry import DEFAULT_EXTRACTOR
 from complydoc.ingest.registry import load_document
 from complydoc.readiness.analyser import analyse
@@ -63,7 +70,8 @@ from complydoc.report.overall import overall_readiness
 from complydoc.report.preview import build_previews
 from complydoc.report.quickwins import quick_wins
 from complydoc.report.routing import summarise_routes
-from complydoc.sensitive.scanner import scan
+from complydoc.sensitive.base import SensitiveMatch
+from complydoc.sensitive.scanner import ScanResult, scan, scan_text
 
 __all__ = ["COMPONENTS", "resolve_jobs", "run_audit"]
 
@@ -259,6 +267,50 @@ def extractor_readings(document: Document) -> list[ExtractorReading]:
     return readings
 
 
+def _page_text(page: Page, scanned: ScanResult | None, work: Work) -> PageText:
+    """A page's text for the report, with its identifiers masked.
+
+    The findings table masks every value, and the text beside it used to carry
+    the same values in full, so a report shared for its findings shared the
+    identifiers too. The page's own text is masked with the findings already
+    located on it. Every other reading of the page — another extractor, OCR —
+    places its characters differently, so each is scanned for itself; that
+    costs a scan per extra reading, and only when readings are being compared.
+
+    With --reveal the values are left, except in the categories configured
+    never to be revealed.
+    """
+    # Imported here: extract builds on the audit, which builds on this module.
+    from complydoc.extraction.extract import mask_matches
+
+    matches: list[SensitiveMatch] | None = None
+    if scanned is not None:
+        matches = [m for m in scanned.matches if m.page == page.number]
+
+    def masked(text: str, located: list[SensitiveMatch] | None = None) -> str:
+        if not text.strip():
+            return text
+        if located is None:
+            located, _unavailable = scan_text(text, work.config.sensitive, reveal=work.reveal)
+        if work.reveal:
+            located = [m for m in located if m.revealed is None]
+        return mask_matches(text, located)[0]
+
+    text = masked(page.text, matches)
+    return PageText(
+        number=page.number,
+        source=page.text_source,
+        characters=len(page.text),
+        text=text[:_MAX_TEXT_CHARS],
+        ocr_text=masked(page.ocr_text)[:_MAX_TEXT_CHARS],
+        truncated=len(page.text) > _MAX_TEXT_CHARS,
+        readings={
+            name: (text if reading == page.text else masked(reading))[:_MAX_TEXT_CHARS]
+            for name, reading in page.readings.items()
+        },
+    )
+
+
 def build_entry(
     document: Document, work: Work, read_seconds: float, relative_path: str
 ) -> DocumentReport:
@@ -311,18 +363,7 @@ def build_entry(
             categories=work.config.sensitive,
         )
     if work.extracted_text:
-        entry.extracted_text = [
-            PageText(
-                number=page.number,
-                source=page.text_source,
-                characters=len(page.text),
-                text=page.text[:_MAX_TEXT_CHARS],
-                ocr_text=page.ocr_text[:_MAX_TEXT_CHARS],
-                truncated=len(page.text) > _MAX_TEXT_CHARS,
-                readings={name: text[:_MAX_TEXT_CHARS] for name, text in page.readings.items()},
-            )
-            for page in document.pages
-        ]
+        entry.extracted_text = [_page_text(page, entry.sensitive, work) for page in document.pages]
 
     total_seconds = read_seconds + analyse_seconds + scan_seconds
     entry.timing = DocumentTiming(

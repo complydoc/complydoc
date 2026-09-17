@@ -10,9 +10,31 @@ beside it, and prints a summary.
 `--ocr` recognises pages with no text layer. Without it such a page contributes
 no text, and the run reports it as unread.
 
+## What the report holds
+
+The report is meant to be shared, so it carries no identifier in the clear:
+
+- **Findings** show each value masked to its last few characters.
+- **Page text** is kept, so a reading can be checked against the page, with every
+  identifier that was found replaced by its masked form. `--no-extracted-text`
+  leaves the text out altogether.
+- **Pages** are drawn as wireframes: where the text, images and findings sit,
+  without the content.
+
+Masking is only as complete as detection: a name the model did not recognise is
+still in the page text.
+
+Two flags change that, and both are announced when the run starts and recorded
+as an important limitation in the report:
+
+| Flag | Adds |
+| --- | --- |
+| `--page-images` | A picture of each page. A picture shows every value on it, masked or not |
+| `--reveal` | Every value unmasked, in the findings, the page text and `--save-text` files |
+
 ## Report summary
 
-**Global readiness** is one number for *can these documents go through a
+**Readiness** (global readiness in the report) is one number for *can these documents go through a
 pipeline at all*, from three factors, with the weights printed beside them:
 
 | Factor | Asks |
@@ -65,7 +87,7 @@ states how many were stopped and after how long. Reading happens in a worker pro
 whenever a timeout is set, because that is the only way to stop a parser that has
 stopped responding. Without `--timeout` there is no limit.
 
-`complydoc compare ~/contracts` uses every reader and OCR engine you have
+`complydoc compare-readers ~/contracts` uses every reader and OCR engine you have
 installed.
 
 ## Large folders and sampling
