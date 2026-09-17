@@ -68,6 +68,9 @@ per failure and the document it belongs to as its location. Both name documents
 by their path from the working directory, which in CI is the repository root, so
 code scanning links each result to its file.
 
+On GitHub, the [GitHub Action](github-action.md) runs this, posts the summary on
+the pull request and uploads the SARIF.
+
 To gate on a report that was already written, pass it instead of a path:
 
 ```bash

@@ -102,3 +102,31 @@ jobs:
               sys.exit(f"the generator no longer produces: {missing}")
           print(f"{len(want)} fixtures accounted for")
           PY
+  action:
+    name: the GitHub Action runs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: a policy the sample documents fail
+        run: |
+          printf 'version: 1\nrules:\n  no_hidden:\n    severity: medium\n' > "$RUNNER_TEMP/policy.yaml"
+      # The action installs a released complydoc, so this checks the action's own
+      # plumbing: inputs, outputs, the summary and the result. The tool itself is
+      # tested above, and the action's scripts in src/tests/test_action.py.
+      - uses: ./
+        id: check
+        with:
+          path: src/complydoc/sample
+          policy: ${{ runner.temp }}/policy.yaml
+          args: --no-ocr
+          comment: false
+          fail: false
+      - name: the failure was reported, not raised
+        env:
+          PASSED: ${{ steps.check.outputs.passed }}
+          CODE: ${{ steps.check.outputs.exit-code }}
+          SUMMARY: ${{ steps.check.outputs.markdown }}
+        run: |
+          test "$PASSED" = false
+          test "$CODE" = 1
+          grep -q "complydoc policy failed" "$SUMMARY"

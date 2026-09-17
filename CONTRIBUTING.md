@@ -34,6 +34,7 @@ want on your PATH. It also reinstalls the spaCy model and runs `complydoc doctor
 | `src/tests/` | Tests and fixtures; `integration/` needs the `integrations` group |
 | `src/scripts/` | Maintenance scripts, not shipped |
 | `docs/` | Documentation site |
+| `action.yml` | The GitHub Action; its scripts are run by `src/tests/test_action.py` |
 
 Documents go through discovery and a loader into the `Document` model; every component reads
 that model. Cost, readiness and the sensitive scan are independent.

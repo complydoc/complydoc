@@ -6,13 +6,6 @@ versioned separately.
 
 ## [Unreleased]
 
-### Removed
-
-- The GitHub Action, `action.yml`, and its guide. It shipped in 0.4.10 and is being
-  rewritten; `uses: complydoc/complydoc@v0.4.10` still works, because the tag holds the
-  version that shipped with it. Nothing else changed: `complydoc check` is what the action
-  ran, and it is unaffected.
-
 ## [0.4.10] — 2026-09-17
 
 ### Security

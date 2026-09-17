@@ -73,7 +73,18 @@ complydoc clean ./documents --out clean/
 ```
 
 `check` holds a folder to rules written in YAML and exits non-zero when they fail, with a
-summary for a pull request comment and SARIF for code scanning. `clean` writes safe copies:
+summary for a pull request comment and SARIF for code scanning. On GitHub, the repository
+is also an action that does all three:
+
+```yaml
+- uses: complydoc/complydoc@v0.4.11
+  with:
+    path: documents
+    policy: policy.yaml
+```
+
+See [GitHub Action](https://complydoc.github.io/complydoc/guides/github-action/) for the
+inputs, permissions and code scanning. `clean` writes safe copies:
 the identifiers masked, the metadata removed, and PDFs rasterised on request.
 
 A parser can hang on a malformed file: `--timeout 120` gives each document a deadline and

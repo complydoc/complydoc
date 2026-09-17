@@ -1,0 +1,191 @@
+# complydoc check as a GitHub Action.
+#
+#   - uses: complydoc/complydoc@v0.4.11
+#     with:
+#       path: documents
+#       policy: policy.yaml
+#
+# Installs complydoc, runs `complydoc check` against a policy file, writes the
+# result to the job summary, keeps one comment on the pull request up to date,
+# and uploads SARIF to code scanning when asked. The documents are read on the
+# runner with the network guard armed. Installing the tool is the only step that
+# reaches the network, and it happens before any document is opened.
+name: complydoc check
+description: Check documents against a policy before they reach an LLM. Identifiers, hidden instructions, readiness, offline.
+author: complydoc
+branding:
+  icon: file-text
+  color: green
+
+inputs:
+  path:
+    description: File or folder to check, relative to the repository root.
+    required: false
+    default: "."
+  policy:
+    description: Policy file of rules the documents must meet. See https://complydoc.github.io/complydoc/guides/policy/
+    required: true
+  version:
+    description: >-
+      complydoc version to install. Empty means the version this action was
+      referenced at when that is a release tag (`@v0.4.11`), and the latest
+      release otherwise.
+    required: false
+    default: ""
+  extras:
+    description: >-
+      Optional extras to install, comma separated. `ocr` reads scans, and
+      `multilingual-names` finds names in European languages but is a large
+      download.
+    required: false
+    default: "ocr"
+  args:
+    description: Further arguments for `complydoc check`, such as `--timeout 120 --no-ocr`.
+    required: false
+    default: ""
+  comment:
+    description: 'Keep one comment on the pull request with the result. Needs `pull-requests: write`.'
+    required: false
+    default: "true"
+  sarif:
+    description: 'Upload the result to GitHub code scanning. Needs `security-events: write`.'
+    required: false
+    default: "false"
+  fail:
+    description: Fail the job when an `error` rule fails. With `false` the result is reported and the job passes.
+    required: false
+    default: "true"
+  upload-report:
+    description: >-
+      Upload the HTML and JSON reports as a workflow artifact. The reports carry
+      masked findings and no page text, but anyone who can read the run can
+      download them.
+    required: false
+    default: "false"
+  token:
+    description: Token used to write the pull request comment.
+    required: false
+    default: ${{ github.token }}
+
+outputs:
+  passed:
+    description: "`true` when every `error` rule passed."
+    value: ${{ steps.check.outputs.passed }}
+  exit-code:
+    description: "complydoc's exit code: 0 passed, 1 a rule failed, 2 the policy or path could not be read."
+    value: ${{ steps.check.outputs.exit-code }}
+  markdown:
+    description: Path to the Markdown summary.
+    value: ${{ steps.check.outputs.markdown }}
+  sarif:
+    description: Path to the SARIF file.
+    value: ${{ steps.check.outputs.sarif }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up uv
+      uses: astral-sh/setup-uv@v6
+
+    - name: Install complydoc
+      shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
+        EXTRAS: ${{ inputs.extras }}
+        ACTION_REF: ${{ github.action_ref }}
+      run: |
+        set -euo pipefail
+        if [[ -z "$VERSION" && "$ACTION_REF" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+          VERSION="${BASH_REMATCH[1]}"
+        fi
+        spec="complydoc"
+        extras="$(echo "$EXTRAS" | tr -d ' ')"
+        [[ -n "$extras" ]] && spec="complydoc[$extras]"
+        [[ -n "$VERSION" ]] && spec="$spec==$VERSION"
+        echo "Installing $spec"
+        uv tool install --python 3.12 "$spec"
+        complydoc doctor
+
+    - name: Check documents
+      id: check
+      shell: bash
+      env:
+        TARGET: ${{ inputs.path }}
+        POLICY: ${{ inputs.policy }}
+        ARGS: ${{ inputs.args }}
+      run: |
+        # GitHub runs this with -e, and complydoc exits 1 for a failed policy:
+        # the code is recorded here and acted on in the last step.
+        set +e -uo pipefail
+        out="$RUNNER_TEMP/complydoc"
+        mkdir -p "$out"
+        # ARGS is split on purpose, the way a command line would be.
+        # shellcheck disable=SC2086
+        complydoc check "$TARGET" --policy "$POLICY" \
+          --markdown "$out/summary.md" --sarif "$out/results.sarif" \
+          --out "$out/report" $ARGS
+        code=$?
+        echo "exit-code=$code" >> "$GITHUB_OUTPUT"
+        echo "passed=$([[ $code == 0 ]] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+        echo "markdown=$out/summary.md" >> "$GITHUB_OUTPUT"
+        echo "sarif=$out/results.sarif" >> "$GITHUB_OUTPUT"
+        if [[ -f "$out/summary.md" ]]; then
+          cat "$out/summary.md" >> "$GITHUB_STEP_SUMMARY"
+        else
+          echo "complydoc could not check the documents (exit $code); see the log." >> "$GITHUB_STEP_SUMMARY"
+        fi
+        exit 0
+
+    - name: Comment on the pull request
+      if: inputs.comment == 'true' && github.event_name == 'pull_request' && steps.check.outputs.exit-code != '2'
+      # A pull request from a fork gets a read-only token. The summary is still
+      # on the job page, so a comment that cannot be written is not a failure.
+      continue-on-error: true
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        SUMMARY: ${{ steps.check.outputs.markdown }}
+        PR: ${{ github.event.pull_request.number }}
+        REPO: ${{ github.repository }}
+        CHECKED: ${{ inputs.path }}
+      run: |
+        set -euo pipefail
+        # One comment per checked path, found again by this marker and edited in place.
+        marker="<!-- complydoc-check:${CHECKED} -->"
+        body="$(printf '%s\n%s\n' "$marker" "$(cat "$SUMMARY")")"
+        existing="$(gh api --paginate "repos/$REPO/issues/$PR/comments" \
+          --jq ".[] | select(.body | startswith(\"$marker\")) | .id" | sed -n 1p)"
+        if [[ -n "$existing" ]]; then
+          gh api --method PATCH "repos/$REPO/issues/comments/$existing" -f body="$body" > /dev/null
+        else
+          gh api --method POST "repos/$REPO/issues/$PR/comments" -f body="$body" > /dev/null
+        fi
+
+    - name: Upload SARIF
+      if: inputs.sarif == 'true' && steps.check.outputs.exit-code != '2'
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ${{ steps.check.outputs.sarif }}
+        category: complydoc
+
+    - name: Upload the reports
+      if: inputs.upload-report == 'true' && steps.check.outputs.exit-code != '2'
+      uses: actions/upload-artifact@v4
+      with:
+        name: complydoc-report
+        path: ${{ runner.temp }}/complydoc/report
+
+    - name: Set the result
+      shell: bash
+      env:
+        CODE: ${{ steps.check.outputs.exit-code }}
+        FAIL: ${{ inputs.fail }}
+      run: |
+        case "$CODE" in
+          0) echo "complydoc: every error rule passed" ;;
+          2) echo "::error::complydoc could not read the policy or the path"; exit 2 ;;
+          *) if [[ "$FAIL" == "true" ]]; then
+               echo "::error::complydoc: the documents failed the policy"; exit 1
+             fi
+             echo "::warning::complydoc: the documents failed the policy" ;;
+        esac

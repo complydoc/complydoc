@@ -51,6 +51,10 @@ On a folder large enough to be slow, `--jobs 0` spreads the work over every CPU 
 how long the run takes. Reach for `--sample` when the user has accepted a partial answer,
 and say in your reply that the figures describe a sample.
 
+To gate a repository on GitHub, the repository is also an action:
+`uses: complydoc/complydoc@v<version>` with `path` and `policy` inputs runs `check`,
+comments on the pull request and can upload SARIF.
+
 Exit code 0 means the run completed, 2 means the arguments or config were wrong. A run
 that finds problems still exits 0, and the findings are in the JSON. Only `check` and
 `diff` exit 1 on findings.
