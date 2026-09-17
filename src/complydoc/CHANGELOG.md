@@ -6,6 +6,8 @@ versioned separately.
 
 ## [Unreleased]
 
+## [0.4.11] — 2026-09-17
+
 ### Added
 
 - `complydoc assist --report <report.json>` drafts quick wins from a report an audit
@@ -619,7 +621,8 @@ First release.
 - `complydoc` audits the current directory; `--jobs`, `--sample`, `--password`.
 - Packaged agent skill.
 
-[Unreleased]: https://github.com/complydoc/complydoc/compare/v0.4.10...HEAD
+[Unreleased]: https://github.com/complydoc/complydoc/compare/v0.4.11...HEAD
+[0.4.11]: https://github.com/complydoc/complydoc/compare/v0.4.10...v0.4.11
 [0.4.10]: https://github.com/complydoc/complydoc/compare/v0.4.9...v0.4.10
 [0.4.9]: https://github.com/complydoc/complydoc/compare/v0.4.8...v0.4.9
 [0.4.8]: https://github.com/complydoc/complydoc/compare/v0.4.7...v0.4.8
