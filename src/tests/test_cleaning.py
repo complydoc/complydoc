@@ -11,8 +11,10 @@ import zipfile
 from email.message import EmailMessage
 
 import pytest
+from typer.testing import CliRunner
 
 from complydoc.cleaning import clean_document
+from complydoc.cli import app
 from tests.helpers import FIXTURES, spacy_model_available
 
 BODY = """SUPPLIER RECORD
@@ -150,3 +152,45 @@ def test_a_format_with_no_cleaner_is_skipped_rather_than_copied(tmp_path, config
 
     assert not result.written
     assert result.skipped and ".rtf" in result.skipped
+
+
+def test_a_copy_records_what_it_changed_and_where(folder, tmp_path, config):
+    result = clean_document(folder / "notes.txt", tmp_path / "out", config)
+
+    assert result.changes, "a copy that masked something should say what"
+    assert len(result.changes) == result.masked
+    assert all(change.where.startswith("line ") for change in result.changes)
+    assert "ni_number" in {change.category for change in result.changes}
+
+
+def test_the_record_carries_the_masked_form_and_never_the_value(folder, tmp_path, config):
+    """The copy exists so the values do not travel. A record of them would undo that."""
+    result = clean_document(folder / "notes.txt", tmp_path / "out", config)
+
+    written = " ".join(f"{c.category} {c.label} {c.masked} {c.where}" for c in result.changes)
+    for value in ("AB123456C", "jane.doe@example.com", "4111 1111 1111 1111"):
+        assert value not in written, f"{value!r} reached the record"
+    assert any("\u2022" in change.masked for change in result.changes)
+
+
+def test_an_office_copy_says_which_part_it_changed(folder, tmp_path, config):
+    result = clean_document(folder / "sample.docx", tmp_path / "out", config)
+
+    assert result.changes
+    assert all(
+        change.where.startswith(("paragraph", "table", "header", "footer"))
+        for change in result.changes
+    ), [change.where for change in result.changes]
+
+
+def test_show_lists_the_changes_and_is_off_by_default(folder, tmp_path):
+    runner = CliRunner()
+    plain = runner.invoke(app, ["clean", str(folder / "notes.txt"), "--out", str(tmp_path / "a")])
+    shown = runner.invoke(
+        app, ["clean", str(folder / "notes.txt"), "--out", str(tmp_path / "b"), "--show"]
+    )
+
+    assert plain.exit_code == 0, plain.output
+    assert shown.exit_code == 0, shown.output
+    assert "line 2" in shown.output
+    assert "line 2" not in plain.output

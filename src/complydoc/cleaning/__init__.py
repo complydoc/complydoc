@@ -30,7 +30,7 @@ from pathlib import Path
 
 from complydoc.config.schema import Config
 
-__all__ = ["CleanResult", "clean_document", "cleanable_formats"]
+__all__ = ["CleanChange", "CleanResult", "clean_document", "cleanable_formats"]
 
 _BY_SUFFIX: dict[str, str] = {
     ".txt": "text",
@@ -52,6 +52,22 @@ def cleanable_formats() -> list[str]:
     return sorted(_BY_SUFFIX)
 
 
+@dataclass(frozen=True, slots=True)
+class CleanChange:
+    """One identifier covered over, and where in the document it was.
+
+    `masked` is the masked form, which is what the copy now carries. The value
+    that was there is not recorded: this exists to show what a copy changed, and
+    a record of the originals would undo the point of making one.
+    """
+
+    category: str
+    label: str
+    masked: str
+    where: str
+    """Where it sat, in the document's own terms: a line, a cell, a slide."""
+
+
 @dataclass(slots=True)
 class CleanResult:
     """What was written, and what was done to it."""
@@ -67,6 +83,8 @@ class CleanResult:
     """Metadata keys and parts taken out of the copy."""
     unscanned_categories: dict[str, str] = field(default_factory=dict)
     """Categories nothing was looked for, so none of that kind were masked."""
+    changes: list[CleanChange] = field(default_factory=list)
+    """Each identifier covered over, with where it was."""
     notes: list[str] = field(default_factory=list)
     """What the copy does not cover, in the caller's own terms."""
     skipped: str | None = None

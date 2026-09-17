@@ -34,6 +34,10 @@ def clean(
             help="PDFs only: render each page to an image, so no text layer survives.",
         ),
     ] = False,
+    show: Annotated[
+        bool,
+        typer.Option("--show", help="List what each copy changed, and where it was."),
+    ] = False,
     recurse: RecurseOpt = True,
     config_dir: ConfigOpt = None,
     quiet: QuietOpt = False,
@@ -78,6 +82,22 @@ def clean(
         else:
             table.add_row(result.source.name, "—", f"[yellow]{result.skipped}[/]")
     console.print(table)
+
+    if show:
+        for result in written:
+            if not result.changes:
+                continue
+            console.print()
+            console.print(f"[bold]{result.source.name}[/]")
+            listing = Table(box=None, pad_edge=False, show_header=False)
+            listing.add_column(style="dim")
+            listing.add_column()
+            listing.add_column(style="dim")
+            for change in result.changes:
+                # The masked form only: the copy exists so the values do not
+                # travel, and printing them here would send them anyway.
+                listing.add_row(f"  {change.where}", change.masked, change.label.lower())
+            console.print(listing)
 
     notes = {note for result in results for note in result.notes}
     for note in sorted(notes):

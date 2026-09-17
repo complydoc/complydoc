@@ -11,9 +11,11 @@ from __future__ import annotations
 
 import posixpath
 import zipfile
+from collections.abc import Iterable
 from pathlib import Path
+from typing import Any
 
-from complydoc.cleaning import CleanResult
+from complydoc.cleaning import CleanChange, CleanResult
 from complydoc.config.schema import Config
 from complydoc.extraction.extract import mask_matches
 from complydoc.sensitive.scanner import scan_text
@@ -39,11 +41,28 @@ _CORE_PROPERTIES = (
 )
 
 
-def _mask(text: str, settings: Config) -> tuple[str, int, int, dict[str, str]]:
+def _mask(
+    text: str, settings: Config, where: str = "", into: list[CleanChange] | None = None
+) -> tuple[str, int, int, dict[str, str]]:
+    """As in `formats`: the masked text, the counts, and what could not be scanned.
+
+    With `into`, each identifier covered over is recorded there, in terms of the
+    part of the document it sat in. Only the masked form is kept.
+    """
     if not text.strip():
         return text, 0, 0, {}
     matches, unavailable = scan_text(text, settings.sensitive)
     masked, replaced, confirmed = mask_matches(text, matches)
+    if into is not None:
+        into.extend(
+            CleanChange(
+                category=match.category,
+                label=match.label,
+                masked=match.masked,
+                where=where or "text",
+            )
+            for match in matches
+        )
     return masked, replaced, confirmed, unavailable
 
 
@@ -90,10 +109,11 @@ def _clean_docx(source: Path, target: Path, settings: Config, result: CleanResul
 
     document = docx.Document(str(source))
 
-    def mask_paragraphs(paragraphs: object) -> None:
-        for paragraph in paragraphs:  # type: ignore[attr-defined]
+    def mask_paragraphs(paragraphs: Iterable[Any], area: str = "paragraph") -> None:
+        for index, paragraph in enumerate(paragraphs, start=1):
             for run in paragraph.runs:
-                masked, count, sure, missing = _mask(run.text, settings)
+                place = f"{area} {index}"
+                masked, count, sure, missing = _mask(run.text, settings, place, result.changes)
                 if count:
                     run.text = masked
                 result.masked += count
@@ -101,13 +121,13 @@ def _clean_docx(source: Path, target: Path, settings: Config, result: CleanResul
                 result.unscanned_categories.update(missing)
 
     mask_paragraphs(document.paragraphs)
-    for table in document.tables:
+    for number, table in enumerate(document.tables, start=1):
         for row in table.rows:
             for cell in row.cells:
-                mask_paragraphs(cell.paragraphs)
+                mask_paragraphs(cell.paragraphs, f"table {number}")
     for section in document.sections:
-        for area in (section.header, section.footer):
-            mask_paragraphs(area.paragraphs)
+        for name, area in (("header", section.header), ("footer", section.footer)):
+            mask_paragraphs(area.paragraphs, name)
 
     _clear_core_properties(document.core_properties, result.metadata_removed)
 
@@ -133,7 +153,8 @@ def _clean_xlsx(source: Path, target: Path, settings: Config, result: CleanResul
             for cell in row:
                 if not isinstance(cell.value, str):
                     continue
-                masked, count, sure, missing = _mask(cell.value, settings)
+                place = f"{sheet.title}!{cell.coordinate}"
+                masked, count, sure, missing = _mask(cell.value, settings, place, result.changes)
                 if count:
                     cell.value = masked
                 result.masked += count
@@ -178,7 +199,8 @@ def _clean_pptx(source: Path, target: Path, settings: Config, result: CleanResul
         for node in root.iter(f"{_A}t"):
             if not node.text:
                 continue
-            masked, count, sure, missing = _mask(node.text, settings)
+            place = posixpath.basename(name).removesuffix(".xml")
+            masked, count, sure, missing = _mask(node.text, settings, place, result.changes)
             if count:
                 node.text = masked
                 changed = True

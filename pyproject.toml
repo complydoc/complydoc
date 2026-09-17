@@ -175,3 +175,12 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = ["langchain_core.*", "llama_index.*"]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# These subclass a base from an optional framework. Where the framework is not
+# installed the base is Any and subclassing it needs the ignore; where it is
+# installed the base resolves and the ignore reads as unused. Both environments
+# are real — the type check runs without those packages and the tests run with
+# them — so the ignore stays and the warning about it does not.
+module = ["complydoc.integrations.langchain", "complydoc.integrations.llamaindex"]
+warn_unused_ignores = false

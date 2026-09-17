@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from complydoc.cleaning import CleanResult
+from complydoc.cleaning import CleanChange, CleanResult
 from complydoc.config.schema import Config
 from complydoc.extraction.extract import mask_matches
 from complydoc.sensitive.scanner import scan_text
@@ -23,12 +23,29 @@ _SPLIT_NOTE = (
 )
 
 
-def _mask(text: str, settings: Config) -> tuple[str, int, int, dict[str, str]]:
-    """`text` with its identifiers masked, the counts, and what could not be scanned."""
+def _mask(
+    text: str, settings: Config, where: str = "", into: list[CleanChange] | None = None
+) -> tuple[str, int, int, dict[str, str]]:
+    """`text` with its identifiers masked, the counts, and what could not be scanned.
+
+    With `into`, each identifier covered over is recorded there, said in terms of
+    `where` it sat. Only the masked form is kept.
+    """
     if not text.strip():
         return text, 0, 0, {}
     matches, unavailable = scan_text(text, settings.sensitive)
     masked, replaced, confirmed = mask_matches(text, matches)
+    if into is not None:
+        for match in matches:
+            place = f"{where} line {match.line}" if where else f"line {match.line}"
+            into.append(
+                CleanChange(
+                    category=match.category,
+                    label=match.label,
+                    masked=match.masked,
+                    where=place.strip(),
+                )
+            )
     return masked, replaced, confirmed, unavailable
 
 
@@ -46,7 +63,7 @@ def clean_text_file(source: Path, target: Path, format_name: str, settings: Conf
     if note:
         result.notes.append(note)
 
-    masked, replaced, confirmed, unavailable = _mask(text, settings)
+    masked, replaced, confirmed, unavailable = _mask(text, settings, into=result.changes)
     target.write_text(masked, encoding="utf-8")
 
     result.output = target
@@ -103,7 +120,9 @@ def clean_html_file(source: Path, target: Path, settings: Config) -> CleanResult
             value = getattr(node, attribute, None)
             if not value or not value.strip():
                 continue
-            masked, count, sure, missing = _mask(value, settings)
+            tag = getattr(node, "tag", "")
+            place = f"<{tag}>" if isinstance(tag, str) and tag else "text"
+            masked, count, sure, missing = _mask(value, settings, place, result.changes)
             setattr(node, attribute, masked)
             replaced += count
             confirmed += sure
@@ -169,7 +188,9 @@ def clean_email_file(source: Path, target: Path, settings: Config) -> CleanResul
             content = part.get_content()
         except (LookupError, ValueError):
             continue
-        masked, count, sure, missing = _mask(content, settings)
+        masked, count, sure, missing = _mask(
+            content, settings, part.get_content_type(), result.changes
+        )
         if count:
             part.set_content(masked, subtype=part.get_content_subtype())
         replaced += count
@@ -180,7 +201,9 @@ def clean_email_file(source: Path, target: Path, settings: Config) -> CleanResul
         value = message.get(header)
         if not value:
             continue
-        masked, count, sure, missing = _mask(str(value), settings)
+        masked, count, sure, missing = _mask(
+            str(value), settings, f"{header} header", result.changes
+        )
         if count:
             del message[header]
             message[header] = masked

@@ -17,11 +17,21 @@ versioned separately.
 
 ### Added
 
+- `complydoc clean --show` lists what each copy changed and where it sat: a line in a text
+  file, a cell in a spreadsheet, a slide, a header. Only the masked form is listed, because
+  a copy exists so the values do not travel and printing them here would send them anyway.
+  The same records are on `CleanResult.changes` for a caller.
+
 - A sort code spaced rather than hyphenated, `12 34 56`, is found where its label is nearby.
   It sits with the context patterns rather than the plain ones, so three pairs of digits in
   open prose are still ignored.
 
 ### Fixed
+
+- The type check warned about two `type: ignore` comments that it needs. They sit on classes
+  subclassing a base from an optional framework: installed, the base resolves and the ignore
+  reads as unused; absent, the base is `Any` and subclassing it is the error the ignore
+  suppresses. Both environments are real, so the comments stay and the warning does not.
 
 - `complydoc doctor` said name detection was unavailable on an install where it works. It
   asked each detector for the models named on a category's first link, so the model doing
