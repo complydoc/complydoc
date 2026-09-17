@@ -6,7 +6,29 @@ versioned separately.
 
 ## [Unreleased]
 
+## [0.4.10] — 2026-09-17
+
+### Security
+
+- A report no longer carries the identifiers it masks. The findings table always masked
+  each value, while the page text kept beside it, and a picture of each page, showed the
+  same values in full: a default `complydoc audit` of an HR folder wrote every national
+  insurance number, card and IBAN into the JSON and the HTML. Page text is now masked with
+  the findings located on it, every other reading of the page is scanned and masked on its
+  own, and `--save-text` writes the same masked text. `--reveal` still shows the values,
+  apart from the categories configured never to be revealed. Masking is as complete as
+  detection, so a name the model missed is still in the text.
+- Page pictures are off by default on `audit`, `sensitive` and `compare-readers`, and
+  `--page-images` is announced when the run starts and recorded as an important
+  limitation, because a picture cannot be masked. `complydoc demo` draws wireframes too,
+  so it shows what a real run produces. The Python API already defaulted to neither.
+
 ### Added
+
+- A GitHub Action. `uses: complydoc/complydoc@v0.4.10` installs the version in its tag,
+  runs `complydoc check` against a policy, writes the result to the job summary, keeps one
+  comment on the pull request up to date, and uploads SARIF to code scanning with
+  `sarif: true`. See the GitHub Action guide.
 
 - A report counts what a registered classifier was asked and how often it could not answer:
   `run.classifier_calls` and `run.classifier_failures`, with an important limitation and a
@@ -21,6 +43,21 @@ versioned separately.
 
 ### Fixed
 
+- SARIF located each failure by its path inside the audited folder, which code scanning
+  resolves from the repository root and so could not link to a file. Locations, and the
+  folder named in the Markdown summary, are now given from the working directory.
+- Every hint for installing an optional part said `uv sync --extra …`, which works only in
+  a checkout of this repository. They now give the `uv tool install` and `pip install`
+  commands, the spaCy hint points at the tool's own interpreter instead of a README
+  section that did not exist, and `complydoc doctor` prints the command for a missing name
+  model. The README said a plain install finds names with a small English model; it finds
+  none without the `ner` or `multilingual-names` extra, and now says so.
+- `complydoc doctor` said every enabled price was verified while the report of the same
+  install listed 18 as imported and unchecked. It now counts both.
+- The hidden-content limitation said instruction patterns were mostly English; they cover
+  seven languages.
+- `check_facts` and `facts_found` match a fact that is itself an identifier, such as an
+  email address a loader should keep, against the masked page text.
 - `--jobs` went quietly serial after the first audit in a process. The worker pool is
   forked from a server started by that process, and a worker forked from an address space
   where torch has initialised dies the moment it reads a document; every audit loads the
@@ -39,6 +76,21 @@ versioned separately.
 
 ### Changed
 
+- `complydoc --help` groups the commands into Audit, Compare readers and loaders, CI and
+  pipelines, and Information. `compare` is now `compare-readers`, beside
+  `compare-loaders`; the old name still works and is hidden. `pricing-import`, a
+  maintainer's tool, is hidden too.
+- The CLI summary leads with one readiness score, naming the factors it combines, and
+  shows the content score beneath it as Extraction. The two used to sit side by side as
+  AI readiness and Global readiness with nothing to tell them apart.
+- Categories skipped for the same reason are one limitation: a missing name model
+  produced two, for people and for organisations. The summary's Not scanned and Unread
+  pages rows point at `complydoc doctor`.
+- Imported prices are an `info` limitation rather than an `important` one. It is a caveat
+  on a cost estimate, and it sat among unread pages and unscanned categories on every run.
+- The agent skill describes all four checks, the commands added since it was written, and
+  the flags that send text off the machine or write values unmasked. It used to say the
+  tool makes no network calls and showed `complydoc <path>`, which is not a command.
 - `--classifier` no longer forces the run into one process. It did, because a classifier
   registered in one process could not follow documents into a worker; the name crosses now,
   so the job count is left as you set it. `run.classifier_missed_workers` counts only what
@@ -553,7 +605,11 @@ First release.
 - `complydoc` audits the current directory; `--jobs`, `--sample`, `--password`.
 - Packaged agent skill.
 
-[Unreleased]: https://github.com/complydoc/complydoc/compare/v0.4.6...HEAD
+[Unreleased]: https://github.com/complydoc/complydoc/compare/v0.4.10...HEAD
+[0.4.10]: https://github.com/complydoc/complydoc/compare/v0.4.9...v0.4.10
+[0.4.9]: https://github.com/complydoc/complydoc/compare/v0.4.8...v0.4.9
+[0.4.8]: https://github.com/complydoc/complydoc/compare/v0.4.7...v0.4.8
+[0.4.7]: https://github.com/complydoc/complydoc/compare/v0.4.6...v0.4.7
 [0.4.6]: https://github.com/complydoc/complydoc/compare/v0.4.5...v0.4.6
 [0.4.5]: https://github.com/complydoc/complydoc/compare/v0.4.4...v0.4.5
 [0.4.4]: https://github.com/complydoc/complydoc/compare/v0.4.3...v0.4.4
