@@ -4,6 +4,17 @@ Newest first. Releases increment the patch number; the minor number changes only
 breaking change to the report JSON or a config key. `schema_version` in the JSON is
 versioned separately.
 
+## [Unreleased]
+
+### Added
+
+- A report counts what a registered classifier was asked and how often it could not answer:
+  `run.classifier_calls` and `run.classifier_failures`, with an important limitation and a
+  line in the CLI summary when any failed. A failed call is treated as no score rather than
+  as a zero, because a service that is down must not read as a document that is clean — but
+  no score is also no finding, so a run whose every call failed used to produce the same
+  report as a run that found nothing. Report schema 13.
+
 ## [0.4.9] — 2026-09-17
 
 ### Added

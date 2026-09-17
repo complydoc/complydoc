@@ -18,6 +18,7 @@ __all__ = [
     "Classifier",
     "InstructionMatch",
     "InstructionMatcher",
+    "classifier_calls",
     "classifier_score",
     "matcher_for",
     "register_instruction_classifier",
@@ -27,6 +28,28 @@ __all__ = [
 Classifier = Callable[[str], float]
 
 _classifier: Classifier | None = None
+
+_calls = 0
+_failures = 0
+"""Counted per process, because that is where a classifier lives.
+
+A call that raises is treated as no score, which is right: a service that is
+down must not read as a document that is clean. But no score also means no
+finding, so a run whose every call failed looked exactly like a run that found
+nothing. These are what let a report tell those two apart.
+"""
+
+
+def classifier_calls() -> tuple[int, int]:
+    """Calls made and calls that failed in this process, then reset to zero.
+
+    Read after each document, so the counts can be carried back from a worker
+    and added up by the process that started it.
+    """
+    global _calls, _failures
+    counts = (_calls, _failures)
+    _calls = _failures = 0
+    return counts
 
 
 def register_instruction_classifier(classifier: Classifier | None) -> None:
@@ -52,12 +75,16 @@ def registered_classifier() -> Classifier | None:
 
 def classifier_score(text: str) -> float | None:
     """The registered classifier's score, or None when there is none or it failed."""
+    global _calls, _failures
+
     if _classifier is None or not text.strip():
         return None
+    _calls += 1
     try:
         value = float(_classifier(text))
     # A registered classifier is caller code; whatever it raises means no score.
     except Exception:
+        _failures += 1
         return None
     return round(min(1.0, max(0.0, value)), 3)
 

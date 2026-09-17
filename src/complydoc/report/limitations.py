@@ -59,6 +59,27 @@ def build_limitations(
             )
         )
 
+    # --- A classifier was asked and could not answer --------------------------
+    if run.classifier_failures:
+        every = run.classifier_failures == run.classifier_calls
+        limitations.append(
+            Limitation(
+                area="Classifier calls that failed",
+                statement=(
+                    f"{count(run.classifier_failures, 'call')} to the registered classifier "
+                    f"of {run.classifier_calls} failed, and a call that fails produces no "
+                    f"score and so no finding. "
+                    + (
+                        "Every call failed, so nothing in this run was judged by it and the "
+                        "passages it would have found are missing rather than absent."
+                        if every
+                        else "Passages those calls covered were judged by the patterns alone."
+                    )
+                ),
+                severity="important",
+            )
+        )
+
     # --- A classifier could not reach the workers -----------------------------
     if run.classifier_missed_workers:
         limitations.append(

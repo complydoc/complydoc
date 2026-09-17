@@ -44,7 +44,7 @@ cd.write_html(report, "report.html")
 ## Output
 
 An HTML report and a JSON file with the same data. The JSON carries
-`schema_version`, currently 12.
+`schema_version`, currently 13.
 
 ## Network access
 

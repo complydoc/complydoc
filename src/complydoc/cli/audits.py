@@ -151,6 +151,13 @@ def summary(report: AuditReport) -> None:
             f"{', '.join(sorted(report.run.content_sent_to))}.[/] A registered classifier "
             f"read the passages it judged; nothing else left this machine."
         )
+    if report.run.classifier_failures:
+        console.print(
+            f"[bold yellow]{report.run.classifier_failures} of "
+            f"{report.run.classifier_calls} classifier calls failed.[/] A call that fails "
+            f"produces no score and so no finding, so those passages were judged by the "
+            f"patterns alone."
+        )
     if report.run.classifier_missed_workers:
         console.print(
             f"[yellow]A classifier was registered but did not run for "

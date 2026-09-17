@@ -47,7 +47,7 @@ __all__ = [
     "RunMetadata",
 ]
 
-SCHEMA_VERSION = 12
+SCHEMA_VERSION = 13
 
 
 def report_shape() -> dict[str, object]:
@@ -80,6 +80,8 @@ def report_shape() -> dict[str, object]:
             "offline_guard": "armed | not_armed",
             "content_sent_to": "hosts sent document text, empty unless a hosted classifier ran",
             "classifier_missed_workers": "documents a registered classifier could not reach",
+            "classifier_calls": "calls a registered classifier made, 0 unless one ran",
+            "classifier_failures": "of those, calls that raised and so produced no score",
             "reveal_used": "bool — true means values are NOT masked",
             "page_images_used": "bool",
             "extracted_text_used": "bool",
@@ -374,6 +376,16 @@ class RunMetadata:
 
     A classifier is registered in one process. Documents spread over a pool are
     read in others, and it cannot follow them there, so it did not run for these.
+    """
+    classifier_calls: int = 0
+    """Calls a registered classifier made during this run, across every process."""
+    classifier_failures: int = 0
+    """Of those, the calls that raised and so produced no score.
+
+    A failed call is treated as no answer rather than as a zero, because a
+    service that is down must not read as a document that is clean. But no
+    answer is also no finding, so without this count a run whose every call
+    failed was indistinguishable from a run that found nothing.
     """
 
 

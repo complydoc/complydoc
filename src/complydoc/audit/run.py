@@ -37,6 +37,7 @@ from complydoc.config.schema import CategoryConfig, Config, ModelPricing
 from complydoc.cost.estimator import estimate_document, folder_from_estimates, resolve_models
 from complydoc.extraction.routing import plan_routes
 from complydoc.hidden.check import check_content
+from complydoc.hidden.instructions import classifier_calls
 from complydoc.ingest import ocr as ocr_module
 from complydoc.ingest.base import TIMED_OUT, Document, IngestOptions, LoaderError, SkipRecord
 from complydoc.ingest.extractors.registry import DEFAULT_EXTRACTOR
@@ -174,6 +175,14 @@ class _Outcome:
     skipped: SkipRecord | None
     ocr_pages: int = 0
     ocr_seconds: float = 0.0
+    classifier_calls: int = 0
+    classifier_failures: int = 0
+    """Calls a registered classifier made for this document, and how many failed.
+
+    A failed call is no score, and no score is no finding, so a run whose calls
+    all failed produced the same report as a run that found nothing. These
+    travel back from the worker so the report can tell those two apart.
+    """
     recovered: bool = False
     """Read in the main process after a worker process stopped."""
 
@@ -332,7 +341,17 @@ def _process(path: Path, work: Work) -> _Outcome:
 
     entry = build_entry(document, work, read_seconds, _relative(document.path, work.target))
     ocr_after = ocr_module.stats()
-    return _Outcome(entry, None, ocr_after[0] - ocr_before[0], ocr_after[1] - ocr_before[1])
+    # Read and reset: whatever the classifier was asked during this document,
+    # in whichever process this is.
+    calls, failures = classifier_calls()
+    return _Outcome(
+        entry,
+        None,
+        ocr_after[0] - ocr_before[0],
+        ocr_after[1] - ocr_before[1],
+        calls,
+        failures,
+    )
 
 
 _WORKER_WORK: Work | None = None
@@ -355,6 +374,15 @@ def _pool_context() -> Any:
         context.set_forkserver_preload(["complydoc.audit.warm"])
         return context
     return get_context("spawn")
+
+
+_CLASSIFIER_TOTALS = [0, 0]
+"""Calls and failures across every process of one run, added up as they return."""
+
+
+def _count_classifier(outcome: _Outcome) -> None:
+    _CLASSIFIER_TOTALS[0] += outcome.classifier_calls
+    _CLASSIFIER_TOTALS[1] += outcome.classifier_failures
 
 
 def _worker_init(work: Work) -> None:
@@ -442,10 +470,13 @@ def _timed(files: list[Path], work: Work, jobs: int, timeout: float) -> Iterator
                 in_flight.clear()
                 queue.clear()
                 for remaining in waiting:
-                    yield dataclasses.replace(_process(remaining, work), recovered=True)
+                    recovered = dataclasses.replace(_process(remaining, work), recovered=True)
+                    _count_classifier(recovered)
+                    yield recovered
             else:
                 del in_flight[future]
                 ocr_module.add_stats(outcome.ocr_pages, outcome.ocr_seconds)
+                _count_classifier(outcome)
                 yield outcome
     finally:
         pool.shutdown(wait=False, cancel_futures=True)
@@ -468,7 +499,9 @@ def _outcomes(
         return
     if jobs <= 1 or len(files) < 2:
         for path in files:
-            yield _process(path, work)
+            outcome = _process(path, work)
+            _count_classifier(outcome)
+            yield outcome
         return
 
     returned = 0
@@ -476,11 +509,14 @@ def _outcomes(
         with _process_pool(jobs, work) as pool:
             for outcome in pool.map(_worker, files, chunksize=1):
                 ocr_module.add_stats(outcome.ocr_pages, outcome.ocr_seconds)
+                _count_classifier(outcome)
                 returned += 1
                 yield outcome
     except BrokenProcessPool:
         for path in files[returned:]:
-            yield dataclasses.replace(_process(path, work), recovered=True)
+            recovered = dataclasses.replace(_process(path, work), recovered=True)
+            _count_classifier(recovered)
+            yield recovered
 
 
 _MIN_DOCUMENTS_PER_WORKER = 12
@@ -633,6 +669,9 @@ def run_audit(
 ) -> AuditReport:
     started = time.monotonic()
     started_at = dt.datetime.now().astimezone()
+    # A caller can run several audits in one process, and last run's calls are
+    # not this run's.
+    _CLASSIFIER_TOTALS[:] = (0, 0)
     plan = plan_audit(
         target,
         config,
@@ -684,6 +723,8 @@ def run_audit(
         offline_guard=offline.guard_status(),
         content_sent_to=_hosts_sent_content(),
         classifier_missed_workers=_classifier_missed(jobs, len(files), recovered),
+        classifier_calls=_CLASSIFIER_TOTALS[0],
+        classifier_failures=_CLASSIFIER_TOTALS[1],
         reveal_used=reveal,
         page_images_used=page_images,
         extracted_text_used=extracted_text,
