@@ -23,7 +23,7 @@ from complydoc.cli.common import (
 from complydoc.utils.text import count
 
 
-@app.command()
+@app.command(rich_help_panel="CI and pipelines")
 def diff(
     old: Annotated[Path, typer.Argument(help="The earlier report JSON, such as a baseline.")],
     new: Annotated[Path, typer.Argument(help="The later report JSON.")],

@@ -62,7 +62,7 @@ def _splitter(reference: str) -> tuple[str, object]:
     return label, splitter
 
 
-@app.command()
+@app.command(rich_help_panel="CI and pipelines")
 def chunks(
     target: TargetArg,
     splitter: Annotated[

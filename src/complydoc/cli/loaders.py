@@ -26,7 +26,7 @@ from complydoc.cli.common import (
 from complydoc.config.loader import ConfigError
 
 
-@app.command("compare-loaders")
+@app.command("compare-loaders", rich_help_panel="Compare readers and loaders")
 def compare_loaders_command(
     spec: Annotated[
         Path,

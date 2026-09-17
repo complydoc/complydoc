@@ -20,7 +20,7 @@ from complydoc.cli.common import (
 )
 
 
-@app.command()
+@app.command(rich_help_panel="CI and pipelines")
 def clean(
     target: Annotated[Path, typer.Argument(help="A file or folder to copy safely.")],
     out: Annotated[

@@ -35,7 +35,7 @@ from complydoc.cli.common import (
 from complydoc.cost.estimator import UnknownModelError
 
 
-@app.command()
+@app.command(rich_help_panel="Audit")
 def routing(
     target: TargetArg,
     out: OutDirOpt = DEFAULT_OUT,

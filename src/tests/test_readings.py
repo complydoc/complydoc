@@ -118,7 +118,7 @@ def test_the_readings_reach_the_report(config):
 
 
 def test_the_compare_command_uses_every_reader_installed(tmp_path):
-    """`complydoc compare` uses every installed reader."""
+    """`complydoc compare-readers` uses every installed reader."""
     import json
 
     from typer.testing import CliRunner
@@ -129,7 +129,7 @@ def test_the_compare_command_uses_every_reader_installed(tmp_path):
     result = CliRunner().invoke(
         app,
         [
-            "compare",
+            "compare-readers",
             str(FIXTURES / "two_column.pdf"),
             "--out",
             str(tmp_path),
@@ -156,7 +156,7 @@ def test_the_compare_command_keeps_what_each_reader_read(tmp_path):
     result = CliRunner().invoke(
         app,
         [
-            "compare",
+            "compare-readers",
             str(FIXTURES / "two_column.pdf"),
             "--out",
             str(tmp_path),
@@ -180,7 +180,7 @@ def test_the_compare_command_does_not_offer_an_ocr_comparison_with_ocr_off(tmp_p
     result = CliRunner().invoke(
         app,
         [
-            "compare",
+            "compare-readers",
             str(FIXTURES / "native_text.pdf"),
             "--out",
             str(tmp_path),

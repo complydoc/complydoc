@@ -18,7 +18,7 @@ from complydoc.cli.common import (
 )
 
 
-@app.command()
+@app.command(rich_help_panel="Information")
 def benchmark(
     config_dir: ConfigOpt = None,
     json_out: Annotated[

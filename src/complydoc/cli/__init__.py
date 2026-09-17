@@ -2,8 +2,10 @@
 
 Each module registers its commands on `app` when imported:
 
-- `audits`: the bare `complydoc`, `audit`, `demo`, `compare`, `cost`, `readiness`, `sensitive`
-- `info`: `skill`, `schema`, `doctor`, `models`, `extractors`, `engines`, `pricing-import`
+- `audits`: the bare `complydoc`, `audit`, `demo`, `compare-readers` (and its old
+  name, `compare`), `cost`, `readiness`, `sensitive`
+- `info`: `skill`, `schema`, `doctor`, `models`, `extractors`, `engines`, and
+  `pricing-import`, which is hidden from `--help`
 - `loaders`: `compare-loaders`
 - `chunks`: `chunks`
 - `routing`: `routing`
@@ -20,11 +22,11 @@ from __future__ import annotations
 
 # isort: off
 # Imported for the commands they register, in the order `--help` lists them.
-from complydoc.cli import audits, info, loaders, chunks, routing, check, diff, benchmark, clean
+from complydoc.cli import audits, routing, loaders, check, diff, clean, chunks, info, benchmark
 
 # isort: on
 from complydoc.cli.common import app
 
 __all__ = ["app"]
 
-COMMAND_MODULES = (audits, info, loaders, chunks, routing, check, diff, benchmark, clean)
+COMMAND_MODULES = (audits, routing, loaders, check, diff, clean, chunks, info, benchmark)
