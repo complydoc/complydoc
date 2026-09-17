@@ -22,6 +22,16 @@ versioned separately.
   or policy run calls it, and the `quick_wins[]` in every report are still computed
   locally without a model.
 
+### Fixed
+
+- Rich read the brackets in an interpolated message as markup and swallowed what was
+  inside them, so an error carrying an install hint such as `complydoc[typesafe]` printed
+  without the command it was telling you to run. Dynamic text is escaped before it reaches
+  the console.
+- `--classifier jev` without the `typesafe` extra installed ended in a traceback.
+  `resolve_classifier` caught `ValueError` around the call, and a missing extra raises
+  `ImportError`; it now reports the missing extra the way every other command does.
+
 ## [0.4.10] — 2026-09-17
 
 ### Security
