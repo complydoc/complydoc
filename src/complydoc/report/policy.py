@@ -202,13 +202,26 @@ def check_policy(report: AuditReport, policy: Policy) -> PolicyResult:
 # ------------------------------------------------------------------ Markdown
 
 
+def _from_here(path: Path) -> str:
+    """`path` relative to the working directory where it sits under it.
+
+    In CI the working directory is the checkout, and a path from its root is
+    what a pull request comment should show and what code scanning resolves a
+    SARIF location against. An absolute runner path does neither.
+    """
+    try:
+        return path.resolve().relative_to(Path.cwd().resolve()).as_posix() or "."
+    except ValueError:
+        return path.as_posix()
+
+
 def policy_markdown(result: PolicyResult) -> str:
     """A summary for a pull request comment or a chat message."""
     verdict = "passed" if result.passed else "failed"
     lines = [
         f"## complydoc policy {verdict}",
         "",
-        f"`{result.target}`",
+        f"`{_from_here(Path(result.target))}`",
         "",
         "| Rule | Result | Failures |",
         "| --- | --- | --- |",
@@ -245,6 +258,14 @@ def policy_sarif(result: PolicyResult, report: AuditReport) -> dict[str, Any]:
     from complydoc import __version__
 
     documents = {d.relative_path for d in report.documents}
+    # A document's relative path is relative to the folder that was audited; code
+    # scanning resolves a location from the repository root.
+    audited = Path(report.run.target)
+    root = audited if audited.is_dir() else audited.parent
+
+    def located(document: str | None) -> str | None:
+        return None if document is None else _from_here(root / document)
+
     rules = [
         {
             "id": rule.rule,
@@ -263,7 +284,7 @@ def policy_sarif(result: PolicyResult, report: AuditReport) -> dict[str, Any]:
             findings.append(_sarif_result(rule, f"{rule.rule} could not run: {rule.error}", None))
             continue
         for item in rule.failures:
-            findings.append(_sarif_result(rule, item, _document_of(item, documents)))
+            findings.append(_sarif_result(rule, item, located(_document_of(item, documents))))
 
     return {
         "$schema": "https://json.schemastore.org/sarif-2.1.0.json",

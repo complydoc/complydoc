@@ -37,7 +37,7 @@ from complydoc.config.loader import ConfigError
 from complydoc.cost.estimator import UnknownModelError
 
 
-@app.command()
+@app.command(rich_help_panel="CI and pipelines")
 def check(
     target: Annotated[
         Path | None,

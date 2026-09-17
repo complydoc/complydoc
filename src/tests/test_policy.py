@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import pathlib
 
 import pytest
 
@@ -152,7 +153,10 @@ def test_the_sarif_names_the_rules_and_the_documents(report, tmp_path):
     located = [r for r in run["results"] if "locations" in r]
     assert located, "a failure naming a document should carry its location"
     uri = located[0]["locations"][0]["physicalLocation"]["artifactLocation"]["uri"]
-    assert uri in {d.relative_path for d in report.documents}
+    # From the working directory, which in CI is the repository root that code
+    # scanning resolves locations against: the file is found at that path.
+    assert any(uri.endswith(d.relative_path) for d in report.documents)
+    assert not uri.startswith("/") and (pathlib.Path.cwd() / uri).is_file()
 
     warnings = [r for r in run["results"] if r["level"] == "warning"]
     assert warnings and all(r["ruleId"] == "no_failures" for r in warnings)

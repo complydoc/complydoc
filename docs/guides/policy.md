@@ -64,7 +64,12 @@ complydoc check ./documents --policy policy.yaml \
 `--markdown` writes a summary to post as a pull request comment: a table of every
 rule and its result, then the failures under each rule that did not pass.
 `--sarif` writes SARIF 2.1.0, which GitHub code scanning reads, with one result
-per failure and the document it belongs to as its location.
+per failure and the document it belongs to as its location. Both name documents
+by their path from the working directory, which in CI is the repository root, so
+code scanning links each result to its file.
+
+On GitHub, the [GitHub Action](github-action.md) runs this, posts the summary on
+the pull request and uploads the SARIF.
 
 To gate on a report that was already written, pass it instead of a path:
 
