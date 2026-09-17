@@ -4,7 +4,7 @@ Newest first. Releases increment the patch number; the minor number changes only
 breaking change to the report JSON or a config key. `schema_version` in the JSON is
 versioned separately.
 
-## [Unreleased]
+## [0.4.9] — 2026-09-17
 
 ### Added
 
@@ -17,11 +17,6 @@ versioned separately.
   none was given, and an automatic job count becomes one process, because a classifier
   registered in one process cannot follow documents into a worker.
   `--classifier-threshold` and `--jobs` override either.
-
-## [0.4.9] — 2026-09-17
-
-### Added
-
 - A report says where document text went. `run.content_sent_to` names every host a
   registered classifier sent passages to, an important limitation states it, and the CLI
   says so above the summary. An ordinary run leaves it empty, because nothing leaves the
