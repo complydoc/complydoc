@@ -7,6 +7,9 @@ findings and the second must state that it read only part of the folder.
 
 from __future__ import annotations
 
+import types
+from multiprocessing import get_all_start_methods
+
 import pytest
 
 from complydoc.audit.run import resolve_jobs, run_audit
@@ -186,3 +189,35 @@ def test_a_worker_that_stops_is_recovered_in_the_main_process(config, serial, mo
     assert findings(recovered) == findings(serial)
     assert recovered.run.documents_read_after_worker_failure > 0
     assert any(item.area == "Parallel workers" for item in recovered.limitations)
+
+
+# --- Forking a process that has loaded torch --------------------------------
+
+
+def test_the_pool_avoids_forking_an_address_space_that_holds_torch(monkeypatch):
+    """Every audit after the first one in a process used to lose its workers.
+
+    The forkserver is started from this process and inherits what it has
+    initialised. A worker forked from an address space where torch has brought
+    up Metal and Objective-C state dies as `BrokenProcessPool` the moment it
+    reads a document. `ner_available` loads that model here, on every audit that
+    scans for identifiers, so the first audit forked cleanly and the next one
+    read every document in the parent instead.
+    """
+    import sys
+
+    from complydoc.audit.run import _pool_context
+
+    monkeypatch.delitem(sys.modules, "torch", raising=False)
+    before = _pool_context().get_start_method()
+
+    monkeypatch.setitem(sys.modules, "torch", types.ModuleType("torch"))
+    assert _pool_context().get_start_method() == "spawn", (
+        "a pool forked from here would die on its first document"
+    )
+
+    # And the choice is about torch, not a blanket downgrade: without it the
+    # forkserver and its preload are still used where they are available.
+    assert before in {"forkserver", "spawn"}
+    if "forkserver" in get_all_start_methods():
+        assert before == "forkserver", "the preload is worth having where it is safe"

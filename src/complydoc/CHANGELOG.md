@@ -21,6 +21,15 @@ versioned separately.
 
 ### Fixed
 
+- `--jobs` went quietly serial after the first audit in a process. The worker pool is
+  forked from a server started by that process, and a worker forked from an address space
+  where torch has initialised dies the moment it reads a document; every audit loads the
+  entity model here to fill `run.ner_available`, so the first audit forked cleanly and every
+  one after it fell back to reading each document in the parent. It took the time a serial
+  run takes and said so only in `documents_read_after_worker_failure`. The pool now uses
+  spawn once torch is present, and the forkserver preload where it is still safe. A library
+  caller auditing several folders, and the test suite, hit this every time.
+
 - `run.content_sent_to` was filled from the process that built the report, so a run whose
   workers did the scoring reported that nothing left the machine while every worker was
   sending passages to a third party. Each document now carries back the hosts reached while

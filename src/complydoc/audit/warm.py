@@ -12,12 +12,20 @@ A worker forked from such a process was observed segfaulting inside pypdfium2,
 in code that has nothing to do with either library — the signature of an
 address space the child inherited in a bad state.
 
-That crash is intermittent and was not reproducible often enough to prove this
-removes it. What can be said is that the hazard is real and documented, that
-the same file's `_pool_context` already refuses to fork this process for the
-same reason, and that preloading the model was measured at about six per cent
-of a parallel scan — 4.18s against 4.43s over ninety documents on six workers.
-Six per cent is not worth a fork hazard, whatever the crash turns out to be.
+That crash is no longer intermittent or unexplained. It reproduces on demand:
+import torch in the process that starts the pool, and every worker forked from
+it dies as `BrokenProcessPool` the moment it reads a document. Keeping the
+entity model out of this file was right, but insufficient — a scan loads that
+model in the parent anyway, through `ner_available`, which every audit calls to
+fill a field in its report. The first audit in a process therefore forked
+cleanly and every audit after it fell back to reading every document in the
+parent, reporting `documents_read_after_worker_failure` and taking the time a
+serial run takes.
+
+`_pool_context` now chooses spawn once torch is present, so this preload is
+used where it is safe and skipped where it is not. It was measured at about six
+per cent of a parallel scan — 4.18s against 4.43s over ninety documents on six
+workers — which was never worth a fork hazard.
 
 Nothing here reaches the network — every model is local, and the offline guard
 is armed before any of it runs.

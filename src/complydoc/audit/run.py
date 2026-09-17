@@ -19,6 +19,7 @@ import datetime as dt
 import os
 import platform
 import re
+import sys
 import time
 from collections import deque
 from collections.abc import Callable, Iterator, Sequence
@@ -387,7 +388,21 @@ def _pool_context() -> Any:
     Never a plain fork of this process. The OCR engine holds native threads, and
     forking a process that has them is a known way to hang a child; the
     forkserver is started before any of that exists.
+
+    Spawn once torch has been imported here. The forkserver is started on
+    demand, from this process, so it inherits whatever this process has already
+    initialised — and a worker forked from an address space where torch has
+    brought up Metal and Objective-C state dies the moment it does real work,
+    as `BrokenProcessPool`. `warm` refuses to preload the entity model for this
+    reason; what it could not account for is that a scan loads that model here
+    too, by way of `ner_available`, which every audit calls to fill a field in
+    its report. So the first audit in a process forks cleanly and every one
+    after it would not, which is why this was invisible until an audit ran twice.
+    Nothing is lost but the preload's measured six per cent, and a run that
+    completes beats one that quietly reads every document in this process.
     """
+    if "torch" in sys.modules:
+        return get_context("spawn")
     if "forkserver" in get_all_start_methods():
         context = get_context("forkserver")
         context.set_forkserver_preload(["complydoc.audit.warm"])
