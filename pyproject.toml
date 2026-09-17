@@ -153,6 +153,7 @@ module = [
     "spacy.*",
     "torch.*",
     "transformers.*",
+    "typesafe_sdk.*",
     "tiktoken.*",
     "docx.*",
     "openpyxl.*",
