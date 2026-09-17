@@ -6,6 +6,21 @@ versioned separately.
 
 ## [Unreleased]
 
+### Changed
+
+- `confirmed` now means a checksum passed, which is what it always claimed to mean. Five
+  validators check a shape rather than compute a check digit — `sort_code`, `uk_postcode`,
+  `uk_phone`, `plausible_dob` and `in_pan` — and a finding resting on one of those is
+  reported as `corroborated` where its label sits beside it, and `pattern` where it does
+  not. A contract start date beside the words "date of birth" was being reported as
+  checksum-backed.
+
+### Added
+
+- A sort code spaced rather than hyphenated, `12 34 56`, is found where its label is nearby.
+  It sits with the context patterns rather than the plain ones, so three pairs of digits in
+  open prose are still ignored.
+
 ### Fixed
 
 - `complydoc doctor` said name detection was unavailable on an install where it works. It

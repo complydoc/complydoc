@@ -43,21 +43,22 @@ cover the patterns for the same reason.
 | | |
 | --- | --- |
 | Labelled identifiers | 53 |
-| Found | 52 |
-| Missed | 1 |
+| Found | 53 |
+| Missed | 0 |
 | Wrongly flagged | 5 |
-| Recall | 98.1% |
-| Precision | 91.2% |
+| Recall | 100.0% |
+| Precision | 91.4% |
 
-By evidence tier, across every pattern finding the run reported: 45 `confirmed`,
-6 `corroborated`, 6 `pattern`. Of the 9 passages labelled as holding nothing, 3
+By evidence tier, across every pattern finding the run reported: 35 `confirmed`,
+15 `corroborated`, 8 `pattern`. Of the 9 passages labelled as holding nothing, 3
 produced at least one finding.
 
 ## What it missed
 
-`sort_code`, on `12 34 56`. The patterns accept `12-34-56`, and six bare digits
-when a label such as "sort code" sits within 60 characters. A sort code spaced
-into pairs matches neither, which is how OCR tends to render one.
+Nothing, on this corpus. The one miss it used to carry was a sort code spaced
+into pairs, `12 34 56`, which is how OCR tends to render one; that spelling is
+now read where its label sits nearby. A corpus this size finding everything is a
+statement about the corpus as much as about the detectors.
 
 ## What it wrongly flagged
 
@@ -69,9 +70,11 @@ into pairs matches neither, which is how OCR tends to render one.
 | `it_codice_fiscale` | a licence code | the same shape as an Italian fiscal code |
 | `sort_code` | a delivery note number | six digits punctuated like a sort code |
 
-Both date findings were reported at the `confirmed` tier, which overstates them:
-a passing `plausible_dob` check means the value is a date, rather than that it is
-someone's date of birth.
+Both date findings are reported at the `corroborated` tier: the words "date of
+birth" appear within the window, and nothing stronger is established. They were
+`confirmed` until `plausible_dob` stopped conferring that tier, which overstated
+them — a passing check there means the value is a date, not that it is someone's
+date of birth. They are still wrong; they now say so more quietly.
 
 ## Names
 

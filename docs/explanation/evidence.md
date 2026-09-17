@@ -6,7 +6,7 @@ score.
 
 | Tier | What was established |
 | --- | --- |
-| `confirmed` | A checksum passed |
+| `confirmed` | A check digit passed |
 | `corroborated` | The pattern matched and a context term was within the configured window |
 | `pattern` | The pattern matched; nothing else corroborates it |
 | `model` | A statistical model produced it. No checksum exists for the category |
@@ -43,5 +43,12 @@ Poland, Sweden, India and Australia. The full list is in the
 [identifier reference](../reference/identifiers.md). A passing checksum moves a finding from `pattern` to
 `confirmed`, which changes both its ranking and its weight in the exposure
 score.
+
+Five validators check a shape instead: `sort_code`, `uk_postcode`, `uk_phone`,
+`plausible_dob` and `in_pan`. Six digits that are not all the same is what a sort
+code looks like, and a plausible date of birth is any date someone alive could
+have, which every contract date also is. A finding resting on one of those is
+`corroborated` where its label sits beside it and `pattern` where it does not,
+because no checksum exists for it to have passed.
 
 Names and organisations have no checksum, so their findings are always `model`.

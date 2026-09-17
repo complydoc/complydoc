@@ -101,18 +101,30 @@ EVIDENCE_ORDER: Final = ("confirmed", "corroborated", "pattern", "model")
 
 
 def evidence_of(
-    model_backed: bool, validators_passed: list[str], context_term: str | None
+    model_backed: bool,
+    validators_passed: list[str],
+    context_term: str | None,
+    label_nearby: bool = False,
 ) -> Evidence:
     """The tier a finding earned from the checks it passed.
+
+    `label_nearby` says one of the category's context terms sits within the
+    window of the match. A match from `patterns` carries no `context_term` even
+    when its label is right beside it, so without this a labelled sort code and
+    a bare one would be told apart by nothing.
 
     `model_backed` says a statistical model named this rather than a pattern
     matching it. It is passed as the fact rather than as a detector's name: a
     detector registered by a caller is no more a pattern match than the one
     that ships, and keying on the name reported its findings as `pattern`.
     """
-    if validators_passed:
+    from complydoc.sensitive.validators import FORMAT_ONLY
+
+    # A checksum is close to proof. A shape check is not, whatever it is called,
+    # so a format-only validator earns its tier from the label beside it.
+    if any(name not in FORMAT_ONLY for name in validators_passed):
         return "confirmed"
-    if context_term:
+    if context_term or label_nearby:
         return "corroborated"
     if model_backed:
         return "model"

@@ -112,6 +112,33 @@ class ScanResult:
         return len(self.matches)
 
 
+def _label_near(text: str, finding: Finding, category: CategoryConfig) -> bool:
+    """Whether one of the category's context terms sits beside this match.
+
+    `finding.context_term` is only set for a match that needed a label to be
+    reported at all. A match from `patterns` is reported on sight, so it carries
+    none even when the label is there, and the tier would otherwise read the
+    same for `Sort code: 12-34-56` and a delivery note number.
+    """
+    if finding.context_term:
+        return True
+    if not category.context_terms:
+        return False
+    # The same proximity rule the detector applies, asked a second time.
+    from complydoc.sensitive.detectors.regex_detector import _nearby_term
+
+    return (
+        _nearby_term(
+            text,
+            finding.start,
+            finding.end,
+            tuple(category.context_terms),
+            category.context_window_chars,
+        )
+        is not None
+    )
+
+
 def _line_starts(text: str) -> list[int]:
     starts = [0]
     for index, char in enumerate(text):
@@ -236,6 +263,7 @@ def _scan_page(
                     candidate.category.model_backed,
                     candidate.validators_passed,
                     finding.context_term,
+                    _label_near(text, finding, candidate.category),
                 ),
                 validators_passed=candidate.validators_passed,
                 context_term=finding.context_term,

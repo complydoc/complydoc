@@ -12,11 +12,11 @@ from tests.helpers import spacy_model_available
 PUBLISHED = {
     "passages": 41,
     "labelled": 53,
-    "found": 52,
-    "missed": 1,
+    "found": 53,
+    "missed": 0,
     "wrongly_flagged": 5,
-    "recall_pct": 98.1,
-    "precision_pct": 91.2,
+    "recall_pct": 100.0,
+    "precision_pct": 91.4,
     "clean_passages": 9,
     "clean_passages_with_a_flag": 3,
 }

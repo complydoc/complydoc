@@ -80,9 +80,21 @@ def test_the_model_reports_no_score_rather_than_a_perfect_one(config):
 
 
 def test_a_checksum_backed_finding_keeps_its_score(config):
-    confirmed = [m for m in matches(config) if m.validators_passed]
-    assert confirmed
-    assert all(m.evidence == "confirmed" for m in confirmed)
+    from complydoc.sensitive.validators import FORMAT_ONLY
+
+    found = matches(config)
+    checksummed = [m for m in found if any(name not in FORMAT_ONLY for name in m.validators_passed)]
+    assert checksummed
+    assert all(m.evidence == "confirmed" for m in checksummed)
+
+    # And a validator that only checks a shape does not confer it: six digits
+    # that are not all the same is what a sort code looks like, not proof.
+    shape_only = [
+        m for m in found if m.validators_passed and set(m.validators_passed) <= FORMAT_ONLY
+    ]
+    assert all(m.evidence != "confirmed" for m in shape_only), [
+        (m.category, m.evidence) for m in shape_only
+    ]
 
 
 def test_every_finding_carries_a_tier(config):

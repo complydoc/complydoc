@@ -51,6 +51,10 @@ categories:
       - '\b\d{2}-\d{2}-\d{2}\b'
     context_patterns:
       - '\b\d{6}\b'
+      # OCR renders a sort code spaced rather than hyphenated. It goes here
+      # rather than in `patterns` so it still needs its label nearby: three
+      # pairs of digits on their own are a date, a score or a part number.
+      - '\b\d{2}[ ]\d{2}[ ]\d{2}\b'
     validators: [sort_code]
     context_terms: ["sort code", "sortcode", "sort-code", "branch code"]
     gdpr_note: >

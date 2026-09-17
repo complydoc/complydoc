@@ -12,7 +12,21 @@ import datetime as dt
 import re
 from collections.abc import Callable
 
-__all__ = ["VALIDATORS", "iban_mod97", "luhn", "validate", "vat_mod97"]
+__all__ = ["FORMAT_ONLY", "VALIDATORS", "iban_mod97", "luhn", "validate", "vat_mod97"]
+
+FORMAT_ONLY: frozenset[str] = frozenset(
+    {"sort_code", "uk_postcode", "uk_phone", "plausible_dob", "in_pan"}
+)
+"""Validators that check a shape rather than compute a check digit.
+
+Most formats here carry a checksum, and passing one is close to proof: a card
+number that satisfies Luhn and an issuer prefix is a card number. These five
+establish much less. Six digits that are not all the same is what a sort code
+looks like, and `plausible_dob` asks only whether a date could belong to someone
+alive, which every contract date also is. Reporting those as `confirmed` said a
+checksum had passed when none exists, so they earn a tier from what sits near
+them instead.
+"""
 
 # Neither of these letters may start a National Insurance prefix, and a handful
 # of two-letter pairs are administratively reserved.
