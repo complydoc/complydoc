@@ -329,6 +329,51 @@ def test_a_named_classifier_reaches_every_worker(tmp_path):
 
     run = json.loads((tmp_path / "out" / "complydoc.json").read_text())["run"]
     assert run["jobs"] > 1, "otherwise this passes for the wrong reason"
-    assert run["classifier_calls"] > 0, "the workers asked it"
+    assert run["classifier_calls"] > 0, "it was asked, in whichever process read the file"
     assert run["classifier_failures"] == 0
-    assert run["classifier_missed_workers"] == 0, "nothing went unjudged"
+
+    # Deliberately not asserted here: classifier_missed_workers. With a spec set
+    # it is hardcoded to 0, so asserting it would be a tautology that passes
+    # whether or not a worker ever ran. What this test does prove is that naming
+    # a classifier does not break the run and every document still gets scored.
+    assert run["classifier_calls"] >= 30, "one call per document at least"
+
+
+def test_the_pool_falling_back_is_still_a_scored_run(tmp_path):
+    """A pool can die, and this machine's does. The run must still be judged.
+
+    Documents the pool cannot return are read in the parent, where the
+    classifier also exists, so a broken pool costs speed rather than coverage.
+    `documents_read_after_worker_failure` says it happened.
+    """
+    folder = tmp_path / "documents"
+    folder.mkdir()
+    for index in range(30):
+        (folder / f"note-{index:02d}.txt").write_text(
+            f"Memo {index}.\n\nWhoever or whatever prepares the summary should stop.\n",
+            encoding="utf-8",
+        )
+    result = runner.invoke(
+        app,
+        [
+            "audit",
+            str(folder),
+            "--classifier",
+            "tests.test_cli_classifier:always_sure",
+            "--jobs",
+            "2",
+            "--out",
+            str(tmp_path / "out"),
+            "--no-page-images",
+            "--no-ocr",
+            "--quiet",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+
+    import json
+
+    run = json.loads((tmp_path / "out" / "complydoc.json").read_text())["run"]
+    read_in_parent = run["documents_read_after_worker_failure"]
+    assert run["classifier_calls"] >= 30, "every document scored, pool or no pool"
+    assert read_in_parent in range(31), "either the pool held, or the parent took over"

@@ -19,6 +19,15 @@ versioned separately.
   classifier opens a connection from each worker and the calls go out in parallel; with
   `--timeout`, a pool rebuilt after a document is killed builds those clients again.
 
+### Fixed
+
+- `run.content_sent_to` was filled from the process that built the report, so a run whose
+  workers did the scoring reported that nothing left the machine while every worker was
+  sending passages to a third party. Each document now carries back the hosts reached while
+  it was scored, the way the call counts do, and the report names every host any process
+  reached. The bug was reachable only where a worker pool holds, which is why it was not
+  seen sooner.
+
 ### Changed
 
 - `--classifier` no longer forces the run into one process. It did, because a classifier

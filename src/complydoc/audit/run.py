@@ -187,6 +187,14 @@ class _Outcome:
     ocr_seconds: float = 0.0
     classifier_calls: int = 0
     classifier_failures: int = 0
+    classifier_hosts: tuple[str, ...] = ()
+    """Hosts a classifier reached while this document was scored.
+
+    Recorded per document for the same reason as the counts: a worker's record
+    of where it sent text is module state in that process, and dies with it. A
+    parallel run would otherwise report that nothing left the machine while
+    every worker was sending passages to a third party.
+    """
     """Calls a registered classifier made for this document, and how many failed.
 
     A failed call is no score, and no score is no finding, so a run whose calls
@@ -361,6 +369,7 @@ def _process(path: Path, work: Work) -> _Outcome:
         ocr_after[1] - ocr_before[1],
         calls,
         failures,
+        tuple(_hosts_sent_content()),
     )
 
 
@@ -389,10 +398,16 @@ def _pool_context() -> Any:
 _CLASSIFIER_TOTALS = [0, 0]
 """Calls and failures across every process of one run, added up as they return."""
 
+_CLASSIFIER_HOSTS: list[str] = []
+"""Every host any process sent document text to, in the order first seen."""
+
 
 def _count_classifier(outcome: _Outcome) -> None:
     _CLASSIFIER_TOTALS[0] += outcome.classifier_calls
     _CLASSIFIER_TOTALS[1] += outcome.classifier_failures
+    for host in outcome.classifier_hosts:
+        if host not in _CLASSIFIER_HOSTS:
+            _CLASSIFIER_HOSTS.append(host)
 
 
 def _worker_init(work: Work) -> None:
@@ -690,6 +705,7 @@ def run_audit(
     # A caller can run several audits in one process, and last run's calls are
     # not this run's.
     _CLASSIFIER_TOTALS[:] = (0, 0)
+    _CLASSIFIER_HOSTS.clear()
     if classifier_spec is not None:
         register_instruction_classifier(resolve_classifier(classifier_spec))
     plan = plan_audit(
@@ -742,7 +758,8 @@ def run_audit(
         config_dir=config.source_dir,
         config_digest=config.digest,
         offline_guard=offline.guard_status(),
-        content_sent_to=_hosts_sent_content(),
+        # Every process that scored anything, not only this one.
+        content_sent_to=sorted({*_CLASSIFIER_HOSTS, *_hosts_sent_content()}),
         classifier_missed_workers=_classifier_missed(classifier_spec, jobs, len(files), recovered),
         classifier_calls=_CLASSIFIER_TOTALS[0],
         classifier_failures=_CLASSIFIER_TOTALS[1],
