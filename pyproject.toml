@@ -54,6 +54,10 @@ multilingual-names = ["transformers>=4.40", "torch>=2.2"]
 # Off unless the caller asks for it: it sends text off the machine, which is the
 # one thing the rest of this tool is built not to do.
 typesafe = ["typesafe-sdk>=0.6"]
+# `complydoc assist`: drafts quick wins from a finished report with a hosted
+# chat model. Off unless the caller asks for it, same as `typesafe` above — it
+# sends the whole report off the machine.
+assistant = ["langchain>=1.0", "langchain-openai>=0.3"]
 notebook = ["pandas>=2.1"]
 
 [project.scripts]
@@ -177,7 +181,7 @@ module = ["pandas"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
-module = ["langchain_core.*", "llama_index.*"]
+module = ["langchain_core.*", "llama_index.*", "langchain.*", "langchain_openai.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]

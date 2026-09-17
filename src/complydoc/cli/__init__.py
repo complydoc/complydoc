@@ -10,6 +10,7 @@ Each module registers its commands on `app` when imported:
 - `chunks`: `chunks`
 - `routing`: `routing`
 - `check`: `check`
+- `assist`: `assist` — sends a finished report to a hosted chat model
 - `diff`: `diff`
 - `benchmark`: `benchmark`
 - `clean`: `clean`
@@ -22,11 +23,22 @@ from __future__ import annotations
 
 # isort: off
 # Imported for the commands they register, in the order `--help` lists them.
-from complydoc.cli import audits, routing, loaders, check, diff, clean, chunks, info, benchmark
+from complydoc.cli import (
+    audits,
+    routing,
+    loaders,
+    check,
+    assist,
+    diff,
+    clean,
+    chunks,
+    info,
+    benchmark,
+)
 
 # isort: on
 from complydoc.cli.common import app
 
 __all__ = ["app"]
 
-COMMAND_MODULES = (audits, routing, loaders, check, diff, clean, chunks, info, benchmark)
+COMMAND_MODULES = (audits, routing, loaders, check, assist, diff, clean, chunks, info, benchmark)
