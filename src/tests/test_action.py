@@ -22,6 +22,10 @@ STEPS = {step["name"]: step for step in ACTION["runs"]["steps"]}
 SAMPLE = ROOT / "src" / "complydoc" / "sample"
 
 
+BASH = ["bash", "--noprofile", "--norc", "-e", "-o", "pipefail", "-c"]
+"""How GitHub runs a `shell: bash` step: with -e, so a failing command ends it."""
+
+
 def _script(name: str) -> str:
     return str(STEPS[name]["run"])
 
@@ -53,7 +57,7 @@ def test_the_install_step_picks_the_version(tmp_path, ref, version, extras, expe
     script = re.sub(r"(?m)^uv tool install .*$", 'echo "$spec"', _script("Install complydoc"))
     script = re.sub(r"(?m)^complydoc doctor$", "", script)
     result = subprocess.run(
-        ["bash", "-c", script],
+        [*BASH, script],
         env={"PATH": os.environ["PATH"], "VERSION": version, "EXTRAS": extras, "ACTION_REF": ref},
         capture_output=True,
         text=True,
@@ -77,7 +81,7 @@ def _check(tmp_path: Path, target: Path, policy: Path) -> dict[str, str]:
         "ARGS": "--no-ocr --quiet --jobs 1",
     }
     result = subprocess.run(
-        ["bash", "-c", _script("Check documents")],
+        [*BASH, _script("Check documents")],
         env=env,
         cwd=ROOT,
         capture_output=True,
@@ -115,7 +119,7 @@ def test_the_check_step_reports_an_unreadable_policy(tmp_path):
 )
 def test_the_last_step_decides_the_job(code, fail, status):
     result = subprocess.run(
-        ["bash", "-c", _script("Set the result")],
+        [*BASH, _script("Set the result")],
         env={"PATH": os.environ["PATH"], "CODE": code, "FAIL": fail},
         capture_output=True,
         text=True,
@@ -139,7 +143,7 @@ def test_the_comment_is_created_once_and_then_edited(tmp_path):
     for existing, verb in [("", "POST"), ("42", "PATCH")]:
         log.write_text("")
         subprocess.run(
-            ["bash", "-c", _script("Comment on the pull request")],
+            [*BASH, _script("Comment on the pull request")],
             env={
                 "PATH": f"{fake.parent}{os.pathsep}{os.environ['PATH']}",
                 "GHLOG": str(log),

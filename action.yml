@@ -113,7 +113,9 @@ runs:
         POLICY: ${{ inputs.policy }}
         ARGS: ${{ inputs.args }}
       run: |
-        set -uo pipefail
+        # GitHub runs this with -e, and complydoc exits 1 for a failed policy:
+        # the code is recorded here and acted on in the last step.
+        set +e -uo pipefail
         out="$RUNNER_TEMP/complydoc"
         mkdir -p "$out"
         # ARGS is split on purpose, the way a command line would be.
