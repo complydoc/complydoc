@@ -4,7 +4,7 @@ Newest first. Releases increment the patch number; the minor number changes only
 breaking change to the report JSON or a config key. `schema_version` in the JSON is
 versioned separately.
 
-## [Unreleased]
+## [0.4.9] — 2026-09-17
 
 ### Added
 
