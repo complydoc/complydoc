@@ -8,6 +8,19 @@ versioned separately.
 
 ### Added
 
+- A report says where document text went. `run.content_sent_to` names every host a
+  registered classifier sent passages to, an important limitation states it, and the CLI
+  says so above the summary. An ordinary run leaves it empty, because nothing leaves the
+  machine. Report schema 12.
+- `run.classifier_missed_workers` counts documents a registered classifier could not be
+  asked about, because they were read in worker processes where it does not exist. Running
+  with `--jobs 1` puts every document in reach of it.
+- The benchmark corpus holds ten passages labelled for hidden instructions: seven written
+  at a model reading the document, in four languages and in wording that names no model at
+  all, and three written to be mistaken for one — an AI-use policy, a contract clause, and
+  a procedure addressed to staff. `complydoc benchmark` scores them, and `--verbose` names
+  each missed injection with the score a registered classifier gave it. Measured numbers
+  are on the Detection accuracy page.
 - `complydoc.integrations.typesafe.jev_classifier` scores passages with TypeSafe's Jev and
   registers as an instruction classifier, so a passage phrased in a way no pattern covers is
   still reported. It is the only part of complydoc that sends document text off the machine:

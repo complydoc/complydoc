@@ -35,7 +35,7 @@ def benchmark(
     from complydoc.benchmark import run_benchmark
 
     config = load_config_or_exit(config_dir)
-    result = run_benchmark(config.sensitive)
+    result = run_benchmark(config)
 
     headline = Table(show_header=False, box=None, pad_edge=False)
     headline.add_column(style="dim")
@@ -75,6 +75,35 @@ def benchmark(
             "[dim]A name score describes the model installed on this machine, so it is kept "
             "out of the figures above.[/]"
         )
+
+    if result.instructions_labelled:
+        hidden = Table(show_header=False, box=None, pad_edge=False)
+        hidden.add_column(style="dim")
+        hidden.add_column()
+        hidden.add_row("Labelled injections", f"{len(result.instructions_injected)}")
+        hidden.add_row("Found", f"{result.instructions_found}")
+        missed = len(result.instructions_missed)
+        hidden.add_row("Missed", f"[yellow]{missed}[/]" if missed else "0")
+        wrong = len(result.instructions_wrongly_flagged)
+        hidden.add_row("Wrongly flagged", f"[yellow]{wrong}[/]" if wrong else "0")
+        hidden.add_row("Recall", f"{result.instruction_recall_pct}%")
+        hidden.add_row("Precision", f"{result.instruction_precision_pct}%")
+        if result.classifier_scores:
+            hidden.add_row("Scored by", "patterns and a registered classifier")
+        else:
+            hidden.add_row("Scored by", "patterns only, no classifier registered")
+        console.print()
+        console.print(hidden)
+        if verbose:
+            for name in result.instructions_missed:
+                # Named apart from the `score` below: a missed injection the
+                # classifier scored just under the threshold is the useful case,
+                # and the number says so where a bare "missed" would not.
+                scored = result.classifier_scores.get(name)
+                suffix = f", classifier scored it {scored:.2f}" if scored is not None else ""
+                console.print(f"  missed  injection {name}{suffix}", markup=False)
+            for name in result.instructions_wrongly_flagged:
+                console.print(f"  flagged not an injection: {name}", markup=False)
 
     imperfect = [
         score
@@ -131,6 +160,16 @@ def benchmark(
                 "wrongly_flagged": result.names_wrongly_flagged,
                 "recall_pct": result.names_recall_pct,
                 "precision_pct": result.names_precision_pct,
+            },
+            "instructions": {
+                "labelled": result.instructions_labelled,
+                "injections": len(result.instructions_injected),
+                "found": result.instructions_found,
+                "missed": result.instructions_missed,
+                "wrongly_flagged": result.instructions_wrongly_flagged,
+                "recall_pct": result.instruction_recall_pct,
+                "precision_pct": result.instruction_precision_pct,
+                "classifier_scores": result.classifier_scores,
             },
             "categories": {
                 score.category: {
