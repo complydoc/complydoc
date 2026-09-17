@@ -14,6 +14,19 @@ versioned separately.
   as a zero, because a service that is down must not read as a document that is clean — but
   no score is also no finding, so a run whose every call failed used to produce the same
   report as a run that found nothing. Report schema 13.
+- `--classifier` now reaches every worker process. The name is handed to each one, which
+  resolves and registers its own, so a parallel run judges every document. A hosted
+  classifier opens a connection from each worker and the calls go out in parallel; with
+  `--timeout`, a pool rebuilt after a document is killed builds those clients again.
+
+### Changed
+
+- `--classifier` no longer forces the run into one process. It did, because a classifier
+  registered in one process could not follow documents into a worker; the name crosses now,
+  so the job count is left as you set it. `run.classifier_missed_workers` counts only what
+  it still applies to: a classifier registered in Python with
+  `register_instruction_classifier`, which is a function and cannot cross a process
+  boundary.
 
 ## [0.4.9] — 2026-09-17
 

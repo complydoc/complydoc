@@ -299,6 +299,7 @@ def run(
                     jobs=jobs,
                     sample=sample,
                     timeout=timeout,
+                    classifier_spec=classifier,
                     progress=progress,
                 )
     except ClassifierError as exc:

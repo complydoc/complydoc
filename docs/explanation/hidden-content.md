@@ -127,9 +127,13 @@ page.
 
 It is the only part of complydoc that sends document text anywhere. Passing
 `allow_network=True` is required, the call is let through the guard one call at a
-time, and the connections made are returned so a run can record them. A folder
-large enough to be split across worker processes will not use it: a classifier is
-registered in one process. `jobs=1` keeps it in reach.
+time, and the connections made are returned so a run can record them.
+
+A classifier named on the command line is handed to every worker process, which
+resolves its own, so a parallel run judges every document. A classifier
+registered in Python with `register_instruction_classifier` is a function, and a
+function does not cross into a worker: those runs judge only what the process
+that registered it reads, and `run.classifier_missed_workers` counts the rest.
 
 From the command line, `--classifier` registers one for the run:
 
@@ -141,12 +145,15 @@ complydoc audit ~/contracts --classifier jev
 complydoc check ~/contracts --policy policy.yaml --classifier jev
 ```
 
-It needs the `typesafe` extra and `JEV_KEY` in the environment. Two things
-happen without being asked for, both stated on screen before the run starts: the
+It needs the `typesafe` extra and `JEV_KEY` in the environment. One thing
+happens without being asked for, stated on screen before the run starts: the
 threshold becomes 0.5, the value measured for Jev rather than the 0.8 that
-applies to a classifier in general, and the run uses one process, because a
-classifier registered in this one cannot follow documents into a worker.
-`--classifier-threshold` and `--jobs` override either.
+applies to a classifier in general. `--classifier-threshold` overrides it.
+
+The job count is left as you set it. Each worker resolves the classifier from
+its name, so a hosted one means a client per worker and calls in parallel; with
+`--timeout`, a pool that is rebuilt after a document is killed builds those
+clients again.
 
 `--classifier module:function` uses code of your own instead. The function is
 imported and called with no arguments, and what it returns is the classifier:

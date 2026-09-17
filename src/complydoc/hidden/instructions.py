@@ -15,7 +15,10 @@ from dataclasses import dataclass
 from complydoc.config.schema import InstructionsConfig
 
 __all__ = [
+    "JEV_THRESHOLD",
+    "SENDS_TEXT_OFF_THE_MACHINE",
     "Classifier",
+    "ClassifierError",
     "InstructionMatch",
     "InstructionMatcher",
     "classifier_calls",
@@ -23,6 +26,7 @@ __all__ = [
     "matcher_for",
     "register_instruction_classifier",
     "registered_classifier",
+    "resolve_classifier",
 ]
 
 Classifier = Callable[[str], float]
@@ -87,6 +91,73 @@ def classifier_score(text: str) -> float | None:
         _failures += 1
         return None
     return round(min(1.0, max(0.0, value)), 3)
+
+
+SENDS_TEXT_OFF_THE_MACHINE = frozenset({"jev"})
+"""Named classifiers that reach a third party, rather than staying local.
+
+Used to decide what a command has to say before it runs, not to decide whether
+to allow it. A `module:function` classifier is caller code, and complydoc cannot
+know where it sends anything, so it is not on this list and not vouched for.
+"""
+
+JEV_THRESHOLD = 0.5
+"""Measured for Jev: it puts ordinary prose under 0.05 and the weakest real
+injection at 0.60. See docs/explanation/accuracy.md."""
+
+
+class ClassifierError(ValueError):
+    """A `--classifier` value that could not be turned into a classifier."""
+
+
+def resolve_classifier(spec: str) -> Classifier:
+    """Build the classifier `spec` names.
+
+    `jev` is TypeSafe's hosted judgement model, through the `typesafe` extra.
+    Anything containing a colon is `module:function`, imported and called with
+    no arguments; what it returns is the classifier.
+    """
+    name = spec.strip()
+    if not name:
+        raise ClassifierError("no classifier named")
+
+    if name.lower() == "jev":
+        try:
+            from complydoc.integrations.typesafe import jev_classifier
+        except ImportError as exc:  # pragma: no cover - depends on the extra
+            raise ClassifierError(
+                "jev needs the optional extra: uv tool install 'complydoc[typesafe]'"
+            ) from exc
+        try:
+            # The flag is the caller saying the passages leave the machine, which
+            # is what this argument means. It is not defaulted anywhere else.
+            return jev_classifier(allow_network=True)
+        except ValueError as exc:
+            raise ClassifierError(str(exc)) from exc
+
+    if ":" not in name:
+        raise ClassifierError(
+            f"unknown classifier {name!r}: use 'jev', or 'module:function' for your own"
+        )
+
+    module_name, _, attribute = name.partition(":")
+    try:
+        from importlib import import_module
+
+        module = import_module(module_name)
+    except ImportError as exc:
+        raise ClassifierError(f"cannot import {module_name!r}: {exc}") from exc
+
+    factory = getattr(module, attribute, None)
+    if factory is None:
+        raise ClassifierError(f"{module_name!r} has no {attribute!r}")
+    if not callable(factory):
+        raise ClassifierError(f"{name} is not callable")
+
+    built = factory()
+    if not callable(built):
+        raise ClassifierError(f"{name}() returned {type(built).__name__}, not a callable")
+    return built  # type: ignore[no-any-return]
 
 
 @dataclass(frozen=True, slots=True)

@@ -133,6 +133,7 @@ def check(
                     jobs=jobs,
                     sample=sample,
                     timeout=timeout or None,
+                    classifier_spec=classifier,
                 )
         except ClassifierError as exc:
             errors.print(f"[bold red]Cannot use that classifier[/] — {exc}")

@@ -37,7 +37,11 @@ from complydoc.config.schema import CategoryConfig, Config, ModelPricing
 from complydoc.cost.estimator import estimate_document, folder_from_estimates, resolve_models
 from complydoc.extraction.routing import plan_routes
 from complydoc.hidden.check import check_content
-from complydoc.hidden.instructions import classifier_calls
+from complydoc.hidden.instructions import (
+    classifier_calls,
+    register_instruction_classifier,
+    resolve_classifier,
+)
 from complydoc.ingest import ocr as ocr_module
 from complydoc.ingest.base import TIMED_OUT, Document, IngestOptions, LoaderError, SkipRecord
 from complydoc.ingest.extractors.registry import DEFAULT_EXTRACTOR
@@ -91,18 +95,18 @@ def _hosts_sent_content() -> list[str]:
     return hosts
 
 
-def _classifier_missed(jobs: int, files: int, recovered: int) -> int:
+def _classifier_missed(spec: str | None, jobs: int, files: int, recovered: int) -> int:
     """Documents a registered classifier could not be asked about.
 
-    It is registered in this process. Documents read in a worker are read
-    somewhere it does not exist, so it did not run for those — but a document
-    the pool failed to return is read here after all, and the classifier does
-    run for it. Counting every file would say a document went unjudged when it
-    was judged.
+    A classifier named by `--classifier` crosses into every worker, which
+    resolves its own, so nothing is missed at any job count. A classifier a
+    caller registered through `register_instruction_classifier` is a function in
+    this process and cannot cross, so documents read in a worker went unjudged —
+    except the ones a failed pool handed back, which were read here after all.
     """
     from complydoc.hidden.instructions import registered_classifier
 
-    if registered_classifier() is None or jobs <= 1:
+    if spec is not None or registered_classifier() is None or jobs <= 1:
         return 0
     return max(0, files - recovered)
 
@@ -167,6 +171,12 @@ class Work:
     extracted_text: bool
     models: tuple[ModelPricing, ...] | None
     today: dt.date
+    classifier: str | None = None
+    """The classifier to register in whichever process reads the document.
+
+    A classifier is a function, and a function does not cross into a worker. Its
+    name does, so each worker resolves and registers its own.
+    """
 
 
 @dataclass(frozen=True, slots=True)
@@ -401,6 +411,11 @@ def _worker_init(work: Work) -> None:
         os.environ.setdefault(variable, "1")
     ocr_module.set_threads(1)
     offline.arm()
+    if work.classifier is not None:
+        # After the guard, and after the fork rather than in the preload: a
+        # classifier of the caller's may load a model, and `warm` is explicit
+        # that a process which has done that is not safe to fork from.
+        register_instruction_classifier(resolve_classifier(work.classifier))
     _WORKER_WORK = work
 
 
@@ -571,6 +586,7 @@ def plan_audit(
     jobs: int = 1,
     sample: int | None = None,
     timeout: float | None = None,
+    classifier_spec: str | None = None,
 ) -> AuditPlan:
     """Discover the files and settle how each will be read, before opening any."""
     requested = [c for c in COMPONENTS if c in set(components)]
@@ -611,6 +627,7 @@ def plan_audit(
             tuple(resolve_models(config.pricing, select_models)) if "cost" in requested else None
         ),
         today=dt.date.today(),
+        classifier=classifier_spec,
     )
     return AuditPlan(
         files=files,
@@ -665,6 +682,7 @@ def run_audit(
     jobs: int = 1,
     sample: int | None = None,
     timeout: float | None = None,
+    classifier_spec: str | None = None,
     progress: Callable[[int, int, Path], None] | None = None,
 ) -> AuditReport:
     started = time.monotonic()
@@ -672,6 +690,8 @@ def run_audit(
     # A caller can run several audits in one process, and last run's calls are
     # not this run's.
     _CLASSIFIER_TOTALS[:] = (0, 0)
+    if classifier_spec is not None:
+        register_instruction_classifier(resolve_classifier(classifier_spec))
     plan = plan_audit(
         target,
         config,
@@ -692,6 +712,7 @@ def run_audit(
         jobs=jobs,
         sample=sample,
         timeout=timeout,
+        classifier_spec=classifier_spec,
     )
     files, skipped, work, jobs = plan.files, plan.skipped, plan.work, plan.jobs
     requested, found, chosen_extractor = plan.requested, plan.found, plan.extractor
@@ -722,7 +743,7 @@ def run_audit(
         config_digest=config.digest,
         offline_guard=offline.guard_status(),
         content_sent_to=_hosts_sent_content(),
-        classifier_missed_workers=_classifier_missed(jobs, len(files), recovered),
+        classifier_missed_workers=_classifier_missed(classifier_spec, jobs, len(files), recovered),
         classifier_calls=_CLASSIFIER_TOTALS[0],
         classifier_failures=_CLASSIFIER_TOTALS[1],
         reveal_used=reveal,

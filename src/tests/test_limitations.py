@@ -193,14 +193,17 @@ def test_documents_the_pool_gave_back_were_not_missed():
 
     cd.register_instruction_classifier(lambda passage: 0.0)
     try:
-        assert _classifier_missed(jobs=4, files=21, recovered=21) == 0, "all read in-process"
-        assert _classifier_missed(jobs=4, files=21, recovered=0) == 21
-        assert _classifier_missed(jobs=4, files=21, recovered=5) == 16
-        assert _classifier_missed(jobs=1, files=21, recovered=0) == 0, "one process, it ran"
+        assert _classifier_missed(None, 4, 21, 21) == 0, "all read in-process"
+        assert _classifier_missed(None, 4, 21, 0) == 21
+        assert _classifier_missed(None, 4, 21, 5) == 16
+        assert _classifier_missed(None, 1, 21, 0) == 0, "one process, it ran"
+
+        # A name crosses into every worker, so a parallel run misses nothing.
+        assert _classifier_missed("jev", 4, 21, 0) == 0, "each worker resolved its own"
     finally:
         cd.register_instruction_classifier(None)
 
-    assert _classifier_missed(jobs=4, files=21, recovered=0) == 0, "no classifier, nothing missed"
+    assert _classifier_missed(None, 4, 21, 0) == 0, "no classifier, nothing missed"
 
 
 def test_a_host_is_recorded_by_name_rather_than_by_socket_noise():

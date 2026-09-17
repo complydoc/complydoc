@@ -20,10 +20,11 @@ connections made are returned so a caller can record them.
 
 Two limits worth knowing before relying on it:
 
-- A classifier is registered in one process. An audit over a folder large enough
-  to be split across workers runs its documents in processes that do not have
-  it, and the classifier will not run there. `jobs=1` keeps everything in one
-  process.
+- Registering this in Python covers the process that registered it. An audit
+  split across workers reads documents in processes that do not have it, and
+  `run.classifier_missed_workers` counts those. `complydoc audit --classifier
+  jev` has no such limit: the name crosses, and every worker builds its own
+  client, so the calls go out in parallel.
 - A score is a judgement, not a checksum. Findings it produces are reported at
   the `model` tier, the weakest of the four, and the threshold that decides what
   counts is `instructions.classifier_threshold` in `hidden.yaml`.

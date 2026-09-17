@@ -41,9 +41,16 @@ recorded. A report that sent text somewhere names the hosts in
 above the summary. A run without such a classifier registered reports nothing
 there, because nothing left.
 
-A classifier is registered in one process, so documents read in a worker
-process are not judged by it. `run.classifier_missed_workers` counts those, and
-`--jobs 1` keeps every document in reach of it.
+`--classifier` hands the name to every worker process, which resolves its own,
+so a parallel run judges every document and a hosted classifier opens a
+connection from each worker rather than only from this one. A classifier
+registered in Python cannot cross a process boundary, and
+`run.classifier_missed_workers` counts the documents it therefore never saw.
+
+`run.classifier_calls` and `run.classifier_failures` record what was asked and
+what could not be answered. A call that fails is no score and so no finding, so
+without the second number a run that reached nothing looked like a run that
+found nothing.
 
 ## Consequences
 
