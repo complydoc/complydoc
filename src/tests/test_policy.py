@@ -156,3 +156,24 @@ def test_the_sarif_names_the_rules_and_the_documents(report, tmp_path):
 
     warnings = [r for r in run["results"] if r["level"] == "warning"]
     assert warnings and all(r["ruleId"] == "no_failures" for r in warnings)
+
+
+def test_no_network_fails_when_a_classifier_sent_the_text_somewhere(report):
+    """The rule inspected loader attempts only, and a hosted classifier is not a loader.
+
+    A gate that asserts "no network" and passes on a run that sent every judged
+    passage to a third party is worse than no gate.
+    """
+    import dataclasses
+    import re
+
+    import complydoc as cd
+    from complydoc.report.expectations import ExpectationError
+
+    cd.expect(report).no_network()  # nothing was sent on this run
+
+    sent = dataclasses.replace(
+        report, run=dataclasses.replace(report.run, content_sent_to=["api.typesafe.ai"])
+    )
+    with pytest.raises(ExpectationError, match=re.escape("api.typesafe.ai")):
+        cd.expect(sent).no_network()

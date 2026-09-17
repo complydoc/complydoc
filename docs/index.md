@@ -44,15 +44,21 @@ cd.write_html(report, "report.html")
 ## Output
 
 An HTML report and a JSON file with the same data. The JSON carries
-`schema_version`, currently 10.
+`schema_version`, currently 12.
 
 ## Network access
 
-The process makes no outbound connections. Before any file is opened,
+The process makes no outbound connections of its own. Before any file is opened,
 `socket.socket.connect`, `connect_ex`, `socket.create_connection` and
 `socket.getaddrinfo` are replaced with functions that raise. `AF_UNIX` sockets
 are permitted. Each report records whether the guard was active. Model prices
-are vendored as data files. See [Network isolation](explanation/offline.md).
+are vendored as data files.
+
+A caller can register an instruction classifier backed by a hosted service, and
+that sends the passages it judges to a third party. It requires
+`allow_network=True`, the report names the hosts in `run.content_sent_to` and
+states it as an important limitation, and `expect(report).no_network()` fails.
+See [Network isolation](explanation/offline.md).
 
 ## Limits
 

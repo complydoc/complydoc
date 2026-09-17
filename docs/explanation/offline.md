@@ -1,6 +1,8 @@
 # Network isolation
 
-complydoc makes no outbound network connections. This is enforced at runtime.
+complydoc makes no outbound network connections of its own. This is enforced at
+runtime. Two things a caller can switch on send data out, and both are named
+below and recorded in the report.
 
 `complydoc/offline.py` replaces the standard library's outbound entry points —
 `socket.socket.connect`, `connect_ex`, `socket.create_connection` and
@@ -22,9 +24,26 @@ A stated policy covers first-party code only. Replacing the socket entry points
 also covers transitive dependencies: a library that opens a connection during a
 run raises `NetworkAccessError`.
 
-The one exception is `inspect_documents(..., allow_network=True)`, which lets the
-loader call connect. The connections are recorded, the report states it, and
+There are two exceptions, and neither happens unless a caller asks for it.
+
+`inspect_documents(..., allow_network=True)` lets the loader being inspected
+call connect. The connections are recorded, the report states it, and
 complydoc's own processing stays guarded.
+
+A registered instruction classifier can be backed by a hosted service, which
+`complydoc.integrations.typesafe.jev_classifier` is. **That sends the text of
+the passages it judges to a third party**, so the premise at the top of this
+page does not hold for a run using one. Building it requires `allow_network=True`
+— there is no default that turns it on — each call is let through the guard one
+at a time rather than the guard being lowered for the run, and the hosts are
+recorded. A report that sent text somewhere names the hosts in
+`run.content_sent_to`, states it as an important limitation, and the CLI says so
+above the summary. A run without such a classifier registered reports nothing
+there, because nothing left.
+
+A classifier is registered in one process, so documents read in a worker
+process are not judged by it. `run.classifier_missed_workers` counts those, and
+`--jobs 1` keeps every document in reach of it.
 
 ## Consequences
 

@@ -86,3 +86,13 @@ def test_the_site_builds_with_every_reference_page(tmp_path: Path):
     for command in app.registered_commands:
         name = command.name or (command.callback.__name__ if command.callback else "")
         assert f"complydoc {name.replace('_', '-')}" in rendered, name
+
+
+def test_the_documented_schema_version_is_the_real_one():
+    """It said 10 while the schema was at 12, because nothing checked it."""
+    from complydoc.report.models import SCHEMA_VERSION
+
+    index = (DOCS / "index.md").read_text(encoding="utf-8")
+    assert f"`schema_version`, currently {SCHEMA_VERSION}." in index, (
+        f"docs/index.md names a schema version that is not {SCHEMA_VERSION}"
+    )

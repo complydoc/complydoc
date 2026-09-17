@@ -134,9 +134,17 @@ class Expectation:
         return self._check("every fact to be found", failures)
 
     def no_network(self) -> Expectation:
-        """No loader attempted or made a network connection."""
+        """Nothing in the run reached the network: no loader, and no classifier.
+
+        The loader attempts were the whole of this check, which made it pass on a
+        run that sent every judged passage to a hosted service — the one case
+        where a gate asserting "no network" most needs to fail.
+        """
         failures = [
             f"{name}: {attempt}" for name, attempt in self._loader_values("network_attempts")
+        ]
+        failures += [
+            f"document text was sent to {host}" for host in sorted(self.report.run.content_sent_to)
         ]
         return self._check("no network connections", failures)
 

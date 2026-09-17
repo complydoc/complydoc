@@ -62,7 +62,7 @@ failed it.
 | `readiness_at_least(score)` | A document scores below `score` |
 | `global_score_at_least(score)` | Global readiness is below `score` |
 | `facts_found(facts=None)` | A loader misses a fact; without `facts`, uses a comparison's facts |
-| `no_network()` | A loader attempted or made a connection |
+| `no_network()` | A loader attempted or made a connection, or a registered classifier sent document text to a host |
 | `no_failures()` | A loader failed on a file, or a file was skipped |
 | `all_categories_scanned()` | An identifier category could not be scanned |
 | `no_regressions(baseline)` | `diff_reports(baseline, report)` has a regression |

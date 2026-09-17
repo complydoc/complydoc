@@ -26,6 +26,13 @@ versioned separately.
   still reported. It is the only part of complydoc that sends document text off the machine:
   `allow_network=True` is required, the call is let through the network guard one call at a
   time and recorded, and everything else stays blocked. The optional extra is `typesafe`.
+- `complydoc clean --show` lists what each copy changed and where it sat: a line in a text
+  file, a cell in a spreadsheet, a slide, a header. Only the masked form is listed, because
+  a copy exists so the values do not travel and printing them here would send them anyway.
+  The same records are on `CleanResult.changes` for a caller.
+- A sort code spaced rather than hyphenated, `12 34 56`, is found where its label is nearby.
+  It sits with the context patterns rather than the plain ones, so three pairs of digits in
+  open prose are still ignored.
 
 ### Changed
 
@@ -36,24 +43,19 @@ versioned separately.
   not. A contract start date beside the words "date of birth" was being reported as
   checksum-backed.
 
-### Added
-
-- `complydoc clean --show` lists what each copy changed and where it sat: a line in a text
-  file, a cell in a spreadsheet, a slide, a header. Only the masked form is listed, because
-  a copy exists so the values do not travel and printing them here would send them anyway.
-  The same records are on `CleanResult.changes` for a caller.
-
-- A sort code spaced rather than hyphenated, `12 34 56`, is found where its label is nearby.
-  It sits with the context patterns rather than the plain ones, so three pairs of digits in
-  open prose are still ignored.
-
 ### Fixed
+
+- `no_network()` and the `no_network` policy rule inspected loader connections only, so a
+  run that sent every judged passage to a hosted classifier passed a gate asserting that
+  nothing reached the network. They now fail on that too, naming the host.
+- The documentation said the report schema was at 10 while it was at 12, and said the
+  process makes no outbound connections without naming the classifier that does. Both are
+  corrected, and the schema version in the docs is now checked by the test suite.
 
 - The type check warned about two `type: ignore` comments that it needs. They sit on classes
   subclassing a base from an optional framework: installed, the base resolves and the ignore
   reads as unused; absent, the base is `Any` and subclassing it is the error the ignore
   suppresses. Both environments are real, so the comments stay and the warning does not.
-
 - `complydoc doctor` said name detection was unavailable on an install where it works. It
   asked each detector for the models named on a category's first link, so the model doing
   the finding went unmentioned whenever it sat further down the chain. It now reports the
