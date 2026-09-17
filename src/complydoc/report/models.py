@@ -47,7 +47,7 @@ __all__ = [
     "RunMetadata",
 ]
 
-SCHEMA_VERSION = 11
+SCHEMA_VERSION = 12
 
 
 def report_shape() -> dict[str, object]:
@@ -78,6 +78,8 @@ def report_shape() -> dict[str, object]:
         "run": {
             "components_run": "list of cost | readiness | sensitive",
             "offline_guard": "armed | not_armed",
+            "content_sent_to": "hosts sent document text, empty unless a hosted classifier ran",
+            "classifier_missed_workers": "documents a registered classifier could not reach",
             "reveal_used": "bool — true means values are NOT masked",
             "page_images_used": "bool",
             "extracted_text_used": "bool",
@@ -359,6 +361,20 @@ class RunMetadata:
     password_used: bool = False
     documents_read_after_worker_failure: int = 0
     """Documents read in the main process after a worker process stopped."""
+    content_sent_to: list[str] = field(default_factory=list)
+    """Hosts that were sent text from these documents.
+
+    Empty for an ordinary run: nothing leaves the machine, and the guard is
+    armed to keep it that way. A classifier the caller registered against a
+    hosted service fills this, so the report says where the documents went
+    rather than leaving that to whoever set the run up to remember.
+    """
+    classifier_missed_workers: int = 0
+    """Documents read in a worker, where a registered classifier does not exist.
+
+    A classifier is registered in one process. Documents spread over a pool are
+    read in others, and it cannot follow them there, so it did not run for these.
+    """
 
 
 @dataclass(frozen=True, slots=True)

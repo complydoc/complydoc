@@ -142,6 +142,19 @@ def summary(report: AuditReport) -> None:
         table.add_row("Unread pages", f"[yellow]{aggregate.pages_unreadable}[/]")
     console.print(table)
 
+    if report.run.content_sent_to:
+        console.print(
+            f"[bold yellow]Text from these documents was sent to "
+            f"{', '.join(sorted(report.run.content_sent_to))}.[/] A registered classifier "
+            f"read the passages it judged; nothing else left this machine."
+        )
+    if report.run.classifier_missed_workers:
+        console.print(
+            f"[yellow]A classifier was registered but did not run for "
+            f"{report.run.classifier_missed_workers} documents[/] read in worker "
+            f"processes. Use --jobs 1 to put every document in reach of it."
+        )
+
     important = [x for x in report.limitations if x.severity == "important"]
     if important:
         console.print(

@@ -127,3 +127,84 @@ def test_alignment_tables_say_what_they_cannot_measure(report):
     assert "whitespace with no ruling lines" in entry.statement
     assert "whitespace_table.pdf" in entry.affected
     assert "native_text.pdf" not in entry.affected, "prose is not a table"
+
+
+# --- What a run sent off the machine ---------------------------------------
+#
+# Everything else in complydoc stays on the machine that started it. A caller
+# can register a classifier that does not, and these cover the two facts a
+# report has to carry when they do: where the text went, and which documents
+# the classifier never saw.
+
+
+def _with(report, **changes):
+    import dataclasses
+
+    return dataclasses.replace(report.run, **changes)
+
+
+def _limitations(report, config, **changes):
+    from complydoc.report.limitations import build_limitations
+
+    return build_limitations(_with(report, **changes), [], [], [], config)
+
+
+def test_an_ordinary_run_says_nothing_about_the_network(report, config):
+    """The disclosure exists for the run that needs it, and only that run."""
+    assert report.run.content_sent_to == []
+    assert report.run.classifier_missed_workers == 0
+
+    areas = {x.area for x in _limitations(report, config)}
+    assert "Content sent off this machine" not in areas
+    assert "Classifier and worker processes" not in areas
+
+
+def test_a_run_that_sent_text_somewhere_says_where(report, config):
+    found = [
+        x
+        for x in _limitations(report, config, content_sent_to=["api.typesafe.ai"])
+        if x.area == "Content sent off this machine"
+    ]
+    assert len(found) == 1
+    assert "api.typesafe.ai" in found[0].statement
+    assert found[0].severity == "important", "the offline premise not holding is not a footnote"
+
+
+def test_a_classifier_that_could_not_reach_the_workers_is_reported(report, config):
+    found = [
+        x
+        for x in _limitations(report, config, classifier_missed_workers=3)
+        if x.area == "Classifier and worker processes"
+    ]
+    assert len(found) == 1
+    assert "3 documents" in found[0].statement
+    assert "jobs=1" in found[0].statement, "a limitation with no way out is not much use"
+
+
+def test_documents_the_pool_gave_back_were_not_missed():
+    """This counted every file whenever jobs > 1.
+
+    A pool that fails hands its documents back to the main process, where the
+    classifier does exist and does run. The count said 21 documents went
+    unjudged on a run that demonstrably judged all of them.
+    """
+    import complydoc as cd
+    from complydoc.audit.run import _classifier_missed
+
+    cd.register_instruction_classifier(lambda passage: 0.0)
+    try:
+        assert _classifier_missed(jobs=4, files=21, recovered=21) == 0, "all read in-process"
+        assert _classifier_missed(jobs=4, files=21, recovered=0) == 21
+        assert _classifier_missed(jobs=4, files=21, recovered=5) == 16
+        assert _classifier_missed(jobs=1, files=21, recovered=0) == 0, "one process, it ran"
+    finally:
+        cd.register_instruction_classifier(None)
+
+    assert _classifier_missed(jobs=4, files=21, recovered=0) == 0, "no classifier, nothing missed"
+
+
+def test_a_host_is_recorded_by_name_rather_than_by_socket_noise():
+    """The guard records a DNS lookup and a connection. A report wants the name."""
+    from complydoc.audit.run import _hosts_sent_content
+
+    assert _hosts_sent_content() == [], "nothing has been sent in this process"

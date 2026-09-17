@@ -18,6 +18,7 @@ import dataclasses
 import datetime as dt
 import os
 import platform
+import re
 import time
 from collections import deque
 from collections.abc import Callable, Iterator, Sequence
@@ -64,6 +65,45 @@ COMPONENTS: tuple[str, ...] = ("cost", "readiness", "sensitive")
 
 _MAX_TEXT_CHARS = 20_000
 """Per page, so one enormous document cannot make the report unopenable."""
+
+
+def _hosts_sent_content() -> list[str]:
+    """Hosts a registered classifier sent document text to, if any.
+
+    Nothing in complydoc reaches the network on its own. A caller can register a
+    classifier that does, and a report that did not say so would leave the one
+    fact a reader most needs to know to whoever set the run up.
+    """
+    try:
+        from complydoc.integrations.typesafe import connections_made
+    except ImportError:  # pragma: no cover - the extra is not installed
+        return []
+
+    # The guard records what it saw: a DNS lookup, then a connection to an
+    # address. What belongs in a report is the name of the place, once.
+    hosts: list[str] = []
+    for connection in connections_made():
+        match = re.search(r"DNS lookup of '([^']+)'", connection)
+        name = match.group(1) if match else None
+        if name and name not in hosts:
+            hosts.append(name)
+    return hosts
+
+
+def _classifier_missed(jobs: int, files: int, recovered: int) -> int:
+    """Documents a registered classifier could not be asked about.
+
+    It is registered in this process. Documents read in a worker are read
+    somewhere it does not exist, so it did not run for those — but a document
+    the pool failed to return is read here after all, and the classifier does
+    run for it. Counting every file would say a document went unjudged when it
+    was judged.
+    """
+    from complydoc.hidden.instructions import registered_classifier
+
+    if registered_classifier() is None or jobs <= 1:
+        return 0
+    return max(0, files - recovered)
 
 
 def ner_available(config: Config) -> bool:
@@ -642,6 +682,8 @@ def run_audit(
         config_dir=config.source_dir,
         config_digest=config.digest,
         offline_guard=offline.guard_status(),
+        content_sent_to=_hosts_sent_content(),
+        classifier_missed_workers=_classifier_missed(jobs, len(files), recovered),
         reveal_used=reveal,
         page_images_used=page_images,
         extracted_text_used=extracted_text,

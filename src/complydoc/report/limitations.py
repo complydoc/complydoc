@@ -43,6 +43,38 @@ def build_limitations(
             )
         )
 
+    # --- Document text was sent somewhere -------------------------------------
+    if run.content_sent_to:
+        limitations.append(
+            Limitation(
+                area="Content sent off this machine",
+                statement=(
+                    f"Text from these documents was sent to "
+                    f"{', '.join(sorted(run.content_sent_to))}. A classifier registered "
+                    f"against a hosted service read the passages it judged, so the "
+                    f"guarantee that nothing leaves this machine does not hold for this "
+                    f"run. Everything else in it stayed here."
+                ),
+                severity="important",
+            )
+        )
+
+    # --- A classifier could not reach the workers -----------------------------
+    if run.classifier_missed_workers:
+        limitations.append(
+            Limitation(
+                area="Classifier and worker processes",
+                statement=(
+                    f"A classifier was registered, and "
+                    f"{count(run.classifier_missed_workers, 'document')} were read in "
+                    f"worker processes where it does not exist, so it did not run for "
+                    f"them. Findings from patterns are unaffected. Run with jobs=1 to put "
+                    f"every document in reach of it."
+                ),
+                severity="important",
+            )
+        )
+
     # --- A worker process stopped --------------------------------------------
     if run.documents_read_after_worker_failure:
         limitations.append(
