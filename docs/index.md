@@ -56,11 +56,13 @@ The process makes no outbound connections of its own. Before any file is opened,
 are permitted. Each report records whether the guard was active. Model prices
 are vendored as data files.
 
-A caller can register an instruction classifier backed by a hosted service, and
-that sends the passages it judges to a third party. It requires
-`allow_network=True`, the report names the hosts in `run.content_sent_to` and
-states it as an important limitation, and `expect(report).no_network()` fails.
-See [Network isolation](explanation/offline.md).
+Two things a caller can ask for send data out. An instruction classifier backed
+by a hosted service sends the passages it judges; the report names the hosts in
+`run.content_sent_to`, states it as an important limitation, and
+`expect(report).no_network()` fails. [`complydoc assist`](guides/assist.md)
+sends a finished report to a hosted chat model. Both need `allow_network=True`
+and neither runs as part of an audit. See
+[Network isolation](explanation/offline.md).
 
 ## Limits
 
@@ -80,6 +82,7 @@ See [Network isolation](explanation/offline.md).
 | [Page routing](guides/routing.md) | Which pages need OCR or a vision model, and what the mix costs |
 | [Policy files](guides/policy.md) | Rules in YAML, checked in CI, with Markdown and SARIF output |
 | [GitHub Action](guides/github-action.md) | The policy check on every pull request, with a comment and code scanning |
+| [Drafting quick wins](guides/assist.md) | `complydoc assist`, which sends a report to a hosted chat model |
 | [Safe copies](guides/clean.md) | Masked copies of documents, with their metadata removed |
 | [Python API](guides/python-api.md) | Conventions, strings, configuration in code, extending |
 | [Extracting masked text](guides/extract-masked-text.md) | Masked text, token counts, warnings |

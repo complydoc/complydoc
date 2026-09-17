@@ -36,6 +36,7 @@ take a path, so use `complydoc audit <path>` for anything else.
 | `complydoc check <path> --policy policy.yaml` | Rules written in YAML; exits 1 when one fails and 2 when the policy will not load; `--markdown`, `--sarif` |
 | `complydoc diff <old.json> <new.json>` | Changes between two reports; exits 1 when something got worse |
 | `complydoc clean <path> --out <dir>` | Safe copies: identifiers masked, metadata removed, `--rasterise` for PDFs; `--show` lists what changed |
+| `complydoc assist --report <report.json>` | Drafts quick wins from a finished report with a hosted chat model. **Sends the report to that model**; needs the `assistant` extra |
 | `complydoc doctor` | What is installed, what is missing, and the command that adds it |
 | `complydoc models` | Which models can be priced against (`--new N` for the latest, `--all` for every one) |
 | `complydoc benchmark` | What identifier detection finds and wrongly flags, against a labelled corpus |
@@ -65,6 +66,10 @@ Do not pass these unless the user asked for exactly that:
 
 - `--classifier jev` sends the passages it judges to api.typesafe.ai. The run says so,
   and `run.content_sent_to` names the host. Everything else stays local.
+- `complydoc assist` sends a finished report to a hosted chat model: its findings, signals,
+  loaders and costs, with the page pictures and page text held back. It is a separate
+  command, never part of an audit, and the quick wins in `quick_wins[]` are computed
+  locally without it.
 - `--reveal` writes identifiers unmasked into the findings, the page text and
   `--save-text` files.
 - `--page-images` embeds a picture of every page in the HTML report. A picture shows

@@ -6,6 +6,20 @@ versioned separately.
 
 ## [Unreleased]
 
+### Added
+
+- `complydoc assist --report <report.json>` drafts quick wins from a report an audit
+  already wrote, with a hosted chat model. **It sends that report to the model**: the
+  findings with their identifiers masked, the readiness signals, the loaders, the cost
+  totals, the limitations and the document paths. The text read off each page and the page
+  pictures are held back, which is both what a quick win does not need and what made the
+  payload unsendable: the ten-page sample goes as 52,000 tokens rather than 509,000. The
+  optional extra is `assistant`, `allow_network=True` is required from Python and
+  defaulted nowhere, the command names the model before it sends and the hosts after, and
+  the network guard is armed around the call so nothing else gets out. No audit, `check`
+  or policy run calls it, and the `quick_wins[]` in every report are still computed
+  locally without a model.
+
 ## [0.4.10] — 2026-09-17
 
 ### Security

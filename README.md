@@ -102,6 +102,7 @@ names, and every report says so. Those are optional because they are large:
 | `multilingual-names` | ~2 GB | Finds people and companies in European languages | Names are not scanned for, unless `ner` is installed |
 | `ner` | ~50 MB | Finds names with spaCy's small English model | Names are not scanned for, unless `multilingual-names` is installed |
 | `typesafe` | small | Judges passages that read as instructions to a model, with a hosted service | Instructions are found by pattern alone |
+| `assistant` | small | `complydoc assist`, which drafts quick wins from a finished report with a hosted chat model | Quick wins are the ones the report computes on its own |
 
 ```bash
 uv tool install "complydoc[ocr,multilingual-names]"
@@ -121,9 +122,12 @@ field labels for companies. Neither is a checksum, so both miss some names:
 [Detection accuracy](https://complydoc.github.io/complydoc/explanation/accuracy/)
 publishes the measured numbers for each.
 
-`typesafe` is the one extra that changes where your documents go: it sends the passages it
-judges to a hosted service, and nothing else in complydoc leaves the machine. It is off
-unless the caller passes `allow_network=True`, and the guard blocks it otherwise.
+Two extras change where your documents go, and nothing else in complydoc leaves the
+machine. `typesafe` sends the passages it judges to a hosted service. `assistant` powers
+`complydoc assist`, which sends a finished report to a hosted chat model: its findings,
+signals, loaders and costs, with the page pictures and the page text held back. Both are
+off unless the caller passes `allow_network=True`, both name the host before they run, and
+the guard blocks everything else.
 
 `complydoc doctor` shows what is installed, and `complydoc benchmark` prints what detection
 finds and what it wrongly flags against a labelled corpus that ships with the package.

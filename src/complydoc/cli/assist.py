@@ -12,6 +12,11 @@ from complydoc.cli.common import QuietOpt, app, console, errors
 
 __all__ = ["assist"]
 
+_LARGE_PAYLOAD = 400_000
+"""Characters of JSON past which the report is worth a word of warning.
+
+About 100,000 tokens, which is where the cheaper context windows stop."""
+
 
 @app.command(rich_help_panel="CI and pipelines")
 def assist(
@@ -27,15 +32,26 @@ def assist(
 ) -> None:
     """Draft quick wins from a finished report with a hosted chat model.
 
-    **Sends the whole report to `model`.** Everything else complydoc computes
-    stays on this machine; `--classifier jev` is the only other command that
-    leaves it, and only with the passages it judges. This one sends the report
-    in full — every extracted passage, masked identifier and finding it holds.
-    It never runs as part of `audit` or `check`; run it on its own, against a
-    report one of those already wrote.
+    **Sends the report to `model`.** Everything else complydoc computes stays
+    on this machine; `--classifier jev` is the only other command that leaves
+    it, and only with the passages it judges. This one sends the report's
+    findings, signals, loaders, costs and limitations, including masked
+    identifiers and document paths. The page pictures and the text read off
+    each page are held back. It never runs as part of `audit` or `check`; run
+    it on its own, against a report one of those already wrote.
     """
-    from complydoc.integrations.assistant import connections_made, quick_wins_call
+    from complydoc import offline
+    from complydoc.integrations.assistant import (
+        connections_made,
+        quick_wins_call,
+        report_payload,
+    )
     from complydoc.report.json_reader import load_report
+
+    # Armed as every other command arms it, so the one call this command is for
+    # is the only thing that can leave: it is made inside `offline.permitted()`,
+    # and anything else the model client tries is blocked and reported.
+    offline.arm()
 
     try:
         audit = load_report(report)
@@ -47,6 +63,15 @@ def assist(
         errors.print(
             f"[bold yellow]complydoc assist sends this report to {model!r}.[/] "
             "Nothing else in complydoc does this without --classifier."
+        )
+
+    payload_chars = len(report_payload(audit))
+    if payload_chars > _LARGE_PAYLOAD and not quiet:
+        errors.print(
+            f"[yellow]This report is large[/] ({payload_chars:,} characters of JSON, "
+            f"roughly {payload_chars // 4:,} tokens). A model with less room than that "
+            f"will refuse it. Audit with --sample to describe the folder in fewer "
+            f"documents."
         )
 
     try:

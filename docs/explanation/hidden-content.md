@@ -125,7 +125,9 @@ middle, so at the shipped threshold of 0.8 it is not reported: lowering the
 threshold is what catches those, and the cost of doing so is measured on the same
 page.
 
-It is the only part of complydoc that sends document text anywhere. Passing
+It is one of two parts of complydoc that send anything anywhere, the other being
+[`complydoc assist`](../guides/assist.md), which sends a finished report rather
+than document text. Passing
 `allow_network=True` is required, the call is let through the guard one call at a
 time, and the connections made are returned so a run can record them.
 

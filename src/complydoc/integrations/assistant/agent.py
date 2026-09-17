@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from complydoc.integrations.assistant.payload import report_payload
 from complydoc.integrations.assistant.prompts import QUICK_WIN_ASSISTANT_PROMPT
 from complydoc.integrations.assistant.schema import AssistantMessage
 
@@ -72,12 +73,15 @@ def quick_wins_call(
     # the guard being lowered for the run.
     with offline.permitted() as seen:
         response: Any = structured_output_model.invoke(
-            QUICK_WIN_ASSISTANT_PROMPT.format(audit_report=report)
+            QUICK_WIN_ASSISTANT_PROMPT.format(audit_report=report_payload(report))
         )
 
     for connection in seen:
         if connection not in _connections:
             _connections.append(connection)
 
-    assert isinstance(response, AssistantMessage)
+    if not isinstance(response, AssistantMessage):
+        # Structured output is the model's to honour, and a model that answers
+        # with something else is a failed call, not a crash in a report writer.
+        raise ValueError(f"{model} did not answer in the shape the assistant asked for")
     return response

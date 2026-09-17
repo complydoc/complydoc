@@ -24,7 +24,7 @@ A stated policy covers first-party code only. Replacing the socket entry points
 also covers transitive dependencies: a library that opens a connection during a
 run raises `NetworkAccessError`.
 
-There are two exceptions, and neither happens unless a caller asks for it.
+There are three exceptions, and none happens unless a caller asks for it.
 
 `inspect_documents(..., allow_network=True)` lets the loader being inspected
 call connect. The connections are recorded, the report states it, and
@@ -51,6 +51,19 @@ registered in Python cannot cross a process boundary, and
 what could not be answered. A call that fails is no score and so no finding, so
 without the second number a run that reached nothing looked like a run that
 found nothing.
+
+`complydoc assist` sends a finished report to a hosted chat model, which drafts
+quick wins from it. **That report describes documents, and it leaves the
+machine**: the findings, the readiness signals, the loaders, the cost totals and
+the limitations, with masked identifiers and document paths among them. The page
+pictures and the text read off each page are held back, and
+[Drafting quick wins](../guides/assist.md) says exactly what goes.
+
+It is a command of its own. No audit, `check` or policy run calls it, so a run
+that never types `assist` sends nothing; the `quick_wins[]` in every report are
+computed here, on this machine, without a model. The guard is armed as it is for
+any other command, the one call is let through `offline.permitted()` and
+recorded, and anything else the model client tries is refused.
 
 ## Consequences
 

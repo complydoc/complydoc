@@ -13,9 +13,11 @@ Off unless the caller asks for it — the same shape as
 holds what it is asked, and `schema.py` holds what it returns.
 
 Unlike the Jev classifier, which only ever receives a passage already flagged
-as worth asking about, the report is passed to the model whole: every masked
-identifier, extracted passage and finding it holds. Treat the model named here
-as a document processor in its own right, not a disambiguator of small spans.
+as worth asking about, this sends the report: its findings, signals, loaders,
+costs and limitations, with the page pictures and the extracted text held back
+(see `payload.py`). Masked identifiers and document paths still go. Treat the
+model named here as a document processor in its own right, not a disambiguator
+of small spans.
 """
 
 from __future__ import annotations
@@ -25,6 +27,15 @@ from complydoc.integrations.assistant.agent import (
     connections_made,
     quick_wins_call,
 )
+from complydoc.integrations.assistant.payload import HELD_BACK, report_payload
 from complydoc.integrations.assistant.schema import AssistantMessage, QuickWin
 
-__all__ = ["DEFAULT_MODEL", "AssistantMessage", "QuickWin", "connections_made", "quick_wins_call"]
+__all__ = [
+    "DEFAULT_MODEL",
+    "HELD_BACK",
+    "AssistantMessage",
+    "QuickWin",
+    "connections_made",
+    "quick_wins_call",
+    "report_payload",
+]
