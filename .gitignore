@@ -38,3 +38,8 @@ reports/
 
 # OS
 .DS_Store
+
+# API keys and other local secrets. Never committed.
+.env
+.env.*
+!.env.example

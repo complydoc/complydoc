@@ -111,8 +111,32 @@ Portuguese, Spanish, French, German, Italian and Dutch, apart from
 
 ### Classifier
 
-No model is shipped or downloaded. A classifier is any function from text to a
-score between 0 and 1:
+A pattern finds an instruction by its wording, so it answers yes or no and
+cannot say how sure it is. A classifier gives a number instead, and
+`complydoc.integrations.typesafe.jev_classifier` is one: it asks a hosted model,
+for each passage, how likely it is to be addressed to a model rather than to a
+person.
+
+What that buys depends on where the threshold sits, and the measured numbers are
+in [Detection accuracy](accuracy.md). An instruction written plainly scores near
+1 and ordinary prose near 0, including prose that talks about AI without
+addressing one. Phrasing that only hints at a reading machine lands in the
+middle, so at the shipped threshold of 0.8 it is not reported: lowering the
+threshold is what catches those, and the cost of doing so is measured on the same
+page.
+
+It is the only part of complydoc that sends document text anywhere. Passing
+`allow_network=True` is required, the call is let through the guard one call at a
+time, and the connections made are returned so a run can record them. A folder
+large enough to be split across worker processes will not use it: a classifier is
+registered in one process. `jobs=1` keeps it in reach.
+
+```python title="jev_classifier.py"
+--8<-- "examples/jev_classifier.py"
+```
+
+No model is shipped or downloaded, and nothing is registered by default. A
+classifier is any function from text to a score between 0 and 1:
 
 ```python
 import complydoc as cd

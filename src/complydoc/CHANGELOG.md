@@ -6,6 +6,14 @@ versioned separately.
 
 ## [Unreleased]
 
+### Added
+
+- `complydoc.integrations.typesafe.jev_classifier` scores passages with TypeSafe's Jev and
+  registers as an instruction classifier, so a passage phrased in a way no pattern covers is
+  still reported. It is the only part of complydoc that sends document text off the machine:
+  `allow_network=True` is required, the call is let through the network guard one call at a
+  time and recorded, and everything else stays blocked. The optional extra is `typesafe`.
+
 ### Changed
 
 - `confirmed` now means a checksum passed, which is what it always claimed to mean. Five

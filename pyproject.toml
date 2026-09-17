@@ -51,6 +51,10 @@ ner = ["spacy>=3.7"]
 # Names in the languages these documents are written in. Heavier than `ner` by
 # an order of magnitude, and measurably better at them: see Detection accuracy.
 multilingual-names = ["transformers>=4.40", "torch>=2.2"]
+# A hosted judgement service for passages that read as instructions to a model.
+# Off unless the caller asks for it: it sends text off the machine, which is the
+# one thing the rest of this tool is built not to do.
+typesafe = ["typesafe-sdk>=0.6"]
 notebook = ["pandas>=2.1"]
 
 [project.scripts]

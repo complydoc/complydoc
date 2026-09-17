@@ -88,6 +88,7 @@ identifiers by pattern. Two things are optional because they are large:
 | --- | --- | --- | --- |
 | `ocr` | ~80 MB | Reads scans and images | Pages with no text layer are reported as unread |
 | `multilingual-names` | ~2 GB | Finds people and companies in European languages | Names are found by a small English model instead |
+| `typesafe` | small | Judges passages that read as instructions to a model, with a hosted service | Instructions are found by pattern alone |
 
 ```bash
 uv tool install "complydoc[ocr,multilingual-names]"
@@ -103,6 +104,10 @@ read by a multilingual model; without it, by spaCy's small English one, which mi
 in other languages and mistakes field labels for companies. Neither is a checksum, so both
 miss some names: [Detection accuracy](https://complydoc.github.io/complydoc/explanation/accuracy/)
 publishes the measured numbers for each.
+
+`typesafe` is the one extra that changes where your documents go: it sends the passages it
+judges to a hosted service, and nothing else in complydoc leaves the machine. It is off
+unless the caller passes `allow_network=True`, and the guard blocks it otherwise.
 
 `complydoc doctor` shows what is installed, and `complydoc benchmark` prints what detection
 finds and what it wrongly flags against a labelled corpus that ships with the package.
