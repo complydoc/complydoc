@@ -66,7 +66,7 @@ def diff(
         try:
             reports.append(load_report(path))
         except (OSError, ValueError, KeyError, TypeError) as exc:
-            errors.print(f"[bold red]Cannot read the report[/] {path} — {exc}")
+            errors.print(f"[bold red]Cannot read the report[/] {path} — {escape(str(exc))}")
             raise typer.Exit(code=2) from exc
     changes = diff_reports(reports[0], reports[1], score_tolerance=tolerance)
 

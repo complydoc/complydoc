@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Annotated
 
 import typer
+from rich.markup import escape
 from rich.progress import (
     BarColumn,
     MofNCompleteColumn,
@@ -320,10 +321,11 @@ def run(
                     progress=progress,
                 )
     except ClassifierError as exc:
-        errors.print(f"[bold red]Cannot use that classifier[/] — {exc}")
+        errors.print(f"[bold red]Cannot use that classifier[/] — {escape(str(exc))}")
         raise typer.Exit(code=2) from exc
     except UnknownModelError as exc:
-        errors.print(f"[bold red]Unknown model[/] — {exc}\n\nRun 'complydoc models' to list them.")
+        errors.print(f"[bold red]Unknown model[/] — {escape(str(exc))}")
+        errors.print("\nRun 'complydoc models' to list them.")
         raise typer.Exit(code=2) from exc
     if not quiet:
         summary(report)

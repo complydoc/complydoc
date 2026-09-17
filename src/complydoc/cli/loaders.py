@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Annotated
 
 import typer
+from rich.markup import escape
 from rich.table import Table
 
 from complydoc.cli.common import (
@@ -57,7 +58,7 @@ def compare_loaders_command(
     try:
         comparison = read_comparison_file(spec)
     except ConfigError as exc:
-        errors.print(f"[bold red]Comparison file error[/]\n{exc}")
+        errors.print(f"[bold red]Comparison file error[/]\n{escape(str(exc))}")
         raise typer.Exit(code=2) from exc
     if comparison.allow_network:
         errors.print(
@@ -67,7 +68,7 @@ def compare_loaders_command(
     try:
         report = compare_from_file(spec, config=config)
     except (ImportError, ValueError, FileNotFoundError) as exc:
-        errors.print(f"[bold red]Comparison failed[/] — {exc}")
+        errors.print(f"[bold red]Comparison failed[/] — {escape(str(exc))}")
         raise typer.Exit(code=2) from exc
 
     if not quiet and report.loader_comparison is not None:

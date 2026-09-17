@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Annotated
 
 import typer
+from rich.markup import escape
 from rich.table import Table
 
 from complydoc import offline
@@ -100,14 +101,14 @@ def check(
     try:
         rules = read_policy(policy)
     except ConfigError as exc:
-        errors.print(f"[bold red]Policy error[/]\n{exc}")
+        errors.print(f"[bold red]Policy error[/]\n{escape(str(exc))}")
         raise typer.Exit(code=2) from exc
 
     if report is not None:
         try:
             audit = load_report(report)
         except (OSError, ValueError, KeyError, TypeError) as exc:
-            errors.print(f"[bold red]Cannot read the report[/] {report} — {exc}")
+            errors.print(f"[bold red]Cannot read the report[/] {report} — {escape(str(exc))}")
             raise typer.Exit(code=2) from exc
     else:
         assert target is not None
@@ -136,10 +137,10 @@ def check(
                     classifier_spec=classifier,
                 )
         except ClassifierError as exc:
-            errors.print(f"[bold red]Cannot use that classifier[/] — {exc}")
+            errors.print(f"[bold red]Cannot use that classifier[/] — {escape(str(exc))}")
             raise typer.Exit(code=2) from exc
         except UnknownModelError as exc:
-            errors.print(f"[bold red]Unknown model[/] — {exc}")
+            errors.print(f"[bold red]Unknown model[/] — {escape(str(exc))}")
             raise typer.Exit(code=2) from exc
         emit(audit, config, out, name, quiet)
 

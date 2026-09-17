@@ -132,7 +132,7 @@ def resolve_classifier(spec: str) -> Classifier:
             # The flag is the caller saying the passages leave the machine, which
             # is what this argument means. It is not defaulted anywhere else.
             return jev_classifier(allow_network=True)
-        except ValueError as exc:
+        except (ValueError, ImportError) as exc:
             raise ClassifierError(str(exc)) from exc
 
     if ":" not in name:

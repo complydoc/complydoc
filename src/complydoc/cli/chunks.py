@@ -11,6 +11,7 @@ from typing import Annotated
 
 import typer
 import yaml
+from rich.markup import escape
 from rich.table import Table
 
 from complydoc import offline
@@ -128,7 +129,7 @@ def chunks(
     try:
         splitters = dict(_splitter(reference) for reference in splitter)
     except (ImportError, ValueError) as exc:
-        errors.print(f"[bold red]Cannot load the splitter[/] — {exc}")
+        errors.print(f"[bold red]Cannot load the splitter[/] — {escape(str(exc))}")
         raise typer.Exit(code=2) from exc
     if len(splitters) != len(splitter):
         errors.print("[bold red]The same splitter is given twice.[/]")
@@ -139,7 +140,7 @@ def chunks(
         try:
             question_list = read_questions(questions)
         except (OSError, ValueError, TypeError) as exc:
-            errors.print(f"[bold red]Cannot read the questions[/] — {exc}")
+            errors.print(f"[bold red]Cannot read the questions[/] — {escape(str(exc))}")
             raise typer.Exit(code=2) from exc
 
     try:
@@ -193,7 +194,7 @@ def chunks(
                 {label: inspect_with(obj, label) for label, obj in splitters.items()}
             )
     except UnknownModelError as exc:
-        errors.print(f"[bold red]Unknown model[/] — {exc}")
+        errors.print(f"[bold red]Unknown model[/] — {escape(str(exc))}")
         raise typer.Exit(code=2) from exc
     reports = list(result.reports.values()) if isinstance(result, ChunkComparison) else [result]
 

@@ -9,6 +9,7 @@ from typing import Annotated
 
 import typer
 from rich.console import Console
+from rich.markup import escape
 
 from complydoc.config.loader import ConfigError, load_config
 from complydoc.config.schema import Config
@@ -237,7 +238,7 @@ def load_config_or_exit(config_dir: Path | None) -> Config:
     try:
         return load_config(config_dir)
     except ConfigError as exc:
-        errors.print(f"[bold red]Configuration error[/]\n{exc}")
+        errors.print(f"[bold red]Configuration error[/]\n{escape(str(exc))}")
         raise typer.Exit(code=2) from exc
 
 

@@ -360,7 +360,7 @@ def pricing_import(
         table = load_table(source)
         chosen = select(table, ids=model, provider=provider, limit=limit)
     except PricingImportError as exc:
-        errors.print(f"[bold red]Import failed[/] — {exc}")
+        errors.print(f"[bold red]Import failed[/] — {escape(str(exc))}")
         raise typer.Exit(code=2) from exc
 
     if not chosen:
