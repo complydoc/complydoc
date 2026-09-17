@@ -1,6 +1,6 @@
 ---
 name: complydoc
-description: Check documents offline before they reach an LLM — what processing them would cost, how reliably their text can be read, which personal and financial identifiers they hold (national IDs across Europe, the Americas, India and Australia, payment cards, IBANs, bank details, names), and whether anything hidden in them is addressed to a model (white or invisible text, prompt injection). Use when asked what documents would cost to process with an LLM, how ready they are to extract from, whether a folder contains personal data or hidden instructions, which document loader or parser reads a folder best, to gate documents in CI with a policy, or to make masked copies before sending them anywhere. Runs locally; no document content leaves the machine unless a hosted classifier is explicitly requested.
+description: Check documents offline before they reach an LLM: what processing them would cost, how reliably their text can be read, which personal and financial identifiers they hold (national IDs across Europe, the Americas, India and Australia, payment cards, IBANs, bank details, names), and whether anything hidden in them is addressed to a model (white or invisible text, prompt injection). Use when asked what documents would cost to process with an LLM, how ready they are to extract from, whether a folder contains personal data or hidden instructions, which document loader or parser reads a folder best, to gate documents in CI with a policy, or to make masked copies before sending them anywhere. Runs locally; no document content leaves the machine unless a hosted classifier is explicitly requested.
 ---
 
 # complydoc
@@ -21,7 +21,7 @@ complydoc audit <path> --print-json
 `--print-json` puts the report on stdout and nothing else; progress goes to stderr.
 Parse stdout. Without it, the tool writes `.complydoc/complydoc.{html,json}` and prints
 both paths. `complydoc` with no arguments audits the current directory; it does not
-take a path — use `complydoc audit <path>` for anything else.
+take a path, so use `complydoc audit <path>` for anything else.
 
 | Command | Scope |
 | --- | --- |
@@ -51,12 +51,8 @@ On a folder large enough to be slow, `--jobs 0` spreads the work over every CPU 
 how long the run takes. Reach for `--sample` when the user has accepted a partial answer,
 and say in your reply that the figures describe a sample.
 
-To gate a repository on GitHub, the repository is also an action:
-`uses: complydoc/complydoc@v<version>` with `path` and `policy` inputs runs `check`,
-comments on the pull request and can upload SARIF.
-
 Exit code 0 means the run completed, 2 means the arguments or config were wrong. A run
-that finds problems still exits 0 — the findings are in the JSON. Only `check` and
+that finds problems still exits 0, and the findings are in the JSON. Only `check` and
 `diff` exit 1 on findings.
 
 ### Flags that change what leaves the machine or the report
@@ -85,42 +81,42 @@ complydoc audit ./invoices --print-json | jq '{
 }'
 ```
 
-- `run.components_run` — which components ran.
-- `run.offline_guard` — `armed` means nothing could leave the machine on its own.
+- `run.components_run`: which components ran.
+- `run.offline_guard`: `armed` means nothing could leave the machine on its own.
   `run.content_sent_to` lists any host a classifier sent passages to; empty is normal.
-- `overall.score` — readiness, 0-100: content, cost path and exposure combined.
+- `overall.score`: readiness, 0-100, from content, cost path and exposure combined.
   `overall.factors[]` says what went into it and what weight each carried; a factor
   with a null score was not measured and was left out rather than counted as nought.
   `overall.bands` counts documents per band, which is what the mean hides.
-- `documents[].readiness.score` — the content factor alone, 0-100: whether the text
+- `documents[].readiness.score`: the content factor alone, 0-100, whether the text
   can be read off the page. Check `low_confidence`.
-- `quick_wins[]` — what to do next, most documents first. Each names its
+- `quick_wins[]`: what to do next, most documents first. Each names its
   `documents`, and `actor` says whether complydoc can do it or a person must.
-- `documents[].sensitive.matches[]` — `category`, `page`, `line`, `masked`,
+- `documents[].sensitive.matches[]`: `category`, `page`, `line`, `masked`,
   `severity`, and `evidence`: `confirmed` (a checksum passed), `corroborated` (a
   label sits next to it), `pattern` (shape only), `model` (a statistical guess,
-  the weakest). `confidence` is null where the detector produces no score —
-  never treat that as certainty.
-- `documents[].content_findings[]` — passages hidden from a reader or addressed to a
+  the weakest). `confidence` is null where the detector produces no score, which
+  is never to be treated as certainty.
+- `documents[].content_findings[]`: passages hidden from a reader or addressed to a
   model: `visibility` (`confirmed`, `suspected`, `not_measured`, `visible`),
   `instruction` (`confirmed`, `pattern`, `model`, `none`), `severity`, and a masked
   `excerpt`. A high-severity one is hidden text telling a model what to do.
-- `documents[].cost.models[]` — token counts and USD per model, with `price_source`
+- `documents[].cost.models[]`: token counts and USD per model, with `price_source`
   (`verified` or `imported`) and `last_verified`.
-- `aggregate.seconds_per_document` / `hours_per_1000_documents` — measured local
+- `aggregate.seconds_per_document` and `hours_per_1000_documents`: measured local
   preparation time, and `ocr_pages_per_second` where OCR ran.
-- `limitations[]` — what this run could not establish, generated from the run itself.
+- `limitations[]`: what this run could not establish, generated from the run itself.
 
 ## What is easy to get wrong
 
 **Zero is not always zero.** A page in `sensitive.unreadable_pages` was never read. A
-category in `aggregate.categories_not_scanned` was never searched for — on an install
-without a name model that includes person and organisation names. Both report zero and
+category in `aggregate.categories_not_scanned` was never searched for, which on an
+install without a name model includes person and organisation names. Both report zero and
 neither is an all-clear. Say so when reporting a clean result, and point at
 `complydoc doctor`, which prints the command that adds the missing part.
 
 **Masking is only as good as detection.** Every value that was found is masked in the
-findings, the page text and saved text. A value detection missed — most often a name —
+findings, the page text and saved text. A value detection missed, most often a name,
 is still in the page text. Quote `masked` values only. `--no-extracted-text` produces a
 report with no document text at all, which is the safer choice when the report will be
 shared.

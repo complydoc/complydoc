@@ -285,7 +285,7 @@ def emit(
         )
         console.print(
             f"[bold]Text[/]    [link=file://{folder}]{folder}[/link]  "
-            f"[dim]{count(len(written), 'file')} — {held}[/]",
+            f"[dim]{count(len(written), 'file')}, {held}[/]",
             no_wrap=True,
             crop=False,
         )

@@ -273,7 +273,7 @@ def _page_text(page: Page, scanned: ScanResult | None, work: Work) -> PageText:
     The findings table masks every value, and the text beside it used to carry
     the same values in full, so a report shared for its findings shared the
     identifiers too. The page's own text is masked with the findings already
-    located on it. Every other reading of the page — another extractor, OCR —
+    located on it. Every other reading of the page (another extractor, OCR)
     places its characters differently, so each is scanned for itself; that
     costs a scan per extra reading, and only when readings are being compared.
 

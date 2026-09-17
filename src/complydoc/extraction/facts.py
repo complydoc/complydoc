@@ -115,8 +115,8 @@ def _as_reported(text: str) -> str:
     """The fact as a report's masked page text would show it.
 
     A report's page text has its identifiers masked, so a fact that is, or holds,
-    an identifier — an email address a loader should keep — is never in it as
-    written. Masked the same way, it is. Masking uses the default configuration:
+    an identifier, such as an email address a loader should keep, is never in
+    it as written. Masked the same way, it is. Masking uses the default configuration:
     a report written with a different mask length matches only the unmasked form.
     """
     # Imported here: extract builds on the audit, which builds on the report.
