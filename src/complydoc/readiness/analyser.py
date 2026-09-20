@@ -27,13 +27,6 @@ class ReadinessReport:
     def not_applicable(self) -> list[SignalResult]:
         return [s for s in self.signals if s.status is SignalStatus.NOT_APPLICABLE]
 
-    @property
-    def errored(self) -> list[SignalResult]:
-        return [s for s in self.signals if s.status is SignalStatus.ERROR]
-
-    def by_rating(self, rating: str) -> list[SignalResult]:
-        return [s for s in self.signals if s.rating == rating]
-
 
 def _article(word: str) -> str:
     """ "a" or "an", so the generated reasons read like English."""

@@ -6,6 +6,12 @@ versioned separately.
 
 ## [Unreleased]
 
+### Fixed
+
+- `--out ~/reports` wrote a folder called `~` for the JSON, the HTML and the routing
+  manifest, while the Markdown and SARIF written by `check` expanded it. All five writers
+  now go through one helper that expands the path.
+
 ## [0.4.11] — 2026-09-17
 
 ### Added

@@ -94,14 +94,7 @@
 
   ul { margin: 0.25rem 0 0.75rem; padding-left: 1.125rem; }
   li { margin-bottom: 0.25rem; }
-  .lim { margin: 0 0 1.125rem; max-width: 46rem; padding-left: 0.75rem;
-         border-left: 3px solid var(--line); }
-  .lim.important { border-left-color: var(--fair); }
-  .lim .h { font-weight: 600; font-size: 0.8125rem; }
   .ok { color: var(--accent); }
-  .lim .files { color: var(--muted); font-size: 0.75rem; margin-top: 0.25rem;
-                font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-                word-break: break-all; }
   /* --- the page viewer: one page, the page beside what was read off it -- */
   /* One segmented control: step, jump, step. Everything in it is the same
      height and shares one border. */
@@ -328,7 +321,6 @@
     .explorer { flex-direction: column; }
     .files { flex: 1 1 auto; max-width: none; width: 100%; margin-top: 0 !important; }
   }
-  .drivers { display: flex; flex-wrap: wrap; gap: 2rem; margin: 0.25rem 0 1.25rem; }
   .driver { flex: 1 1 22rem; min-width: 0; }
   .driver > .lbl { font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.06em;
                    color: var(--faint); margin-bottom: 0.375rem;
@@ -336,11 +328,9 @@
   table.bare { margin: 0; table-layout: fixed; }
   table.bare td { border-bottom: none; padding: 0.25rem 0.5rem 0 0; }
   table.bare tr.d-head td { font-weight: 600; font-size: 0.8125rem; padding-top: 0.5rem; }
-  table.bare tr.d-why td { padding: 0 0 0.5rem; border-bottom: 1px solid var(--line); }
   table.bare td.v { white-space: normal; font-weight: 400; color: var(--ink-2);
                     font-size: 0.8125rem; text-align: right; width: 42%; }
   table.bare td.n { width: 3rem; }
-  .wt { font-size: 0.6875rem; color: var(--faint); }
   /* A bordered notice box. */
   .notice { border: 1px solid var(--line-2); border-left: 3px solid var(--attn);
             background: var(--panel); padding: 0.625rem 0.875rem; margin: 0.75rem 0;
@@ -366,7 +356,7 @@
     details > div { display: block !important; }
     summary { list-style: none; }
     h2 { break-after: avoid; }
-    tr, .lim { break-inside: avoid; }
+    tr { break-inside: avoid; }
   }
 
   /* --- page chrome --------------------------------------------------- */
@@ -453,9 +443,4 @@
                                            color: #fff; }
   .foot-meta dd.opts { font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
                        font-size: 0.6875rem; }
-  .lims { max-height: none; }
-  .pair-text { display: flex; gap: 0.75rem; }
-  .pair-text .half-text { flex: 1 1 0; min-width: 0; }
-  .pair-text .lbl { font-size: 0.625rem; color: var(--faint); text-transform: uppercase;
-                    letter-spacing: 0.06em; margin: 0 0 0.25rem; }
   @media print { nav.tabs { display: none; } section[data-page] { display: block !important; } }

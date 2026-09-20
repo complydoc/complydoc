@@ -241,9 +241,4 @@ def overall_readiness(report: AuditReport, config: OverallConfig) -> OverallRead
     return result
 
 
-def evidence_weight(evidence: str) -> float:
-    """Exposed for the report, so the page can explain the weighting it used."""
-    return _EVIDENCE_WEIGHT.get(evidence, 0.5)
-
-
 assert set(_EVIDENCE_WEIGHT) == set(EVIDENCE_ORDER), "every tier needs a weight"

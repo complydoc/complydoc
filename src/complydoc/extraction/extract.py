@@ -46,6 +46,7 @@ from complydoc.ingest.base import IngestOptions
 from complydoc.ingest.registry import load_document
 from complydoc.sensitive.base import EVIDENCE_ORDER, SensitiveMatch
 from complydoc.sensitive.scanner import scan
+from complydoc.utils.files import relative_to_root
 
 __all__ = ["Chunk", "ExtractionWarning", "TextResult", "extract_text"]
 
@@ -313,7 +314,7 @@ def extract_text(
         ExtractionWarning(
             kind=UNREADABLE_DOCUMENT,
             detail=record.reason,
-            document=_relative(record.path, root),
+            document=relative_to_root(record.path, root),
         )
         for record in skipped
     ]
@@ -324,7 +325,7 @@ def extract_text(
     seen_categories: set[str] = set()
 
     for path in files:
-        relative = _relative(path, root)
+        relative = relative_to_root(path, root)
         try:
             document = load_document(path, options)
         # As in an audit, a parser failure on one file is a warning, not the end.
@@ -432,10 +433,3 @@ def extract_text(
         documents_read=read,
         documents_skipped=len(skipped),
     )
-
-
-def _relative(path: Path, root: Path) -> str:
-    try:
-        return str(path.relative_to(root if root.is_dir() else root.parent))
-    except ValueError:  # pragma: no cover - a path from outside the folder
-        return str(path)

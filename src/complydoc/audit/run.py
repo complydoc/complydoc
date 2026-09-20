@@ -72,6 +72,7 @@ from complydoc.report.quickwins import quick_wins
 from complydoc.report.routing import summarise_routes
 from complydoc.sensitive.base import SensitiveMatch
 from complydoc.sensitive.scanner import ScanResult, scan, scan_text
+from complydoc.utils.files import relative_to_root
 
 __all__ = ["COMPONENTS", "resolve_jobs", "run_audit"]
 
@@ -151,13 +152,6 @@ def _model_loads(detector_id: str, model_name: str) -> bool:
     if module is None:
         return True
     return bool(module.model_available(model_name)[0])
-
-
-def _relative(path: Path, root: Path) -> str:
-    try:
-        return str(path.relative_to(root if root.is_dir() else root.parent))
-    except ValueError:
-        return str(path)
 
 
 @dataclass(frozen=True, slots=True)
@@ -399,7 +393,7 @@ def _process(path: Path, work: Work) -> _Outcome:
         )
     read_seconds = time.perf_counter() - read_started
 
-    entry = build_entry(document, work, read_seconds, _relative(document.path, work.target))
+    entry = build_entry(document, work, read_seconds, relative_to_root(document.path, work.target))
     ocr_after = ocr_module.stats()
     # Read and reset: whatever the classifier was asked during this document,
     # in whichever process this is.

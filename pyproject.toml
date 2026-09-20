@@ -164,6 +164,11 @@ module = [
     "reportlab.*",
     "lxml",
     "lxml.*",
+    "pandas",
+    "langchain.*",
+    "langchain_core.*",
+    "langchain_openai.*",
+    "llama_index.*",
 ]
 ignore_missing_imports = true
 
@@ -175,14 +180,6 @@ markers = [
     "requires_ocr: needs the optional [ocr] extra installed",
     "requires_ner: needs the optional [ner] extra installed",
 ]
-
-[[tool.mypy.overrides]]
-module = ["pandas"]
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = ["langchain_core.*", "llama_index.*", "langchain.*", "langchain_openai.*"]
-ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 # These subclass a base from an optional framework. Where the framework is not

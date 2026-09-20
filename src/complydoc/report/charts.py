@@ -59,12 +59,6 @@ class ArchitectureCost:
     documents_total: int
     note: str
 
-    @property
-    def reach_pct(self) -> float:
-        if not self.documents_total:
-            return 0.0
-        return self.documents_served / self.documents_total * 100
-
 
 @dataclass(slots=True)
 class ModelComparison:

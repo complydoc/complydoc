@@ -30,6 +30,7 @@ from complydoc.report.overall import overall_readiness
 from complydoc.report.preview import Box, PagePreview
 from complydoc.report.quickwins import quick_wins
 from complydoc.sensitive.base import EVIDENCE_ORDER, SEVERITY_WEIGHT
+from complydoc.utils.files import write_text
 from complydoc.utils.text import count, duration
 
 __all__ = [
@@ -358,6 +359,4 @@ def render_html(report: AuditReport, config: Config) -> str:
 
 
 def write_html(report: AuditReport, config: Config, path: Path) -> Path:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(render_html(report, config), encoding="utf-8")
-    return path
+    return write_text(path, render_html(report, config))

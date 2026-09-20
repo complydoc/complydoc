@@ -17,6 +17,7 @@ from complydoc import __version__
 from complydoc.extraction.chunks import FLAGS, ChunkComparison, ChunkReport
 from complydoc.report.assets import FAVICON_URI, LOGO_SVG, template_environment
 from complydoc.report.compare import ReportDiff
+from complydoc.utils.files import write_text
 from complydoc.utils.text import count
 
 __all__ = [
@@ -95,7 +96,7 @@ def write_chunks_html(
     `source` names what was split, for the page heading. Previews and identifiers
     are masked, as they are in the report.
     """
-    return _write(Path(path), render_chunks_html(result, source=source))
+    return write_text(Path(path), render_chunks_html(result, source=source))
 
 
 def write_diff_html(diff: ReportDiff, path: str | Path, *, old: str = "", new: str = "") -> Path:
@@ -103,7 +104,7 @@ def write_diff_html(diff: ReportDiff, path: str | Path, *, old: str = "", new: s
 
     `old` and `new` label the two reports in the heading, such as their file names.
     """
-    return _write(Path(path), render_diff_html(diff, old=old, new=new))
+    return write_text(Path(path), render_diff_html(diff, old=old, new=new))
 
 
 def chunks_to_dict(result: ChunkReport | ChunkComparison) -> dict[str, Any]:
@@ -129,19 +130,12 @@ def diff_to_dict(diff: ReportDiff) -> dict[str, Any]:
 
 
 def write_chunks_json(result: ChunkReport | ChunkComparison, path: str | Path) -> Path:
-    return _write(Path(path), _dumps(chunks_to_dict(result)))
+    return write_text(Path(path), _dumps(chunks_to_dict(result)))
 
 
 def write_diff_json(diff: ReportDiff, path: str | Path) -> Path:
-    return _write(Path(path), _dumps(diff_to_dict(diff)))
+    return write_text(Path(path), _dumps(diff_to_dict(diff)))
 
 
 def _dumps(data: dict[str, Any]) -> str:
     return json.dumps(data, indent=2, sort_keys=True, ensure_ascii=False, default=str) + "\n"
-
-
-def _write(path: Path, content: str) -> Path:
-    path = path.expanduser()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(content, encoding="utf-8")
-    return path

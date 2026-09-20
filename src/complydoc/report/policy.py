@@ -38,6 +38,7 @@ from pydantic import BaseModel, ConfigDict, model_validator
 from complydoc.config.loader import ConfigError
 from complydoc.report.expectations import Expectation
 from complydoc.report.models import AuditReport
+from complydoc.utils.files import write_text
 
 __all__ = [
     "RULES",
@@ -176,10 +177,6 @@ class PolicyResult:
     def passed(self) -> bool:
         return not self.failed
 
-    @property
-    def failures_total(self) -> int:
-        return sum(len(r.failures) for r in self.rules if not r.passed)
-
 
 def check_policy(report: AuditReport, policy: Policy) -> PolicyResult:
     """Every rule against `report`, all of them, in the order the policy lists them."""
@@ -247,7 +244,7 @@ def policy_markdown(result: PolicyResult) -> str:
 
 
 def write_policy_markdown(result: PolicyResult, path: str | os.PathLike[str]) -> Path:
-    return _write(Path(path), policy_markdown(result))
+    return write_text(Path(path), policy_markdown(result))
 
 
 # --------------------------------------------------------------------- SARIF
@@ -336,11 +333,4 @@ def write_policy_sarif(
     result: PolicyResult, report: AuditReport, path: str | os.PathLike[str]
 ) -> Path:
     content = json.dumps(policy_sarif(result, report), indent=2, sort_keys=True) + "\n"
-    return _write(Path(path), content)
-
-
-def _write(path: Path, content: str) -> Path:
-    path = path.expanduser()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(content, encoding="utf-8")
-    return path
+    return write_text(Path(path), content)

@@ -30,6 +30,7 @@ from complydoc.cost.vision import vision_tokens
 from complydoc.extraction.routing import ROUTES
 from complydoc.report.charts import build_comparison, headline_comparison
 from complydoc.report.models import AuditReport
+from complydoc.utils.files import write_text
 from complydoc.utils.text import count
 
 __all__ = ["RoutingSummary", "routing_manifest", "summarise_routes", "write_routing_json"]
@@ -232,9 +233,5 @@ def routing_manifest(report: AuditReport) -> dict[str, Any]:
 
 
 def write_routing_json(report: AuditReport, path: Path) -> Path:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        json.dumps(routing_manifest(report), indent=2, sort_keys=True, ensure_ascii=False) + "\n",
-        encoding="utf-8",
-    )
-    return path
+    content = json.dumps(routing_manifest(report), indent=2, sort_keys=True, ensure_ascii=False)
+    return write_text(path, content + "\n")
