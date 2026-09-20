@@ -41,4 +41,6 @@ from complydoc.cli.common import app
 
 __all__ = ["app"]
 
+# Not decoration: the imports above are for their side effects, and naming them
+# here is what keeps them from being read as unused and removed.
 COMMAND_MODULES = (audits, routing, loaders, check, assist, diff, clean, chunks, info, benchmark)

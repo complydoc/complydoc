@@ -197,13 +197,6 @@ class LoaderRun:
     """The framework and library the loader comes from, such as `LangChain` and `pypdf`."""
 
 
-VISIBILITY_LEVELS = ("visible", "not_measured", "suspected", "confirmed")
-"""Whether a person reading the document would see a passage, weakest evidence of
-hiding first."""
-INSTRUCTION_LEVELS = ("confirmed", "pattern", "model", "none")
-"""Whether a passage reads as an instruction to a model, strongest evidence first."""
-
-
 @dataclass(frozen=True, slots=True)
 class ContentFinding:
     """A passage that is hidden from a reader, reads as an instruction to a model, or both."""

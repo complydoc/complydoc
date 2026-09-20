@@ -476,7 +476,7 @@ class PdfLoader:
         for index, image in rasters.items():
             document.pages[index].raster = image
 
-        self._apply_ocr(document, options, ocr_module, needs_raster)
+        self._apply_ocr(document, options, ocr_module)
         self._apply_ocr_compare(document, options, ocr_module)
         self._apply_second_engines(document, options)
         return document
@@ -667,9 +667,7 @@ class PdfLoader:
             page.ocr_confidence = read.confidence
 
     @staticmethod
-    def _apply_ocr(
-        document: Document, options: IngestOptions, ocr_module: Any, rendered: list[int]
-    ) -> None:
+    def _apply_ocr(document: Document, options: IngestOptions, ocr_module: Any) -> None:
         candidates = [
             page
             for page in document.pages

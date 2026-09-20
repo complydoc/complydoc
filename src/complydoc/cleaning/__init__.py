@@ -30,7 +30,7 @@ from pathlib import Path
 
 from complydoc.config.schema import Config
 
-__all__ = ["CleanChange", "CleanResult", "clean_document", "cleanable_formats"]
+__all__ = ["CleanChange", "CleanResult", "clean_document"]
 
 _BY_SUFFIX: dict[str, str] = {
     ".txt": "text",
@@ -45,11 +45,6 @@ _BY_SUFFIX: dict[str, str] = {
     ".pptx": "pptx",
     ".pdf": "pdf",
 }
-
-
-def cleanable_formats() -> list[str]:
-    """The file extensions a safe copy can be made of."""
-    return sorted(_BY_SUFFIX)
 
 
 @dataclass(frozen=True, slots=True)

@@ -6,11 +6,10 @@ arrangement the extractors, signals and detectors use.
 
 from __future__ import annotations
 
-import importlib
-import pkgutil
 from typing import Final
 
 from complydoc.ingest.engines.base import Engine
+from complydoc.utils.imports import import_package_modules
 
 __all__ = ["DEFAULT_ENGINE", "all_engines", "engine_by_id", "register"]
 
@@ -36,11 +35,7 @@ def _discover() -> None:
     if _discovered:
         return
     _discovered = True
-    package = importlib.import_module("complydoc.ingest.engines")
-    for info in pkgutil.iter_modules(package.__path__):
-        if info.name in {"base", "registry"}:
-            continue
-        importlib.import_module(f"complydoc.ingest.engines.{info.name}")
+    import_package_modules("complydoc.ingest.engines", skip={"base", "registry"})
 
 
 def all_engines() -> list[Engine]:

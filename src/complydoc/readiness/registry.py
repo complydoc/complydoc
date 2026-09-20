@@ -7,11 +7,10 @@ list and no switch statement to edit.
 
 from __future__ import annotations
 
-import importlib
-import pkgutil
 from typing import Final, TypeVar
 
 from complydoc.readiness.base import Signal
+from complydoc.utils.imports import import_package_modules
 
 __all__ = ["all_signals", "register", "signal", "signal_by_id"]
 
@@ -51,9 +50,7 @@ def _discover() -> None:
     if _discovered:
         return
     _discovered = True
-    package = importlib.import_module("complydoc.readiness.signals")
-    for info in pkgutil.iter_modules(package.__path__):
-        importlib.import_module(f"complydoc.readiness.signals.{info.name}")
+    import_package_modules("complydoc.readiness.signals")
 
 
 def all_signals() -> list[Signal]:

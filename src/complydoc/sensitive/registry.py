@@ -6,13 +6,22 @@ decorated class, and pointing a category at it by name in sensitive.yaml.
 
 from __future__ import annotations
 
-import importlib
-import pkgutil
-from typing import Final, TypeVar
+from typing import TYPE_CHECKING, Final, TypeVar
 
 from complydoc.sensitive.base import Detector
 
-__all__ = ["DetectorUnavailableError", "all_detectors", "detector", "detector_by_id", "register"]
+if TYPE_CHECKING:  # pragma: no cover - type-checking imports only
+    from complydoc.config.schema import SensitiveConfig
+from complydoc.utils.imports import import_package_modules
+
+__all__ = [
+    "DetectorUnavailableError",
+    "all_detectors",
+    "detector",
+    "detector_by_id",
+    "models_for_detector",
+    "register",
+]
 
 _DETECTORS: Final[dict[str, Detector]] = {}
 _discovered = False
@@ -57,9 +66,7 @@ def _discover() -> None:
     if _discovered:
         return
     _discovered = True
-    package = importlib.import_module("complydoc.sensitive.detectors")
-    for info in pkgutil.iter_modules(package.__path__):
-        importlib.import_module(f"complydoc.sensitive.detectors.{info.name}")
+    import_package_modules("complydoc.sensitive.detectors")
 
 
 def all_detectors() -> list[Detector]:
@@ -70,3 +77,17 @@ def all_detectors() -> list[Detector]:
 def detector_by_id(detector_id: str) -> Detector | None:
     _discover()
     return _DETECTORS.get(detector_id)
+
+
+def models_for_detector(config: SensitiveConfig, detector_id: str) -> list[str]:
+    """Every model an enabled category names for `detector_id`, in order.
+
+    Every link of a chain, not just the first: a category names the detectors to
+    try in order, and a model further down one is still configured.
+    """
+    names: list[str] = []
+    for category in config.enabled_categories.values():
+        for found, link in category.chain():
+            if found == detector_id and link.model is not None:
+                names.extend(link.model.model_names())
+    return list(dict.fromkeys(names))

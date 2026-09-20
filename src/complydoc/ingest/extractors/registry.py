@@ -7,11 +7,10 @@ arrangement the readiness signals and the sensitive detectors use.
 
 from __future__ import annotations
 
-import importlib
-import pkgutil
 from typing import Final
 
 from complydoc.ingest.extractors.base import Extractor
+from complydoc.utils.imports import import_package_modules
 
 __all__ = ["DEFAULT_EXTRACTOR", "all_extractors", "extractor_by_id", "register"]
 
@@ -41,11 +40,7 @@ def _discover() -> None:
     if _discovered:
         return
     _discovered = True
-    package = importlib.import_module("complydoc.ingest.extractors")
-    for info in pkgutil.iter_modules(package.__path__):
-        if info.name in {"base", "registry"}:
-            continue
-        importlib.import_module(f"complydoc.ingest.extractors.{info.name}")
+    import_package_modules("complydoc.ingest.extractors", skip={"base", "registry"})
 
 
 def all_extractors() -> list[Extractor]:

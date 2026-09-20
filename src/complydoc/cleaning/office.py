@@ -225,12 +225,12 @@ def _clean_pptx(source: Path, target: Path, settings: Config, result: CleanResul
             out.writestr(item, rewritten.get(name, contents[name]))
 
     if dropped:
-        _drop_relationships(target, dropped)
+        _drop_relationships(target)
         result.metadata_removed.extend(dropped)
     result.output = target
 
 
-def _drop_relationships(package: Path, dropped: list[str]) -> None:
+def _drop_relationships(package: Path) -> None:
     """Remove package relationships pointing at parts that are no longer there."""
     from lxml import etree
 

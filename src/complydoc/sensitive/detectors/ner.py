@@ -18,7 +18,7 @@ from typing import Any
 
 from complydoc.config.schema import NerModelSpec, SensitiveConfig
 from complydoc.sensitive.base import DetectorContext, Finding
-from complydoc.sensitive.registry import DetectorUnavailableError, detector
+from complydoc.sensitive.registry import DetectorUnavailableError, detector, models_for_detector
 from complydoc.utils.install import spacy_model_hint
 from complydoc.utils.text import detect_language
 
@@ -68,14 +68,7 @@ def _parse(model_name: str, text: str) -> Any:
 
 def configured_models(config: SensitiveConfig) -> list[str]:
     """Every model named by an enabled category that uses this detector, in order."""
-    names: list[str] = []
-    for category in config.enabled_categories.values():
-        # Every link, not just the first: a category names the detectors to try
-        # in order, and a model further down the chain is still configured.
-        for detector_id, link in category.chain():
-            if detector_id == "ner" and link.model is not None:
-                names.extend(link.model.model_names())
-    return list(dict.fromkeys(names))
+    return models_for_detector(config, "ner")
 
 
 def _model_for(spec: NerModelSpec, text: str) -> tuple[str, list[str]]:
