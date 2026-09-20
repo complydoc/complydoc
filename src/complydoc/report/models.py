@@ -609,60 +609,112 @@ class AuditReport:
         return summary_html(self)
 
 
+@dataclass(frozen=True, slots=True)
+class _ReadinessTally:
+    """How the signals came out across the folder, and the scores they produced."""
+
+    distribution: dict[str, dict[str, int]]
+    scores: list[float]
+    bands: Counter[str]
+
+
+@dataclass(frozen=True, slots=True)
+class _SensitiveTally:
+    """What the identifier scan found across the folder, and what it could not look at."""
+
+    unreadable_pages: int
+    by_category: Counter[str]
+    by_severity: Counter[str]
+    not_scanned: dict[str, str]
+    documents_with_data: int
+
+
+@dataclass(frozen=True, slots=True)
+class _ContentTally:
+    """Hidden and instruction-like passages across the folder."""
+
+    matrix: dict[str, dict[str, int]]
+    total: int
+    high: int
+    documents_with_findings: int
+    documents_unchecked: int
+
+
+def _tally_readiness(documents: list[DocumentReport]) -> _ReadinessTally:
+    distribution: dict[str, dict[str, int]] = {}
+    scores: list[float] = []
+    bands: Counter[str] = Counter()
+
+    for document in documents:
+        if document.readiness is None:
+            continue
+        for signal in document.readiness.signals:
+            bucket = distribution.setdefault(
+                signal.id,
+                {"good": 0, "fair": 0, "poor": 0, "not_applicable": 0, "error": 0},
+            )
+            if signal.status is SignalStatus.ERROR:
+                bucket["error"] += 1
+            elif signal.status is SignalStatus.NOT_APPLICABLE:
+                bucket["not_applicable"] += 1
+            elif signal.rating:
+                bucket[signal.rating] += 1
+        if document.readiness.score is not None:
+            scores.append(document.readiness.score.value)
+            bands[document.readiness.score.label] += 1
+
+    return _ReadinessTally(distribution, scores, bands)
+
+
+def _tally_sensitive(documents: list[DocumentReport]) -> _SensitiveTally:
+    unreadable = 0
+    by_category: Counter[str] = Counter()
+    by_severity: Counter[str] = Counter()
+    not_scanned: dict[str, str] = {}
+    with_data = 0
+
+    for document in documents:
+        if document.sensitive is None:
+            continue
+        unreadable += len(document.sensitive.unreadable_pages)
+        by_category.update(document.sensitive.counts_by_category)
+        by_severity.update(document.sensitive.counts_by_severity)
+        if document.sensitive.total:
+            with_data += 1
+        # The first reason given for a category: they are the same reason on
+        # every document, because it is the run that could not scan it.
+        for entry in document.sensitive.unscanned_categories:
+            not_scanned.setdefault(entry.category, entry.reason)
+
+    return _SensitiveTally(unreadable, by_category, by_severity, not_scanned, with_data)
+
+
+def _tally_content(documents: list[DocumentReport]) -> _ContentTally:
+    matrix: dict[str, dict[str, int]] = {}
+    total = high = with_findings = unchecked = 0
+
+    for document in documents:
+        for finding in document.content_findings:
+            row = matrix.setdefault(finding.instruction, {})
+            row[finding.visibility] = row.get(finding.visibility, 0) + 1
+            total += 1
+            high += finding.severity == "high"
+        with_findings += bool(document.content_findings)
+        unchecked += document.visibility_checked is False
+
+    return _ContentTally(matrix, total, high, with_findings, unchecked)
+
+
 def build_aggregate(
     documents: list[DocumentReport],
     skipped: list[SkipRecord],
     cost: FolderCostEstimate | None,
 ) -> Aggregate:
-    formats: Counter[str] = Counter()
-    pages = 0
-    unreadable = 0
-    signal_distribution: dict[str, dict[str, int]] = {}
-    scores: list[float] = []
-    bands: Counter[str] = Counter()
-    by_category: Counter[str] = Counter()
-    by_severity: Counter[str] = Counter()
-    not_scanned: dict[str, str] = {}
-    with_sensitive = 0
-    content_matrix: dict[str, dict[str, int]] = {}
-    content_total = content_high = with_content = unchecked = 0
-
-    for document in documents:
-        formats[document.format.value] += 1
-        pages += document.page_count
-
-        if document.readiness is not None:
-            for signal in document.readiness.signals:
-                bucket = signal_distribution.setdefault(
-                    signal.id,
-                    {"good": 0, "fair": 0, "poor": 0, "not_applicable": 0, "error": 0},
-                )
-                if signal.status is SignalStatus.ERROR:
-                    bucket["error"] += 1
-                elif signal.status is SignalStatus.NOT_APPLICABLE:
-                    bucket["not_applicable"] += 1
-                elif signal.rating:
-                    bucket[signal.rating] += 1
-            if document.readiness.score is not None:
-                scores.append(document.readiness.score.value)
-                bands[document.readiness.score.label] += 1
-
-        if document.sensitive is not None:
-            unreadable += len(document.sensitive.unreadable_pages)
-            by_category.update(document.sensitive.counts_by_category)
-            by_severity.update(document.sensitive.counts_by_severity)
-            if document.sensitive.total:
-                with_sensitive += 1
-            for entry in document.sensitive.unscanned_categories:
-                not_scanned.setdefault(entry.category, entry.reason)
-
-        for finding in document.content_findings:
-            row = content_matrix.setdefault(finding.instruction, {})
-            row[finding.visibility] = row.get(finding.visibility, 0) + 1
-            content_total += 1
-            content_high += finding.severity == "high"
-        with_content += bool(document.content_findings)
-        unchecked += document.visibility_checked is False
+    formats: Counter[str] = Counter(d.format.value for d in documents)
+    pages = sum(d.page_count for d in documents)
+    readiness = _tally_readiness(documents)
+    sensitive = _tally_sensitive(documents)
+    content = _tally_content(documents)
 
     timings = [d.timing for d in documents if d.timing]
     measured_seconds = sum(t.total_seconds for t in timings)
@@ -672,21 +724,23 @@ def build_aggregate(
         documents_audited=len(documents),
         documents_skipped=len(skipped),
         pages_total=pages,
-        pages_unreadable=unreadable,
+        pages_unreadable=sensitive.unreadable_pages,
         formats=dict(formats),
-        signal_distribution=signal_distribution,
-        readiness_bands=dict(bands),
-        mean_readiness_score=round(sum(scores) / len(scores), 1) if scores else None,
-        sensitive_by_category=dict(by_category),
-        sensitive_by_severity=dict(by_severity),
-        sensitive_total=int(sum(by_category.values())),
-        documents_with_sensitive_data=with_sensitive,
-        categories_not_scanned=not_scanned,
-        content_matrix=content_matrix,
-        content_findings_total=content_total,
-        content_findings_high=content_high,
-        documents_with_content_findings=with_content,
-        documents_visibility_unchecked=unchecked,
+        signal_distribution=readiness.distribution,
+        readiness_bands=dict(readiness.bands),
+        mean_readiness_score=(
+            round(sum(readiness.scores) / len(readiness.scores), 1) if readiness.scores else None
+        ),
+        sensitive_by_category=dict(sensitive.by_category),
+        sensitive_by_severity=dict(sensitive.by_severity),
+        sensitive_total=int(sum(sensitive.by_category.values())),
+        documents_with_sensitive_data=sensitive.documents_with_data,
+        categories_not_scanned=sensitive.not_scanned,
+        content_matrix=content.matrix,
+        content_findings_total=content.total,
+        content_findings_high=content.high,
+        documents_with_content_findings=content.documents_with_findings,
+        documents_visibility_unchecked=content.documents_unchecked,
         total_seconds=round(measured_seconds, 3),
         seconds_per_document=(round(measured_seconds / len(timings), 3) if timings else None),
         seconds_per_page=round(measured_seconds / pages, 3) if pages else None,

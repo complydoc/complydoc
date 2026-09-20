@@ -180,7 +180,6 @@ def xlsx_hidden_runs(
     path: Path, config: VisibilityConfig
 ) -> tuple[list[HiddenRun], list[str], bool]:
     import openpyxl
-    from openpyxl.utils import column_index_from_string
     from openpyxl.utils.exceptions import InvalidFileException
 
     try:
@@ -190,51 +189,86 @@ def xlsx_hidden_runs(
 
     runs: list[HiddenRun] = []
     try:
-        for index, sheet in enumerate(workbook.worksheets):
-            number = index + 1
-            title = sheet.title
-            state = getattr(sheet, "sheet_state", "visible")
-            if state in ("hidden", "veryHidden"):
-                values = [
-                    str(cell.value)
-                    for row in sheet.iter_rows()
-                    for cell in row
-                    if cell.value is not None and str(cell.value).strip()
-                ]
-                kind = "very hidden" if state == "veryHidden" else "hidden"
-                _add(runs, number, values, f"{kind} sheet {title!r}", config)
-                continue
-
-            hidden_rows = {i for i, dimension in sheet.row_dimensions.items() if dimension.hidden}
-            hidden_columns: set[int] = set()
-            for key, dimension in sheet.column_dimensions.items():
-                if dimension.hidden:
-                    low = dimension.min or column_index_from_string(key)
-                    high = dimension.max or low
-                    hidden_columns.update(range(low, high + 1))
-
-            groups: dict[str, list[str]] = {}
-            for row in sheet.iter_rows():
-                for cell in row:
-                    if cell.value is None or not str(cell.value).strip():
-                        continue
-                    reason = None
-                    if cell.row in hidden_rows:
-                        reason = f"hidden row in sheet {title!r}"
-                    elif cell.column in hidden_columns:
-                        reason = f"hidden column in sheet {title!r}"
-                    elif _format_shows_nothing(cell.number_format):
-                        reason = f"number format that displays nothing, in sheet {title!r}"
-                    elif _white_on_nothing(cell, config):
-                        reason = f"white text in sheet {title!r}"
-                    if reason:
-                        groups.setdefault(reason, []).append(str(cell.value))
-            for reason, values in groups.items():
-                _add(runs, number, values, reason, config)
+        for number, sheet in enumerate(workbook.worksheets, start=1):
+            _sheet_runs(runs, number, sheet, config)
     finally:
         with contextlib.suppress(Exception):
             workbook.close()
     return runs, [], True
+
+
+def _sheet_runs(runs: list[HiddenRun], number: int, sheet: Any, config: VisibilityConfig) -> None:
+    """What one sheet hides: the whole of it when the sheet is, else cell by cell."""
+    title = sheet.title
+    state = getattr(sheet, "sheet_state", "visible")
+    if state in ("hidden", "veryHidden"):
+        kind = "very hidden" if state == "veryHidden" else "hidden"
+        _add(runs, number, _written_values(sheet), f"{kind} sheet {title!r}", config)
+        return
+
+    hidden_rows = {i for i, dimension in sheet.row_dimensions.items() if dimension.hidden}
+    hidden_columns = _hidden_columns(sheet)
+
+    # Grouped by reason, so one hidden column is one finding rather than one a cell.
+    groups: dict[str, list[str]] = {}
+    for row in sheet.iter_rows():
+        for cell in row:
+            value = "" if cell.value is None else str(cell.value)
+            if not value.strip():
+                continue
+            reason = _why_unseen(cell, title, hidden_rows, hidden_columns, config)
+            if reason is not None:
+                groups.setdefault(reason, []).append(value)
+
+    for reason, values in groups.items():
+        _add(runs, number, values, reason, config)
+
+
+def _written_values(sheet: Any) -> list[str]:
+    """Every cell of the sheet that holds something, as text."""
+    return [
+        str(cell.value)
+        for row in sheet.iter_rows()
+        for cell in row
+        if cell.value is not None and str(cell.value).strip()
+    ]
+
+
+def _hidden_columns(sheet: Any) -> set[int]:
+    """Column numbers the sheet hides.
+
+    A column dimension covers a range, and carries the range as `min` and `max`;
+    where it does not, the key is the column letter it applies to.
+    """
+    from openpyxl.utils import column_index_from_string
+
+    hidden: set[int] = set()
+    for key, dimension in sheet.column_dimensions.items():
+        if not dimension.hidden:
+            continue
+        low = dimension.min or column_index_from_string(key)
+        high = dimension.max or low
+        hidden.update(range(low, high + 1))
+    return hidden
+
+
+def _why_unseen(
+    cell: Any,
+    title: str,
+    hidden_rows: set[int],
+    hidden_columns: set[int],
+    config: VisibilityConfig,
+) -> str | None:
+    """Why a person reading the sheet would not see this cell, or None if they would."""
+    if cell.row in hidden_rows:
+        return f"hidden row in sheet {title!r}"
+    if cell.column in hidden_columns:
+        return f"hidden column in sheet {title!r}"
+    if _format_shows_nothing(cell.number_format):
+        return f"number format that displays nothing, in sheet {title!r}"
+    if _white_on_nothing(cell, config):
+        return f"white text in sheet {title!r}"
+    return None
 
 
 def _add(

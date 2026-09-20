@@ -19,16 +19,10 @@ from complydoc.utils.text import count, plural
 __all__ = ["build_limitations"]
 
 
-def build_limitations(
-    run: RunMetadata,
-    documents: list[DocumentReport],
-    skipped: list[SkipRecord],
-    staleness: list[StalenessWarning],
-    config: Config,
-) -> list[Limitation]:
+def _sampling(run: RunMetadata) -> list[Limitation]:
+    """Only part of the folder was looked at."""
     limitations: list[Limitation] = []
 
-    # --- Only part of the folder was looked at ----------------------------
     if run.sampled_from is not None:
         limitations.append(
             Limitation(
@@ -43,7 +37,13 @@ def build_limitations(
             )
         )
 
-    # --- Document text was sent somewhere -------------------------------------
+    return limitations
+
+
+def _content_sent_off_machine(run: RunMetadata) -> list[Limitation]:
+    """Document text was sent somewhere."""
+    limitations: list[Limitation] = []
+
     if run.content_sent_to:
         limitations.append(
             Limitation(
@@ -59,7 +59,13 @@ def build_limitations(
             )
         )
 
-    # --- A classifier was asked and could not answer --------------------------
+    return limitations
+
+
+def _classifier_failures(run: RunMetadata) -> list[Limitation]:
+    """A classifier was asked and could not answer."""
+    limitations: list[Limitation] = []
+
     if run.classifier_failures:
         every = run.classifier_failures == run.classifier_calls
         limitations.append(
@@ -80,7 +86,13 @@ def build_limitations(
             )
         )
 
-    # --- A classifier could not reach the workers -----------------------------
+    return limitations
+
+
+def _classifier_and_workers(run: RunMetadata) -> list[Limitation]:
+    """A classifier could not reach the worker processes."""
+    limitations: list[Limitation] = []
+
     if run.classifier_missed_workers:
         limitations.append(
             Limitation(
@@ -96,7 +108,13 @@ def build_limitations(
             )
         )
 
-    # --- A worker process stopped --------------------------------------------
+    return limitations
+
+
+def _worker_restarts(run: RunMetadata) -> list[Limitation]:
+    """A worker process stopped and its documents were read again here."""
+    limitations: list[Limitation] = []
+
     if run.documents_read_after_worker_failure:
         limitations.append(
             Limitation(
@@ -111,7 +129,13 @@ def build_limitations(
             )
         )
 
-    # --- Extractors that read the same page differently --------------------
+    return limitations
+
+
+def _extractor_disagreement(documents: list[DocumentReport]) -> list[Limitation]:
+    """Extractors that read the same page differently."""
+    limitations: list[Limitation] = []
+
     differing = sorted(d.relative_path for d in documents if d.extractors_disagree)
     if differing:
         names = ", ".join(r.extractor for r in documents[0].extractions) if documents else ""
@@ -129,7 +153,13 @@ def build_limitations(
             )
         )
 
-    # --- Hidden text, and text addressed to a model -----------------------
+    return limitations
+
+
+def _hidden_content(run: RunMetadata, documents: list[DocumentReport]) -> list[Limitation]:
+    """Hidden text, and text addressed to a model."""
+    limitations: list[Limitation] = []
+
     if "sensitive" in run.components_run:
         high = [
             d.relative_path
@@ -199,7 +229,13 @@ def build_limitations(
                 )
             )
 
-    # --- Imported prices --------------------------------------------------
+    return limitations
+
+
+def _imported_prices(documents: list[DocumentReport]) -> list[Limitation]:
+    """Prices taken from a third-party table rather than the provider."""
+    limitations: list[Limitation] = []
+
     priced = next((d.cost.models for d in documents if d.cost), [])
     imported = sorted({m.display_name for m in priced if m.price_source == "imported"})
     if imported:
@@ -222,7 +258,13 @@ def build_limitations(
             )
         )
 
-    # --- Files that were never opened -------------------------------------
+    return limitations
+
+
+def _files_not_examined(run: RunMetadata, skipped: list[SkipRecord]) -> list[Limitation]:
+    """Files that were never opened."""
+    limitations: list[Limitation] = []
+
     if skipped:
         by_reason: dict[str, list[str]] = defaultdict(list)
         for record in skipped:
@@ -249,7 +291,13 @@ def build_limitations(
                 )
             )
 
-    # --- Pages with no readable text --------------------------------------
+    return limitations
+
+
+def _unreadable_pages(run: RunMetadata, documents: list[DocumentReport]) -> list[Limitation]:
+    """Pages with no readable text."""
+    limitations: list[Limitation] = []
+
     unreadable: dict[str, list[int]] = {}
     for document in documents:
         if document.sensitive and document.sensitive.unreadable_pages:
@@ -277,7 +325,13 @@ def build_limitations(
             )
         )
 
-    # --- Encrypted documents ----------------------------------------------
+    return limitations
+
+
+def _encrypted_documents(documents: list[DocumentReport]) -> list[Limitation]:
+    """Documents that are password protected."""
+    limitations: list[Limitation] = []
+
     encrypted = [
         d.relative_path
         for d in documents
@@ -296,7 +350,13 @@ def build_limitations(
             )
         )
 
-    # --- Detector categories that never ran -------------------------------
+    return limitations
+
+
+def _categories_not_scanned(documents: list[DocumentReport], config: Config) -> list[Limitation]:
+    """Detector categories that never ran."""
+    limitations: list[Limitation] = []
+
     unscanned: dict[str, tuple[str, list[str]]] = {}
     for document in documents:
         if not document.sensitive:
@@ -331,27 +391,27 @@ def build_limitations(
             )
         )
 
-    # --- Signals that did not apply ---------------------------------------
+    return limitations
+
+
+def _failed_signals(documents: list[DocumentReport]) -> list[Limitation]:
+    """Signals that raised an error."""
+    limitations: list[Limitation] = []
+
     # Keyed by (signal, reason). Grouping on the signal alone would attach one
     # document's reason to every other document in the group.
-    na_signals: dict[tuple[str, str], list[str]] = {}
+    #
+    # Only signals that errored: one that does not apply to a format is a
+    # property of the document, and the document itself lists it.
     error_signals: dict[tuple[str, str], list[str]] = {}
     for document in documents:
         if not document.readiness:
             continue
         for signal in document.readiness.signals:
-            if signal.status is SignalStatus.NOT_APPLICABLE:
-                bucket = na_signals
-            elif signal.status is SignalStatus.ERROR:
-                bucket = error_signals
-            else:
+            if signal.status is not SignalStatus.ERROR:
                 continue
             key = (signal.name, signal.reason or "no reason recorded")
-            bucket.setdefault(key, []).append(document.relative_path)
-
-    # Signals that simply do not apply to a format are a property of the document,
-    # not of the run, and are listed on the document itself.
-    _ = na_signals
+            error_signals.setdefault(key, []).append(document.relative_path)
 
     for (name, reason), affected in sorted(error_signals.items()):
         limitations.append(
@@ -366,7 +426,13 @@ def build_limitations(
             )
         )
 
-    # --- What alignment-detected tables cannot report ---------------------
+    return limitations
+
+
+def _aligned_tables(documents: list[DocumentReport]) -> list[Limitation]:
+    """What alignment-detected tables cannot report."""
+    limitations: list[Limitation] = []
+
     aligned = [
         d.relative_path
         for d in documents
@@ -391,7 +457,13 @@ def build_limitations(
             )
         )
 
-    # --- Documents with no fixed pagination -------------------------------
+    return limitations
+
+
+def _documents_without_pagination(documents: list[DocumentReport]) -> list[Limitation]:
+    """Documents with no fixed pagination."""
+    limitations: list[Limitation] = []
+
     unpaged = [d.relative_path for d in documents if not d.page_count_known]
     if unpaged:
         limitations.append(
@@ -407,7 +479,13 @@ def build_limitations(
             )
         )
 
-    # --- Pricing provenance ------------------------------------------------
+    return limitations
+
+
+def _price_provenance(staleness: list[StalenessWarning], config: Config) -> list[Limitation]:
+    """Prices that are stale, and models carrying no price at all."""
+    limitations: list[Limitation] = []
+
     for warning in staleness:
         limitations.append(
             Limitation(
@@ -431,7 +509,13 @@ def build_limitations(
             )
         )
 
-    # --- Token counting fidelity -------------------------------------------
+    return limitations
+
+
+def _token_counting(documents: list[DocumentReport]) -> list[Limitation]:
+    """Where a token count is an estimate rather than a count."""
+    limitations: list[Limitation] = []
+
     fidelities: dict[str, list[str]] = defaultdict(list)
     for document in documents:
         if not document.cost:
@@ -448,7 +532,13 @@ def build_limitations(
             )
         )
 
-    # --- Output tokens are not estimated -----------------------------------
+    return limitations
+
+
+def _cost_scope(run: RunMetadata, config: Config) -> list[Limitation]:
+    """What a cost figure does not cover."""
+    limitations: list[Limitation] = []
+
     if run.components_run and "cost" in run.components_run:
         limitations.append(
             Limitation(
@@ -471,7 +561,13 @@ def build_limitations(
                 )
             )
 
-    # --- Extrapolation ------------------------------------------------------
+    return limitations
+
+
+def _volume_extrapolation(run: RunMetadata, documents: list[DocumentReport]) -> list[Limitation]:
+    """Monthly and annual figures rest on this run being typical."""
+    limitations: list[Limitation] = []
+
     if run.monthly_volume:
         limitations.append(
             Limitation(
@@ -485,7 +581,13 @@ def build_limitations(
             )
         )
 
-    # --- Reveal --------------------------------------------------------------
+    return limitations
+
+
+def _masking(run: RunMetadata) -> list[Limitation]:
+    """Reports that carry values in the clear."""
+    limitations: list[Limitation] = []
+
     if run.reveal_used:
         limitations.append(
             Limitation(
@@ -513,7 +615,13 @@ def build_limitations(
             )
         )
 
-    # --- Signals registered but not configured -------------------------------
+    return limitations
+
+
+def _unconfigured_signals(documents: list[DocumentReport]) -> list[Limitation]:
+    """Signals registered in code with no entry in the configuration."""
+    limitations: list[Limitation] = []
+
     unconfigured: set[str] = set()
     for document in documents:
         if document.readiness:
@@ -530,7 +638,13 @@ def build_limitations(
             )
         )
 
-    # --- Components that were not run at all ---------------------------------
+    return limitations
+
+
+def _components_not_run(run: RunMetadata) -> list[Limitation]:
+    """Components this run did not cover."""
+    limitations: list[Limitation] = []
+
     all_components = {"cost", "readiness", "sensitive"}
     not_run = sorted(all_components - set(run.components_run))
     if not_run:
@@ -546,3 +660,37 @@ def build_limitations(
         )
 
     return limitations
+
+
+def build_limitations(
+    run: RunMetadata,
+    documents: list[DocumentReport],
+    skipped: list[SkipRecord],
+    staleness: list[StalenessWarning],
+    config: Config,
+) -> list[Limitation]:
+    """Every limitation this run carries, in the order the report shows them."""
+    return [
+        *_sampling(run),
+        *_content_sent_off_machine(run),
+        *_classifier_failures(run),
+        *_classifier_and_workers(run),
+        *_worker_restarts(run),
+        *_extractor_disagreement(documents),
+        *_hidden_content(run, documents),
+        *_imported_prices(documents),
+        *_files_not_examined(run, skipped),
+        *_unreadable_pages(run, documents),
+        *_encrypted_documents(documents),
+        *_categories_not_scanned(documents, config),
+        *_failed_signals(documents),
+        *_aligned_tables(documents),
+        *_documents_without_pagination(documents),
+        *_price_provenance(staleness, config),
+        *_token_counting(documents),
+        *_cost_scope(run, config),
+        *_volume_extrapolation(run, documents),
+        *_masking(run),
+        *_unconfigured_signals(documents),
+        *_components_not_run(run),
+    ]
