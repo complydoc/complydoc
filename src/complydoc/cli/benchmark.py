@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 
 import typer
 from rich.table import Table
@@ -16,6 +16,139 @@ from complydoc.cli.common import (
     console,
     load_config_or_exit,
 )
+from complydoc.utils.files import write_text
+
+if TYPE_CHECKING:  # pragma: no cover - type-checking imports only
+    from typing import Any
+
+    from complydoc.benchmark import BenchmarkResult, CategoryScore
+
+
+def _headline(result: BenchmarkResult) -> Table:
+    """What detection found across the corpus, and what it should not have."""
+    table = Table(show_header=False, box=None, pad_edge=False)
+    table.add_column(style="dim")
+    table.add_column()
+    table.add_row("Passages", f"{result.passages}")
+    table.add_row("Labelled identifiers", f"{result.labelled_total}")
+    table.add_row("Found", f"{result.found_total}")
+    table.add_row("Missed", f"[yellow]{result.missed_total}[/]" if result.missed_total else "0")
+    flagged = result.wrongly_flagged_total
+    table.add_row("Wrongly flagged", f"[yellow]{flagged}[/]" if flagged else "0")
+    table.add_row("Recall", f"{result.recall_pct}%")
+    table.add_row("Precision", f"{result.precision_pct}%")
+    table.add_row(
+        "Passages holding nothing",
+        f"{result.clean_passages}, {result.clean_passages_with_a_flag} with a flag",
+    )
+    table.add_row(
+        "Evidence", ", ".join(f"{tier} {n}" for tier, n in sorted(result.by_evidence.items()))
+    )
+    return table
+
+
+def _names(result: BenchmarkResult) -> Table:
+    """Names, scored apart: the figure describes the model on this machine."""
+    table = Table(show_header=False, box=None, pad_edge=False)
+    table.add_column(style="dim")
+    table.add_column()
+    table.add_row("Names found by", f"{result.model_name}")
+    table.add_row("Labelled names", f"{result.names_labelled}")
+    table.add_row("Found", f"{result.names_found}")
+    missed = result.names_labelled - result.names_found
+    table.add_row("Missed", f"[yellow]{missed}[/]" if missed else "0")
+    flagged = result.names_wrongly_flagged
+    table.add_row("Wrongly flagged", f"[yellow]{flagged}[/]" if flagged else "0")
+    table.add_row("Recall", f"{result.names_recall_pct}%")
+    table.add_row("Precision", f"{result.names_precision_pct}%")
+    return table
+
+
+def _instructions(result: BenchmarkResult) -> Table:
+    """Passages written at a model, and passages written to be mistaken for one."""
+    table = Table(show_header=False, box=None, pad_edge=False)
+    table.add_column(style="dim")
+    table.add_column()
+    table.add_row("Labelled injections", f"{len(result.instructions_injected)}")
+    table.add_row("Found", f"{result.instructions_found}")
+    missed = len(result.instructions_missed)
+    table.add_row("Missed", f"[yellow]{missed}[/]" if missed else "0")
+    wrong = len(result.instructions_wrongly_flagged)
+    table.add_row("Wrongly flagged", f"[yellow]{wrong}[/]" if wrong else "0")
+    table.add_row("Recall", f"{result.instruction_recall_pct}%")
+    table.add_row("Precision", f"{result.instruction_precision_pct}%")
+    table.add_row(
+        "Scored by",
+        "patterns and a registered classifier"
+        if result.classifier_scores
+        else "patterns only, no classifier registered",
+    )
+    return table
+
+
+def _categories(imperfect: list[CategoryScore]) -> Table:
+    """Only the categories worth looking at: the ones that got something wrong."""
+    table = Table(
+        title="Categories that missed something or flagged something", title_justify="left"
+    )
+    table.add_column("Category")
+    table.add_column("Found", justify="right")
+    table.add_column("Missed", justify="right")
+    table.add_column("Wrongly flagged", justify="right")
+    for score in imperfect:
+        table.add_row(
+            score.category,
+            f"{score.found}/{score.labelled}",
+            str(score.missed),
+            str(score.wrongly_flagged),
+        )
+    return table
+
+
+def _scores(result: BenchmarkResult) -> dict[str, Any]:
+    """The same numbers as JSON, for a caller that wants to track them over time."""
+    return {
+        "passages": result.passages,
+        "labelled": result.labelled_total,
+        "found": result.found_total,
+        "missed": result.missed_total,
+        "wrongly_flagged": result.wrongly_flagged_total,
+        "recall_pct": result.recall_pct,
+        "precision_pct": result.precision_pct,
+        "by_evidence": result.by_evidence,
+        "clean_passages": result.clean_passages,
+        "clean_passages_with_a_flag": result.clean_passages_with_a_flag,
+        "names": {
+            "measured": result.names_measured,
+            "model": result.model_name,
+            "labelled": result.names_labelled,
+            "found": result.names_found,
+            "wrongly_flagged": result.names_wrongly_flagged,
+            "recall_pct": result.names_recall_pct,
+            "precision_pct": result.names_precision_pct,
+        },
+        "instructions": {
+            "labelled": result.instructions_labelled,
+            "injections": len(result.instructions_injected),
+            "found": result.instructions_found,
+            "missed": result.instructions_missed,
+            "wrongly_flagged": result.instructions_wrongly_flagged,
+            "recall_pct": result.instruction_recall_pct,
+            "precision_pct": result.instruction_precision_pct,
+            "classifier_scores": result.classifier_scores,
+        },
+        "categories": {
+            score.category: {
+                "found": score.found,
+                "missed": score.missed,
+                "wrongly_flagged": score.wrongly_flagged,
+                "unmeasured": score.unmeasured,
+                "misses": score.misses,
+                "false_flags": score.false_flags,
+            }
+            for score in sorted(result.categories.values(), key=lambda s: s.category)
+        },
+    }
 
 
 @app.command(rich_help_panel="Information")
@@ -36,64 +169,19 @@ def benchmark(
 
     config = load_config_or_exit(config_dir)
     result = run_benchmark(config)
-
-    headline = Table(show_header=False, box=None, pad_edge=False)
-    headline.add_column(style="dim")
-    headline.add_column()
-    headline.add_row("Passages", f"{result.passages}")
-    headline.add_row("Labelled identifiers", f"{result.labelled_total}")
-    headline.add_row("Found", f"{result.found_total}")
-    headline.add_row("Missed", f"[yellow]{result.missed_total}[/]" if result.missed_total else "0")
-    flagged = result.wrongly_flagged_total
-    headline.add_row("Wrongly flagged", f"[yellow]{flagged}[/]" if flagged else "0")
-    headline.add_row("Recall", f"{result.recall_pct}%")
-    headline.add_row("Precision", f"{result.precision_pct}%")
-    headline.add_row(
-        "Passages holding nothing",
-        f"{result.clean_passages}, {result.clean_passages_with_a_flag} with a flag",
-    )
-    tiers = ", ".join(f"{tier} {n}" for tier, n in sorted(result.by_evidence.items()))
-    headline.add_row("Evidence", tiers)
-    console.print(headline)
+    console.print(_headline(result))
 
     if result.names_measured:
-        names = Table(show_header=False, box=None, pad_edge=False)
-        names.add_column(style="dim")
-        names.add_column()
-        names.add_row("Names found by", f"{result.model_name}")
-        names.add_row("Labelled names", f"{result.names_labelled}")
-        names.add_row("Found", f"{result.names_found}")
-        missed_names = result.names_labelled - result.names_found
-        names.add_row("Missed", f"[yellow]{missed_names}[/]" if missed_names else "0")
-        flagged_names = result.names_wrongly_flagged
-        names.add_row("Wrongly flagged", f"[yellow]{flagged_names}[/]" if flagged_names else "0")
-        names.add_row("Recall", f"{result.names_recall_pct}%")
-        names.add_row("Precision", f"{result.names_precision_pct}%")
         console.print()
-        console.print(names)
+        console.print(_names(result))
         console.print(
             "[dim]A name score describes the model installed on this machine, so it is kept "
             "out of the figures above.[/]"
         )
 
     if result.instructions_labelled:
-        hidden = Table(show_header=False, box=None, pad_edge=False)
-        hidden.add_column(style="dim")
-        hidden.add_column()
-        hidden.add_row("Labelled injections", f"{len(result.instructions_injected)}")
-        hidden.add_row("Found", f"{result.instructions_found}")
-        missed = len(result.instructions_missed)
-        hidden.add_row("Missed", f"[yellow]{missed}[/]" if missed else "0")
-        wrong = len(result.instructions_wrongly_flagged)
-        hidden.add_row("Wrongly flagged", f"[yellow]{wrong}[/]" if wrong else "0")
-        hidden.add_row("Recall", f"{result.instruction_recall_pct}%")
-        hidden.add_row("Precision", f"{result.instruction_precision_pct}%")
-        if result.classifier_scores:
-            hidden.add_row("Scored by", "patterns and a registered classifier")
-        else:
-            hidden.add_row("Scored by", "patterns only, no classifier registered")
         console.print()
-        console.print(hidden)
+        console.print(_instructions(result))
         if verbose:
             for name in result.instructions_missed:
                 # Named apart from the `score` below: a missed injection the
@@ -111,21 +199,7 @@ def benchmark(
         if score.missed or score.wrongly_flagged
     ]
     if imperfect:
-        table = Table(
-            title="Categories that missed something or flagged something", title_justify="left"
-        )
-        table.add_column("Category")
-        table.add_column("Found", justify="right")
-        table.add_column("Missed", justify="right")
-        table.add_column("Wrongly flagged", justify="right")
-        for score in imperfect:
-            table.add_row(
-                score.category,
-                f"{score.found}/{score.labelled}",
-                str(score.missed),
-                str(score.wrongly_flagged),
-            )
-        console.print(table)
+        console.print(_categories(imperfect))
         if verbose:
             for score in imperfect:
                 for item in score.misses:
@@ -141,48 +215,5 @@ def benchmark(
         )
 
     if json_out is not None:
-        payload = {
-            "passages": result.passages,
-            "labelled": result.labelled_total,
-            "found": result.found_total,
-            "missed": result.missed_total,
-            "wrongly_flagged": result.wrongly_flagged_total,
-            "recall_pct": result.recall_pct,
-            "precision_pct": result.precision_pct,
-            "by_evidence": result.by_evidence,
-            "clean_passages": result.clean_passages,
-            "clean_passages_with_a_flag": result.clean_passages_with_a_flag,
-            "names": {
-                "measured": result.names_measured,
-                "model": result.model_name,
-                "labelled": result.names_labelled,
-                "found": result.names_found,
-                "wrongly_flagged": result.names_wrongly_flagged,
-                "recall_pct": result.names_recall_pct,
-                "precision_pct": result.names_precision_pct,
-            },
-            "instructions": {
-                "labelled": result.instructions_labelled,
-                "injections": len(result.instructions_injected),
-                "found": result.instructions_found,
-                "missed": result.instructions_missed,
-                "wrongly_flagged": result.instructions_wrongly_flagged,
-                "recall_pct": result.instruction_recall_pct,
-                "precision_pct": result.instruction_precision_pct,
-                "classifier_scores": result.classifier_scores,
-            },
-            "categories": {
-                score.category: {
-                    "found": score.found,
-                    "missed": score.missed,
-                    "wrongly_flagged": score.wrongly_flagged,
-                    "unmeasured": score.unmeasured,
-                    "misses": score.misses,
-                    "false_flags": score.false_flags,
-                }
-                for score in sorted(result.categories.values(), key=lambda s: s.category)
-            },
-        }
-        json_out.expanduser().parent.mkdir(parents=True, exist_ok=True)
-        json_out.expanduser().write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+        write_text(json_out, json.dumps(_scores(result), indent=2) + "\n")
         console.print(f"Scores {json_out}")
