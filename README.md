@@ -6,10 +6,19 @@
 
   <h3>Check documents before they reach an LLM, offline.</h3>
 
-  <a href="https://pypi.org/project/complydoc/"><img src="https://img.shields.io/pypi/dm/complydoc?color=1a7f4b&cacheSeconds=3600" alt="PyPI downloads"></a>
+  <a href="https://pypi.org/project/complydoc/"><img src="https://img.shields.io/pypi/v/complydoc?color=1a7f4b&label=pypi" alt="PyPI"></a>
   <a href="https://github.com/complydoc/complydoc/actions/workflows/checks.yml"><img src="https://github.com/complydoc/complydoc/actions/workflows/checks.yml/badge.svg?branch=main" alt="Tests"></a>
   <a href="https://complydoc.github.io/complydoc/"><img src="https://img.shields.io/badge/docs-complydoc-1a7f4b" alt="Documentation"></a>
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-1a7f4b" alt="License"></a>
+  <br><br>
+
+  <strong>Works with</strong><br>
+  <a href="https://github.com/langchain-ai/langchain">LangChain</a> &middot;
+  <a href="https://github.com/run-llama/llama_index">LlamaIndex</a> &middot;
+  <a href="https://github.com/Unstructured-IO/unstructured">Unstructured</a> &middot;
+  <a href="https://github.com/docling-project/docling">Docling</a> &middot;
+  <a href="https://github.com/run-llama/llama_cloud_services">LlamaParse</a> &middot;
+  <a href="https://learn.microsoft.com/azure/ai-services/document-intelligence/">Azure Document Intelligence</a>
 </div>
 
 <br>
@@ -52,14 +61,8 @@ report = cd.compare_loaders(
 report.to_pandas("loaders")
 ```
 
-Works with [LangChain](https://github.com/langchain-ai/langchain),
-[LlamaIndex](https://github.com/run-llama/llama_index),
-[Unstructured](https://github.com/Unstructured-IO/unstructured),
-[Docling](https://github.com/docling-project/docling),
-[LlamaParse](https://github.com/run-llama/llama_cloud_services) and
-[Azure AI Document Intelligence](https://learn.microsoft.com/azure/ai-services/document-intelligence/),
-and with any loader that has a `load` method or is a callable. Reports tag each loader with the
-framework and library it comes from.
+Any loader with a `load` method, or any callable, works the same way. Reports tag each loader
+with the framework and library it came from.
 
 The same from the command line, for CI:
 
