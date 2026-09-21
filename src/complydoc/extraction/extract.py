@@ -42,10 +42,10 @@ from pathlib import Path
 from complydoc.audit.discovery import discover
 from complydoc.config.schema import Config, TokenizerSpec
 from complydoc.cost.tokenizer import count_tokens
-from complydoc.ingest.base import IngestOptions
+from complydoc.ingest.base import Document, IngestOptions, SkipRecord
 from complydoc.ingest.registry import load_document
 from complydoc.sensitive.base import EVIDENCE_ORDER, SensitiveMatch
-from complydoc.sensitive.scanner import scan
+from complydoc.sensitive.scanner import ScanResult, scan
 from complydoc.utils.files import relative_to_root
 
 __all__ = ["Chunk", "ExtractionWarning", "TextResult", "extract_text"]
@@ -280,6 +280,135 @@ def tokenizer_for(config: Config, model: str | None) -> TokenizerSpec:
     )
 
 
+def _skipped_warnings(skipped: list[SkipRecord], root: Path) -> list[ExtractionWarning]:
+    """Files discovery found and could not hand over."""
+    return [
+        ExtractionWarning(
+            kind=UNREADABLE_DOCUMENT,
+            detail=record.reason,
+            document=relative_to_root(record.path, root),
+        )
+        for record in skipped
+    ]
+
+
+def _unscanned_warnings(found: ScanResult, already_said: set[str]) -> list[ExtractionWarning]:
+    """Categories the scan could not look for, said once for the whole run.
+
+    Masked text with a category missing still carries identifiers of that kind,
+    and the caller is about to send it somewhere.
+    """
+    warnings: list[ExtractionWarning] = []
+    for entry in found.unscanned_categories:
+        if entry.category in already_said:
+            continue
+        already_said.add(entry.category)
+        warnings.append(
+            ExtractionWarning(
+                kind=MASKING_INCOMPLETE,
+                detail=(
+                    f"{entry.label} was not scanned for ({entry.reason}), so the "
+                    f"text may still carry identifiers of that kind"
+                ),
+            )
+        )
+    return warnings
+
+
+def _document_chunks(
+    document: Document,
+    relative: str,
+    found: ScanResult | None,
+    spec: TokenizerSpec,
+    *,
+    mask: bool,
+    ocr: bool,
+    max_tokens: int | None,
+) -> tuple[list[Chunk], list[ExtractionWarning]]:
+    """One document's pages as chunks, and what could not be read off them."""
+    by_page: dict[int, list[SensitiveMatch]] = {}
+    for match in found.matches if found is not None else []:
+        by_page.setdefault(match.page, []).append(match)
+
+    chunks: list[Chunk] = []
+    warnings: list[ExtractionWarning] = []
+    for page in document.pages:
+        text = page.text or page.ocr_text
+        if not text.strip():
+            warnings.append(
+                ExtractionWarning(
+                    kind=UNREADABLE_PAGE,
+                    detail=(
+                        "nothing could be read off this page" + ("" if ocr else "; OCR was not run")
+                    ),
+                    document=relative,
+                    page=page.number,
+                )
+            )
+            continue
+
+        body, replaced, confirmed = (
+            mask_matches(text, by_page.get(page.number, [])) if mask else (text, 0, 0)
+        )
+        parts = _split(body, spec, max_tokens) if max_tokens else [body]
+        for index, part in enumerate(parts, start=1):
+            counted = count_tokens(part, spec)
+            chunks.append(
+                Chunk(
+                    document=relative,
+                    page=page.number,
+                    part=index,
+                    text=part,
+                    tokens=counted.tokens,
+                    token_fidelity=counted.fidelity,
+                    encoding=counted.encoding,
+                    # Counted against the page, so the second part of a split
+                    # page does not report the same masking over again.
+                    masked=replaced if index == 1 else 0,
+                    masked_confirmed=confirmed if index == 1 else 0,
+                    source=page.text_source,
+                )
+            )
+    return chunks, warnings
+
+
+def _closing_warnings(
+    settings: Config, chunks: list[Chunk], spec: TokenizerSpec, *, mask: bool
+) -> list[ExtractionWarning]:
+    """What the caller should know about the text as a whole before sending it."""
+    warnings: list[ExtractionWarning] = []
+
+    # Said every time masking runs, because it is true every time and it is the
+    # thing a caller most needs to have been told before sending the text on.
+    guessed = sorted(
+        entry.label
+        for entry in settings.sensitive.enabled_categories.values()
+        if entry.model_backed
+    )
+    if mask and guessed and chunks:
+        warnings.append(
+            ExtractionWarning(
+                kind=MASKING_BEST_EFFORT,
+                detail=(
+                    f"{', '.join(guessed).lower()} are recognised by a statistical model, "
+                    f"so some will have been missed"
+                ),
+            )
+        )
+
+    if chunks and chunks[0].token_fidelity == "estimated":
+        warnings.append(
+            ExtractionWarning(
+                kind=TEXT_ESTIMATED_TOKENS,
+                detail=(
+                    f"no local encoding for {spec.encoding}, so token counts are "
+                    f"a character estimate"
+                ),
+            )
+        )
+    return warnings
+
+
 def extract_text(
     target: str | Path,
     *,
@@ -310,19 +439,12 @@ def extract_text(
 
     files, skipped = discover(root, recurse=recurse)
     spec = tokenizer_for(settings, model)
-    warnings: list[ExtractionWarning] = [
-        ExtractionWarning(
-            kind=UNREADABLE_DOCUMENT,
-            detail=record.reason,
-            document=relative_to_root(record.path, root),
-        )
-        for record in skipped
-    ]
+    options = IngestOptions(ocr=ocr, password=password, extractor=extractor or "pdfplumber")
 
+    warnings = _skipped_warnings(skipped, root)
     chunks: list[Chunk] = []
     read = 0
-    options = IngestOptions(ocr=ocr, password=password, extractor=extractor or "pdfplumber")
-    seen_categories: set[str] = set()
+    said_unscanned: set[str] = set()
 
     for path in files:
         relative = relative_to_root(path, root)
@@ -342,89 +464,14 @@ def extract_text(
 
         found = scan(document, settings.sensitive, reveal=reveal) if mask or reveal else None
         if found is not None:
-            for entry in found.unscanned_categories:
-                if entry.category in seen_categories:
-                    continue
-                seen_categories.add(entry.category)
-                warnings.append(
-                    ExtractionWarning(
-                        kind=MASKING_INCOMPLETE,
-                        detail=(
-                            f"{entry.label} was not scanned for ({entry.reason}), so the "
-                            f"text may still carry identifiers of that kind"
-                        ),
-                    )
-                )
-
-        by_page: dict[int, list[SensitiveMatch]] = {}
-        for match in found.matches if found is not None else []:
-            by_page.setdefault(match.page, []).append(match)
-
-        for page in document.pages:
-            text = page.text or page.ocr_text
-            if not text.strip():
-                warnings.append(
-                    ExtractionWarning(
-                        kind=UNREADABLE_PAGE,
-                        detail=(
-                            "nothing could be read off this page"
-                            + ("" if ocr else "; OCR was not run")
-                        ),
-                        document=relative,
-                        page=page.number,
-                    )
-                )
-                continue
-
-            body, replaced, confirmed = (
-                mask_matches(text, by_page.get(page.number, [])) if mask else (text, 0, 0)
-            )
-            parts = _split(body, spec, max_tokens) if max_tokens else [body]
-            for index, part in enumerate(parts, start=1):
-                counted = count_tokens(part, spec)
-                chunks.append(
-                    Chunk(
-                        document=relative,
-                        page=page.number,
-                        part=index,
-                        text=part,
-                        tokens=counted.tokens,
-                        token_fidelity=counted.fidelity,
-                        encoding=counted.encoding,
-                        masked=replaced if index == 1 else 0,
-                        masked_confirmed=confirmed if index == 1 else 0,
-                        source=page.text_source,
-                    )
-                )
-
-    # Said every time masking runs, because it is true every time and it is the
-    # thing a caller most needs to have been told before sending the text on.
-    guessed = sorted(
-        entry.label
-        for entry in settings.sensitive.enabled_categories.values()
-        if entry.model_backed
-    )
-    if mask and guessed and chunks:
-        warnings.append(
-            ExtractionWarning(
-                kind=MASKING_BEST_EFFORT,
-                detail=(
-                    f"{', '.join(guessed).lower()} are recognised by a statistical model, "
-                    f"so some will have been missed"
-                ),
-            )
+            warnings += _unscanned_warnings(found, said_unscanned)
+        page_chunks, page_warnings = _document_chunks(
+            document, relative, found, spec, mask=mask, ocr=ocr, max_tokens=max_tokens
         )
+        chunks += page_chunks
+        warnings += page_warnings
 
-    if chunks and chunks[0].token_fidelity == "estimated":
-        warnings.append(
-            ExtractionWarning(
-                kind=TEXT_ESTIMATED_TOKENS,
-                detail=(
-                    f"no local encoding for {spec.encoding}, so token counts are "
-                    f"a character estimate"
-                ),
-            )
-        )
+    warnings += _closing_warnings(settings, chunks, spec, mask=mask)
 
     return TextResult(
         chunks=chunks,

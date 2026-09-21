@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 
 import typer
 from rich.markup import escape
@@ -36,6 +36,62 @@ from complydoc.cli.common import (
 )
 from complydoc.config.loader import ConfigError
 from complydoc.cost.estimator import UnknownModelError
+
+if TYPE_CHECKING:  # pragma: no cover - type-checking imports only
+    from complydoc.report.policy import PolicyResult, RuleResult
+
+
+_SHOWN = 10
+"""Failures listed per rule. A rule that fails on every document otherwise
+scrolls the rules that matter off the screen."""
+
+_LINE = 150
+"""Characters of a failure line kept, so one long path does not wrap three times."""
+
+
+def _outcome(rule: RuleResult) -> str:
+    """How one rule came out, as the table shows it."""
+    if rule.passed:
+        return "[green]pass[/]"
+    if rule.error is not None:
+        return "[yellow]could not run[/]"
+    if rule.level == "warning":
+        return "[yellow]warning[/]"
+    return "[red]fail[/]"
+
+
+def _rules_table(result: PolicyResult) -> Table:
+    """Every rule in the policy and how it came out."""
+    table = Table(box=None, pad_edge=False)
+    table.add_column("Rule")
+    table.add_column("Result")
+    table.add_column("Failures", justify="right")
+    for rule in result.rules:
+        table.add_row(rule.rule, _outcome(rule), str(len(rule.failures) or "—"))
+    return table
+
+
+def _print_failures(result: PolicyResult) -> None:
+    """What failed each rule, under the rule it failed."""
+    for rule in result.failed + result.warned:
+        console.print(f"\n[bold]{rule.rule}[/] — expected {rule.description}")
+        if rule.error is not None:
+            console.print(f"  [yellow]could not run: {rule.error}[/]", markup=False)
+            continue
+        for item in rule.failures[:_SHOWN]:
+            line = " ".join(item.split())
+            console.print(f"  {line[:_LINE]}{'…' if len(line) > _LINE else ''}", markup=False)
+        if len(rule.failures) > _SHOWN:
+            console.print(f"  and {len(rule.failures) - _SHOWN} more")
+
+
+def _verdict(result: PolicyResult) -> str:
+    """The one line someone reads when they do not read the rest."""
+    if result.passed and not result.warned:
+        return "[green]Policy passed.[/]"
+    if result.passed:
+        return f"[yellow]Policy passed with {len(result.warned)} warning(s).[/]"
+    return f"[red]Policy failed: {len(result.failed)} rule(s).[/]"
 
 
 @app.command(rich_help_panel="CI and pipelines")
@@ -152,42 +208,10 @@ def check(
         written.append(("SARIF", write_policy_sarif(result, audit, sarif)))
 
     if not quiet:
-        table = Table(box=None, pad_edge=False)
-        table.add_column("Rule")
-        table.add_column("Result")
-        table.add_column("Failures", justify="right")
-        for rule in result.rules:
-            if rule.passed:
-                outcome = "[green]pass[/]"
-            elif rule.error is not None:
-                outcome = "[yellow]could not run[/]"
-            elif rule.level == "warning":
-                outcome = "[yellow]warning[/]"
-            else:
-                outcome = "[red]fail[/]"
-            table.add_row(rule.rule, outcome, str(len(rule.failures) or "—"))
-        console.print(table)
-
-        for rule in result.failed + result.warned:
-            console.print(f"\n[bold]{rule.rule}[/] — expected {rule.description}")
-            if rule.error is not None:
-                console.print(f"  [yellow]could not run: {rule.error}[/]", markup=False)
-                continue
-            for item in rule.failures[:10]:
-                # One line each: a rule that fails on every document otherwise
-                # wraps its way past the rules that matter.
-                line = " ".join(item.split())
-                console.print(f"  {line[:150]}{'…' if len(line) > 150 else ''}", markup=False)
-            if len(rule.failures) > 10:
-                console.print(f"  and {len(rule.failures) - 10} more")
-
+        console.print(_rules_table(result))
+        _print_failures(result)
         console.print()
-        if result.passed and not result.warned:
-            console.print("[green]Policy passed.[/]")
-        elif result.passed:
-            console.print(f"[yellow]Policy passed with {len(result.warned)} warning(s).[/]")
-        else:
-            console.print(f"[red]Policy failed: {len(result.failed)} rule(s).[/]")
+        console.print(_verdict(result))
         for label, path in written:
             link(label, path)
 
