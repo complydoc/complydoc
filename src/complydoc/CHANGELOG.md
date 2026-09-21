@@ -6,6 +6,8 @@ versioned separately.
 
 ## [Unreleased]
 
+## [0.4.12] — 2026-09-21
+
 ### Added
 
 - A loader comparison says which loader to use. `compare-loaders` prints it, the report
@@ -655,7 +657,8 @@ First release.
 - `complydoc` audits the current directory; `--jobs`, `--sample`, `--password`.
 - Packaged agent skill.
 
-[Unreleased]: https://github.com/complydoc/complydoc/compare/v0.4.11...HEAD
+[Unreleased]: https://github.com/complydoc/complydoc/compare/v0.4.12...HEAD
+[0.4.12]: https://github.com/complydoc/complydoc/compare/v0.4.11...v0.4.12
 [0.4.11]: https://github.com/complydoc/complydoc/compare/v0.4.10...v0.4.11
 [0.4.10]: https://github.com/complydoc/complydoc/compare/v0.4.9...v0.4.10
 [0.4.9]: https://github.com/complydoc/complydoc/compare/v0.4.8...v0.4.9
