@@ -11,6 +11,7 @@ import json
 import pytest
 
 import complydoc as cd
+from tests.helpers import FIXTURES
 
 SOURCE = "/tmp/compare/contract.pdf"
 
@@ -189,3 +190,86 @@ def test_metadata_keys_differing_only_in_case_are_the_same_key():
         ]
     )
     assert report.loader_comparison.metadata_keys == {"page_label": ["Loader"]}
+
+
+def _pypdf_text(path) -> list[str]:
+    from pypdf import PdfReader
+
+    return [page.extract_text() or "" for page in PdfReader(str(path)).pages]
+
+
+def _plumber_text(path) -> list[str]:
+    import pdfplumber
+
+    with pdfplumber.open(str(path)) as pdf:
+        return [page.extract_text() or "" for page in pdf.pages]
+
+
+class RealLoader:
+    """A loader backed by a real library, so the two readings are genuine."""
+
+    def __init__(self, reader, path) -> None:
+        self.reader = reader
+        self.path = path
+
+    def load(self) -> list:
+        return [
+            LangChainDocument(text, {"source": str(self.path), "page": number})
+            for number, text in enumerate(self.reader(self.path))
+        ]
+
+
+def test_two_readings_of_a_two_column_page_are_reported_as_reordered():
+    """Same words, different order, which is what a two-column page does to a reader.
+
+    The report entries carry the text masked, and a value covered over a
+    slightly different span in each reading made two identical pages look like
+    two different ones. The comparison reads what the loaders returned.
+    """
+    page = FIXTURES / "two_column.pdf"
+    report = cd.compare_loaders(
+        {
+            "pypdf": RealLoader(_pypdf_text, page),
+            "pdfplumber": RealLoader(_plumber_text, page),
+        },
+        facts=["The supplier shall provide the services described in the order"],
+    )
+
+    readings = {r.extractor: r for r in report.documents[0].extractions}
+    other = readings["pdfplumber"]
+    assert other.similarity < 1.0, "the two libraries walk the columns differently"
+    assert other.reordered, "the same words in a different order, not different words"
+
+    # The point of the comparison: the fact survives one reading and not the other.
+    check = report.loader_comparison.facts[0]
+    assert check.found["pypdf"] == "exact"
+    assert check.found["pdfplumber"] is None
+
+
+# A sort code is reported where its label sits nearby, so the same digits are
+# masked in one reading and left alone in the other once the order moves the
+# label away from them. That is what made two identical pages compare as
+# different once the report started carrying its text masked.
+_MIDDLE = (
+    "Payment is due on receipt of this invoice and the remaining balance is "
+    "payable within thirty days of the date shown above"
+)
+_LABEL_BESIDE_DIGITS = f"Sort code: 12 34 56 {_MIDDLE}"
+_LABEL_FAR_FROM_DIGITS = f"12 34 56 {_MIDDLE} Sort code:"
+
+
+def test_the_comparison_reads_what_the_loaders_returned_not_the_masked_text():
+    report = cd.compare_loaders(
+        {
+            "beside": Loader([_LABEL_BESIDE_DIGITS]),
+            "far": Loader([_LABEL_FAR_FROM_DIGITS]),
+        }
+    )
+
+    entry = report.documents[0]
+    masked = {entry.extracted_text[0].text, entry.extracted_text[0].readings["far"]}
+    assert len(masked) == 2, "the two readings mask the sort code differently"
+
+    far = {r.extractor: r for r in entry.extractions}["far"]
+    assert far.similarity < 1.0
+    assert far.reordered, "same words, moved around, whatever the masking did to them"

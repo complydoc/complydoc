@@ -271,14 +271,17 @@ def _readings(
             continue
         name = inspection.loader.name
         theirs = _pages(other)
+        # Measured on what each loader returned, and shown as the report masks it.
+        own_raw = baseline.page_text.get(str(entry.path)) or own
+        theirs_raw = inspection.page_text.get(str(other.path)) or theirs
         if entry.page_count_known and other.page_count_known:
-            similarity, reordered = _paged_similarity(own, theirs)
+            similarity, reordered = _paged_similarity(own_raw, theirs_raw)
             for page in entry.extracted_text:
                 page.readings[name] = theirs.get(page.number, "")
         else:
             # Without page numbers on both sides there is nothing to line pages
             # up by, so the document is compared as one run of text.
-            left, right = words(_whole(own)), words(_whole(theirs))
+            left, right = words(_whole(own_raw)), words(_whole(theirs_raw))
             similarity = reading_similarity(left[:MAX_WORDS], right[:MAX_WORDS])
             reordered = similarity < 1.0 and same_words(left, right)
             if len(entry.extracted_text) == 1:

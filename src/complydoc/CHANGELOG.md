@@ -8,6 +8,14 @@ versioned separately.
 
 ### Fixed
 
+- A loader comparison called two readings of the same page different words, and offered a
+  wrong reason for it: "the page uses a font whose character map is wrong". The comparison
+  ran on the report's text, which carries every identifier masked, and a value covered over
+  a slightly different span in each reading made two identical pages look unlike each other.
+  It now measures what each loader returned, held only for the length of the comparison,
+  while the report shows the masked text as before. A two-column contract read by pypdf and
+  pdfplumber is reported as the same words in a different order again, which is what it is.
+
 - `--out ~/reports` wrote a folder called `~` for the JSON, the HTML and the routing
   manifest, while the Markdown and SARIF written by `check` expanded it. All five writers
   now go through one helper that expands the path.

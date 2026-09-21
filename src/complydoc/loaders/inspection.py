@@ -43,7 +43,7 @@ import platform
 import re
 import time
 from collections.abc import Callable, Iterable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path, PurePath
 from typing import TYPE_CHECKING, Any
 
@@ -174,6 +174,15 @@ class Inspection:
     entries: list[DocumentReport]
     run: RunMetadata
     loader: LoaderRun
+    page_text: dict[str, dict[int, str]] = field(default_factory=dict)
+    """What the loader returned, by document path and page, before masking.
+
+    The comparison asks whether two loaders read the same words, and the report
+    entries carry those words masked, where a value covered over a slightly
+    different span in each reading makes two identical pages look different.
+    This never reaches the report: it is held for the length of the comparison
+    and dropped with the Inspection.
+    """
 
 
 def inspect_run(
@@ -222,12 +231,16 @@ def inspect_run(
         )
 
         entries: list[DocumentReport] = []
+        page_text: dict[str, dict[int, str]] = {}
         for document in documents:
             relative = _relative_name(document.path, root)
             entry = build_entry(document, work, 0.0, relative)
             entry.metadata_findings = findings.get(str(document.path), [])
             entry.path_exposures = exposures.get(str(document.path), [])
             entries.append(entry)
+            page_text[str(document.path)] = {
+                page.number: page.text or page.ocr_text for page in document.pages
+            }
 
         run = RunMetadata(
             tool_version=__version__,
@@ -252,7 +265,7 @@ def inspect_run(
             extractor=loader_run.name,
         )
 
-    return Inspection(settings, tuple(components), entries, run, loader_run)
+    return Inspection(settings, tuple(components), entries, run, loader_run, page_text)
 
 
 def finish_report(inspection: Inspection) -> AuditReport:
