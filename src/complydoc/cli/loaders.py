@@ -92,6 +92,12 @@ def compare_loaders_command(
                 cells.append(f"{row.facts_found or 0} of {len(comparison.facts)}")
             table.add_row(*cells)
         console.print(table)
+
+        lc = report.loader_comparison
+        if lc.recommended:
+            console.print(f"\n[bold green]Use {lc.recommended}[/] — {escape(lc.verdict)}")
+        elif lc.verdict:
+            console.print(f"\n[yellow]No recommendation[/] — {escape(lc.verdict)}")
     emit(report, config, out, name, quiet)
     if print_json:
         print_report_json(report)

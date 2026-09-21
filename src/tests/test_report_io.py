@@ -141,3 +141,21 @@ def test_a_schema_5_report_is_read(audit):
     data = json.loads(json.dumps(to_dict(audit)))
     data["run"]["schema_version"] = 5
     assert cd.load_report(data).run.schema_version == 5
+
+
+def test_every_shipped_schema_version_stays_readable(audit):
+    """A bumped version must not drop the one before it.
+
+    Reports are baselines: `diff` compares a report written weeks ago against
+    one written now, and dropping a version from the readable list turns every
+    committed baseline into an error.
+    """
+    from complydoc.report.json_reader import READABLE_SCHEMA_VERSIONS
+    from complydoc.report.models import SCHEMA_VERSION
+
+    assert SCHEMA_VERSION in READABLE_SCHEMA_VERSIONS
+    assert SCHEMA_VERSION - 1 in READABLE_SCHEMA_VERSIONS, "the previous release's reports"
+
+    data = to_dict(audit)
+    data["run"]["schema_version"] = SCHEMA_VERSION - 1
+    assert cd.load_report(data).run.schema_version == SCHEMA_VERSION - 1

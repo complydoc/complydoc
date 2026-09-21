@@ -6,6 +6,16 @@ versioned separately.
 
 ## [Unreleased]
 
+### Added
+
+- A loader comparison says which loader to use. `compare-loaders` prints it, the report
+  carries it in `loader_comparison.recommended`, `verdict` and `ranked`, and the Loaders
+  compared section opens with it. Three things can decide it: a file a loader could not
+  open, an expected fact one loader kept and another lost, or time where they read the same
+  text. Where they read the same documents differently and no fact was given there is no
+  recommendation, because nothing in the text says which reading is right; the verdict says
+  so and asks for a fact. Report schema 14.
+
 ### Fixed
 
 - A loader comparison called two readings of the same page different words, and offered a

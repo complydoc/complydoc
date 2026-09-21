@@ -50,6 +50,7 @@ from complydoc.loaders.inspection import (
 )
 from complydoc.loaders.origin import loader_tags
 from complydoc.loaders.parsers import LoaderSpec
+from complydoc.loaders.verdict import recommend
 from complydoc.report.models import (
     AuditReport,
     DocumentReport,
@@ -182,6 +183,13 @@ def compare_loaders(
         metadata_keys=_uneven_keys(inspections),
         documents=_uneven_documents(inspections, by_path),
         facts=fact_checks,
+    )
+    verdict = recommend(comparison, report.documents)
+    comparison = dataclasses.replace(
+        comparison,
+        recommended=verdict.recommended,
+        verdict=verdict.reason,
+        ranked=verdict.ranked,
     )
     report.loader_comparison = comparison
     report.limitations[:0] = [

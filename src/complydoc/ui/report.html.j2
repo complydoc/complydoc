@@ -125,6 +125,8 @@
 {% set lc_costs = lc.loaders | rejectattr("parser_usd", "none") | list %}
 <div class="loaderrun">
 <h3>Loaders compared</h3>
+{% if lc.recommended %}<p class="verdict"><strong>Use {{ lc.recommended }}.</strong> {{ lc.verdict }}</p>
+{% elif lc.verdict %}<p class="verdict">{{ lc.verdict }}</p>{% endif %}
 <p class="note">Findings, scores and cost on this report are built from {{ lc.baseline }}. The
 other loaders ran on the same input; where their text differs is marked on the Documents
 page, and identifiers only some of them returned are listed on the Security page.</p>

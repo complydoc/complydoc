@@ -167,3 +167,28 @@ facts:
 The first loader is the baseline. A `loader` is called with each file path and its
 `options`; a `preset` is one of the parser presets above. An invalid file, or a
 loader that cannot be imported, exits with status 2.
+
+## Which one to use
+
+The comparison ends with a recommendation, on the command line and at the top of
+the report's Loaders compared section. Three things can decide it:
+
+| What decided it | Example |
+| --- | --- |
+| Files a loader could not open | `Use pypdf, it opened all 9 documents; pdfplumber raised on 1` |
+| An expected fact one loader kept | `Use pypdf, it kept 5 of 5 expected facts, pdfplumber kept 4` |
+| Time, where the loaders read the same text | `Use pypdf, every loader read the same text and it was the quickest` |
+
+Where the loaders read the same documents differently and no fact was given,
+there is no recommendation, because nothing in the text says which reading is
+right:
+
+```
+No recommendation — the loaders read 1 document differently and nothing here
+says which reading is right. Pass a passage these documents contain, as a fact,
+and the comparison can say which reading holds it.
+```
+
+A two-column page is the usual cause: one library walks the columns and another
+reads straight across, and both return the same words. `facts` is what settles
+it, which is why it is worth filling in.

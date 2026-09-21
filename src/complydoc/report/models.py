@@ -47,7 +47,7 @@ __all__ = [
     "RunMetadata",
 ]
 
-SCHEMA_VERSION = 13
+SCHEMA_VERSION = 14
 
 
 def report_shape() -> dict[str, object]:
@@ -131,7 +131,9 @@ def report_shape() -> dict[str, object]:
             "null unless compare_loaders ran: baseline, loaders[] (per-loader totals, "
             "network, scores, failures, facts_found, parser_usd, tags[]), facts[], "
             "identifier_differences[] (found_by[], missed_by[]), "
-            "metadata_keys (key -> loaders returning it), documents (path -> loaders)"
+            "metadata_keys (key -> loaders returning it), documents (path -> loaders), "
+            "recommended (the loader to use, null where the run cannot tell), verdict "
+            "(what decided it), ranked[]"
         ),
         "aggregate": (
             "folder totals: cost, signal_distribution, sensitive_by_category, "
@@ -307,6 +309,12 @@ class LoaderComparison:
     """Documents not returned by every loader, and which loaders returned them."""
     facts: list[FactCheck] = field(default_factory=list)
     """Expected facts, checked against every loader's text."""
+    recommended: str | None = None
+    """The loader to use, where the run could tell. None when it could not."""
+    verdict: str = ""
+    """What decided the recommendation, or what stopped it being decided."""
+    ranked: list[str] = field(default_factory=list)
+    """Every loader, best first, by what the run could measure."""
 
 
 @dataclass(frozen=True, slots=True)
