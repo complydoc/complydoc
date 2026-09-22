@@ -51,16 +51,21 @@ def _install_hint(model_name: str) -> str:
 
 @lru_cache(maxsize=2)
 def _load(model_name: str) -> Any:
-    # Set before the library is imported. `huggingface_hub` reads these once, as
-    # it is imported, and a value set afterwards is never seen: the weights come
-    # from the cache either way, but the tokenizer asks the hub for its templates
-    # and a scan's network guard stops the run there.
+    # The offline switches are read once, as the library is imported, so these
+    # only help when complydoc is the first thing to import it. Anything that
+    # imported `transformers` earlier, which LangChain does, leaves the library
+    # online: the tokenizer then asks the hub for its templates, the scan's
+    # network guard stops that, and the load failed with a message saying the
+    # model was missing when it was in the cache all along.
+    #
+    # So each part is also told to use local files, which it honours whatever was
+    # imported before it.
     os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
     os.environ["HF_HUB_OFFLINE"] = "1"
     os.environ["TRANSFORMERS_OFFLINE"] = "1"
 
     try:
-        from transformers import pipeline
+        from transformers import AutoModelForTokenClassification, AutoTokenizer, pipeline
     except ImportError as exc:
         raise DetectorUnavailableError(
             f"the token classifier needs the optional extra ({extra_hint('multilingual-names')})"
@@ -69,9 +74,12 @@ def _load(model_name: str) -> Any:
     from complydoc.offline import NetworkAccessError
 
     try:
+        tokenizer = AutoTokenizer.from_pretrained(model_name, local_files_only=True)
+        model = AutoModelForTokenClassification.from_pretrained(model_name, local_files_only=True)
         return pipeline(
             "token-classification",
-            model=model_name,
+            model=model,
+            tokenizer=tokenizer,
             aggregation_strategy="simple",
         )
     except (OSError, ValueError, NetworkAccessError) as exc:

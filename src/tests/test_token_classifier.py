@@ -9,6 +9,9 @@ window that lost track of its offset would report a name at the wrong place.
 from __future__ import annotations
 
 import importlib.util
+import os
+import subprocess
+import sys
 
 import pytest
 
@@ -169,3 +172,35 @@ print("OK" if ok else f"FAILED {reason}")
     if "FAILED" in result.stdout and any(text in result.stdout for text in unavailable):
         pytest.skip("the extra or the model is not installed in the subprocess")
     assert "OK" in result.stdout, f"{result.stdout}\n{result.stderr[-2000:]}"
+
+
+@requires_model
+def test_the_model_loads_when_transformers_was_imported_first():
+    """What happens under LangChain, which imports `transformers` before complydoc.
+
+    The offline switches are read as the library is imported, so they came too
+    late: the load reached for the network, the scan's guard stopped it, and the
+    scan fell back to the small English model while reporting the multilingual
+    one as missing. It found "John Smith" and lost "Jane Doe" and "Acme Holdings
+    Ltd". A fresh process is the only way to import in that order.
+    """
+    script = """
+import transformers
+import complydoc as cd
+text = "EMPLOYEE RECORD\\nName: Jane Doe\\nEmployer: Acme Holdings Ltd\\n"
+found = cd.scan_text(text)
+print(sorted(m.category for m in found.matches))
+"""
+    # As a user's shell has it. Loading the model in this process, which the skip
+    # check above does, sets the offline switches, and a child would inherit them
+    # and never import in the order that went wrong.
+    env = {
+        k: v for k, v in os.environ.items() if k not in ("HF_HUB_OFFLINE", "TRANSFORMERS_OFFLINE")
+    }
+    result = subprocess.run(
+        [sys.executable, "-c", script], capture_output=True, text=True, timeout=300, env=env
+    )
+    assert result.returncode == 0, result.stderr[-2000:]
+    found = result.stdout.strip().splitlines()[-1]
+    assert "person_name" in found, "Jane Doe"
+    assert "organisation_name" in found, "Acme Holdings Ltd"

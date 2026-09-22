@@ -6,6 +6,18 @@ versioned separately.
 
 ## [Unreleased]
 
+### Fixed
+
+- Names went unmasked in any process that had imported `transformers` before complydoc,
+  which importing LangChain does. The multilingual name model is told to stay offline
+  through switches the library reads once, as it is imported, so under LangChain they
+  came too late: loading it reached for the network, the scan's guard stopped it, and
+  the scan fell back to the small English model while reporting the multilingual one as
+  missing from the machine, where it had been all along. On the sample employee record
+  that found "John Smith" and lost "Jane Doe" and "Acme Holdings Ltd", and flagged
+  "Finance" as a company. The model and its tokenizer are now loaded from local files
+  directly, which holds whatever was imported first.
+
 ### Changed
 
 - The JSON report is written in a summary shape by default, a quarter of its old size:
