@@ -182,8 +182,8 @@ def test_model_selection_narrows_the_report(tmp_path):
     )
     assert result.exit_code == 0, result.output
     data = json.loads((tmp_path / "one.json").read_text())
-    for document in data["documents"]:
-        assert [m["model_id"] for m in document["cost"]["models"]] == ["claude-haiku-4-5"]
+    # The folder's cost per model: the table a reader of the default JSON sees.
+    assert [m["model_id"] for m in data["cost"]["models"]] == ["claude-haiku-4-5"]
 
 
 def test_repeating_the_flag_compares_several(tmp_path):
@@ -205,7 +205,7 @@ def test_repeating_the_flag_compares_several(tmp_path):
     )
     assert result.exit_code == 0, result.output
     data = json.loads((tmp_path / "two.json").read_text())
-    assert [m["model_id"] for m in data["documents"][0]["cost"]["models"]] == [
+    assert [m["model_id"] for m in data["cost"]["models"]] == [
         "claude-opus-5",
         "claude-haiku-4-5",
     ]

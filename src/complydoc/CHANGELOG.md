@@ -6,6 +6,21 @@ versioned separately.
 
 ## [Unreleased]
 
+### Changed
+
+- The JSON report is written in a summary shape by default, a quarter of its old size:
+  4.6 MB rather than 20.3 MB for 200 one-page documents. Three quarters of it was two
+  things a reader of the JSON rarely wants. The price of every document on every model,
+  which was stored twice, in `cost.documents` and again in each document's
+  `cost.models`, is replaced by `cost.models`, the folder's cost on each model and path,
+  one row per model. The page geometry the HTML draws its page views with,
+  `documents[].previews`, is left out. Every finding, score and limitation is unchanged,
+  and the HTML report is the same, since it is drawn before the JSON is written.
+  `--detail full` on `audit` and `cost`, or `write_json(..., detail="full")`, writes
+  every field; `run.report_detail` says which shape a file is, so a part left out is
+  never read as empty. A summary reads back with `load_report` as what it is. Report
+  schema 15.
+
 ## [0.4.12] — 2026-09-21
 
 ### Added

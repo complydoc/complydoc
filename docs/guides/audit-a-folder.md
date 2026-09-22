@@ -32,6 +32,20 @@ as an important limitation in the report:
 | `--page-images` | A picture of each page. A picture shows every value on it, masked or not |
 | `--reveal` | Every value unmasked, in the findings, the page text and `--save-text` files |
 
+## How much the JSON carries
+
+The JSON is written in one of two shapes, and `run.report_detail` says which:
+
+| `--detail` | Carries | 200 one-page documents |
+| --- | --- | --- |
+| `summary` (default) | Every finding, score and limitation, and the folder's cost on each model | 4.6 MB |
+| `full` | All of that, plus the price of every document on every model, and the page geometry the HTML draws with | 20.3 MB |
+
+The HTML report is the same either way: it is drawn before the JSON is written.
+Use `--detail full` on `audit` or `cost` when you need a single document's price on a
+given model, or when something reprocesses the reports, since a summary reads back
+without the parts it left out. In Python, `cd.write_json(report, path, detail="full")`.
+
 ## Report summary
 
 **Readiness** (global readiness in the report) is one number for *can these documents go through a

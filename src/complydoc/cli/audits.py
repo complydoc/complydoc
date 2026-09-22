@@ -33,6 +33,7 @@ from complydoc.cli.common import (
     CompareEnginesOpt,
     CompareExtractorsOpt,
     ConfigOpt,
+    DetailOpt,
     ExtractedTextOpt,
     ExtractorOpt,
     JobsOpt,
@@ -47,6 +48,7 @@ from complydoc.cli.common import (
     PrintJsonOpt,
     QuietOpt,
     RecurseOpt,
+    ReportDetail,
     SampleOpt,
     SaveTextOpt,
     TargetArg,
@@ -60,6 +62,7 @@ from complydoc.cli.common import (
     route_output,
 )
 from complydoc.cost.estimator import UnknownModelError
+from complydoc.report.json_writer import Detail
 from complydoc.report.models import AuditReport
 from complydoc.utils.text import count
 
@@ -260,6 +263,7 @@ def run(
     compare_engines: list[str] | None = None,
     classifier: str | None = None,
     classifier_threshold: float | None = None,
+    detail: ReportDetail = ReportDetail.summary,
 ) -> None:
     """Audit `target` and write the reports: what every audit command does."""
     offline.arm()
@@ -329,9 +333,10 @@ def run(
         raise typer.Exit(code=2) from exc
     if not quiet:
         summary(report)
-    emit(report, config, out, name, quiet, save_text)
+    level: Detail = "full" if detail is ReportDetail.full else "summary"
+    emit(report, config, out, name, quiet, save_text, detail=level)
     if print_json:
-        print_report_json(report)
+        print_report_json(report, level)
 
 
 @app.command(rich_help_panel="Audit")
@@ -370,6 +375,7 @@ def audit(
     compare_extractor: CompareExtractorsOpt = None,
     save_text: SaveTextOpt = None,
     print_json: PrintJsonOpt = False,
+    detail: DetailOpt = ReportDetail.summary,
     quiet: QuietOpt = False,
     classifier: ClassifierOpt = None,
     classifier_threshold: ClassifierThresholdOpt = None,
@@ -403,6 +409,7 @@ def audit(
         timeout=timeout or None,
         classifier=classifier,
         classifier_threshold=classifier_threshold,
+        detail=detail,
     )
 
 
@@ -591,6 +598,7 @@ def cost(
     compare_extractor: CompareExtractorsOpt = None,
     save_text: SaveTextOpt = None,
     print_json: PrintJsonOpt = False,
+    detail: DetailOpt = ReportDetail.summary,
     quiet: QuietOpt = False,
 ) -> None:
     """Estimate LLM processing cost only."""
@@ -616,6 +624,7 @@ def cost(
         jobs=jobs,
         sample=sample,
         timeout=timeout or None,
+        detail=detail,
     )
 
 

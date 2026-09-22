@@ -14,6 +14,7 @@ import datetime as dt
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 from complydoc.config.schema import ModelPricing, PricingConfig
 from complydoc.cost.tokenizer import TokenCount, count_tokens
@@ -91,7 +92,8 @@ class DocumentCostEstimate:
     has_text_layer: bool
     mean_text_coverage_pct: float
     pages: list[PageFacts]
-    models: list[ModelCostEstimate]
+    models: list[ModelCostEstimate] = field(default_factory=list)
+    """Every priced model against this document. Empty when a summary report left it out."""
 
     def cheapest_text_path_usd(self) -> float | None:
         values = [m.text_path_input_usd for m in self.models if m.text_path_input_usd is not None]
@@ -127,6 +129,13 @@ class FolderCostEstimate:
     resolutions: list[str]
     documents: list[DocumentCostEstimate] = field(default_factory=list)
     volume: VolumeExtrapolation | None = None
+    models: list[dict[str, Any]] = field(default_factory=list)
+    """The folder's cost per model and per path, as the report's cost chart shows it.
+
+    Filled when the report is written, from `documents`. Kept as plain data so a
+    summary report, which leaves `documents` out, still carries what the folder
+    would cost on each model and reads back with it.
+    """
 
     def total_text_path_usd(self) -> float | None:
         values = [d.cheapest_text_path_usd() for d in self.documents]

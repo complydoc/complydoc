@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import sys
+from enum import StrEnum
 from pathlib import Path
 from typing import Annotated
 
@@ -14,7 +15,7 @@ from rich.markup import escape
 from complydoc.config.loader import ConfigError, load_config
 from complydoc.config.schema import Config
 from complydoc.report.html_writer import write_html
-from complydoc.report.json_writer import to_dict, write_json
+from complydoc.report.json_writer import Detail, to_dict, write_json
 from complydoc.report.models import AuditReport
 from complydoc.utils.text import count
 
@@ -25,6 +26,7 @@ __all__ = [
     "CompareEnginesOpt",
     "CompareExtractorsOpt",
     "ConfigOpt",
+    "DetailOpt",
     "ExtractedTextOpt",
     "ExtractorOpt",
     "JobsOpt",
@@ -39,6 +41,7 @@ __all__ = [
     "PrintJsonOpt",
     "QuietOpt",
     "RecurseOpt",
+    "ReportDetail",
     "SampleOpt",
     "SaveTextOpt",
     "TargetArg",
@@ -103,6 +106,25 @@ PageImagesOpt = Annotated[
         help="Embed a picture of each page beside what was extracted from it. "
         "Off by default: a picture shows every value on the page, so a report "
         "built with it carries the identifiers the rest of the report masks.",
+    ),
+]
+
+
+class ReportDetail(StrEnum):
+    """How much the JSON report carries."""
+
+    summary = "summary"
+    full = "full"
+
+
+DetailOpt = Annotated[
+    ReportDetail,
+    typer.Option(
+        "--detail",
+        help="How much the JSON report carries. `summary`, the default, keeps every "
+        "finding and score and the folder's cost on each model, and leaves out the "
+        "price of every document on every model and the page geometry the HTML draws "
+        "with. `full` writes every field; use it for anything that reprocesses reports.",
     ),
 ]
 ExtractedTextOpt = Annotated[
@@ -257,9 +279,10 @@ def emit(
     name: str,
     quiet: bool,
     save_text: Path | None = None,
+    detail: Detail = "summary",
 ) -> None:
     """Write the JSON and HTML reports, and the extracted text when asked, then link them."""
-    json_path = write_json(report, out / f"{name}.json").resolve()
+    json_path = write_json(report, out / f"{name}.json", detail=detail).resolve()
     html_path = write_html(report, config, out / f"{name}.html").resolve()
 
     written: list[Path] = []
@@ -292,7 +315,8 @@ def emit(
         )
 
 
-def print_report_json(report: AuditReport) -> None:
+def print_report_json(report: AuditReport, detail: Detail = "summary") -> None:
     sys.stdout.write(
-        json.dumps(to_dict(report), indent=2, sort_keys=True, ensure_ascii=False) + "\n"
+        json.dumps(to_dict(report, detail=detail), indent=2, sort_keys=True, ensure_ascii=False)
+        + "\n"
     )

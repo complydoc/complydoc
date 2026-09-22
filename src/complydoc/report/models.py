@@ -47,7 +47,7 @@ __all__ = [
     "RunMetadata",
 ]
 
-SCHEMA_VERSION = 14
+SCHEMA_VERSION = 15
 
 
 def report_shape() -> dict[str, object]:
@@ -85,6 +85,10 @@ def report_shape() -> dict[str, object]:
             "reveal_used": "bool — true means values are NOT masked",
             "page_images_used": "bool",
             "extracted_text_used": "bool",
+            "report_detail": (
+                "summary | full — summary leaves out documents[].cost.models, "
+                "documents[].previews and cost.documents; full writes every field"
+            ),
             "jobs": "worker processes used",
             "timeout_seconds": "seconds each document was given, when --timeout was used",
             "documents_read_after_worker_failure": "documents re-read after a worker stopped",
@@ -94,7 +98,12 @@ def report_shape() -> dict[str, object]:
             "relative_path": "str",
             "sha256": "str",
             "format": "pdf | image | docx | xlsx | pptx | html | markdown | text | email | other",
-            "cost.models[]": "per-model text and vision token counts and USD",
+            "cost": "pages, page_count, text layer and coverage for this document",
+            "cost.models[]": (
+                "full only: every priced model against this document, with text and "
+                "vision token counts and USD"
+            ),
+            "previews[]": "full only: page geometry the HTML report draws its page views from",
             "readiness.signals[]": "id, value, rating, weight, why, status",
             "readiness.score": "value 0-100, higher is better; label; low_confidence",
             "sensitive.matches[]": (
@@ -116,6 +125,12 @@ def report_shape() -> dict[str, object]:
             "visibility_checked": "bool, null when the scan did not run",
             "path_exposures": "metadata keys holding an absolute filesystem path",
         },
+        "cost": (
+            "null unless cost ran: currency, headline_resolution, resolutions[], volume, "
+            "models[] (the folder's cost per model and per path: text_layer, text_ocr, "
+            "vision, each with folder_usd, per_1000_usd and annual_usd), and, full only, "
+            "documents[] (every document against every model)"
+        ),
         "overall": {
             "score": "global readiness 0-100, content and cost path and exposure",
             "factors[]": "name, score (null when not measured), weight, why",
@@ -362,6 +377,12 @@ class RunMetadata:
     sample_size: int | None = None
     """Documents the sample selected. Fewer may appear if one failed to parse."""
     password_used: bool = False
+    report_detail: str = "full"
+    """`summary` when the JSON left out the per-document price list and page geometry.
+
+    Written into the file by the writer, so a reader can tell a part that was left
+    out from a part that was empty.
+    """
     documents_read_after_worker_failure: int = 0
     """Documents read in the main process after a worker process stopped."""
     content_sent_to: list[str] = field(default_factory=list)

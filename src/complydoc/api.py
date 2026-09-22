@@ -62,7 +62,7 @@ import asyncio
 import os
 from collections.abc import AsyncIterator, Callable, Iterator, Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING, TypedDict, Unpack
+from typing import TYPE_CHECKING, Literal, TypedDict, Unpack
 
 from complydoc import offline
 from complydoc.audit.run import COMPONENTS, iter_entries, plan_audit, run_audit
@@ -370,9 +370,20 @@ def write_html(
     return _write_html(report, config or load_config(), Path(path).expanduser())
 
 
-def write_json(report: AuditReport, path: str | os.PathLike[str]) -> Path:
-    """Write the report as JSON, and return where. Same shape the CLI writes."""
-    return _write_json(report, Path(path).expanduser())
+def write_json(
+    report: AuditReport,
+    path: str | os.PathLike[str],
+    *,
+    detail: Literal["summary", "full"] = "summary",
+) -> Path:
+    """Write the report as JSON, and return where. Same shape the CLI writes.
+
+    `detail="summary"` leaves out the price of every document on every model and
+    the page geometry the HTML draws with, keeping the folder's cost per model.
+    `detail="full"` writes every field; use it for anything that reprocesses
+    reports, since a summary reads back without the parts it left out.
+    """
+    return _write_json(report, Path(path).expanduser(), detail=detail)
 
 
 def iter_audit(

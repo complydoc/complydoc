@@ -110,8 +110,12 @@ complydoc audit ./invoices --print-json | jq '{
   model: `visibility` (`confirmed`, `suspected`, `not_measured`, `visible`),
   `instruction` (`confirmed`, `pattern`, `model`, `none`), `severity`, and a masked
   `excerpt`. A high-severity one is hidden text telling a model what to do.
-- `documents[].cost.models[]`: token counts and USD per model, with `price_source`
-  (`verified` or `imported`) and `last_verified`.
+- `cost.models[]`: the folder's cost on each priced model, per path (`text_layer`,
+  `text_ocr`, `vision`), each with `folder_usd`, `per_1000_usd` and `annual_usd`, and
+  the model's `price_source` (`verified` or `imported`).
+- `run.report_detail`: `summary` by default, which leaves out the price of every
+  document on every model and the page geometry. Pass `--detail full` to `audit` or
+  `cost` when those are needed; do not read their absence from a summary as zero.
 - `aggregate.seconds_per_document` and `hours_per_1000_documents`: measured local
   preparation time, and `ocr_pages_per_second` where OCR ran.
 - `limitations[]`: what this run could not establish, generated from the run itself.
