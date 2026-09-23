@@ -30,6 +30,11 @@ versioned separately.
 
 ### Changed
 
+- A new mark: a check mark whose two strokes are leaves, with a dot above the short
+  one, in complydoc green. It replaces the document in a dashed boundary in the HTML
+  report, its favicon, the docs site and the README. The source files and the reasoning
+  are in `brand/logo`.
+
 - Everything about loaders and readers is on the report's Documents page, in a Loaders
   section at the top: the verdict, a shorter table, expected facts, identifiers only some
   loaders kept, and what only some loaders returned. The Summary and Security pages no

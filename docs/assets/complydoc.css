@@ -15,10 +15,8 @@
   font-weight: 600;
 }
 
-/* The mark is drawn with currentColor so it takes the header's ink, the same
-   way it does in the report. */
+/* The mark is white, since the header behind it is complydoc green. */
 .md-header__button.md-logo img {
-  color: var(--md-primary-bg-color);
-  height: 1.5rem;
+  height: 1.25rem;
   width: auto;
 }
