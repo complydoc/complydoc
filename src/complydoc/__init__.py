@@ -33,7 +33,7 @@ document and cannot break a host application that needs the network of its own.
 from __future__ import annotations
 
 # Before the import below, which reaches code that reads it back off this module.
-__version__ = "0.4.12"
+__version__ = "0.5.0"
 
 from complydoc import api as _api
 from complydoc.api import *  # noqa: F403

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640" role="img" aria-label="complydoc">
+  <rect width="1280" height="640" fill="#000000"/>
+  <path fill="#4cc38a" fill-rule="evenodd" transform="translate(292 214) scale(2.1875) translate(-9 -20)" d="M35 84A30 30 0 0 1 9 58A30 30 0 0 1 35 84ZM43 84A72 72 0 0 1 93 20A72 72 0 0 1 43 84ZM11 34a13 13 0 1 0 26 0a13 13 0 1 0 -26 0Z"/>
+  <text x="506" y="344" fill="#e9e9e7" font-size="120" font-weight="600" font-family="Geist, 'Helvetica Neue', Helvetica, Arial, sans-serif" letter-spacing="-3">complydoc</text>
+  <text x="640" y="470" fill="#9aa0a6" font-size="36" text-anchor="middle" font-family="Geist, 'Helvetica Neue', Helvetica, Arial, sans-serif">Check documents before they reach an LLM.</text>
+</svg>

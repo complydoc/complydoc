@@ -6,6 +6,11 @@ versioned separately.
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-09-23
+
+The minor number moves because the JSON report is now written in a summary shape by
+default; `--detail full` writes every field as before. See Changed.
+
 ### Added
 
 - An expected fact a loader missed now shows the passage in that loader's text that came
@@ -704,7 +709,8 @@ First release.
 - `complydoc` audits the current directory; `--jobs`, `--sample`, `--password`.
 - Packaged agent skill.
 
-[Unreleased]: https://github.com/complydoc/complydoc/compare/v0.4.12...HEAD
+[Unreleased]: https://github.com/complydoc/complydoc/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/complydoc/complydoc/compare/v0.4.12...v0.5.0
 [0.4.12]: https://github.com/complydoc/complydoc/compare/v0.4.11...v0.4.12
 [0.4.11]: https://github.com/complydoc/complydoc/compare/v0.4.10...v0.4.11
 [0.4.10]: https://github.com/complydoc/complydoc/compare/v0.4.9...v0.4.10
