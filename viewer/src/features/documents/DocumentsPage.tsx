@@ -1,35 +1,26 @@
-import { DataTable, type Column } from "@/components/DataTable";
 import { Section, SectionStack } from "@/components/Section";
-import { ToneBadge } from "@/components/ToneBadge";
-import { fileName, formatCount, formatScore } from "@/report/format";
-import { bandOf, bandTone, documentRows, severityTone, type DocumentRow } from "@/report/select";
+import { documentRows } from "@/report/select";
 import type { Report } from "@/report/types";
+import { DocumentDetail } from "./detail/DocumentDetail";
+import { DocumentTable } from "./DocumentTable";
 import { LoadersSection } from "./loaders/LoadersSection";
 
-const columns: Column<DocumentRow>[] = [
-  { header: "Document", cell: (row) => <span title={row.path}>{fileName(row.path)}</span> },
-  { header: "Format", cell: (row) => row.format.toUpperCase() },
-  { header: "Pages", cell: (row) => formatCount(row.pages), numeric: true },
-  {
-    header: "Readiness",
-    cell: (row) => <ToneBadge tone={bandTone(bandOf(row.score))}>{formatScore(row.score)}</ToneBadge>,
-    numeric: true,
-  },
-  {
-    header: "Sensitive",
-    cell: (row) =>
-      row.highest ? <ToneBadge tone={severityTone(row.highest)}>{formatCount(row.findings)}</ToneBadge> : "–",
-    numeric: true,
-  },
-];
+interface DocumentsPageProps {
+  report: Report;
+  /** The index of the open document, from the URL; null for the list. */
+  open: string | null;
+}
 
-/** Every document, and, when loaders were compared, which loader read them best. */
-export function DocumentsPage({ report }: { report: Report }) {
+/** Every document and, when loaders were compared, which one read them best; or one document, page by page. */
+export function DocumentsPage({ report, open }: DocumentsPageProps) {
+  const document = open === null ? undefined : report.documents[Number(open)];
+  if (document) return <DocumentDetail key={open} report={report} document={document} />;
+
   return (
     <SectionStack>
       {report.loader_comparison && <LoadersSection comparison={report.loader_comparison} />}
-      <Section title="Documents" aside="least ready first">
-        <DataTable caption="Documents" columns={columns} rows={documentRows(report)} rowKey={(row) => row.path} />
+      <Section title="Documents" aside="open one to compare its readings">
+        <DocumentTable rows={documentRows(report)} />
       </Section>
     </SectionStack>
   );

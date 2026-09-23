@@ -10,11 +10,11 @@ import type { Band, DocumentEntry, LoaderComparison, Report, Severity } from "./
 /** Limitation areas about loaders and readers. They are told on the Documents page. */
 const READER_AREAS = new Set(["Loaders", "Extraction"]);
 
-export const BANDS: readonly { key: Band; label: string; tone: Tone }[] = [
-  { key: "ready", label: "Ready", tone: "good" },
-  { key: "workable", label: "Workable", tone: "neutral" },
-  { key: "needs work", label: "Needs work", tone: "warn" },
-  { key: "not ready", label: "Not ready", tone: "bad" },
+export const BANDS: readonly { key: Band; id: string; label: string; tone: Tone }[] = [
+  { key: "ready", id: "ready", label: "Ready", tone: "good" },
+  { key: "workable", id: "workable", label: "Workable", tone: "neutral" },
+  { key: "needs work", id: "needsWork", label: "Needs work", tone: "warn" },
+  { key: "not ready", id: "notReady", label: "Not ready", tone: "bad" },
 ];
 
 export const SEVERITIES: readonly Severity[] = ["high", "medium", "low"];
@@ -39,7 +39,7 @@ export function bandTone(band: Band | null): Tone {
 }
 
 /** The bands with at least one document, best first. */
-export function bandCounts(report: Report): { key: Band; label: string; tone: Tone; count: number }[] {
+export function bandCounts(report: Report): { key: Band; id: string; label: string; tone: Tone; count: number }[] {
   return BANDS.map((band) => ({ ...band, count: report.overall.bands[band.key] ?? 0 })).filter(
     (band) => band.count > 0,
   );
@@ -63,12 +63,17 @@ export function categoriesByCount(report: Report): CategoryCount[] {
 }
 
 export interface DocumentRow {
+  /** Position in the report's document list, which is how a document is opened. */
+  index: number;
   path: string;
   format: string;
   pages: number;
   score: number | null;
   findings: number;
   highest: Severity | null;
+  /** The least any other reader agreed with the kept one, 0 to 1; null when no other read it. */
+  agreement: number | null;
+  reordered: boolean;
 }
 
 function highestSeverity(document: DocumentEntry): Severity | null {
@@ -76,16 +81,46 @@ function highestSeverity(document: DocumentEntry): Severity | null {
   return SEVERITIES.find((s) => found.has(s)) ?? null;
 }
 
+/** A document's readiness score. The report keys scores by the path relative to the folder. */
+export function documentScore(report: Report, document: DocumentEntry): number | null {
+  return report.overall.by_document[document.relative_path] ?? null;
+}
+
+/** Below this, two readings of a page tell different stories; complydoc uses the same line. */
+const SIMILAR_ENOUGH = 0.95;
+
+/** Whether a reader moved the words around in a way worth saying: only where the readings differ. */
+export function worthCallingReordered(reading: { similarity: number; reordered: boolean }): boolean {
+  return reading.reordered && reading.similarity < SIMILAR_ENOUGH;
+}
+
+function agreement(document: DocumentEntry): { agreement: number | null; reordered: boolean } {
+  const others = document.extractions.slice(1);
+  if (others.length === 0) return { agreement: null, reordered: false };
+  return {
+    agreement: Math.min(...others.map((reading) => reading.similarity)),
+    reordered: others.some(worthCallingReordered),
+  };
+}
+
+/** How worrying a level of agreement between two readers is. */
+export function agreementTone(similarity: number): Tone {
+  if (similarity >= SIMILAR_ENOUGH) return "good";
+  return similarity >= 0.75 ? "warn" : "bad";
+}
+
 /** One row per document, the least ready first, since those need attention. */
 export function documentRows(report: Report): DocumentRow[] {
   return report.documents
-    .map((document) => ({
+    .map((document, index) => ({
+      index,
       path: document.relative_path,
       format: document.format,
       pages: document.page_count,
-      score: report.overall.by_document[document.path] ?? null,
+      score: documentScore(report, document),
       findings: document.sensitive.matches.length,
       highest: highestSeverity(document),
+      ...agreement(document),
     }))
     .sort((a, b) => (a.score ?? -1) - (b.score ?? -1) || a.path.localeCompare(b.path));
 }

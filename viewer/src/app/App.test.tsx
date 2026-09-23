@@ -31,20 +31,20 @@ describe("App", () => {
 
   it("opens the bundled sample", async () => {
     render(<App />);
-    await userEvent.click(screen.getByRole("button", { name: "Open the sample" }));
-    expect(await screen.findByText(/sample: pypdf vs pdfplumber/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "pypdf against pdfplumber" }));
+    expect(await screen.findByText(/sample: pypdf against pdfplumber/)).toBeInTheDocument();
   });
 
   it("goes back to the open screen", async () => {
     render(<App />);
-    await userEvent.click(screen.getByRole("button", { name: "Open the sample" }));
+    await userEvent.click(screen.getByRole("button", { name: "pypdf against pdfplumber" }));
     await userEvent.click(await screen.findByRole("button", { name: "Open another" }));
     expect(screen.getByRole("heading", { name: "Open a report" })).toBeInTheDocument();
   });
 
   it("switches the theme from the header", async () => {
     render(<App />);
-    await userEvent.click(screen.getByRole("button", { name: "Open the sample" }));
+    await userEvent.click(screen.getByRole("button", { name: "pypdf against pdfplumber" }));
     await userEvent.click(await screen.findByRole("radio", { name: "Dark" }));
     expect(document.documentElement).toHaveClass("dark");
   });

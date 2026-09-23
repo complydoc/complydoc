@@ -1,43 +1,45 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { DataTable } from "./DataTable";
-import { ScoreRing } from "./ScoreRing";
+import { createColumnHelper } from "@tanstack/react-table";
+import { DataTable, type Columns } from "./DataTable";
+import { ReadinessChart } from "./ReadinessChart";
 import { Section, SectionStack } from "./Section";
 import { Stat } from "./Stat";
 import { ThemeToggle } from "./ThemeToggle";
 import { ToneBadge } from "./ToneBadge";
 
-describe("ScoreRing", () => {
-  it("shows the score and reads the bands out", () => {
+describe("ReadinessChart", () => {
+  it("reads the score and the bands out", () => {
     render(
-      <ScoreRing
+      <ReadinessChart
         score="93"
         caption="ready"
-        segments={[
-          { label: "Ready", count: 8, tone: "good" },
-          { label: "Workable", count: 1, tone: "neutral" },
+        bands={[
+          { id: "ready", label: "Ready", count: 8, tone: "good" },
+          { id: "workable", label: "Workable", count: 1, tone: "neutral" },
         ]}
       />,
     );
-    expect(screen.getByText("93")).toBeInTheDocument();
-    expect(screen.getByText("8 ready, 1 workable")).toBeInTheDocument();
-  });
-
-  it("draws no arcs for an empty folder", () => {
-    const { container } = render(<ScoreRing score="–" caption="not scored" segments={[]} />);
-    expect(container.querySelectorAll("circle")).toHaveLength(0);
+    expect(screen.getByText("Readiness 93, ready: 8 ready, 1 workable")).toBeInTheDocument();
   });
 });
 
+interface Row {
+  name: string;
+  n: number;
+}
+const column = createColumnHelper<Row>();
+const columns: Columns<Row> = [
+  column.accessor("name", { header: "Loader" }),
+  column.accessor("n", { header: "Documents", meta: { numeric: true } }),
+];
+
 describe("DataTable", () => {
-  it("renders a row per item, with figures aligned right", () => {
+  function renderTable() {
     render(
       <DataTable
         caption="Loaders"
-        columns={[
-          { header: "Loader", cell: (row: { name: string; n: number }) => row.name },
-          { header: "Documents", cell: (row) => row.n, numeric: true },
-        ]}
+        columns={columns}
         rows={[
           { name: "pypdf", n: 9 },
           { name: "pdfplumber", n: 8 },
@@ -45,9 +47,22 @@ describe("DataTable", () => {
         rowKey={(row) => row.name}
       />,
     );
-    const table = screen.getByRole("table", { name: "Loaders" });
+    return screen.getByRole("table", { name: "Loaders" });
+  }
+
+  it("renders a row per item, with figures aligned right", () => {
+    const table = renderTable();
     expect(within(table).getAllByRole("row")).toHaveLength(3);
     expect(within(table).getByText("8")).toHaveClass("text-right");
+  });
+
+  it("sorts from a header, largest figure first", async () => {
+    const table = renderTable();
+    const firstCell = () => within(within(table).getAllByRole("row")[1] as HTMLElement).getAllByRole("cell")[0];
+    await userEvent.click(within(table).getByRole("button", { name: "Documents" }));
+    expect(firstCell()).toHaveTextContent("pypdf");
+    await userEvent.click(within(table).getByRole("button", { name: "Documents" }));
+    expect(firstCell()).toHaveTextContent("pdfplumber");
   });
 });
 

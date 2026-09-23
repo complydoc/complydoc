@@ -23,16 +23,20 @@ on Radix, Lucide icons, Geist fonts, and Vitest with Testing Library.
 src/
   app/            the shell: App picks between opening a report and showing one
   features/       one folder per page, each owning its parts
-    open/         the empty state: drop, choose or open the sample
+    open/         the empty state: drop or choose a report, or open a sample
     summary/      readiness, quick wins, headline figures, caveats
     security/     identifiers by severity, by kind, and where
-    documents/    every document, and loaders/ for the loader comparison
-  components/     complydoc's building blocks: Section, Stat, DataTable, ScoreRing...
+    documents/    every document; loaders/ for the loader comparison;
+                  detail/ for one document: its page beside every reading, marked
+  components/     complydoc's building blocks, made of shadcn parts: Section, Stat, DataTable...
     ui/           shadcn/ui source, added and updated with its CLI
-  hooks/          useReportFile, useHashTab, useTheme
-  report/         the report itself, with no React: types, parsing, formatting, selectors
+  hooks/          useReportFile, useHashRoute, useTheme, useMediaQuery
+  report/         the report itself, with no React: types, parsing, formatting,
+                  selectors, and readings.ts, which lines up and diffs a page's readings
   lib/            shadcn's utilities
-  fixtures/       a real report: pypdf against pdfplumber over the sample folder
+  fixtures/       two real reports on the sample folder: an audit with page images,
+                  pypdf compared and OCR (audit.json), and pypdf against pdfplumber
+                  as LangChain loaders (loaders.json)
   test/           test setup and the sample loader
   index.css       the theme: brand tokens on shadcn's names
 ```
@@ -47,6 +51,22 @@ What goes where:
 - **Tests sit beside the code** (`Thing.tsx`, `Thing.test.tsx`) and query what
   a person sees (roles, names, text), not class names.
 - **Imports use `@/`**, except for a sibling in the same folder.
+
+## The page comparison
+
+Open a document from the Documents table (`#documents/<n>`). Each page shows
+three resizable panes: the page itself, with every identifier found boxed
+where it sits, and two readings, each chosen from every reader the run
+compared (the kept extractor or loader, the others, and OCR), with what one
+has and the other lacks marked.
+
+The page picture needs a full report taken with page images:
+
+```bash
+complydoc audit ./docs --compare-extractor pypdf --ocr-compare --page-images --detail full
+```
+
+Without it, the readings still sit side by side and the page pane says how to get the picture.
 
 ## Adding a shadcn component
 

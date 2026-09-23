@@ -1,31 +1,41 @@
-import { DataTable, type Column } from "@/components/DataTable";
+import { createColumnHelper } from "@tanstack/react-table";
+import { DataTable, type Columns } from "@/components/DataTable";
 import { Badge } from "@/components/ui/badge";
 import { formatCount, formatScore, formatSeconds } from "@/report/format";
 import { rankedLoaders } from "@/report/select";
 import type { LoaderComparison, LoaderRow } from "@/report/types";
 
-/** The loaders side by side. Columns that would say nothing for this run are left out. */
+const column = createColumnHelper<LoaderRow>();
+const numeric = { meta: { numeric: true } } as const;
+
+/** The loaders side by side, best first. Columns that would say nothing for this run are left out. */
 export function LoaderTable({ comparison }: { comparison: LoaderComparison }) {
-  const columns: Column<LoaderRow>[] = [
-    {
+  const columns: Columns<LoaderRow> = [
+    column.accessor("name", {
       header: "Loader",
-      cell: (row) => (
+      cell: (c) => (
         <span className="flex items-center gap-2 font-medium">
-          {row.name}
-          {row.name === comparison.recommended && <Badge variant="success">recommended</Badge>}
+          {c.getValue()}
+          {c.getValue() === comparison.recommended && <Badge variant="success">recommended</Badge>}
         </span>
       ),
-    },
-    { header: "Documents", cell: (row) => formatCount(row.documents), numeric: true },
-    { header: "Characters", cell: (row) => formatCount(row.characters), numeric: true },
-    { header: "Load time", cell: (row) => formatSeconds(row.seconds), numeric: true },
-    { header: "Readiness", cell: (row) => formatScore(row.readiness_score), numeric: true },
+    }),
+    column.accessor("documents", { header: "Documents", cell: (c) => formatCount(c.getValue()), ...numeric }),
+    column.accessor("characters", { header: "Characters", cell: (c) => formatCount(c.getValue()), ...numeric }),
+    column.accessor("seconds", { header: "Load time", cell: (c) => formatSeconds(c.getValue()), ...numeric }),
+    column.accessor("readiness_score", { header: "Readiness", cell: (c) => formatScore(c.getValue()), ...numeric }),
   ];
   if (comparison.facts.length > 0) {
-    columns.push({ header: "Facts kept", cell: (row) => `${row.facts_found} of ${comparison.facts.length}`, numeric: true });
+    columns.push(
+      column.accessor("facts_found", {
+        header: "Facts kept",
+        cell: (c) => `${c.getValue()} of ${comparison.facts.length}`,
+        ...numeric,
+      }),
+    );
   }
   if (comparison.loaders.some((row) => row.error)) {
-    columns.push({ header: "Error", cell: (row) => row.error });
+    columns.push(column.accessor("error", { header: "Error" }));
   }
 
   return <DataTable caption="Loaders compared" columns={columns} rows={rankedLoaders(comparison)} rowKey={(row) => row.name} />;

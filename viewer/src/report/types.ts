@@ -23,6 +23,10 @@ export interface Report {
 
 export interface RunMetadata {
   schema_version: number;
+  /** The library that read the text layer, or the first loader compared. */
+  extractor: string;
+  ocr_compare_used: boolean;
+  page_images_used: boolean;
   tool_version: string;
   report_detail: "summary" | "full";
   target: string;
@@ -91,6 +95,42 @@ export interface Extraction {
   reordered: boolean;
 }
 
+/** The text read off one page: the kept reading, the others, and OCR's. */
+export interface PageText {
+  number: number;
+  /** Where the kept text came from: the text layer, OCR, or a loader. */
+  source: "native" | "ocr" | "loader";
+  characters: number;
+  text: string;
+  ocr_text: string;
+  truncated: boolean;
+  /** What each other reader made of the page, by name. */
+  readings: Record<string, string>;
+}
+
+/** A rectangle on the page, as fractions of its width and height. */
+export interface Box {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  label: string | null;
+  title: string | null;
+  value: string | null;
+}
+
+/** A page's geometry, and its picture when the run was asked for one. Full reports only. */
+export interface PagePreview {
+  number: number;
+  width_pt: number;
+  height_pt: number;
+  text_blocks: Box[];
+  image_blocks: Box[];
+  sensitive: Box[];
+  image_data_uri: string | null;
+  unreadable: boolean;
+}
+
 export interface DocumentEntry {
   path: string;
   relative_path: string;
@@ -98,6 +138,9 @@ export interface DocumentEntry {
   page_count: number;
   sensitive: { matches: SensitiveMatch[] };
   extractions: Extraction[];
+  extracted_text: PageText[];
+  /** Left out of a summary report. */
+  previews?: PagePreview[];
 }
 
 export interface LoaderRow {

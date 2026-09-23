@@ -82,18 +82,30 @@ Rules:
 
 ## Components
 
-Use shadcn/ui first ([`src/components/ui`](src/components/ui)), then the
-complydoc components built on it ([`src/components`](src/components)):
+Every piece of UI comes from shadcn/ui ([`src/components/ui`](src/components/ui)),
+added with its CLI. The complydoc components in [`src/components`](src/components)
+only put shadcn parts together:
 
-| Need | Use |
-| --- | --- |
-| A page section | `Section`, stacked in `SectionStack` |
-| A headline number | `Stat` in a `StatGrid` |
-| A table of rows | `DataTable` with column definitions |
-| A state label | `ToneBadge` (good, neutral, warn, bad) or `Badge` |
-| A recommendation or caveat | `Alert` |
-| Nothing to show yet | `Empty` |
-| Readiness at a glance | `ScoreRing` |
+| Need | Use | Built from |
+| --- | --- | --- |
+| A page section | `Section`, stacked in `SectionStack` | heading, `Separator` |
+| A headline number | `Stat` in a `StatGrid` | `Card` |
+| A table of rows | `DataTable` | shadcn's data table: `Table` on TanStack Table |
+| A state label | `ToneBadge` (good, neutral, warn, bad) | `Badge` |
+| Readiness at a glance | `ReadinessChart` | `Chart` (Recharts donut) |
+| A list of things | `ItemGroup` and `Item` | shadcn |
+| A recommendation or caveat | `Alert` | shadcn |
+| Nothing to show yet | `Empty` | shadcn |
+| Side by side | `ResizablePanelGroup` | shadcn |
+| Choosing among a few | `ToggleGroup`, or `Select` for more | shadcn |
+
+Two things are drawn here, because no shadcn registry has them (checked:
+@shadcn, @reui, @kibo-ui, @magicui, @shadcnblocks, @diceui, @tailark):
+
+- the diff marks in a reading ([`DiffText`](src/features/documents/detail/DiffText.tsx)),
+  `<mark>` on the theme's tokens: lost words `destructive-soft`, added ones `success-soft`;
+- the identifier boxes laid over a page picture ([`PagePicture`](src/features/documents/detail/PagePicture.tsx)),
+  each a shadcn `Tooltip` trigger.
 
 ## Voice
 

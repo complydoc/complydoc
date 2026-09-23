@@ -22,6 +22,10 @@ beforeEach(() => {
       removeListener: () => {},
       dispatchEvent: () => false,
     }) as MediaQueryList;
+  // Radix Select measures and scrolls its list, and captures the pointer.
+  Element.prototype.hasPointerCapture ??= () => false;
+  Element.prototype.releasePointerCapture ??= () => {};
+  Element.prototype.scrollIntoView ??= () => {};
   window.ResizeObserver ??= class {
     observe() {}
     unobserve() {}

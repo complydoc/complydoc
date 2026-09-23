@@ -1,4 +1,5 @@
-import { DataTable, type Column } from "@/components/DataTable";
+import { createColumnHelper } from "@tanstack/react-table";
+import { DataTable, type Columns } from "@/components/DataTable";
 import { Section, SectionStack } from "@/components/Section";
 import { Stat, StatGrid } from "@/components/Stat";
 import { ToneBadge } from "@/components/ToneBadge";
@@ -6,18 +7,22 @@ import { fileName, formatCount, humanise } from "@/report/format";
 import { SEVERITIES, categoriesByCount, documentRows, severityTone, type CategoryCount, type DocumentRow } from "@/report/select";
 import type { Report } from "@/report/types";
 
-const categoryColumns: Column<CategoryCount>[] = [
-  { header: "Identifier", cell: (row) => row.label },
-  { header: "Found", cell: (row) => formatCount(row.count), numeric: true },
+const kinds = createColumnHelper<CategoryCount>();
+const categoryColumns: Columns<CategoryCount> = [
+  kinds.accessor("label", { header: "Identifier" }),
+  kinds.accessor("count", { header: "Found", cell: (c) => formatCount(c.getValue()), meta: { numeric: true } }),
 ];
 
-const documentColumns: Column<DocumentRow>[] = [
-  { header: "Document", cell: (row) => fileName(row.path) },
-  { header: "Items", cell: (row) => formatCount(row.findings), numeric: true },
-  {
+const where = createColumnHelper<DocumentRow>();
+const documentColumns: Columns<DocumentRow> = [
+  where.accessor((row) => fileName(row.path), { id: "document", header: "Document" }),
+  where.accessor("findings", { header: "Items", cell: (c) => formatCount(c.getValue()), meta: { numeric: true } }),
+  where.display({
+    id: "highest",
     header: "Highest",
-    cell: (row) => row.highest && <ToneBadge tone={severityTone(row.highest)}>{row.highest}</ToneBadge>,
-  },
+    cell: ({ row }) =>
+      row.original.highest && <ToneBadge tone={severityTone(row.original.highest)}>{row.original.highest}</ToneBadge>,
+  }),
 ];
 
 /** What the documents carry that should not leave: by severity, by kind, and where. */

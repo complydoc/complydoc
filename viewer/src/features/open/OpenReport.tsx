@@ -5,10 +5,11 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { cn } from "@/lib/utils";
+import { SAMPLES } from "./samples";
 
 interface OpenReportProps {
   onFile: (file: File) => void;
-  onSample: () => void;
+  onSample: (id: string) => void;
   /** Why the last file could not be opened, if it could not. */
   error?: string | undefined;
 }
@@ -59,9 +60,14 @@ export function OpenReport({ onFile, onSample, error }: OpenReportProps) {
             }}
           />
           <Button onClick={() => input.current?.click()}>Choose file</Button>
-          <Button variant="link" onClick={onSample}>
-            Open the sample
-          </Button>
+          <div className="flex flex-col items-center">
+            <span className="text-xs text-muted-foreground">or open a sample</span>
+            {SAMPLES.map((sample) => (
+              <Button key={sample.id} variant="link" size="sm" onClick={() => onSample(sample.id)}>
+                {sample.label}
+              </Button>
+            ))}
+          </div>
         </EmptyContent>
       </Empty>
       {error && (

@@ -6,7 +6,7 @@ describe("SummaryPage", () => {
   it("leads with the folder's score and its factors", () => {
     render(<SummaryPage report={sampleReport()} />);
     const readiness = screen.getByRole("region", { name: "Readiness" });
-    expect(within(readiness).getByText("93")).toBeInTheDocument();
+    expect(within(readiness).getByText(/Readiness 93, ready/)).toBeInTheDocument();
     expect(within(readiness).getByRole("list", { name: "Factors" }).children).toHaveLength(3);
   });
 

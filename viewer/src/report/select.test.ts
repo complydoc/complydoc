@@ -1,7 +1,8 @@
-import { sampleReport, sampleWithComparison } from "../test/sample";
+import { sampleAudit, sampleReport, sampleWithComparison } from "@/test/sample";
 import {
   bandCounts,
   bandOf,
+  agreementTone,
   bandTone,
   categoriesByCount,
   documentRows,
@@ -71,5 +72,24 @@ describe("select", () => {
     const caveats = summaryCaveats(sampleReport());
     expect(caveats.map((c) => c.area)).toEqual(["Hidden content", "Pages that could not be read", "Price provenance"]);
     expect(caveats[2]?.statements).toHaveLength(3);
+  });
+
+  it("says how far the readers of each document agree, and whether one reordered it", () => {
+    const rows = documentRows(sampleAudit());
+    const contract = rows.find((row) => row.path.endsWith("terms-and-conditions.pdf"));
+    expect(contract?.agreement).toBeCloseTo(0.5143);
+    expect(contract?.reordered).toBe(true);
+    expect(rows.find((row) => row.path.endsWith(".docx"))?.agreement).toBeNull();
+    expect(rows.every((row, _, all) => all.filter((r) => r.index === row.index).length === 1)).toBe(true);
+  });
+
+  it("colours agreement on complydoc's threshold", () => {
+    expect([1, 0.95, 0.8, 0.51].map(agreementTone)).toEqual(["good", "good", "warn", "bad"]);
+  });
+
+  it("finds each document's score, and calls a reading reordered only where it differs", () => {
+    const rows = documentRows(sampleAudit());
+    expect(rows.every((row) => row.score !== null)).toBe(true);
+    expect(rows.find((row) => row.path === "invoice-de.pdf")).toMatchObject({ agreement: 1, reordered: false });
   });
 });
