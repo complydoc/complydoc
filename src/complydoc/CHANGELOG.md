@@ -6,6 +6,14 @@ versioned separately.
 
 ## [Unreleased]
 
+### Added
+
+- A React viewer for the JSON report, in `viewer/`: Summary, Security, Cost and
+  Documents pages, every finding linked to where it sits, and a document's pages beside
+  every reading of them, OCR included, with the differences marked. It is a separate app
+  built with shadcn/ui, not part of the Python package; `viewer/README.md` says how to run
+  it. The HTML report `complydoc audit` writes is unchanged.
+
 ## [0.5.0] — 2026-09-23
 
 The minor number moves because the JSON report is now written in a summary shape by
