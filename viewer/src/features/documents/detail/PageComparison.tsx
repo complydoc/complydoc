@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { plural } from "@/report/format";
 import { defaultPair, diffReadings, type Reading } from "@/report/readings";
 import type { PagePreview } from "@/report/types";
-import { PagePicture } from "./PagePicture";
+import { PagePane } from "./PagePane";
 import { ReadingPane } from "./ReadingPane";
 
 interface PageComparisonProps {
+  number: number;
   readings: Reading[];
   preview: PagePreview | undefined;
 }
@@ -18,9 +19,10 @@ function pick(readings: Reading[], id: string): Reading {
 
 /**
  * The page and two of its readings side by side, with what each reading has
- * that the other lacks marked. Resizable on a wide screen, stacked on a narrow one.
+ * that the other lacks marked. Three equal panes of one height, resizable on a
+ * wide screen and stacked on a narrow one.
  */
-export function PageComparison({ readings, preview }: PageComparisonProps) {
+export function PageComparison({ number, readings, preview }: PageComparisonProps) {
   const wide = useMediaQuery("(min-width: 64rem)");
   const [[leftId, rightId], setPair] = useState(() => defaultPair(readings));
   const left = pick(readings, leftId);
@@ -30,7 +32,7 @@ export function PageComparison({ readings, preview }: PageComparisonProps) {
     left.id === right.id ? "same reading" : diff.differences === 0 ? "identical" : plural(diff.differences, "difference");
 
   const panes = [
-    <PagePicture key="page" preview={preview} />,
+    <PagePane key="page" number={number} preview={preview} />,
     <ReadingPane
       key="left"
       label="Left reading"
@@ -54,21 +56,18 @@ export function PageComparison({ readings, preview }: PageComparisonProps) {
   ];
 
   if (!wide) {
-    return <div className="flex flex-col gap-4 [&>[data-slot=card]]:h-96">{panes}</div>;
+    return <div className="flex flex-col gap-4 [&>[data-slot=card]]:h-[32rem]">{panes}</div>;
   }
   return (
-    <ResizablePanelGroup orientation="horizontal" className="h-[75vh] min-h-[32rem] gap-1">
-      <ResizablePanel defaultSize="30%" minSize="15%" className="overflow-auto pr-2">
-        {panes[0]}
-      </ResizablePanel>
-      <ResizableHandle withHandle />
-      <ResizablePanel defaultSize="35%" minSize="20%" className="px-2">
-        {panes[1]}
-      </ResizablePanel>
-      <ResizableHandle withHandle />
-      <ResizablePanel defaultSize="35%" minSize="20%" className="pl-2">
-        {panes[2]}
-      </ResizablePanel>
+    <ResizablePanelGroup orientation="horizontal" className="h-[calc(100svh-18rem)] min-h-[32rem]">
+      {panes.map((pane, index) => (
+        <Fragment key={pane.key}>
+          {index > 0 && <ResizableHandle withHandle className="mx-2" />}
+          <ResizablePanel defaultSize={`${100 / panes.length}%`} minSize="20%">
+            {pane}
+          </ResizablePanel>
+        </Fragment>
+      ))}
     </ResizablePanelGroup>
   );
 }

@@ -20,7 +20,7 @@ interface ReadingPaneProps {
 export function ReadingPane({ label, readings, selected, onSelect, parts, side, note }: ReadingPaneProps) {
   return (
     <Card size="sm" className="h-full">
-      <CardHeader>
+      <CardHeader className="items-center">
         <Select value={selected} onValueChange={onSelect}>
           <SelectTrigger size="sm" aria-label={label} className="w-44">
             <SelectValue />

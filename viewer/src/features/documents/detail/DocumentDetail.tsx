@@ -53,17 +53,17 @@ export function DocumentDetail({ report, document }: DocumentDetailProps) {
             {worthCallingReordered(reading) && " · reordered"}
           </ToneBadge>
         ))}
-      </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <PagePicker count={document.extracted_text.length} current={pageIndex} onPick={setPageIndex} />
-        <p className="ml-auto text-xs text-muted-foreground">Marked: what the other reading lacks</p>
+        <div className="ml-auto flex items-center gap-4">
+          <PagePicker count={document.extracted_text.length} current={pageIndex} onPick={setPageIndex} />
+          <p className="text-xs text-muted-foreground">Marked: what the other reading lacks</p>
+        </div>
       </div>
 
       {page ? (
         <PageComparison
           // A fresh pair of readings for each page, since pages can have different readers.
           key={page.number}
+          number={page.number}
           readings={pageReadings(page, report.run.extractor)}
           preview={document.previews?.find((p) => p.number === page.number)}
         />
