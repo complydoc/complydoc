@@ -1,30 +1,30 @@
+/**
+ * The complydoc mark, an owl's face in flat pieces, and the wordmark beside it.
+ *
+ * The same geometry as brand/logo/mark-flat.svg, inlined so it takes the
+ * theme's green. brand/logo/README.md says why an owl and where each version goes.
+ */
+const MARK =
+  "M26 30A17 17 0 0 1 8 6A17 17 0 0 1 26 30ZM92 6A17 17 0 0 1 74 30A17 17 0 0 1 92 6ZM8 54a20 20 0 1 0 40 0a20 20 0 1 0 -40 0ZM52 54a20 20 0 1 0 40 0a20 20 0 1 0 -40 0ZM23.5 56a7.5 7.5 0 1 0 15.0 0a7.5 7.5 0 1 0 -15.0 0ZM61.5 56a7.5 7.5 0 1 0 15.0 0a7.5 7.5 0 1 0 -15.0 0ZM50 72A15 15 0 0 1 50 96A15 15 0 0 1 50 72Z";
+
 interface LogoProps {
   /** Show the wordmark beside the mark. */
   withName?: boolean;
-  height?: number;
+  /** Height of the mark in pixels; the wordmark scales with it. */
+  size?: number;
 }
 
-/** The complydoc mark: a document inside a dashed boundary, one line in the accent. */
-export function Logo({ withName = true, height = 32 }: LogoProps) {
-  const width = withName ? height * (296 / 64) : height * (56 / 64);
+export function Logo({ withName = true, size = 24 }: LogoProps) {
   return (
-    <svg
-      viewBox={withName ? "0 0 296 64" : "0 0 56 64"}
-      width={width}
-      height={height}
-      role="img"
-      aria-label="complydoc"
-    >
-      <rect x="8" y="12" width="40" height="40" rx="8" fill="none" stroke="var(--primary)" strokeWidth="1.5" strokeDasharray="3,3" />
-      <rect x="20" y="21" width="16" height="22" rx="2" fill="none" stroke="currentColor" strokeWidth="1.5" />
-      <line x1="23" y1="27" x2="33" y2="27" stroke="currentColor" strokeWidth="1.5" />
-      <line x1="23" y1="32" x2="33" y2="32" stroke="currentColor" strokeWidth="1.5" />
-      <line x1="23" y1="37" x2="29" y2="37" stroke="var(--primary)" strokeWidth="1.5" />
+    <span className="inline-flex items-center gap-2 text-primary" role="img" aria-label="complydoc">
+      <svg viewBox="0 0 100 100" width={size} height={size} aria-hidden="true" className="shrink-0">
+        <path fill="currentColor" fillRule="evenodd" d={MARK} />
+      </svg>
       {withName && (
-        <text x="62" y="41" fill="currentColor" fontSize="27" fontWeight="600" fontFamily="Geist Variable, sans-serif" letterSpacing="-0.02em">
+        <span aria-hidden="true" className="font-semibold tracking-tight text-foreground" style={{ fontSize: size * 0.75 }}>
           complydoc
-        </text>
+        </span>
       )}
-    </svg>
+    </span>
   );
 }

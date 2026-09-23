@@ -28,7 +28,7 @@ export function OpenReport({ onFile, onSample, error }: OpenReportProps) {
 
   return (
     <main className="flex min-h-svh flex-col items-center justify-center gap-8 px-4 py-8">
-      <Logo height={40} />
+      <Logo size={36} />
       <Empty
         className={cn("max-w-md flex-none border bg-card py-10 transition-colors", dragging && "border-primary bg-success-soft")}
         onDragOver={(event) => {

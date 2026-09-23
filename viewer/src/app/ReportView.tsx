@@ -36,7 +36,7 @@ export function ReportView({ report, name, theme, onTheme, onClose }: ReportView
     <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 md:px-6">
       <header className="flex items-center gap-4">
         <span className="shrink-0">
-          <Logo height={28} />
+          <Logo size={24} />
         </span>
         <p className="hidden min-w-0 truncate text-sm text-muted-foreground sm:block" title={name}>
           {name}
