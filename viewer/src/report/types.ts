@@ -10,6 +10,8 @@ export type Band = "ready" | "workable" | "needs work" | "not ready";
 export type Severity = "high" | "medium" | "low";
 export type LimitationSeverity = "info" | "important";
 export type FactMatch = "exact" | "close" | null;
+/** How strongly a finding is backed, strongest first. */
+export type Evidence = "confirmed" | "corroborated" | "pattern" | "model";
 
 export interface Report {
   run: RunMetadata;
@@ -19,6 +21,7 @@ export interface Report {
   limitations: Limitation[];
   documents: DocumentEntry[];
   loader_comparison: LoaderComparison | null;
+  cost: Cost | null;
 }
 
 export interface RunMetadata {
@@ -85,7 +88,16 @@ export interface SensitiveMatch {
   severity: Severity;
   masked: string;
   page: number | null;
-  evidence: string;
+  evidence: Evidence;
+}
+
+/** A passage that reads as an instruction to a model and is hidden from a person. */
+export interface ContentFinding {
+  excerpt: string;
+  page: number | null;
+  severity: Severity;
+  hidden_reasons: string[];
+  instruction_reasons: string[];
 }
 
 export interface Extraction {
@@ -137,6 +149,7 @@ export interface DocumentEntry {
   format: string;
   page_count: number;
   sensitive: { matches: SensitiveMatch[] };
+  content_findings: ContentFinding[];
   extractions: Extraction[];
   extracted_text: PageText[];
   /** Left out of a summary report. */
@@ -181,4 +194,30 @@ export interface LoaderComparison {
   identifier_differences: IdentifierDifference[];
   documents: Record<string, string[]>;
   metadata_keys: Record<string, string[]>;
+}
+
+export type CostPath = "text_layer" | "text_ocr" | "vision";
+
+/** What sending the folder to a model costs one way. Null where the path serves no document. */
+export interface Architecture {
+  key: CostPath;
+  label: string;
+  per_1000_usd: number | null;
+  folder_usd: number | null;
+  documents_served: number;
+  documents_total: number;
+}
+
+export interface ModelCost {
+  model_id: string;
+  display_name: string;
+  provider: string;
+  /** "verified" by hand, or imported from a third-party table. */
+  price_source: string;
+  architectures: Architecture[];
+}
+
+export interface Cost {
+  currency: string;
+  models: ModelCost[];
 }

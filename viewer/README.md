@@ -25,14 +25,17 @@ src/
   features/       one folder per page, each owning its parts
     open/         the empty state: drop or choose a report, or open a sample
     summary/      readiness, quick wins, headline figures, caveats
-    security/     identifiers by severity, by kind, and where
+    security/     what was found, what kind, where and how sure; hidden
+                  instructions quoted; every finding, masked, in one table
+    cost/         the cheapest model each way, the ten cheapest charted, every model
     documents/    every document; loaders/ for the loader comparison;
                   detail/ for one document: its page beside every reading, marked
   components/     complydoc's building blocks, made of shadcn parts: Section, Stat, DataTable...
     ui/           shadcn/ui source, added and updated with its CLI
   hooks/          useReportFile, useHashRoute, useTheme, useMediaQuery
   report/         the report itself, with no React: types, parsing, formatting,
-                  selectors, and readings.ts, which lines up and diffs a page's readings
+                  selectors (select, security, cost), and readings.ts, which lines
+                  up and diffs a page's readings
   lib/            shadcn's utilities
   fixtures/       two real reports on the sample folder: an audit with page images,
                   pypdf compared and OCR (audit.json), and pypdf against pdfplumber

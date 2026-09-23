@@ -93,6 +93,7 @@ only put shadcn parts together:
 | A table of rows | `DataTable` | shadcn's data table: `Table` on TanStack Table |
 | A state label | `ToneBadge` (good, neutral, warn, bad) | `Badge` |
 | Readiness at a glance | `ReadinessChart` | `Chart` (Recharts donut) |
+| Counts or prices by name | `BarList`, one row height for every chart | `Chart` (Recharts horizontal bars) |
 | A list of things | `ItemGroup` and `Item` | shadcn |
 | A recommendation or caveat | `Alert` | shadcn |
 | Nothing to show yet | `Empty` | shadcn |

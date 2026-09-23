@@ -2,8 +2,8 @@ import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CostPage } from "@/features/cost/CostPage";
 import { DocumentsPage } from "@/features/documents/DocumentsPage";
 import { SecurityPage } from "@/features/security/SecurityPage";
 import { SummaryPage } from "@/features/summary/SummaryPage";
@@ -11,7 +11,7 @@ import { useHashRoute } from "@/hooks/useHashRoute";
 import type { Theme } from "@/hooks/useTheme";
 import type { Report } from "@/report/types";
 
-const PAGES = ["summary", "security", "documents"] as const;
+const PAGES = ["summary", "security", "cost", "documents"] as const;
 type Page = (typeof PAGES)[number];
 
 interface ReportViewProps {
@@ -28,6 +28,7 @@ export function ReportView({ report, name, theme, onTheme, onClose }: ReportView
   const counts: Record<Page, number | undefined> = {
     summary: undefined,
     security: report.aggregate.sensitive_total,
+    cost: undefined,
     documents: report.documents.length,
   };
 
@@ -49,7 +50,7 @@ export function ReportView({ report, name, theme, onTheme, onClose }: ReportView
       </header>
 
       <Tabs value={page} onValueChange={(value) => go(value as Page)} className="gap-8">
-        <TabsList variant="line" aria-label="Report pages">
+        <TabsList aria-label="Report pages">
           {PAGES.map((id) => (
             <TabsTrigger key={id} value={id} className="capitalize">
               {id}
@@ -63,15 +64,14 @@ export function ReportView({ report, name, theme, onTheme, onClose }: ReportView
         <TabsContent value="security">
           <SecurityPage report={report} />
         </TabsContent>
+        <TabsContent value="cost">
+          <CostPage report={report} />
+        </TabsContent>
         <TabsContent value="documents">
           <DocumentsPage report={report} open={detail} />
         </TabsContent>
       </Tabs>
 
-      <Separator />
-      <footer className="text-xs text-faint">
-        complydoc {report.run.tool_version} · schema {report.run.schema_version} · {report.run.report_detail} report
-      </footer>
     </div>
   );
 }

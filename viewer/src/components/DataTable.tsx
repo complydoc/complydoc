@@ -31,16 +31,18 @@ interface DataTableProps<T> {
   columns: Columns<T>;
   rows: T[];
   rowKey: (row: T) => string;
+  /** Let a reader sort by a column's header. Worth it on a long table; noise on a short one. */
+  sortable?: boolean;
 }
 
 const SORT_ICON = { asc: ArrowUpIcon, desc: ArrowDownIcon, none: ArrowUpDownIcon };
 
 /**
  * shadcn's data table: TanStack Table on the Table component, on a card.
- * A column with an accessor sorts from its header. The caption is for screen
+ * When `sortable`, a column with an accessor sorts from its header. The caption is for screen
  * readers; the section heading shows it.
  */
-export function DataTable<T>({ caption, columns, rows, rowKey }: DataTableProps<T>) {
+export function DataTable<T>({ caption, columns, rows, rowKey, sortable = false }: DataTableProps<T>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   // TanStack Table returns functions the React Compiler cannot memoise; it is the documented way to use it.
   // eslint-disable-next-line react-hooks/incompatible-library
@@ -51,6 +53,7 @@ export function DataTable<T>({ caption, columns, rows, rowKey }: DataTableProps<
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     onSortingChange: setSorting,
+    enableSorting: sortable,
     state: { sorting },
   });
 

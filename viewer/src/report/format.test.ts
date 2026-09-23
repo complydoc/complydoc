@@ -1,4 +1,4 @@
-import { fileName, formatPercent, formatScore, formatSeconds, humanise, plural } from "./format";
+import { fileName, formatPercent, formatUsd, formatScore, formatSeconds, humanise, plural } from "./format";
 
 describe("format", () => {
   it("rounds a score and dashes a missing one", () => {
@@ -28,5 +28,12 @@ describe("format", () => {
 
   it("turns a key into words", () => {
     expect(humanise("email_address")).toBe("Email address");
+  });
+
+  it("writes dollars to the cent, or finer under a cent", () => {
+    expect(formatUsd(8)).toBe("$8.00");
+    expect(formatUsd(0.6180000001)).toBe("$0.62");
+    expect(formatUsd(0.00559)).toBe("$0.0056");
+    expect(formatUsd(null)).toBe("–");
   });
 });

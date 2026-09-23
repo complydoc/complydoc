@@ -45,6 +45,7 @@ describe("DataTable", () => {
           { name: "pdfplumber", n: 8 },
         ]}
         rowKey={(row) => row.name}
+        sortable
       />,
     );
     return screen.getByRole("table", { name: "Loaders" });

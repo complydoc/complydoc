@@ -1,5 +1,4 @@
 import { ToneBadge } from "@/components/ToneBadge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Item, ItemActions, ItemContent, ItemDescription, ItemGroup, ItemTitle } from "@/components/ui/item";
 import { formatPercent } from "@/report/format";
 import type { FactCheck, FactMatch } from "@/report/types";
@@ -23,33 +22,29 @@ interface FactListProps {
 /** Each expected fact, whether each loader kept it, and the nearest passage where it did not. */
 export function FactList({ facts, loaders }: FactListProps) {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       {facts.map((check) => (
-        <Card key={check.fact}>
-          <CardHeader>
-            <CardTitle>“{check.fact}”</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ItemGroup aria-label="Loaders">
-              {loaders.map((loader) => {
-                const match = matchOf(check.found[loader] ?? null);
-                const nearest = check.nearest[loader];
-                return (
-                  <Item key={loader} role="listitem" size="xs" variant="muted">
-                    <ItemContent>
-                      <ItemTitle>{loader}</ItemTitle>
-                      {nearest && <ItemDescription className="font-mono text-xs">“{nearest}”</ItemDescription>}
-                    </ItemContent>
-                    <ItemActions>
-                      <span className="text-xs text-faint">{formatPercent(check.scores[loader] ?? 0)}</span>
-                      <ToneBadge tone={match.tone}>{match.label}</ToneBadge>
-                    </ItemActions>
-                  </Item>
-                );
-              })}
-            </ItemGroup>
-          </CardContent>
-        </Card>
+        <div key={check.fact} className="flex flex-col gap-3">
+          <p className="font-medium">“{check.fact}”</p>
+          <ItemGroup aria-label={`Loaders on “${check.fact}”`}>
+            {loaders.map((loader) => {
+              const match = matchOf(check.found[loader] ?? null);
+              const nearest = check.nearest[loader];
+              return (
+                <Item key={loader} role="listitem" size="xs" variant="muted">
+                  <ItemContent>
+                    <ItemTitle>{loader}</ItemTitle>
+                    {nearest && <ItemDescription className="font-mono text-xs">“{nearest}”</ItemDescription>}
+                  </ItemContent>
+                  <ItemActions>
+                    <span className="text-xs text-faint">{formatPercent(check.scores[loader] ?? 0)}</span>
+                    <ToneBadge tone={match.tone}>{match.label}</ToneBadge>
+                  </ItemActions>
+                </Item>
+              );
+            })}
+          </ItemGroup>
+        </div>
       ))}
     </div>
   );

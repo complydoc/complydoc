@@ -33,3 +33,10 @@ export function humanise(key: string): string {
   const words = key.replaceAll("_", " ");
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
+
+/** Dollars, to the cent, or to four places when the sum is under a cent. */
+export function formatUsd(value: number | null): string {
+  if (value === null) return "–";
+  const digits = value !== 0 && Math.abs(value) < 0.01 ? 4 : 2;
+  return `$${value.toLocaleString("en-GB", { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
+}

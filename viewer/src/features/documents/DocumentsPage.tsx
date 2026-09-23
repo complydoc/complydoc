@@ -19,7 +19,7 @@ export function DocumentsPage({ report, open }: DocumentsPageProps) {
   return (
     <SectionStack>
       {report.loader_comparison && <LoadersSection comparison={report.loader_comparison} />}
-      <Section title="Documents" aside="open one to compare its readings">
+      <Section title="Documents">
         <DocumentTable rows={documentRows(report)} />
       </Section>
     </SectionStack>

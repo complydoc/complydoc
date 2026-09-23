@@ -52,5 +52,5 @@ const columns: Columns<DocumentRow> = [
 
 /** Every document, least ready first. A name opens the document's page comparison. */
 export function DocumentTable({ rows }: { rows: DocumentRow[] }) {
-  return <DataTable caption="Documents" columns={columns} rows={rows} rowKey={(row) => String(row.index)} />;
+  return <DataTable caption="Documents" columns={columns} rows={rows} rowKey={(row) => String(row.index)} sortable />;
 }

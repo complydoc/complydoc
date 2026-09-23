@@ -1,77 +1,57 @@
 import type { ReactNode } from "react";
-import { createColumnHelper } from "@tanstack/react-table";
-import { DataTable, type Columns } from "@/components/DataTable";
 import { Section } from "@/components/Section";
-import { humanise } from "@/report/format";
-import { returnedBySomeOnly, type OnlySome } from "@/report/select";
-import type { IdentifierDifference, LoaderComparison } from "@/report/types";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { returnedBySomeOnly } from "@/report/select";
+import type { LoaderComparison } from "@/report/types";
 import { FactList } from "./FactList";
 import { LoaderTable } from "./LoaderTable";
+import { DifferenceList, ReturnedList } from "./OnlySomeList";
 import { Verdict } from "./Verdict";
 
-const difference = createColumnHelper<IdentifierDifference>();
-const differenceColumns: Columns<IdentifierDifference> = [
-  difference.accessor((row) => humanise(row.category), { id: "identifier", header: "Identifier" }),
-  difference.accessor("value", { header: "Value", cell: (c) => <code className="font-mono">{c.getValue()}</code> }),
-  difference.accessor("location", { header: "Where" }),
-  difference.accessor((row) => row.found_by.join(", "), { id: "kept", header: "Kept by" }),
-  difference.accessor((row) => row.missed_by.join(", "), { id: "lost", header: "Lost by" }),
-];
-
-const onlySome = createColumnHelper<OnlySome>();
-const onlySomeColumns: Columns<OnlySome> = [
-  onlySome.accessor("kind", { header: "Kind" }),
-  onlySome.accessor("name", { header: "Name", cell: (c) => <code className="font-mono">{c.getValue()}</code> }),
-  onlySome.accessor((row) => row.loaders.join(", "), { id: "returned", header: "Returned by" }),
-];
-
-function Part({ title, children }: { title: string; children: ReactNode }) {
+function Panel({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
   return (
-    <div className="flex flex-col gap-3">
-      <h3 className="font-heading font-semibold">{title}</h3>
-      {children}
-    </div>
+    <Card className="h-full">
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+        {description && <CardDescription>{description}</CardDescription>}
+      </CardHeader>
+      <CardContent>{children}</CardContent>
+    </Card>
   );
 }
 
-/** Which loader to use and the evidence for it. Each part shows only when it has something to say. */
+/**
+ * Which loader to use and the evidence for it: the verdict, the loaders side
+ * by side, then a card for each kind of evidence the run has, in equal columns.
+ */
 export function LoadersSection({ comparison }: { comparison: LoaderComparison }) {
   const returned = returnedBySomeOnly(comparison);
   const differences = comparison.identifier_differences;
 
+  const panels = [
+    comparison.facts.length > 0 && (
+      <Panel key="facts" title="Expected facts">
+        <FactList facts={comparison.facts} loaders={comparison.ranked} />
+      </Panel>
+    ),
+    differences.length > 0 && (
+      <Panel key="identifiers" title="Identifiers only some kept" description="Green kept it, red lost it">
+        <DifferenceList rows={differences} />
+      </Panel>
+    ),
+    returned.length > 0 && (
+      <Panel key="returned" title="Returned by some only">
+        <ReturnedList rows={returned} />
+      </Panel>
+    ),
+  ].filter(Boolean);
+
   return (
-    <Section title="Loaders" aside={`${comparison.loaders.length} compared`}>
-      <div className="flex flex-col gap-8">
+    <Section title="Loaders">
+      <div className="flex flex-col gap-4">
         <Verdict comparison={comparison} />
         <LoaderTable comparison={comparison} />
-
-        {comparison.facts.length > 0 && (
-          <Part title="Expected facts">
-            <FactList facts={comparison.facts} loaders={comparison.ranked} />
-          </Part>
-        )}
-
-        {differences.length > 0 && (
-          <Part title="Identifiers only some loaders kept">
-            <DataTable
-              caption="Identifiers only some loaders kept"
-              columns={differenceColumns}
-              rows={differences}
-              rowKey={(row) => `${row.location}-${row.category}-${row.value}`}
-            />
-          </Part>
-        )}
-
-        {returned.length > 0 && (
-          <Part title="Returned by some loaders only">
-            <DataTable
-              caption="Returned by some loaders only"
-              columns={onlySomeColumns}
-              rows={returned}
-              rowKey={(row) => `${row.kind}-${row.name}`}
-            />
-          </Part>
-        )}
+        {panels.length > 0 && <div className="grid gap-4 lg:grid-cols-2">{panels}</div>}
       </div>
     </Section>
   );

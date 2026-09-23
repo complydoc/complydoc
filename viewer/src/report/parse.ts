@@ -36,5 +36,5 @@ export function parseReport(text: string): Report {
   if (!Array.isArray(data.documents)) {
     throw new ReportError("This report has no document list.");
   }
-  return { loader_comparison: null, ...data } as unknown as Report;
+  return { loader_comparison: null, cost: null, ...data } as unknown as Report;
 }

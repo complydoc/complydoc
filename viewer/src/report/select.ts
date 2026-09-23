@@ -5,7 +5,7 @@
  * only lay things out.
  */
 import { humanise } from "./format";
-import type { Band, DocumentEntry, LoaderComparison, Report, Severity } from "./types";
+import type { Band, DocumentEntry, Evidence, LoaderComparison, Report, Severity } from "./types";
 
 /** Limitation areas about loaders and readers. They are told on the Documents page. */
 const READER_AREAS = new Set(["Loaders", "Extraction"]);
@@ -18,6 +18,18 @@ export const BANDS: readonly { key: Band; id: string; label: string; tone: Tone 
 ];
 
 export const SEVERITIES: readonly Severity[] = ["high", "medium", "low"];
+
+/** How strongly a finding is backed, strongest first as complydoc orders it, in words a reader knows. */
+export const EVIDENCE: readonly { key: Evidence; label: string }[] = [
+  { key: "confirmed", label: "checksum passed" },
+  { key: "corroborated", label: "label nearby" },
+  { key: "pattern", label: "shape only" },
+  { key: "model", label: "name model" },
+];
+
+export function evidenceLabel(evidence: Evidence): string {
+  return EVIDENCE.find((e) => e.key === evidence)?.label ?? evidence;
+}
 
 export type Tone = "good" | "neutral" | "warn" | "bad";
 
