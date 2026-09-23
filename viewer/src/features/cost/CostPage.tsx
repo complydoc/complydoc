@@ -1,13 +1,14 @@
 import { CoinsIcon } from "lucide-react";
 import { useState } from "react";
 import { BarList } from "@/components/BarList";
+import { ProviderBadge } from "@/components/ProviderBadge";
 import { Section, SectionStack } from "@/components/Section";
 import { Stat, StatGrid } from "@/components/Stat";
-import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardAction, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import type { ChartConfig } from "@/components/ui/chart";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { PATHS, cheapest, costRows, pricedOn } from "@/report/cost";
+import { PATHS, cheapest, costRows, pricedOn, providerColour, providersOf } from "@/report/cost";
 import { formatUsd } from "@/report/format";
 import type { CostPath, Report } from "@/report/types";
 import { CostTable } from "./CostTable";
@@ -75,8 +76,19 @@ export function CostPage({ report }: { report: Report }) {
             </CardAction>
           </CardHeader>
           <CardContent>
-            <BarList series={SERIES} data={models} category="name" format={formatUsd} />
+            <BarList
+              series={SERIES}
+              data={models}
+              category="name"
+              format={formatUsd}
+              colour={(model) => providerColour(model.provider)}
+            />
           </CardContent>
+          <CardFooter className="flex-wrap gap-2 border-t-0 bg-transparent">
+            {providersOf(models).map((provider) => (
+              <ProviderBadge key={provider} provider={provider} />
+            ))}
+          </CardFooter>
         </Card>
       </Section>
 

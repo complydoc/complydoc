@@ -64,6 +64,7 @@ export function DocumentDetail({ report, document }: DocumentDetailProps) {
           // A fresh pair of readings for each page, since pages can have different readers.
           key={page.number}
           number={page.number}
+          name={fileName(document.relative_path)}
           readings={pageReadings(page, report.run.extractor)}
           preview={document.previews?.find((p) => p.number === page.number)}
         />

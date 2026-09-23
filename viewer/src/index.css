@@ -88,6 +88,16 @@
   --chart-3: #b0740f;
   --chart-4: #a4402f;
   --chart-5: #2a78d6;
+
+  /* One colour per model provider, told apart at a glance, never meaning good or bad. */
+  --provider-1: #c96442;
+  --provider-2: #2a78d6;
+  --provider-3: #7c5cc4;
+  --provider-4: #c98a00;
+  --provider-5: #0f8a8a;
+  --provider-6: #cc4b87;
+  --provider-7: #5b6b7f;
+  --provider-8: #8a6d3b;
 }
 
 .dark {
@@ -122,6 +132,15 @@
   --chart-3: #d9a441;
   --chart-4: #e08a72;
   --chart-5: #3987e5;
+
+  --provider-1: #e0876a;
+  --provider-2: #3987e5;
+  --provider-3: #a38be6;
+  --provider-4: #e0b040;
+  --provider-5: #3cc2c2;
+  --provider-6: #e27aa9;
+  --provider-7: #9aa6b5;
+  --provider-8: #c4a574;
 }
 
 @layer base {

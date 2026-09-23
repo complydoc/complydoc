@@ -1,5 +1,5 @@
 import { sampleAudit, sampleReport } from "@/test/sample";
-import { cheapest, costRows, pricedOn } from "./cost";
+import { cheapest, costRows, pricedOn, providerColour, providerName, providersOf } from "./cost";
 
 describe("cost", () => {
   it("lists the priced models on a path, cheapest first", () => {
@@ -21,5 +21,13 @@ describe("cost", () => {
 
   it("is empty for a report without cost", () => {
     expect(pricedOn({ ...sampleAudit(), cost: null }, "text_ocr")).toEqual([]);
+  });
+
+  it("gives each provider its own colour and name", () => {
+    const providers = providersOf(sampleAudit().cost?.models ?? []);
+    const colours = providers.map(providerColour);
+    expect(new Set(colours).size).toBe(providers.length);
+    expect(providerName("openai")).toBe("OpenAI");
+    expect(providerColour("someone-new")).toMatch(/^var\(--provider-[1-8]\)$/);
   });
 });

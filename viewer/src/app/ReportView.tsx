@@ -33,7 +33,7 @@ export function ReportView({ report, name, theme, onTheme, onClose }: ReportView
   };
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 md:px-6">
+    <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 md:px-6">
       <header className="flex items-center gap-4">
         <span className="shrink-0">
           <Logo height={28} />

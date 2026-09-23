@@ -1,6 +1,35 @@
 /** What sending the folder to each model costs, arranged for the Cost page. */
 import type { CostPath, ModelCost, Report } from "./types";
 
+/** How complydoc's providers are written, and the palette slot each keeps on every chart. */
+const PROVIDERS: Record<string, { name: string; slot: number }> = {
+  anthropic: { name: "Anthropic", slot: 1 },
+  openai: { name: "OpenAI", slot: 2 },
+  gemini: { name: "Gemini", slot: 3 },
+  mistral: { name: "Mistral", slot: 4 },
+  deepseek: { name: "DeepSeek", slot: 5 },
+  zai: { name: "Z.ai", slot: 6 },
+  moonshot: { name: "Moonshot", slot: 7 },
+  xai: { name: "xAI", slot: 8 },
+};
+const SLOTS = 8;
+
+export function providerName(provider: string): string {
+  return PROVIDERS[provider]?.name ?? provider;
+}
+
+/** The colour a provider takes everywhere on the page. One not listed gets a slot from its name. */
+export function providerColour(provider: string): string {
+  const known = PROVIDERS[provider]?.slot;
+  const slot = known ?? ([...provider].reduce((sum, c) => sum + c.charCodeAt(0), 0) % SLOTS) + 1;
+  return `var(--provider-${slot})`;
+}
+
+/** The providers among some models, in the order they first appear. */
+export function providersOf(models: { provider: string }[]): string[] {
+  return [...new Set(models.map((m) => m.provider))];
+}
+
 export const PATHS: readonly { key: CostPath; label: string }[] = [
   { key: "text_ocr", label: "Text + local OCR" },
   { key: "vision", label: "As images" },

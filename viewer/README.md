@@ -78,7 +78,7 @@ npx shadcn@latest add dialog
 ```
 
 Files land in `src/components/ui`. They're ours to edit, as the Badge's
-`success` and `warning` variants show, but keep changes small so the CLI can
+`success` and `warning` variants and the Toggle's green selected edge show, but keep changes small so the CLI can
 still diff them.
 
 ## Opening a report

@@ -1,4 +1,4 @@
-import { Bar, BarChart, CartesianGrid, LabelList, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, Cell, LabelList, XAxis, YAxis } from "recharts";
 import {
   ChartContainer,
   ChartLegend,
@@ -16,6 +16,8 @@ interface BarListProps<T> {
   category: keyof T & string;
   /** Shown instead of the value on a bar's tooltip, such as "$0.62". */
   format?: (value: number) => string;
+  /** A colour for each bar of a single series, such as its provider's. */
+  colour?: (row: T) => string;
 }
 
 const LABEL_WIDTH = 176;
@@ -31,7 +33,7 @@ function shorten(text: string) {
  * shadcn's horizontal bar chart, one bar per row of `data`, each row the
  * same height. With several series the bars stack, and a legend names them.
  */
-export function BarList<T>({ series, data, category, format }: BarListProps<T>) {
+export function BarList<T>({ series, data, category, format, colour }: BarListProps<T>) {
   const keys = Object.keys(series);
   const stacked = keys.length > 1;
   // Every bar gets the same row, so bars are one thickness in any chart; a legend adds a line.
@@ -78,6 +80,7 @@ export function BarList<T>({ series, data, category, format }: BarListProps<T>) 
             radius={index === keys.length - 1 ? [0, 4, 4, 0] : 0}
             isAnimationActive={false}
           >
+            {!stacked && colour && data.map((row, index) => <Cell key={index} fill={colour(row)} />)}
             {/* A single series says its value at the end of each bar. */}
             {!stacked && (
               <LabelList

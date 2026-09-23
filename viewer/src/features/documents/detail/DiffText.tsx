@@ -15,7 +15,7 @@ interface DiffTextProps {
  */
 export function DiffText({ parts, side }: DiffTextProps) {
   return (
-    <pre className="font-mono text-xs leading-relaxed whitespace-pre-wrap">
+    <pre className="font-mono text-sm leading-relaxed whitespace-pre-wrap">
       {parts.map((part, index) =>
         part.changed ? (
           <mark
