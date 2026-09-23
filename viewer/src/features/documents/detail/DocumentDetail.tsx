@@ -32,6 +32,7 @@ export function DocumentDetail({ report, document, index, page: startPage = null
   const page = document.extracted_text[pageIndex];
   const score = documentScore(report, document);
   const others = document.extractions.slice(1);
+  const readings = page ? pageReadings(page, report.run.extractor) : [];
   const shown = highlight && page && (highlight.page === null || highlight.page === page.number) ? highlight : null;
 
   return (
@@ -49,7 +50,7 @@ export function DocumentDetail({ report, document, index, page: startPage = null
         ))}
         <div className="ml-auto flex items-center gap-4">
           <PagePicker count={document.extracted_text.length} current={pageIndex} onPick={setPageIndex} />
-          <p className="text-xs text-muted-foreground">Marked: what the other reading lacks</p>
+          {readings.length > 1 && <p className="text-xs text-muted-foreground">Marked: what the other reading lacks</p>}
         </div>
       </div>
 
@@ -61,7 +62,7 @@ export function DocumentDetail({ report, document, index, page: startPage = null
           key={page.number}
           number={page.number}
           name={fileName(document.relative_path)}
-          readings={pageReadings(page, report.run.extractor)}
+          readings={readings}
           preview={document.previews?.find((p) => p.number === page.number)}
           highlight={shown}
         />

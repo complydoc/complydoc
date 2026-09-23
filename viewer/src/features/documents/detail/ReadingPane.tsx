@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { Card, CardAction, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { DiffPart, Reading } from "@/report/readings";
@@ -18,25 +18,29 @@ interface ReadingPaneProps {
   needle: string | null;
 }
 
-/** One reading of the page, chosen from every reader the run compared. */
+/** One reading of the page, chosen from every reader the run compared, or named when it is the only one. */
 export function ReadingPane({ label, readings, selected, onSelect, parts, side, note, needle }: ReadingPaneProps) {
   return (
     <Card size="sm" className="h-full">
       <CardHeader className="items-center">
-        <Select value={selected} onValueChange={onSelect}>
-          <SelectTrigger size="sm" aria-label={label} className="w-44">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              {readings.map((reading) => (
-                <SelectItem key={reading.id} value={reading.id}>
-                  {reading.label}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
+        {readings.length > 1 ? (
+          <Select value={selected} onValueChange={onSelect}>
+            <SelectTrigger size="sm" aria-label={label} className="w-44">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {readings.map((reading) => (
+                  <SelectItem key={reading.id} value={reading.id}>
+                    {reading.label}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        ) : (
+          <CardTitle className="flex h-7 items-center">{readings[0]?.label}</CardTitle>
+        )}
         <CardAction>
           <Badge variant="secondary">{note}</Badge>
         </CardAction>

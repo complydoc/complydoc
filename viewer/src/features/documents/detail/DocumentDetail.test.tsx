@@ -53,9 +53,13 @@ describe("DocumentDetail", () => {
     expect(screen.getByText("--page-images --detail full")).toBeInTheDocument();
   });
 
-  it("names a scanned page's reading OCR", () => {
+  it("gives a page read only one way the page and that reading, in two halves", () => {
     open(sampleAudit(), "supplier-invoices-scanned.pdf");
-    expect(screen.getByRole("combobox", { name: "Left reading" })).toHaveTextContent("OCR");
+    // A scanned page's only reading is OCR's, so there is nothing to pick and nothing to compare.
+    expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+    expect(screen.getByText("OCR", { selector: "[data-slot=card-title]" })).toBeInTheDocument();
+    expect(screen.queryByText("Marked: what the other reading lacks")).not.toBeInTheDocument();
+    expect(document.querySelectorAll("mark:not([data-finding])")).toHaveLength(0);
   });
 
   it("opens on the page asked for", () => {
