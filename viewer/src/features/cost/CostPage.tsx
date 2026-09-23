@@ -7,19 +7,21 @@ import { Stat, StatGrid } from "@/components/Stat";
 import { Card, CardAction, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import type { ChartConfig } from "@/components/ui/chart";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { PATHS, cheapest, costRows, pricedOn, providerColour, providersOf } from "@/report/cost";
+import { PATHS, UNITS, byProvider, cheapest, costRows, pricedOn, providerColour, providerName, providersOf, type CostUnit } from "@/report/cost";
 import { formatUsd } from "@/report/format";
 import type { CostPath, Report } from "@/report/types";
 import { CostTable } from "./CostTable";
 
-const SHOWN = 10;
-const SERIES = { usd: { label: "Per 1,000 documents", color: "var(--primary)" } } satisfies ChartConfig;
+const ALL = "all";
 
-/** What sending the folder to a model costs: the cheapest each way, the cheapest models, and every model. */
+/** What sending the folder to a model costs: the cheapest each way, every model by provider, and a table of them. */
 export function CostPage({ report }: { report: Report }) {
   const paths = PATHS.filter((path) => pricedOn(report, path.key).length > 0);
   const [path, setPath] = useState<CostPath>(paths[0]?.key ?? "text_ocr");
+  const [unit, setUnit] = useState<CostUnit>("per_1000");
+  const [provider, setProvider] = useState<string>(ALL);
 
   if (paths.length === 0) {
     return (
@@ -37,7 +39,11 @@ export function CostPage({ report }: { report: Report }) {
 
   const text = cheapest(report, "text_ocr");
   const images = cheapest(report, "vision");
-  const models = pricedOn(report, path).slice(0, SHOWN);
+  const models = byProvider(report, path, unit, provider === ALL ? null : provider);
+  const providers = providersOf(pricedOn(report, path, unit));
+  const series = {
+    usd: { label: UNITS.find((u) => u.key === unit)?.label ?? "", color: "var(--primary)" },
+  } satisfies ChartConfig;
 
   return (
     <SectionStack>
@@ -54,11 +60,30 @@ export function CostPage({ report }: { report: Report }) {
         </StatGrid>
       </Section>
 
-      <Section title="Cheapest models">
+      <Section title="By provider">
         <Card>
           <CardHeader>
-            <CardTitle>The {models.length} cheapest</CardTitle>
+            <CardTitle>{provider === ALL ? "Every model, by provider" : providerName(provider)}</CardTitle>
             <CardAction>
+              <Select value={provider} onValueChange={setProvider}>
+                <SelectTrigger size="sm" className="w-44" aria-label="Provider">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value={ALL}>All providers</SelectItem>
+                    {providers.map((id) => (
+                      <SelectItem key={id} value={id}>
+                        {providerName(id)}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </CardAction>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            <div className="flex flex-wrap gap-2">
               <ToggleGroup
                 type="single"
                 variant="outline"
@@ -73,20 +98,34 @@ export function CostPage({ report }: { report: Report }) {
                   </ToggleGroupItem>
                 ))}
               </ToggleGroup>
-            </CardAction>
-          </CardHeader>
-          <CardContent>
+              <ToggleGroup
+                type="single"
+                variant="outline"
+                size="sm"
+                value={unit}
+                aria-label="What the cost is for"
+                onValueChange={(value) => value && setUnit(value as CostUnit)}
+                className="ml-auto"
+              >
+                {UNITS.map((option) => (
+                  <ToggleGroupItem key={option.key} value={option.key}>
+                    {option.label}
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
+            </div>
             <BarList
-              series={SERIES}
+              series={series}
               data={models}
               category="name"
               format={formatUsd}
               colour={(model) => providerColour(model.provider)}
+              onSelect={(model) => setProvider(provider === ALL ? model.provider : ALL)}
             />
           </CardContent>
           <CardFooter className="flex-wrap gap-2 border-t-0 bg-transparent">
-            {providersOf(models).map((provider) => (
-              <ProviderBadge key={provider} provider={provider} />
+            {providersOf(models).map((id) => (
+              <ProviderBadge key={id} provider={id} />
             ))}
           </CardFooter>
         </Card>

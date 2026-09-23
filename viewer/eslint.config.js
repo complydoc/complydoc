@@ -5,8 +5,8 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  // components/ui is shadcn's generated source: updated with its CLI, not linted by hand.
-  { ignores: ["dist", "coverage", "src/components/ui"] },
+  // shadcn's generated source, updated with its CLI rather than by hand, is not linted.
+  { ignores: ["dist", "coverage", "src/components/ui", "src/hooks/use-mobile.ts"] },
   {
     files: ["**/*.{ts,tsx}"],
     extends: [js.configs.recommended, ...tseslint.configs.strict],

@@ -18,6 +18,8 @@ interface BarListProps<T> {
   format?: (value: number) => string;
   /** A colour for each bar of a single series, such as its provider's. */
   colour?: (row: T) => string;
+  /** Called with a bar's row when it is clicked, to open what it stands for. */
+  onSelect?: (row: T) => void;
 }
 
 const LABEL_WIDTH = 176;
@@ -33,7 +35,7 @@ function shorten(text: string) {
  * shadcn's horizontal bar chart, one bar per row of `data`, each row the
  * same height. With several series the bars stack, and a legend names them.
  */
-export function BarList<T>({ series, data, category, format, colour }: BarListProps<T>) {
+export function BarList<T>({ series, data, category, format, colour, onSelect }: BarListProps<T>) {
   const keys = Object.keys(series);
   const stacked = keys.length > 1;
   // Every bar gets the same row, so bars are one thickness in any chart; a legend adds a line.
@@ -79,6 +81,13 @@ export function BarList<T>({ series, data, category, format, colour }: BarListPr
             maxBarSize={20}
             radius={index === keys.length - 1 ? [0, 4, 4, 0] : 0}
             isAnimationActive={false}
+            {...(onSelect && {
+              className: "cursor-pointer",
+              onClick: (_: unknown, index: number) => {
+                const row = data[index];
+                if (row) onSelect(row);
+              },
+            })}
           >
             {!stacked && colour && data.map((row, index) => <Cell key={index} fill={colour(row)} />)}
             {/* A single series says its value at the end of each bar. */}

@@ -3,6 +3,7 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/componen
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { plural } from "@/report/format";
 import { defaultPair, diffReadings, type Reading } from "@/report/readings";
+import type { Highlight } from "@/report/highlight";
 import type { PagePreview } from "@/report/types";
 import { PagePane } from "./PagePane";
 import { ReadingPane } from "./ReadingPane";
@@ -12,6 +13,8 @@ interface PageComparisonProps {
   name: string;
   readings: Reading[];
   preview: PagePreview | undefined;
+  /** A finding on this page to show in every pane. */
+  highlight: Highlight | null;
 }
 
 function pick(readings: Reading[], id: string): Reading {
@@ -23,7 +26,7 @@ function pick(readings: Reading[], id: string): Reading {
  * that the other lacks marked. Three equal panes of one height, resizable on a
  * wide screen and stacked on a narrow one.
  */
-export function PageComparison({ number, name, readings, preview }: PageComparisonProps) {
+export function PageComparison({ number, name, readings, preview, highlight }: PageComparisonProps) {
   const wide = useMediaQuery("(min-width: 64rem)");
   const [[leftId, rightId], setPair] = useState(() => defaultPair(readings));
   const left = pick(readings, leftId);
@@ -33,7 +36,7 @@ export function PageComparison({ number, name, readings, preview }: PageComparis
     left.id === right.id ? "same reading" : diff.differences === 0 ? "identical" : plural(diff.differences, "difference");
 
   const panes = [
-    <PagePane key="page" number={number} name={name} preview={preview} />,
+    <PagePane key="page" number={number} name={name} preview={preview} mark={highlight?.box ?? null} />,
     <ReadingPane
       key="left"
       label="Left reading"
@@ -43,6 +46,7 @@ export function PageComparison({ number, name, readings, preview }: PageComparis
       parts={diff.left}
       side="left"
       note={left.kept ? "kept" : shared}
+      needle={highlight?.needle ?? null}
     />,
     <ReadingPane
       key="right"
@@ -53,6 +57,7 @@ export function PageComparison({ number, name, readings, preview }: PageComparis
       parts={diff.right}
       side="right"
       note={shared}
+      needle={highlight?.needle ?? null}
     />,
   ];
 
@@ -60,16 +65,19 @@ export function PageComparison({ number, name, readings, preview }: PageComparis
     return <div className="flex flex-col gap-4 [&>[data-slot=card]]:h-[32rem]">{panes}</div>;
   }
   return (
-    <ResizablePanelGroup orientation="horizontal" className="h-[calc(100svh-14rem)] min-h-[40rem]">
-      {panes.map((pane, index) => (
-        <Fragment key={pane.key}>
-          {index > 0 && <ResizableHandle withHandle className="mx-2" />}
-          {/* A card's border is a ring drawn just outside it; the padding keeps the panel from clipping it. */}
-          <ResizablePanel defaultSize={`${100 / panes.length}%`} minSize="20%" className="p-px">
-            {pane}
-          </ResizablePanel>
-        </Fragment>
-      ))}
-    </ResizablePanelGroup>
+    // The panel library sizes its group to 100% of the parent, so the parent carries the height.
+    <div className="h-[calc(100svh-13rem)] min-h-[36rem]">
+      <ResizablePanelGroup orientation="horizontal">
+        {panes.map((pane, index) => (
+          <Fragment key={pane.key}>
+            {index > 0 && <ResizableHandle withHandle className="mx-2" />}
+            {/* A card's border is a ring drawn just outside it; the padding keeps the panel from clipping it. */}
+            <ResizablePanel defaultSize={`${100 / panes.length}%`} minSize="20%" className="p-px">
+              {pane}
+            </ResizablePanel>
+          </Fragment>
+        ))}
+      </ResizablePanelGroup>
+    </div>
   );
 }

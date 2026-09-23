@@ -21,7 +21,8 @@ on Radix, Lucide icons, Geist fonts, and Vitest with Testing Library.
 
 ```
 src/
-  app/            the shell: App picks between opening a report and showing one
+  app/            the shell: App picks between opening a report and showing one;
+                  ReportView is the sidebar, the breadcrumb bar and the page
   features/       one folder per page, each owning its parts
     open/         the empty state: drop or choose a report, or open a sample
     summary/      readiness, quick wins, headline figures, caveats
@@ -69,7 +70,10 @@ uv run python viewer/sample/make_reports.py
 
 ## The page comparison
 
-Open a document from the Documents table (`#documents/<n>`). Each page shows
+Open a document from the Documents table (`#documents/<n>`), or a finding
+from the Security page (`#documents/<n>/<page>/i<k>`), which opens on the
+finding's page with it boxed on the picture, marked in both readings and
+named in a banner above them. Each page shows
 three resizable panes: the page itself, with every identifier found boxed
 where it sits, and two readings, each chosen from every reader the run
 compared (the kept extractor or loader, the others, and OCR), with what one

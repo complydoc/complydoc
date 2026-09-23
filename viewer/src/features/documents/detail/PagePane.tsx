@@ -12,10 +12,12 @@ interface PagePaneProps {
   preview: PagePreview | undefined;
   /** The document's name, for the enlarged view's title. */
   name: string;
+  /** A finding's box to mark on the page. */
+  mark: { value: string; label: string } | null;
 }
 
 /** The page, on a card shaped like the reading panes beside it, and enlarged on request to read it. */
-export function PagePane({ number, preview, name }: PagePaneProps) {
+export function PagePane({ number, preview, name, mark }: PagePaneProps) {
   const found = preview?.sensitive.length ?? 0;
   const identifiers = found > 0 && <Badge variant="destructive">{plural(found, "identifier")}</Badge>;
 
@@ -44,7 +46,7 @@ export function PagePane({ number, preview, name }: PagePaneProps) {
                   <DialogDescription>Every identifier found is boxed where it sits.</DialogDescription>
                 </DialogHeader>
                 <div className="min-h-0 flex-1">
-                  <PagePicture preview={preview} />
+                  <PagePicture preview={preview} mark={mark} />
                 </div>
               </DialogContent>
             </Dialog>
@@ -52,7 +54,7 @@ export function PagePane({ number, preview, name }: PagePaneProps) {
         </CardAction>
       </CardHeader>
       <CardContent className="min-h-0 flex-1">
-        <PagePicture preview={preview} />
+        <PagePicture preview={preview} mark={mark} />
       </CardContent>
     </Card>
   );

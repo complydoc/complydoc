@@ -4,6 +4,7 @@ import { Stat, StatGrid } from "@/components/Stat";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { ChartConfig } from "@/components/ui/chart";
 import { fileName, formatCount, humanise } from "@/report/format";
+import { documentHref } from "@/report/route";
 import { evidenceCounts, findingRows, hiddenInstructions, severityByDocument } from "@/report/security";
 import { SEVERITIES, categoriesByCount } from "@/report/select";
 import type { Report } from "@/report/types";
@@ -22,7 +23,11 @@ const BY_SEVERITY = {
 export function SecurityPage({ report }: { report: Report }) {
   const { aggregate } = report;
   const hidden = hiddenInstructions(report);
-  const byDocument = severityByDocument(report).map((row) => ({ ...row, document: fileName(row.path) }));
+  const byDocument = severityByDocument(report).map((row) => ({
+    ...row,
+    document: fileName(row.path),
+    index: report.documents.findIndex((d) => d.relative_path === row.path),
+  }));
   const kinds = categoriesByCount(report);
 
   return (
@@ -56,7 +61,12 @@ export function SecurityPage({ report }: { report: Report }) {
                 <CardTitle>By document</CardTitle>
               </CardHeader>
               <CardContent>
-                <BarList series={BY_SEVERITY} data={byDocument} category="document" />
+                <BarList
+                  series={BY_SEVERITY}
+                  data={byDocument}
+                  category="document"
+                  onSelect={(row) => (window.location.hash = documentHref(row.index).slice(1))}
+                />
               </CardContent>
             </Card>
             <Card className="flex-1">

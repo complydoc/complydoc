@@ -33,6 +33,9 @@ describe("SecurityPage", () => {
     expect(rows).toHaveLength(report.aggregate.sensitive_total);
     expect(rows[0]).toHaveTextContent("high");
     expect(rows[0]).toHaveTextContent("checksum passed");
-    expect(within(rows[0] as HTMLElement).getByRole("link")).toHaveAttribute("href", expect.stringMatching(/^#documents\/\d+$/));
+    const [finding, document] = within(rows[0] as HTMLElement).getAllByRole("link");
+    // The identifier opens its page with it marked; the document opens the document.
+    expect(finding).toHaveAttribute("href", expect.stringMatching(/^#documents\/\d+\/\d+\/i\d+$/));
+    expect(document).toHaveAttribute("href", expect.stringMatching(/^#documents\/\d+$/));
   });
 });

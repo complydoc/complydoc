@@ -1,4 +1,4 @@
-import { sampleAudit, sampleReport, sampleWithComparison } from "@/test/sample";
+import { required, sampleAudit, sampleReport, sampleWithComparison } from "@/test/sample";
 import {
   bandCounts,
   bandOf,
@@ -81,7 +81,8 @@ describe("select", () => {
     expect(contract?.reordered).toBe(true);
 
     const report = sampleAudit();
-    report.documents[0]!.extractions = report.documents[0]!.extractions.slice(0, 1);
+    const first = required(report.documents[0]);
+    first.extractions = first.extractions.slice(0, 1);
     expect(documentRows(report).find((row) => row.index === 0)?.agreement).toBeNull();
     expect(rows.every((row, _, all) => all.filter((r) => r.index === row.index).length === 1)).toBe(true);
   });

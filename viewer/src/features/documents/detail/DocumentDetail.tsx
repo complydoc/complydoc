@@ -1,47 +1,41 @@
 import { useState } from "react";
 import { ToneBadge } from "@/components/ToneBadge";
 import { Badge } from "@/components/ui/badge";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
 import { fileName, formatPercent, formatScore, plural } from "@/report/format";
+import { findingHighlight } from "@/report/highlight";
 import { pageReadings } from "@/report/readings";
+import { documentHref, type FindingRef } from "@/report/route";
 import { agreementTone, bandOf, bandTone, documentScore, worthCallingReordered } from "@/report/select";
 import type { DocumentEntry, Report } from "@/report/types";
+import { FindingBanner } from "./FindingBanner";
 import { PageComparison } from "./PageComparison";
 import { PagePicker } from "./PagePicker";
 
 interface DocumentDetailProps {
   report: Report;
   document: DocumentEntry;
+  /** Position of the document in the report, for links back to it. */
+  index: number;
+  /** The page to open on, as printed; the first when null. */
+  page?: number | null;
+  /** A finding to show on its page. */
+  finding?: FindingRef | null;
 }
 
-/** One document: every reader's reading of each page, beside the page itself. */
-export function DocumentDetail({ report, document }: DocumentDetailProps) {
-  const [pageIndex, setPageIndex] = useState(0);
+/** One document: every reader's reading of each page, beside the page itself, and a finding shown where it sits. */
+export function DocumentDetail({ report, document, index, page: startPage = null, finding = null }: DocumentDetailProps) {
+  const highlight = finding ? findingHighlight(document, finding) : null;
+  const opening = highlight?.page ?? startPage;
+  const [pageIndex, setPageIndex] = useState(() =>
+    Math.max(0, document.extracted_text.findIndex((p) => p.number === opening)),
+  );
   const page = document.extracted_text[pageIndex];
   const score = documentScore(report, document);
   const others = document.extractions.slice(1);
+  const shown = highlight && page && (highlight.page === null || highlight.page === page.number) ? highlight : null;
 
   return (
     <div className="flex flex-col gap-6">
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink href="#documents">Documents</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>{fileName(document.relative_path)}</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
-
       <div className="flex flex-wrap items-center gap-2">
         <h2 className="mr-2 font-heading text-lg font-semibold tracking-tight">{fileName(document.relative_path)}</h2>
         <Badge variant="outline">{document.format.toUpperCase()}</Badge>
@@ -59,6 +53,8 @@ export function DocumentDetail({ report, document }: DocumentDetailProps) {
         </div>
       </div>
 
+      {shown && <FindingBanner highlight={shown} clearHref={documentHref(index, page?.number)} />}
+
       {page ? (
         <PageComparison
           // A fresh pair of readings for each page, since pages can have different readers.
@@ -67,6 +63,7 @@ export function DocumentDetail({ report, document }: DocumentDetailProps) {
           name={fileName(document.relative_path)}
           readings={pageReadings(page, report.run.extractor)}
           preview={document.previews?.find((p) => p.number === page.number)}
+          highlight={shown}
         />
       ) : (
         <p className="text-muted-foreground">

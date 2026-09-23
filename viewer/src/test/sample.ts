@@ -27,3 +27,9 @@ export function sampleWithComparison(): Report & { loader_comparison: LoaderComp
 export function sampleAudit(): Report {
   return parseReport(auditRaw);
 }
+
+/** A value a test knows is there, or a failure that says which one was not. */
+export function required<T>(value: T | null | undefined, what = "value"): T {
+  if (value === null || value === undefined) throw new Error(`expected ${what} in the sample`);
+  return value;
+}

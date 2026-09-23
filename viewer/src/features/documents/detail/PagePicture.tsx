@@ -1,6 +1,7 @@
 import { ImageOffIcon } from "lucide-react";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 import type { Box, PagePreview } from "@/report/types";
 
 function place(box: Box) {
@@ -18,7 +19,17 @@ function hasPicture(preview: PagePreview | undefined): preview is PagePreview {
  * It fills its space as far as the page's proportions allow, so the marks
  * stay on the words they belong to at any size.
  */
-export function PagePicture({ preview }: { preview: PagePreview | undefined }) {
+interface PagePictureProps {
+  preview: PagePreview | undefined;
+  /** A finding's box to mark, found by its masked value and label. */
+  mark?: { value: string; label: string } | null;
+}
+
+function isMarked(box: Box, mark: PagePictureProps["mark"]) {
+  return Boolean(mark && box.value === mark.value && box.title?.startsWith(mark.label));
+}
+
+export function PagePicture({ preview, mark = null }: PagePictureProps) {
   if (!hasPicture(preview)) {
     return (
       <Empty className="h-full p-4">
@@ -51,19 +62,27 @@ export function PagePicture({ preview }: { preview: PagePreview | undefined }) {
             <span key={index} aria-hidden="true" className="absolute rounded-xs bg-muted-foreground/25" style={place(box)} />
           ))
         )}
-        {preview.sensitive.map((box, index) => (
-          <Tooltip key={index}>
-            <TooltipTrigger asChild>
-              <span
-                tabIndex={0}
-                aria-label={box.title ?? "Sensitive item"}
-                className="absolute rounded-xs bg-destructive/25 ring-1 ring-destructive"
-                style={place(box)}
-              />
-            </TooltipTrigger>
-            <TooltipContent className="max-w-xs whitespace-pre-line">{box.title}</TooltipContent>
-          </Tooltip>
-        ))}
+        {preview.sensitive.map((box, index) => {
+          const marked = isMarked(box, mark);
+          return (
+            // The finding asked for opens with its tooltip showing, so the reader sees what and where at once.
+            <Tooltip key={index} {...(marked && { defaultOpen: true })}>
+              <TooltipTrigger asChild>
+                <span
+                  tabIndex={0}
+                  aria-label={box.title ?? "Sensitive item"}
+                  data-finding={marked || undefined}
+                  className={cn(
+                    "absolute rounded-xs",
+                    marked ? "z-10 bg-primary/30 ring-2 ring-primary" : "bg-destructive/25 ring-1 ring-destructive",
+                  )}
+                  style={place(box)}
+                />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs whitespace-pre-line">{box.title}</TooltipContent>
+            </Tooltip>
+          );
+        })}
       </figure>
     </div>
   );

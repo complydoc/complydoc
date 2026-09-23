@@ -36,8 +36,21 @@ export const PATHS: readonly { key: CostPath; label: string }[] = [
   { key: "text_layer", label: "Text layer only" },
 ];
 
+/** What a cost is measured against: a thousand documents, or the folder that was audited. */
+export type CostUnit = "per_1000" | "folder";
+
+export const UNITS: readonly { key: CostUnit; label: string }[] = [
+  { key: "per_1000", label: "Per 1,000 documents" },
+  { key: "folder", label: "This folder" },
+];
+
 export function perThousand(model: ModelCost, path: CostPath): number | null {
   return model.architectures.find((a) => a.key === path)?.per_1000_usd ?? null;
+}
+
+export function costOf(model: ModelCost, path: CostPath, unit: CostUnit): number | null {
+  const architecture = model.architectures.find((a) => a.key === path);
+  return (unit === "folder" ? architecture?.folder_usd : architecture?.per_1000_usd) ?? null;
 }
 
 export interface PricedModel {
@@ -49,10 +62,10 @@ export interface PricedModel {
 }
 
 /** Every model with a price on this path, cheapest first. */
-export function pricedOn(report: Report, path: CostPath): PricedModel[] {
+export function pricedOn(report: Report, path: CostPath, unit: CostUnit = "per_1000"): PricedModel[] {
   return (report.cost?.models ?? [])
     .flatMap((model) => {
-      const usd = perThousand(model, path);
+      const usd = costOf(model, path, unit);
       return usd === null
         ? []
         : [{ id: model.model_id, name: model.display_name, provider: model.provider, verified: model.price_source === "verified", usd }];
@@ -84,4 +97,15 @@ export function costRows(report: Report): CostRow[] {
     text: perThousand(model, "text_ocr"),
     vision: perThousand(model, "vision"),
   }));
+}
+
+/**
+ * The priced models grouped by provider: providers in the order of their
+ * cheapest model, each provider's models cheapest first. With `provider`, that
+ * provider's models only.
+ */
+export function byProvider(report: Report, path: CostPath, unit: CostUnit, provider: string | null = null): PricedModel[] {
+  const priced = pricedOn(report, path, unit).filter((m) => provider === null || m.provider === provider);
+  const order = providersOf(priced);
+  return [...priced].sort((a, b) => order.indexOf(a.provider) - order.indexOf(b.provider) || a.usd - b.usd);
 }

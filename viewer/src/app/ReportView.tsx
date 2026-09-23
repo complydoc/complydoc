@@ -1,18 +1,23 @@
-import { Logo } from "@/components/Logo";
-import { ThemeToggle } from "@/components/ThemeToggle";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import { Separator } from "@/components/ui/separator";
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { CostPage } from "@/features/cost/CostPage";
 import { DocumentsPage } from "@/features/documents/DocumentsPage";
 import { SecurityPage } from "@/features/security/SecurityPage";
 import { SummaryPage } from "@/features/summary/SummaryPage";
 import { useHashRoute } from "@/hooks/useHashRoute";
 import type { Theme } from "@/hooks/useTheme";
+import { fileName } from "@/report/format";
 import type { Report } from "@/report/types";
-
-const PAGES = ["summary", "security", "cost", "documents"] as const;
-type Page = (typeof PAGES)[number];
+import { AppSidebar } from "./AppSidebar";
+import { PAGES, PAGE_INFO } from "./pages";
 
 interface ReportViewProps {
   report: Report;
@@ -22,56 +27,48 @@ interface ReportViewProps {
   onClose: () => void;
 }
 
-/** One opened report: the header, the page tabs and the page. */
+/** One opened report: the sidebar, a bar saying where you are, and the page. */
 export function ReportView({ report, name, theme, onTheme, onClose }: ReportViewProps) {
-  const [{ page, detail }, go] = useHashRoute(PAGES);
-  const counts: Record<Page, number | undefined> = {
-    summary: undefined,
-    security: report.aggregate.sensitive_total,
-    cost: undefined,
-    documents: report.documents.length,
-  };
+  const [{ page, detail }] = useHashRoute(PAGES);
+  const open = page === "documents" && detail !== null ? report.documents[Number(detail.split("/")[0])] : undefined;
 
   return (
-    <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 md:px-6">
-      <header className="flex items-center gap-4">
-        <span className="shrink-0">
-          <Logo size={24} />
-        </span>
-        <p className="hidden min-w-0 truncate text-sm text-muted-foreground sm:block" title={name}>
-          {name}
-        </p>
-        <div className="ml-auto flex items-center gap-2">
-          <ThemeToggle theme={theme} onChange={onTheme} />
-          <Button variant="outline" size="sm" onClick={onClose}>
-            Open another
-          </Button>
-        </div>
-      </header>
-
-      <Tabs value={page} onValueChange={(value) => go(value as Page)} className="gap-8">
-        <TabsList aria-label="Report pages">
-          {PAGES.map((id) => (
-            <TabsTrigger key={id} value={id} className="capitalize">
-              {id}
-              {counts[id] !== undefined && <Badge variant="secondary">{counts[id]}</Badge>}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-        <TabsContent value="summary">
-          <SummaryPage report={report} />
-        </TabsContent>
-        <TabsContent value="security">
-          <SecurityPage report={report} />
-        </TabsContent>
-        <TabsContent value="cost">
-          <CostPage report={report} />
-        </TabsContent>
-        <TabsContent value="documents">
-          <DocumentsPage report={report} open={detail} />
-        </TabsContent>
-      </Tabs>
-
-    </div>
+    <SidebarProvider>
+      <AppSidebar report={report} name={name} page={page} theme={theme} onTheme={onTheme} onClose={onClose} />
+      {/* min-w-0 lets the page shrink to the space beside the sidebar instead of widening to its widest chart. */}
+      <SidebarInset className="min-w-0">
+        <header className="sticky top-0 z-10 flex h-12 shrink-0 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur">
+          <SidebarTrigger className="-ml-1" />
+          <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem className="hidden md:block">{name}</BreadcrumbItem>
+              <BreadcrumbSeparator className="hidden md:block" />
+              <BreadcrumbItem>
+                {open ? (
+                  <BreadcrumbLink href={`#${page}`}>{PAGE_INFO[page].label}</BreadcrumbLink>
+                ) : (
+                  <BreadcrumbPage>{PAGE_INFO[page].label}</BreadcrumbPage>
+                )}
+              </BreadcrumbItem>
+              {open && (
+                <>
+                  <BreadcrumbSeparator />
+                  <BreadcrumbItem>
+                    <BreadcrumbPage>{fileName(open.relative_path)}</BreadcrumbPage>
+                  </BreadcrumbItem>
+                </>
+              )}
+            </BreadcrumbList>
+          </Breadcrumb>
+        </header>
+        <main className="mx-auto w-full max-w-7xl p-4 md:p-6">
+          {page === "summary" && <SummaryPage report={report} />}
+          {page === "security" && <SecurityPage report={report} />}
+          {page === "cost" && <CostPage report={report} />}
+          {page === "documents" && <DocumentsPage report={report} open={detail} />}
+        </main>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

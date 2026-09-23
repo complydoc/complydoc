@@ -4,6 +4,8 @@ import type { Evidence, Report, Severity } from "./types";
 
 export interface FindingRow {
   id: string;
+  /** Position among the document's identifiers, which is how a link names it. */
+  match: number;
   /** Position in the report's document list, which is how a document is opened. */
   document: number;
   path: string;
@@ -22,6 +24,7 @@ export function findingRows(report: Report): FindingRow[] {
     .flatMap((document, index) =>
       document.sensitive.matches.map((match, position) => ({
         id: `${index}-${position}`,
+        match: position,
         document: index,
         path: document.relative_path,
         page: match.page,
@@ -55,6 +58,8 @@ export function severityByDocument(report: Report): ({ path: string } & Severity
 
 export interface HiddenInstruction {
   id: string;
+  /** Position among the document's hidden instructions. */
+  finding: number;
   document: number;
   path: string;
   page: number | null;
@@ -69,6 +74,7 @@ export function hiddenInstructions(report: Report): HiddenInstruction[] {
   return report.documents.flatMap((document, index) =>
     document.content_findings.map((finding, position) => ({
       id: `${index}-${position}`,
+      finding: position,
       document: index,
       path: document.relative_path,
       page: finding.page,

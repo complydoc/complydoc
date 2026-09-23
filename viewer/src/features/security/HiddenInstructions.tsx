@@ -3,6 +3,7 @@ import { ToneBadge } from "@/components/ToneBadge";
 import { Badge } from "@/components/ui/badge";
 import { Item, ItemActions, ItemContent, ItemDescription, ItemFooter, ItemGroup, ItemMedia, ItemTitle } from "@/components/ui/item";
 import { fileName } from "@/report/format";
+import { documentHref } from "@/report/route";
 import type { HiddenInstruction } from "@/report/security";
 import { severityTone } from "@/report/select";
 
@@ -17,7 +18,10 @@ export function HiddenInstructions({ found }: { found: HiddenInstruction[] }) {
           </ItemMedia>
           <ItemContent>
             <ItemTitle>
-              <a href={`#documents/${finding.document}`} className="underline-offset-4 hover:underline">
+              <a
+                href={documentHref(finding.document, finding.page, { kind: "hidden", index: finding.finding })}
+                className="underline-offset-4 hover:underline"
+              >
                 {fileName(finding.path)}
               </a>
               {finding.page !== null && <span className="text-muted-foreground">page {finding.page}</span>}

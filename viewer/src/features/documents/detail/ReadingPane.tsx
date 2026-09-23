@@ -12,12 +12,14 @@ interface ReadingPaneProps {
   onSelect: (id: string) => void;
   parts: DiffPart[];
   side: "left" | "right";
-  /** What sits in the badge: "kept", or how much this reading shares with the other. */
+  /** What sits in the badge: "kept", or how many stretches differ. */
   note: string;
+  /** A finding to mark in the text. */
+  needle: string | null;
 }
 
 /** One reading of the page, chosen from every reader the run compared. */
-export function ReadingPane({ label, readings, selected, onSelect, parts, side, note }: ReadingPaneProps) {
+export function ReadingPane({ label, readings, selected, onSelect, parts, side, note, needle }: ReadingPaneProps) {
   return (
     <Card size="sm" className="h-full">
       <CardHeader className="items-center">
@@ -41,7 +43,7 @@ export function ReadingPane({ label, readings, selected, onSelect, parts, side, 
       </CardHeader>
       <CardContent className="min-h-0 flex-1">
         <ScrollArea className="h-full">
-          <DiffText parts={parts} side={side} />
+          <DiffText parts={parts} side={side} needle={needle} />
         </ScrollArea>
       </CardContent>
     </Card>

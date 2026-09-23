@@ -1,24 +1,26 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { sampleAudit, sampleReport } from "@/test/sample";
+import { required, sampleAudit, sampleReport } from "@/test/sample";
+import type { FindingRef } from "@/report/route";
 import type { Report } from "@/report/types";
 import { DocumentDetail } from "./DocumentDetail";
 
-function open(report: Report, name: string) {
-  const document = report.documents.find((d) => d.relative_path.endsWith(name));
+function open(report: Report, name: string, where: { page?: number; finding?: FindingRef } = {}) {
+  const index = report.documents.findIndex((d) => d.relative_path.endsWith(name));
+  const document = report.documents[index];
   if (!document) throw new Error(`no ${name} in the sample`);
   render(
     <TooltipProvider>
-      <DocumentDetail report={report} document={document} />
+      <DocumentDetail report={report} document={document} index={index} page={where.page ?? null} finding={where.finding ?? null} />
     </TooltipProvider>,
   );
+  return document;
 }
 
 describe("DocumentDetail", () => {
   it("names the document and how far its readers agree", () => {
     open(sampleAudit(), "master-services-agreement.pdf");
-    expect(screen.getByRole("link", { name: "Documents" })).toHaveAttribute("href", "#documents");
     expect(screen.getByRole("heading", { name: "master-services-agreement.pdf" })).toBeInTheDocument();
     expect(screen.getByText(/pypdf 34%/)).toHaveTextContent("reordered");
   });
@@ -54,5 +56,30 @@ describe("DocumentDetail", () => {
   it("names a scanned page's reading OCR", () => {
     open(sampleAudit(), "supplier-invoices-scanned.pdf");
     expect(screen.getByRole("combobox", { name: "Left reading" })).toHaveTextContent("OCR");
+  });
+
+  it("opens on the page asked for", () => {
+    open(sampleAudit(), "master-services-agreement.pdf", { page: 3 });
+    expect(screen.getByRole("figure", { name: "Page 3" })).toBeInTheDocument();
+  });
+
+  it("shows an identifier where it sits: its page, its box and its text", () => {
+    const report = sampleAudit();
+    const entry = required(report.documents.find((d) => d.relative_path === "master-services-agreement.pdf"));
+    const index = entry.sensitive.matches.findIndex((m) => m.category === "iban");
+    const match = required(entry.sensitive.matches[index]);
+    open(report, "master-services-agreement.pdf", { finding: { kind: "identifier", index } });
+
+    expect(screen.getByRole("figure", { name: `Page ${match.page}` })).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent(match.label);
+    expect(document.body.querySelector("[data-finding]")).toBeTruthy();
+    const marked = [...document.body.querySelectorAll("mark[data-finding]")].map((m) => m.textContent).join("");
+    expect(marked).toContain(match.masked.split(" ").at(-1));
+  });
+
+  it("points at a hidden instruction's passage", () => {
+    open(sampleAudit(), "vendor-due-diligence.pdf", { finding: { kind: "hidden", index: 0 } });
+    expect(screen.getByRole("alert")).toHaveTextContent("Hidden instruction");
+    expect(document.body.querySelectorAll("mark[data-finding]").length).toBeGreaterThan(0);
   });
 });

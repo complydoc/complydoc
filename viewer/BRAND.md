@@ -19,12 +19,14 @@ every component picks them up without being told.
 ## Name and mark
 
 - The name is always lowercase: **complydoc**, even at the start of a sentence.
-- The mark is a document inside a dashed boundary, with its last line in the
-  brand green: the document, and what is allowed to leave it.
-- Use [`Logo`](src/components/Logo.tsx). It draws in `currentColor` and the
-  primary green, so it works on light and dark without a second file.
-- Keep clear space of at least the mark's inner margin around it. Don't
-  recolour, stretch, outline or put it on a busy background.
+- The mark is an owl's face in flat pieces: two discs for eyes, two leaves for
+  ear tufts, one for the beak. An owl looks closely at what others miss, which
+  is what complydoc does to documents before a model reads them. It shares
+  LangChain's vocabulary of flat geometric pieces, so the two sit well together.
+- Use [`Logo`](src/components/Logo.tsx) in the app. The source files, and where
+  each version goes, are in [`brand/logo`](../brand/logo/README.md).
+- In the UI the mark is one colour, the primary green, with no plate behind it.
+  Don't recolour it, stretch it or outline it.
 
 ## Colour
 
@@ -72,6 +74,15 @@ Rules:
 - Sentence case everywhere: "Quick wins", not "Quick Wins".
 - No em dashes. Use a full stop or a comma.
 
+## Layout
+
+The app follows the shape of LangSmith, the tool most of complydoc's readers
+already use: a slim sidebar that collapses to icons, with the mark, the open
+report and the pages; a thin bar across the top saying where you are; and the
+page beneath, dense and full width. Findings link to where they are: an
+identifier on the Security page opens its document on its page, boxed on the
+picture and marked in the text.
+
 ## Shape and space
 
 - Radius `0.625rem` for cards, smaller for badges and controls (from shadcn's
@@ -99,6 +110,7 @@ only put shadcn parts together:
 | Nothing to show yet | `Empty` | shadcn |
 | Side by side | `ResizablePanelGroup` | shadcn |
 | Choosing among a few | `ToggleGroup`, or `Select` for more | shadcn |
+| Navigation | `Sidebar` and `Breadcrumb` | shadcn |
 
 Two things are drawn here, because no shadcn registry has them (checked:
 @shadcn, @reui, @kibo-ui, @magicui, @shadcnblocks, @diceui, @tailark):
