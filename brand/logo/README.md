@@ -17,6 +17,17 @@ over the check, or the one thing on the page that was found.
 mark-flat.svg   what ships in a UI: the shapes only, in currentColor
 mark.svg        the same shapes in complydoc green, for a light ground
 icon.svg        the icon: the mark in bright green on the near-black tile
+avatar.svg      the same without rounded corners, for places that round them,
+                such as a GitHub organisation's avatar
+social-preview.svg   the 1280 x 640 card GitHub shows when the repository is shared
+png/            the same rendered to PNG, for places that take no SVG:
+                avatar-1024, icon-1024, icon-512, mark-green, social-preview
+```
+
+The PNGs are rendered with `rsvg-convert`, for example:
+
+```bash
+rsvg-convert -w 1024 -h 1024 brand/logo/avatar.svg -o brand/logo/png/avatar-1024.png
 ```
 
 The wordmarks the README shows, the mark beside `complydoc` in Geist semibold,
