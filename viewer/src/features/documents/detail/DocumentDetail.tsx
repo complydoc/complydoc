@@ -30,6 +30,7 @@ export function DocumentDetail({ report, document, index, page: startPage = null
     Math.max(0, document.extracted_text.findIndex((p) => p.number === opening)),
   );
   const page = document.extracted_text[pageIndex];
+  const pages = document.extracted_text.length;
   const score = documentScore(report, document);
   const others = document.extractions.slice(1);
   const readings = page ? pageReadings(page, report.run.extractor) : [];
@@ -48,10 +49,6 @@ export function DocumentDetail({ report, document, index, page: startPage = null
             {worthCallingReordered(reading) && " · reordered"}
           </ToneBadge>
         ))}
-        <div className="ml-auto flex items-center gap-4">
-          <PagePicker count={document.extracted_text.length} current={pageIndex} onPick={setPageIndex} />
-          {readings.length > 1 && <p className="text-xs text-muted-foreground">Marked: what the other reading lacks</p>}
-        </div>
       </div>
 
       {shown && <FindingBanner highlight={shown} clearHref={documentHref(index, page?.number)} />}
@@ -65,12 +62,18 @@ export function DocumentDetail({ report, document, index, page: startPage = null
           readings={readings}
           preview={document.previews?.find((p) => p.number === page.number)}
           highlight={shown}
+          // Room below for the page picker, when there is more than one page.
+          reserve={pages > 1}
         />
       ) : (
         <p className="text-muted-foreground">
           This report carries no text for the document. Run the audit with <code>--extracted-text</code>.
         </p>
       )}
+
+      <div className="flex justify-center">
+        <PagePicker count={pages} current={pageIndex} onPick={setPageIndex} />
+      </div>
     </div>
   );
 }

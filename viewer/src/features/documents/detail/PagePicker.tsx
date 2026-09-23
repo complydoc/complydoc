@@ -18,7 +18,7 @@ export function PagePicker({ count, current, onPick }: PagePickerProps) {
   if (count < 2) return null;
   const pages = Array.from({ length: count }, (_, index) => index);
   return (
-    <Pagination className="mx-0 w-auto justify-start">
+    <Pagination className="mx-0 w-auto">
       <PaginationContent>
         <PaginationItem>
           <PaginationPrevious

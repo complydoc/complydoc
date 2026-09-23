@@ -15,6 +15,8 @@ interface PageComparisonProps {
   preview: PagePreview | undefined;
   /** A finding on this page to show in every pane. */
   highlight: Highlight | null;
+  /** Leave room below for something else on screen, such as the page picker. */
+  reserve?: boolean;
 }
 
 function pick(readings: Reading[], id: string): Reading {
@@ -27,7 +29,7 @@ function pick(readings: Reading[], id: string): Reading {
  * wide screen and stacked on a narrow one. A page read only one way has
  * nothing to compare, so it is the page and that reading, in two halves.
  */
-export function PageComparison({ number, name, readings, preview, highlight }: PageComparisonProps) {
+export function PageComparison({ number, name, readings, preview, highlight, reserve = false }: PageComparisonProps) {
   const wide = useMediaQuery("(min-width: 64rem)");
   const [[leftId, rightId], setPair] = useState(() => defaultPair(readings));
   const left = pick(readings, leftId);
@@ -86,7 +88,7 @@ export function PageComparison({ number, name, readings, preview, highlight }: P
   }
   return (
     // The panel library sizes its group to 100% of the parent, so the parent carries the height.
-    <div className="h-[calc(100svh-13rem)] min-h-[36rem]">
+    <div className={reserve ? "h-[calc(100svh-16rem)] min-h-[34rem]" : "h-[calc(100svh-13rem)] min-h-[36rem]"}>
       <ResizablePanelGroup orientation="horizontal">
         {panes.map((pane, index) => (
           <Fragment key={pane.key}>

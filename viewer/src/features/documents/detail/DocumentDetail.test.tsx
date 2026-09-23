@@ -58,7 +58,6 @@ describe("DocumentDetail", () => {
     // A scanned page's only reading is OCR's, so there is nothing to pick and nothing to compare.
     expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
     expect(screen.getByText("OCR", { selector: "[data-slot=card-title]" })).toBeInTheDocument();
-    expect(screen.queryByText("Marked: what the other reading lacks")).not.toBeInTheDocument();
     expect(document.querySelectorAll("mark:not([data-finding])")).toHaveLength(0);
   });
 
