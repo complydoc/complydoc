@@ -119,110 +119,6 @@
 </div>
 {% endif %}
 
-{% if report.loader_comparison %}
-{% set lc = report.loader_comparison %}
-{% set lc_failures = lc.loaders | selectattr("failures") | list %}
-{% set lc_costs = lc.loaders | rejectattr("parser_usd", "none") | list %}
-<div class="loaderrun">
-<h3>Loaders compared</h3>
-{% if lc.recommended %}<p class="verdict"><strong>Use {{ lc.recommended }}.</strong> {{ lc.verdict }}</p>
-{% elif lc.verdict %}<p class="verdict">{{ lc.verdict }}</p>{% endif %}
-<p class="note">Findings, scores and cost on this report are built from {{ lc.baseline }}. The
-other loaders ran on the same input; where their text differs is marked on the Documents
-page, and identifiers only some of them returned are listed on the Security page.</p>
-<div class="scroll"><table>
-  <thead><tr><th>Loader</th><th class="n">Documents</th><th class="n">Pages</th>
-    <th class="n">Characters</th><th class="n">Load time</th><th>Network</th>
-    <th class="n">Metadata keys</th><th class="n">Identifiers in text</th>
-    <th class="n">In metadata</th><th class="n">Readiness</th><th class="n">Global</th>{% if lc.facts %}<th class="n">Facts found</th>{% endif %}{% if lc_failures %}<th class="n">Failed files</th>{% endif %}{% if lc_costs %}<th class="n">Parser cost</th>{% endif %}</tr></thead>
-  <tbody>
-  {% for l in lc.loaders %}
-    <tr{% if loop.first %} class="d-head"{% endif %}>
-      <td class="mono">{{ l.name }}{% for tag in l.tags %} <span class="ltag">{{ tag }}</span>{% endfor %}{% if loop.first %} <span class="flag">baseline</span>{% endif %}{% if l.error %}
-        <span class="attn">did not finish</span>{% endif %}</td>
-      <td class="n">{{ l.documents }}</td>
-      <td class="n">{{ l.pages }}</td>
-      <td class="n">{{ "{:,}".format(l.characters) }}</td>
-      <td class="n">{{ duration(l.seconds) }}</td>
-      <td>{% if l.network_allowed %}<span class="attn">allowed</span>, {{ l.network_attempts | length }} made{% elif l.network_attempts %}<span class="attn">{{ l.network_attempts | length }} refused</span>{% else %}none{% endif %}</td>
-      <td class="n">{{ l.metadata_keys | length }}</td>
-      <td class="n">{{ l.identifiers_in_text }}</td>
-      <td class="n">{{ l.identifiers_in_metadata }}</td>
-      <td class="n">{{ "—" if l.readiness_score is none else l.readiness_score }}</td>
-      <td class="n">{{ "—" if l.global_score is none else l.global_score }}</td>
-      {% if lc.facts %}<td class="n">{{ l.facts_found }} / {{ lc.facts | length }}</td>{% endif %}
-      {% if lc_failures %}<td class="n">{{ l.failures | length }}</td>{% endif %}
-      {% if lc_costs %}<td class="n">{{ "—" if l.parser_usd is none else "$%.2f" | format(l.parser_usd) }}</td>{% endif %}
-    </tr>
-  {% endfor %}
-  </tbody>
-</table></div>
-{% if lc.facts %}
-<h3>Expected facts</h3>
-<p class="note">Whether each fact appears in each loader's text. Matching ignores case,
-whitespace and words split at line breaks; a fuzzy match shows its similarity.</p>
-<div class="scroll"><table>
-  <thead><tr><th>Fact</th><th>Document</th>{% for l in lc.loaders %}<th class="mono">{{ l.name }}</th>{% endfor %}</tr></thead>
-  <tbody>
-  {% for f in lc.facts %}
-    <tr><td>{{ f.fact }}</td><td class="mono">{{ f.document or "any" }}</td>
-    {% for l in lc.loaders %}{% set kind = f.found.get(l.name) %}
-      <td>{% if kind == "exact" %}found{% elif kind == "fuzzy" %}fuzzy, {{ "%.2f" | format(f.scores[l.name]) }}{% else %}<span class="attn">missing</span>{% endif %}{% if kind and f.pages.get(l.name) %} on p{{ f.pages[l.name] }}{% endif %}</td>
-    {% endfor %}</tr>
-  {% endfor %}
-  </tbody>
-</table></div>
-{% endif %}
-{% if lc.metadata_keys %}
-<h3>Metadata keys not returned by every loader</h3>
-<p class="note">Matched ignoring case, so <span class="mono">author</span> and
-<span class="mono">Author</span> count as the same key.</p>
-<div class="scroll"><table>
-  <thead><tr><th>Key</th><th>Returned by</th></tr></thead>
-  <tbody>
-  {% for key, names in lc.metadata_keys.items() %}
-    <tr><td class="mono">{{ key }}</td><td class="mono">{{ names | join(", ") }}</td></tr>
-  {% endfor %}
-  </tbody>
-</table></div>
-{% endif %}
-{% if lc.documents %}
-<h3>Documents not returned by every loader</h3>
-<div class="scroll"><table>
-  <thead><tr><th>Document</th><th>Returned by</th></tr></thead>
-  <tbody>
-  {% for document, names in lc.documents.items() %}
-    <tr><td class="mono">{{ document }}</td><td class="mono">{{ names | join(", ") }}</td></tr>
-  {% endfor %}
-  </tbody>
-</table></div>
-{% endif %}
-</div>
-{% endif %}
-{% if report.loader and not report.loader_comparison %}
-{# Only present when the documents came from another framework's loader. #}
-<div class="loaderrun">
-<h3>Loader</h3>
-<div class="scroll"><table>
-  <tbody>
-    <tr><th>Loader</th><td class="mono">{{ report.loader.name }}{% for tag in report.loader.tags %} <span class="ltag">{{ tag }}</span>{% endfor %}</td></tr>
-    <tr><th>Documents returned</th><td>{{ report.loader.documents_returned }}</td></tr>
-    <tr><th>Load time</th><td>{% if report.loader.seconds is none %}passed in already
-      loaded{% else %}{{ duration(report.loader.seconds) }}{% endif %}</td></tr>
-    {% set attempts = report.loader.network_attempts %}
-    <tr><th>Network</th><td>{% if report.loader.network_allowed %}<span class="attn">allowed</span>,
-      {{ plural(attempts | length, "connection") }} made{% elif attempts %}blocked,
-      <span class="attn">{{ plural(attempts | length, "connection") }} refused</span>{% else %}blocked,
-      none attempted{% endif %}</td></tr>
-    {% for attempt in attempts %}
-    <tr><th></th><td class="mono">{{ attempt }}</td></tr>
-    {% endfor %}
-    <tr><th>Metadata keys</th><td class="mono">{{ report.loader.metadata_keys | join(", ") or "none" }}</td></tr>
-  </tbody>
-</table></div>
-{% if report.loader.error %}<p class="attn">{{ report.loader.error }}</p>{% endif %}
-</div>
-{% endif %}
 
 {% if quick_wins %}
 {# Ranked by how many documents each touches, with who has to act. #}
@@ -619,11 +515,70 @@ name and directory layout it came from.</p>
 </table></div>
 {% endif %}
 
-{% if report.loader_comparison and report.loader_comparison.identifier_differences %}
-<h3>Found by some loaders only</h3>
-<p class="note">Identifiers in one loader's output and not another's, matched by category and
-masked value. An identifier missing from a loader's text is missing for anything that reads
-that text afterwards. Greyed rows are low-severity findings from the name model.</p>
+
+{% if agg.categories_not_scanned %}
+<h3>Categories not scanned</h3>
+<div class="scroll"><table>
+  <thead><tr><th>Category</th><th>Why not</th></tr></thead>
+  <tbody>{% for cat, reason in agg.categories_not_scanned | dictsort %}
+    <tr><td>{{ category_meta(cat).label }}</td><td class="why">{{ reason }}</td></tr>
+  {% endfor %}</tbody>
+</table></div>
+<p class="note">These categories were not scanned in this run.</p>
+{% endif %}
+{% endif %}
+</section>
+
+{# ========================================================== DOCUMENTS #}
+<section data-page id="documents" hidden>
+
+{% if report.loader_comparison %}
+{% set lc = report.loader_comparison %}
+{% set lc_failures = lc.loaders | selectattr("failures") | list %}
+{% set lc_costs = lc.loaders | rejectattr("parser_usd", "none") | list %}
+{% set lc_network = (lc.loaders | selectattr("network_attempts") | list)
+                    + (lc.loaders | selectattr("network_allowed") | list) %}
+<div class="loaders">
+<h2>Loaders</h2>
+{% if lc.recommended %}<p class="verdict"><strong>Use {{ lc.recommended }}.</strong> {{ lc.verdict }}</p>
+{% elif lc.verdict %}<p class="verdict none">{{ lc.verdict }}</p>{% endif %}
+<div class="scroll"><table>
+  <thead><tr><th>Loader</th><th class="n">Documents</th><th class="n">Characters</th>
+    <th class="n">Load time</th><th class="n">Readiness</th>{% if lc.facts %}<th class="n">Facts</th>{% endif %}{% if lc_failures %}<th class="n">Failed files</th>{% endif %}{% if lc_network %}<th>Network</th>{% endif %}{% if lc_costs %}<th class="n">Parser cost</th>{% endif %}</tr></thead>
+  <tbody>
+  {% for l in lc.loaders %}
+    <tr>
+      <td class="mono">{{ l.name }}{% for tag in l.tags %} <span class="ltag">{{ tag }}</span>{% endfor %}{% if loop.first %} <span class="flag">baseline</span>{% endif %}{% if l.error %} <span class="attn">did not finish</span>{% endif %}</td>
+      <td class="n">{{ l.documents }}</td>
+      <td class="n">{{ "{:,}".format(l.characters) }}</td>
+      <td class="n">{{ duration(l.seconds) }}</td>
+      <td class="n">{{ "—" if l.readiness_score is none else l.readiness_score }}</td>
+      {% if lc.facts %}<td class="n">{{ l.facts_found }} of {{ lc.facts | length }}</td>{% endif %}
+      {% if lc_failures %}<td class="n">{{ l.failures | length }}</td>{% endif %}
+      {% if lc_network %}<td>{% if l.network_allowed %}<span class="attn">allowed</span>, {{ l.network_attempts | length }} made{% elif l.network_attempts %}<span class="attn">{{ l.network_attempts | length }} refused</span>{% else %}none{% endif %}</td>{% endif %}
+      {% if lc_costs %}<td class="n">{{ "—" if l.parser_usd is none else "$%.2f" | format(l.parser_usd) }}</td>{% endif %}
+    </tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+
+{% if lc.facts %}
+<h3>Expected facts</h3>
+<div class="scroll"><table>
+  <thead><tr><th>Fact</th>{% for l in lc.loaders %}<th class="mono">{{ l.name }}</th>{% endfor %}</tr></thead>
+  <tbody>
+  {% for f in lc.facts %}
+    <tr><td>{{ f.fact }}{% if f.document %} <span class="ltag">{{ f.document }}</span>{% endif %}</td>
+    {% for l in lc.loaders %}{% set kind = f.found.get(l.name) %}
+      <td>{% if kind == "exact" %}found{% elif kind == "fuzzy" %}close, {{ "%.2f" | format(f.scores[l.name]) }}{% else %}<span class="attn">missing</span>{% endif %}{% if kind and f.pages.get(l.name) %} on p{{ f.pages[l.name] }}{% endif %}{% if kind != "exact" and f.nearest and f.nearest.get(l.name) %}<span class="near">&ldquo;{{ f.nearest[l.name] }}&rdquo;</span>{% endif %}</td>
+    {% endfor %}</tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% endif %}
+
+{% if lc.identifier_differences %}
+<h3>Identifiers only some loaders kept</h3>
 <div class="scroll"><table data-sortable>
   <thead><tr><th data-sort="text">Document</th><th data-sort="text">Category</th>
     <th data-sort="num" data-sort-default="desc">Severity</th><th data-sort="num">Evidence</th>
@@ -646,21 +601,47 @@ that text afterwards. Greyed rows are low-severity findings from the name model.
 </table></div>
 {% endif %}
 
-{% if agg.categories_not_scanned %}
-<h3>Categories not scanned</h3>
+{% if lc.metadata_keys or lc.documents %}
+<h3>Returned by some loaders only</h3>
 <div class="scroll"><table>
-  <thead><tr><th>Category</th><th>Why not</th></tr></thead>
-  <tbody>{% for cat, reason in agg.categories_not_scanned | dictsort %}
-    <tr><td>{{ category_meta(cat).label }}</td><td class="why">{{ reason }}</td></tr>
-  {% endfor %}</tbody>
+  <thead><tr><th>What</th><th>Returned by</th></tr></thead>
+  <tbody>
+  {% for document, names in lc.documents.items() %}
+    <tr><td class="mono">{{ document }} <span class="ltag">document</span></td><td class="mono">{{ names | join(", ") }}</td></tr>
+  {% endfor %}
+  {% for key, names in lc.metadata_keys.items() %}
+    <tr><td class="mono">{{ key }} <span class="ltag">metadata key</span></td><td class="mono">{{ names | join(", ") }}</td></tr>
+  {% endfor %}
+  </tbody>
 </table></div>
-<p class="note">These categories were not scanned in this run.</p>
 {% endif %}
+</div>
 {% endif %}
-</section>
+{% if report.loader and not report.loader_comparison %}
+{# Only present when the documents came from another framework's loader. #}
+<div class="loaders">
+<h2>Loader</h2>
+<div class="scroll"><table>
+  <tbody>
+    <tr><th>Loader</th><td class="mono">{{ report.loader.name }}{% for tag in report.loader.tags %} <span class="ltag">{{ tag }}</span>{% endfor %}</td></tr>
+    <tr><th>Documents returned</th><td>{{ report.loader.documents_returned }}</td></tr>
+    <tr><th>Load time</th><td>{% if report.loader.seconds is none %}passed in already
+      loaded{% else %}{{ duration(report.loader.seconds) }}{% endif %}</td></tr>
+    {% set attempts = report.loader.network_attempts %}
+    <tr><th>Network</th><td>{% if report.loader.network_allowed %}<span class="attn">allowed</span>,
+      {{ plural(attempts | length, "connection") }} made{% elif attempts %}blocked,
+      <span class="attn">{{ plural(attempts | length, "connection") }} refused</span>{% else %}blocked,
+      none attempted{% endif %}</td></tr>
+    {% for attempt in attempts %}
+    <tr><th></th><td class="mono">{{ attempt }}</td></tr>
+    {% endfor %}
+    <tr><th>Metadata keys</th><td class="mono">{{ report.loader.metadata_keys | join(", ") or "none" }}</td></tr>
+  </tbody>
+</table></div>
+{% if report.loader.error %}<p class="attn">{{ report.loader.error }}</p>{% endif %}
+</div>
+{% endif %}
 
-{# ========================================================== DOCUMENTS #}
-<section data-page id="documents" hidden>
 
 <div class="explorer" id="explorer">
   <aside class="files">
@@ -745,11 +726,20 @@ that text afterwards. Greyed rows are low-severity findings from the name model.
           </div>
         {% endif %}
         {% for row in rows %}
+          {#- Named after the reader the report was built from, when several were compared. -#}
+          {%- set kept_label = (report.run.extractor if row.readings and row.source != "ocr"
+                                else ("what OCR read" if row.source == "ocr" else "text layer")) -%}
+          {#- A loader returns words without their positions, so there is no layout to
+              draw. Where another reader read the same page, the space the layout would
+              take holds the kept reading instead, and the two sit side by side. -#}
+          {%- set side_by_side = not row.image_data_uri and not row.preview
+                                 and (row.text or row.ocr_text) and row.diffs -%}
           <div class="spread" data-page="{{ row.number }}"
                {% if row.readers_differ %}data-differs="1"{% endif %} hidden>
             <div class="side">
               <div class="lbl">
-                {% if row.image_data_uri %}
+                {% if side_by_side %}{{ kept_label }}
+                {% elif row.image_data_uri %}
                 <span class="swap" role="group">
                   <button type="button" data-face="img" aria-selected="true">page</button>
                   <button type="button" data-face="svg" aria-selected="false">layout</button>
@@ -765,10 +755,18 @@ that text afterwards. Greyed rows are low-severity findings from the name model.
                        height="{{ row.image_height_px }}"{% endif %}
                        loading="lazy"></div></div>
               {% endif %}
-              {% if row.preview %}
+              {% if side_by_side %}
+                {% set kept = row.text or row.ocr_text %}
+                <div class="body"><pre>{{ kept }}</pre></div>
+                <p class="pcap">{{ "{:,}".format(kept | length) }} characters, {{ kept_label }}
+                  {%- if row.truncated %}, truncated for the report{% endif %}</p>
+              {% elif row.preview %}
                 <div class="face" data-face="svg" {% if row.image_data_uri %}hidden{% endif %}>
                   <div class="body">{{ page_preview_svg(row.preview) | safe }}</div>
                 </div>
+              {% elif row.text or row.ocr_text %}
+                <div class="body"><p class="note">No layout to draw. This text came from a
+                  loader, which returns the words without where they sit on the page.</p></div>
               {% else %}
                 <div class="body"><p class="note">This page could not be read.</p></div>
               {% endif %}
@@ -789,11 +787,8 @@ that text afterwards. Greyed rows are low-severity findings from the name model.
                  and --compare-extractor or --compare-ocr-engine the rest. #}
               {% set compare = row.source == "native" and row.ocr_text %}
               {% set panes = [] %}
-              {# When several readers are compared, the first pane is named after
-                 the reader the report was built from. #}
-              {%- set kept_label = (report.run.extractor if row.readings and row.source != "ocr"
-                                    else ("what OCR read" if row.source == "ocr" else "text layer")) -%}
-              {%- if row.text or row.ocr_text -%}
+              {#- Side by side, the kept reading is already on the left. -#}
+              {%- if (row.text or row.ocr_text) and not side_by_side -%}
                 {%- set _ = panes.append(("text", kept_label, row.text or row.ocr_text)) -%}
               {%- endif -%}
               {%- if compare -%}{%- set _ = panes.append(("ocr", "what OCR sees", row.ocr_text)) -%}{%- endif -%}
@@ -809,7 +804,7 @@ that text afterwards. Greyed rows are low-severity findings from the name model.
                           aria-selected="{{ "true" if loop.first else "false" }}">{{ label }}</button>
                   {% endfor %}
                 </span>
-                {% elif panes %}{{ panes[0][1] }} from this page
+                {% elif panes %}{{ panes[0][1] }}{% if not side_by_side %} from this page{% endif %}
                 {% else %}content{% endif %}
               </div>
               {% if panes %}

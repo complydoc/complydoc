@@ -47,6 +47,13 @@ class Match:
     """`exact`, `fuzzy`, or None when not found."""
     score: float
     page: int | None
+    passage: str | None = None
+    """The run of words that came closest, when the fact was not found exactly.
+
+    A score says a reading missed; the passage says how. A fact split by a
+    two-column page reads as two clauses spliced together, and showing that is
+    what makes the miss make sense.
+    """
 
 
 def as_facts(facts: Iterable[Fact | str]) -> list[Fact]:
@@ -63,11 +70,16 @@ def as_facts(facts: Iterable[Fact | str]) -> list[Fact]:
     return result
 
 
-def normalise(text: str) -> str:
-    """Casefolded text with invisible characters, line-break hyphens and extra spaces removed."""
+def _tidy(text: str) -> str:
+    """Invisible characters, line-break hyphens and extra spaces removed, case kept."""
     text = unicodedata.normalize("NFKC", strip_invisible(text)).replace("­", "")
     text = _HYPHEN_BREAK.sub(r"\1\2", text)
-    return " ".join(text.split()).casefold()
+    return " ".join(text.split())
+
+
+def normalise(text: str) -> str:
+    """Casefolded text with invisible characters, line-break hyphens and extra spaces removed."""
+    return _tidy(text).casefold()
 
 
 def find_fact(
@@ -81,10 +93,14 @@ def find_fact(
     matcher.set_seq2(target)
 
     for number, page_text in pages:
-        haystack = normalise(page_text)
+        tidy = _tidy(page_text)
+        haystack = tidy.casefold()
         if target in haystack:
             return Match("exact", 1.0, number)
         words = haystack.split()[:MAX_WORDS]
+        # The same words as the page wrote them, index for index: casefolding
+        # changes letters and never where a word ends.
+        shown = tidy.split()[:MAX_WORDS]
         for width in sorted({max(1, size - 1), size, size + 1}):
             for start in range(max(1, len(words) - width + 1)):
                 matcher.set_seq1(" ".join(words[start : start + width]))
@@ -92,11 +108,12 @@ def find_fact(
                     continue
                 ratio = matcher.ratio()
                 if ratio > best.score:
-                    best = Match(None, round(ratio, 4), number)
+                    passage = " ".join(shown[start : start + width])
+                    best = Match(None, round(ratio, 4), number, passage)
 
     if best.score >= threshold:
-        return Match("fuzzy", best.score, best.page)
-    return Match(None, best.score, None)
+        return Match("fuzzy", best.score, best.page, best.passage)
+    return Match(None, best.score, None, best.passage)
 
 
 def _applies(document: DocumentReport, name: str | None) -> bool:
@@ -152,6 +169,7 @@ def evaluate_facts(
         scores: dict[str, float] = {}
         pages: dict[str, int | None] = {}
         located: dict[str, str | None] = {}
+        nearest: dict[str, str | None] = {}
         for name, candidates in documents.items():
             best, where = Match(None, 0.0, None), None
             for document in candidates:
@@ -167,6 +185,7 @@ def evaluate_facts(
             scores[name] = best.score
             pages[name] = best.page
             located[name] = where if best.kind else None
+            nearest[name] = best.passage if best.kind != "exact" else None
         checks.append(
             FactCheck(
                 fact=fact.text,
@@ -175,6 +194,7 @@ def evaluate_facts(
                 scores=scores,
                 pages=pages,
                 documents=located,
+                nearest=nearest,
             )
         )
     return checks

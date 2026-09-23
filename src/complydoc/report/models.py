@@ -144,7 +144,8 @@ def report_shape() -> dict[str, object]:
         ),
         "loader_comparison": (
             "null unless compare_loaders ran: baseline, loaders[] (per-loader totals, "
-            "network, scores, failures, facts_found, parser_usd, tags[]), facts[], "
+            "network, scores, failures, facts_found, parser_usd, tags[]), facts[] (found, "
+            "scores, and nearest: the passage that came closest where a fact was missed), "
             "identifier_differences[] (found_by[], missed_by[]), "
             "metadata_keys (key -> loaders returning it), documents (path -> loaders), "
             "recommended (the loader to use, null where the run cannot tell), verdict "
@@ -309,6 +310,12 @@ class FactCheck:
     pages: dict[str, int | None]
     documents: dict[str, str | None]
     """Loader name to the document the fact was found in."""
+    nearest: dict[str, str | None] = field(default_factory=dict)
+    """Loader name to the passage that came closest, where the fact was not found exactly.
+
+    What a missing fact looks like in that loader's text, which is usually the
+    reason it went missing.
+    """
 
 
 @dataclass(frozen=True, slots=True)

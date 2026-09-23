@@ -62,8 +62,12 @@
   h4 { font-size: 0.8125rem; font-weight: 600; margin: 1.5rem 0 0.375rem; color: var(--ink-2); }
   p  { margin: 0 0 0.75rem; }
   .meta { color: var(--muted); font-size: 0.8125rem; margin: 0; }
-  .verdict { margin: 0 0 0.75rem; max-width: 46rem; padding-left: 0.75rem;
-             border-left: 3px solid var(--good); font-size: 0.8125rem; }
+  .near { display: block; margin-top: 0.25rem; color: var(--muted); font-size: 0.75rem;
+          font-style: italic; }
+
+  .verdict { margin: 0 0 1rem; max-width: 46rem; padding: 0.125rem 0 0.125rem 0.75rem;
+             border-left: 3px solid var(--accent); font-size: 0.875rem; }
+  .verdict.none { border-left-color: var(--line-2); color: var(--ink-2); }
 
   .note { color: var(--muted); font-size: 0.8125rem; max-width: 46rem; }
   code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.875em; }
@@ -216,9 +220,10 @@
   .cm-empty { color: var(--faint); padding: .45rem .5rem; border: 1px dashed var(--line);
               border-radius: 6px; }
   .cm-cell.sel { outline: 2px solid var(--ink); outline-offset: 1px; }
-  .loaderrun { margin: 0 0 1.5rem; }
-  .loaderrun table th { text-align: left; font-weight: 500; color: var(--muted);
-                        width: 12rem; }
+  /* Loaders sit above the file explorer on the Documents page, ruled off from it. */
+  .loaders { margin: 0 0 2rem; padding-bottom: 1.75rem; border-bottom: 1px solid var(--line); }
+  .loaders > h2:first-child { margin-top: 0.5rem; }
+  .loaders tbody th { text-align: left; font-weight: 500; color: var(--muted); width: 12rem; }
   .pv-tip b { display: block; font-weight: 600; }
   .pv-tip .found { display: block; margin: 0.1875rem 0 0.25rem;
                    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;

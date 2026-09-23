@@ -176,9 +176,16 @@ def test_the_comparison_is_written_to_json_and_html(tmp_path):
     assert data["loader_comparison"]["identifier_differences"][0]["missed_by"] == ["drops"]
 
     html = cd.write_html(report, tmp_path / "r.html").read_text(encoding="utf-8")
-    assert "Loaders compared" in html
-    assert "Found by some loaders only" in html
-    differences_table = html.split("Found by some loaders only")[1].split("</table>")[0]
+    pages = {
+        name: html.split(f'id="{name}"')[1].split("<section data-page")[0]
+        for name in ("summary", "security", "documents")
+    }
+    # Everything about loaders and readers belongs with the documents they read.
+    assert "<h2>Loaders</h2>" in pages["documents"]
+    assert "Identifiers only some loaders kept" in pages["documents"]
+    assert "Loaders" not in pages["summary"] and "loaders kept" not in pages["security"]
+
+    differences_table = html.split("Identifiers only some loaders kept")[1].split("</table>")[0]
     assert "jane.doe@example.com" not in differences_table
 
 
@@ -244,6 +251,10 @@ def test_two_readings_of_a_two_column_page_are_reported_as_reordered():
     check = report.loader_comparison.facts[0]
     assert check.found["pypdf"] == "exact"
     assert check.found["pdfplumber"] is None
+
+    # And the report can show why: the closest passage is two clauses spliced.
+    assert check.nearest["pypdf"] is None, "nothing to explain where it was found"
+    assert "however arising" in check.nearest["pdfplumber"]
 
 
 # A sort code is reported where its label sits nearby, so the same digits are

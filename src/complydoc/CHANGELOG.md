@@ -6,6 +6,16 @@ versioned separately.
 
 ## [Unreleased]
 
+### Added
+
+- An expected fact a loader missed now shows the passage in that loader's text that came
+  closest, in `loader_comparison.facts[].nearest` and under the fact in the report. On a
+  two-column contract it shows the two clauses the reader spliced where the fact should
+  have been.
+
+- A page read by several loaders, with no page image to draw, shows the kept reading and
+  another loader's reading side by side, with the differences marked.
+
 ### Fixed
 
 - Names went unmasked in any process that had imported `transformers` before complydoc,
@@ -19,6 +29,11 @@ versioned separately.
   directly, which holds whatever was imported first.
 
 ### Changed
+
+- Everything about loaders and readers is on the report's Documents page, in a Loaders
+  section at the top: the verdict, a shorter table, expected facts, identifiers only some
+  loaders kept, and what only some loaders returned. The Summary and Security pages no
+  longer carry it, and the notes under each table are gone.
 
 - The JSON report is written in a summary shape by default, a quarter of its old size:
   4.6 MB rather than 20.3 MB for 200 one-page documents. Three quarters of it was two

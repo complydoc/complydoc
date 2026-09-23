@@ -171,7 +171,7 @@ loader that cannot be imported, exits with status 2.
 ## Which one to use
 
 The comparison ends with a recommendation, on the command line and at the top of
-the report's Loaders compared section. Three things can decide it:
+the Loaders section at the top of the report's Documents page. Three things can decide it:
 
 | What decided it | Example |
 | --- | --- |
