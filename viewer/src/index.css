@@ -1,0 +1,137 @@
+/* The complydoc theme, on shadcn/ui's token names. BRAND.md explains each colour
+   and when to use it. Components use these tokens, never raw colours. */
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+/* Bundled, not fetched: the viewer makes no network request, like the rest of complydoc. */
+@import "@fontsource-variable/geist";
+@import "@fontsource-variable/geist-mono";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-sans);
+  --font-mono: "Geist Mono Variable", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  /* complydoc's states, beyond shadcn's set */
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-destructive-soft: var(--destructive-soft);
+  --color-faint: var(--faint);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  --radius: 0.625rem;
+
+  --background: #fbfbfa; /* Paper */
+  --foreground: #111111; /* Ink */
+  --card: #ffffff;
+  --card-foreground: #111111;
+  --popover: #ffffff;
+  --popover-foreground: #111111;
+  --primary: #1a7f4b; /* complydoc green */
+  --primary-foreground: #ffffff;
+  --secondary: #f1f1ef;
+  --secondary-foreground: #333333;
+  --muted: #f1f1ef;
+  --muted-foreground: #666666;
+  --accent: #f1f1ef;
+  --accent-foreground: #111111;
+  --destructive: #a4402f; /* Attention */
+  --border: #e8e8e6;
+  --input: #d8d8d4;
+  --ring: #1a7f4b;
+
+  --success: #1a7f4b;
+  --success-soft: #e3f2ea;
+  --warning: #b0740f;
+  --warning-soft: #f7ecd8;
+  --destructive-soft: #f6e5e1;
+  --faint: #999999;
+
+  --chart-1: #1a7f4b;
+  --chart-2: #8b939c;
+  --chart-3: #b0740f;
+  --chart-4: #a4402f;
+  --chart-5: #2a78d6;
+}
+
+.dark {
+  --background: #16181a;
+  --foreground: #e9e9e7;
+  --card: #1d2023;
+  --card-foreground: #e9e9e7;
+  --popover: #1d2023;
+  --popover-foreground: #e9e9e7;
+  --primary: #4cc38a;
+  --primary-foreground: #16181a;
+  --secondary: #23272b;
+  --secondary-foreground: #c9c9c6;
+  --muted: #23272b;
+  --muted-foreground: #9aa0a6;
+  --accent: #23272b;
+  --accent-foreground: #e9e9e7;
+  --destructive: #e08a72;
+  --border: #2b2f33;
+  --input: #3a3f45;
+  --ring: #4cc38a;
+
+  --success: #4cc38a;
+  --success-soft: #1e3a2a;
+  --warning: #d9a441;
+  --warning-soft: #3a2f1b;
+  --destructive-soft: #3a2622;
+  --faint: #71767b;
+
+  --chart-1: #4cc38a;
+  --chart-2: #7d858d;
+  --chart-3: #d9a441;
+  --chart-4: #e08a72;
+  --chart-5: #3987e5;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans antialiased;
+  }
+  body {
+    @apply bg-background text-foreground tabular-nums;
+  }
+}

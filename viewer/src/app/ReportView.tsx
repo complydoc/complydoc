@@ -1,0 +1,75 @@
+import { Logo } from "@/components/Logo";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DocumentsPage } from "@/features/documents/DocumentsPage";
+import { SecurityPage } from "@/features/security/SecurityPage";
+import { SummaryPage } from "@/features/summary/SummaryPage";
+import { useHashTab } from "@/hooks/useHashTab";
+import type { Theme } from "@/hooks/useTheme";
+import type { Report } from "@/report/types";
+
+const PAGES = ["summary", "security", "documents"] as const;
+type Page = (typeof PAGES)[number];
+
+interface ReportViewProps {
+  report: Report;
+  name: string;
+  theme: Theme;
+  onTheme: (theme: Theme) => void;
+  onClose: () => void;
+}
+
+/** One opened report: the header, the page tabs and the page. */
+export function ReportView({ report, name, theme, onTheme, onClose }: ReportViewProps) {
+  const [page, setPage] = useHashTab(PAGES);
+  const counts: Record<Page, number | undefined> = {
+    summary: undefined,
+    security: report.aggregate.sensitive_total,
+    documents: report.documents.length,
+  };
+
+  return (
+    <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 md:px-6">
+      <header className="flex items-center gap-4">
+        <Logo height={28} />
+        <p className="min-w-0 truncate text-sm text-muted-foreground" title={name}>
+          {name}
+        </p>
+        <div className="ml-auto flex items-center gap-2">
+          <ThemeToggle theme={theme} onChange={onTheme} />
+          <Button variant="outline" size="sm" onClick={onClose}>
+            Open another
+          </Button>
+        </div>
+      </header>
+
+      <Tabs value={page} onValueChange={(value) => setPage(value as Page)} className="gap-8">
+        <TabsList variant="line" aria-label="Report pages">
+          {PAGES.map((id) => (
+            <TabsTrigger key={id} value={id} className="capitalize">
+              {id}
+              {counts[id] !== undefined && <Badge variant="secondary">{counts[id]}</Badge>}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        <TabsContent value="summary">
+          <SummaryPage report={report} />
+        </TabsContent>
+        <TabsContent value="security">
+          <SecurityPage report={report} />
+        </TabsContent>
+        <TabsContent value="documents">
+          <DocumentsPage report={report} />
+        </TabsContent>
+      </Tabs>
+
+      <Separator />
+      <footer className="text-xs text-faint">
+        complydoc {report.run.tool_version} · schema {report.run.schema_version} · {report.run.report_detail} report
+      </footer>
+    </div>
+  );
+}

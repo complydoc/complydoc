@@ -113,6 +113,10 @@ packages = ["src/complydoc"]
 [tool.hatch.build.targets.wheel.force-include]
 "src/complydoc/skill/SKILL.md" = "complydoc/skill/SKILL.md"
 
+[tool.hatch.build.targets.sdist]
+# The React viewer is a separate app with its own toolchain, not part of the package.
+exclude = ["viewer"]
+
 [[tool.mypy.overrides]]
 # Not a dependency: the tesseract engine is there for anyone who already has it
 # installed, and complydoc will not make everyone carry a system binary for it.

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 56 64" width="56" height="64" role="img" aria-label="complydoc">
+  <rect x="8" y="12" width="40" height="40" rx="8" fill="none" stroke="#4cc38a" stroke-width="1.5" stroke-dasharray="3,3"/>
+  <rect x="20" y="21" width="16" height="22" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <line x1="23" y1="27" x2="33" y2="27" stroke="currentColor" stroke-width="1.5"/>
+  <line x1="23" y1="32" x2="33" y2="32" stroke="currentColor" stroke-width="1.5"/>
+  <line x1="23" y1="37" x2="29" y2="37" stroke="#4cc38a" stroke-width="1.5"/>
+</svg>
