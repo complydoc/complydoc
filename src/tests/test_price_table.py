@@ -195,6 +195,9 @@ def test_using_an_imported_price_is_disclosed(config):
 
 
 def test_a_verified_only_run_carries_no_provenance_caveat(config):
+    # Staleness is its own caveat, and it comes due with the calendar, not the code.
+    pricing = config.pricing.model_copy(update={"staleness_warn_days": 100_000})
+    config = config.model_copy(update={"pricing": pricing})
     report = run_audit(FIXTURES, config, ("cost",), ocr=False, select_models=["claude-opus-5"])
     assert not [x for x in report.limitations if x.area == "Price provenance"]
 
