@@ -53,7 +53,8 @@ export function PagePane({ number, preview, name, mark }: PagePaneProps) {
           )}
         </CardAction>
       </CardHeader>
-      <CardContent className="min-h-0 flex-1">
+      {/* Tighter than a card's usual padding: every pixel here goes to the page. */}
+      <CardContent className="min-h-0 flex-1 px-2">
         <PagePicture preview={preview} mark={mark} />
       </CardContent>
     </Card>

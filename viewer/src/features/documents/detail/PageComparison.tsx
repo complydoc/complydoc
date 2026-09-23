@@ -25,8 +25,8 @@ function pick(readings: Reading[], id: string): Reading {
 
 /**
  * The page and two of its readings side by side, with what each reading has
- * that the other lacks marked. Three equal panes of one height, resizable on a
- * wide screen and stacked on a narrow one. A page read only one way has
+ * that the other lacks marked. Three panes of one height, the page the widest,
+ * resizable on a wide screen and stacked on a narrow one. A page read only one way has
  * nothing to compare, so it is the page and that reading, in two halves.
  */
 export function PageComparison({ number, name, readings, preview, highlight, reserve = false }: PageComparisonProps) {
@@ -83,18 +83,23 @@ export function PageComparison({ number, name, readings, preview, highlight, res
         />,
       ];
 
+  // The page takes the larger share: a portrait page fills its pane's width long
+  // before its height, so width is what makes it readable. Readings share the rest.
+  const sizes = single ? ["50%", "50%"] : ["42%", "29%", "29%"];
+
   if (!wide) {
     return <div className="flex flex-col gap-4 [&>[data-slot=card]]:h-[32rem]">{panes}</div>;
   }
   return (
     // The panel library sizes its group to 100% of the parent, so the parent carries the height.
-    <div className={reserve ? "h-[calc(100svh-16rem)] min-h-[34rem]" : "h-[calc(100svh-13rem)] min-h-[36rem]"}>
+    // As tall as the window allows below the title, less the picker's row when there is one.
+    <div className={reserve ? "h-[calc(100svh-13rem)] min-h-[34rem]" : "h-[calc(100svh-9.5rem)] min-h-[36rem]"}>
       <ResizablePanelGroup orientation="horizontal">
         {panes.map((pane, index) => (
           <Fragment key={pane.key}>
             {index > 0 && <ResizableHandle withHandle className="mx-2" />}
             {/* A card's border is a ring drawn just outside it; the padding keeps the panel from clipping it. */}
-            <ResizablePanel defaultSize={`${100 / panes.length}%`} minSize={single ? "30%" : "20%"} className="p-px">
+            <ResizablePanel defaultSize={sizes[index]} minSize={single ? "30%" : "20%"} className="p-px">
               {pane}
             </ResizablePanel>
           </Fragment>
