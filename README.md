@@ -4,7 +4,7 @@
     <img alt="complydoc" src="https://raw.githubusercontent.com/complydoc/complydoc/main/.github/images/logo-light.svg" width="42%">
   </picture>
 
-  <h3>Check documents before they reach an LLM, offline.</h3>
+  <h3>Check documents before they reach an LLM.</h3>
 
   <a href="https://pypi.org/project/complydoc/"><img src="https://img.shields.io/pypi/v/complydoc?color=1a7f4b&label=pypi" alt="PyPI"></a>
   <a href="https://github.com/complydoc/complydoc/actions/workflows/checks.yml"><img src="https://github.com/complydoc/complydoc/actions/workflows/checks.yml/badge.svg?branch=main" alt="Tests"></a>
@@ -27,6 +27,10 @@ complydoc inspects documents, and the output of document loaders, before they ar
 an LLM. It measures what processing them will cost, how reliably text can be read off each
 page, which personal and financial identifiers they contain, and whether anything hidden in
 a file is addressed to a model.
+
+It runs on your machine. Nothing leaves it unless you ask for that: see
+[How it works](#how-it-works). A hosted companion for teams, complydoc Cloud, is planned;
+[say if your team would use it](https://github.com/complydoc/complydoc/discussions).
 
 > [!TIP]
 > Run `complydoc demo` to produce a full report on the sample documents bundled with the package.

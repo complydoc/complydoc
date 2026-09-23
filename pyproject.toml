@@ -1,7 +1,7 @@
 [project]
 name = "complydoc"
 dynamic = ["version"]
-description = "Check documents before they reach an LLM, offline: token cost, extraction readiness, identifiers, hidden text and prompt injection."
+description = "Check documents before they reach an LLM: token cost, extraction readiness, identifiers, hidden text and prompt injection."
 readme = "README.md"
 requires-python = ">=3.11,<3.14"
 license = { text = "MIT" }

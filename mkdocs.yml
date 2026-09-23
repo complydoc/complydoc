@@ -13,7 +13,7 @@
 
 site_name: complydoc
 site_description: >-
-  Check documents before they reach an LLM, offline.
+  Check documents before they reach an LLM.
 site_url: https://complydoc.github.io/complydoc/
 repo_url: https://github.com/complydoc/complydoc
 repo_name: complydoc/complydoc

@@ -18,6 +18,12 @@ LlamaIndex.
 
 It produces a report. It does not modify documents.
 
+It runs on your machine, and makes no outbound connection of its own; see
+[Network isolation](explanation/offline.md). A hosted companion for teams, complydoc
+Cloud, is planned: history across runs, comparing runs, and the pages this repository's
+[viewer](https://github.com/complydoc/complydoc/tree/main/viewer) shows, shared instead of
+opened as a local file. [Say if your team would use it](https://github.com/complydoc/complydoc/discussions).
+
 ## Install
 
 ```bash
