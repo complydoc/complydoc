@@ -17,14 +17,14 @@ function open(report: Report, name: string) {
 
 describe("DocumentDetail", () => {
   it("names the document and how far its readers agree", () => {
-    open(sampleAudit(), "terms-and-conditions.pdf");
+    open(sampleAudit(), "master-services-agreement.pdf");
     expect(screen.getByRole("link", { name: "Documents" })).toHaveAttribute("href", "#documents");
-    expect(screen.getByRole("heading", { name: "terms-and-conditions.pdf" })).toBeInTheDocument();
-    expect(screen.getByText(/pypdf 51%/)).toHaveTextContent("reordered");
+    expect(screen.getByRole("heading", { name: "master-services-agreement.pdf" })).toBeInTheDocument();
+    expect(screen.getByText(/pypdf 34%/)).toHaveTextContent("reordered");
   });
 
   it("shows the page beside two readings, the kept one against the next reader", () => {
-    open(sampleAudit(), "terms-and-conditions.pdf");
+    open(sampleAudit(), "master-services-agreement.pdf");
     expect(screen.getByRole("figure", { name: "Page 1" })).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Left reading" })).toHaveTextContent("pdfplumber");
     expect(screen.getByRole("combobox", { name: "Right reading" })).toHaveTextContent("pypdf");
@@ -33,26 +33,26 @@ describe("DocumentDetail", () => {
   });
 
   it("marks where identifiers sit on the page", () => {
-    open(sampleAudit(), "employee-record.pdf");
+    open(sampleAudit(), "master-services-agreement.pdf");
     const page = screen.getByRole("figure", { name: "Page 1" });
     expect(within(page).getAllByLabelText(/Person name/).length).toBeGreaterThan(0);
   });
 
   it("switches a pane to OCR", async () => {
-    open(sampleAudit(), "terms-and-conditions.pdf");
+    open(sampleAudit(), "master-services-agreement.pdf");
     await userEvent.click(screen.getByRole("combobox", { name: "Right reading" }));
     await userEvent.click(await screen.findByRole("option", { name: "OCR" }));
     expect(screen.getByRole("combobox", { name: "Right reading" })).toHaveTextContent("OCR");
   });
 
   it("says how to get a page picture when the report has none", () => {
-    open(sampleReport(), "terms-and-conditions.pdf");
+    open(sampleReport(), "master-services-agreement.pdf");
     expect(screen.getByText("No picture of this page")).toBeInTheDocument();
     expect(screen.getByText("--page-images --detail full")).toBeInTheDocument();
   });
 
   it("names a scanned page's reading OCR", () => {
-    open(sampleAudit(), "invoice-scan.pdf");
+    open(sampleAudit(), "supplier-invoices-scanned.pdf");
     expect(screen.getByRole("combobox", { name: "Left reading" })).toHaveTextContent("OCR");
   });
 });

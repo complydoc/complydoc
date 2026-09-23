@@ -14,18 +14,18 @@ describe("DocumentsPage", () => {
 
   it("shows where a loader lost a fact, and the closest it came", () => {
     render(<DocumentsPage report={sampleReport()} open={null} />);
-    expect(screen.getByText("kept")).toBeInTheDocument();
-    expect(screen.getByText("missed")).toBeInTheDocument();
-    expect(screen.getByText(/however arising/)).toBeInTheDocument();
+    expect(screen.getAllByText("kept")).toHaveLength(2);
+    expect(screen.getAllByText("missed")).toHaveLength(2);
+    expect(screen.getByText(/The supplier shall provide the services 5\.1/)).toBeInTheDocument();
   });
 
   it("lists every document, least ready first, each opening its comparison", () => {
     render(<DocumentsPage report={sampleReport()} open={null} />);
     const table = screen.getByRole("table", { name: "Documents" });
     const rows = within(table).getAllByRole("row");
-    expect(rows).toHaveLength(10);
-    expect(rows[1]).toHaveTextContent("employee-record.pdf");
-    expect(within(rows[1] as HTMLElement).getByRole("link", { name: "employee-record.pdf" })).toHaveAttribute(
+    expect(rows).toHaveLength(7);
+    expect(rows[1]).toHaveTextContent("master-services-agreement.pdf");
+    expect(within(rows[1] as HTMLElement).getByRole("link", { name: "master-services-agreement.pdf" })).toHaveAttribute(
       "href",
       expect.stringMatching(/^#documents\/\d+$/),
     );

@@ -37,9 +37,7 @@ src/
                   selectors (select, security, cost), and readings.ts, which lines
                   up and diffs a page's readings
   lib/            shadcn's utilities
-  fixtures/       two real reports on the sample folder: an audit with page images,
-                  pypdf compared and OCR (audit.json), and pypdf against pdfplumber
-                  as LangChain loaders (loaders.json)
+  fixtures/       the two sample reports, written by sample/make_reports.py
   test/           test setup and the sample loader
   index.css       the theme: brand tokens on shadcn's names
 ```
@@ -54,6 +52,20 @@ What goes where:
 - **Tests sit beside the code** (`Thing.tsx`, `Thing.test.tsx`) and query what
   a person sees (roles, names, text), not class names.
 - **Imports use `@/`**, except for a sibling in the same folder.
+
+## The samples
+
+Six synthetic documents, 33 pages in all, in `sample/documents`: a two-column
+contract, an annual report with tables and a chart, a staff handbook, scanned
+invoices, a questionnaire hiding an instruction to a model, and German invoices.
+Every identifier in them is invented or a published test value. From them come
+the two reports the open screen offers: a full audit with page pictures, pypdf
+compared and OCR, and pypdf against pdfplumber as LangChain loaders.
+
+```bash
+uv run python viewer/sample/make_documents.py
+uv run python viewer/sample/make_reports.py
+```
 
 ## The page comparison
 

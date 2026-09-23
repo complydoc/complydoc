@@ -15,8 +15,8 @@ import {
 describe("select", () => {
   it("counts only the bands that have documents, best first", () => {
     expect(bandCounts(sampleReport()).map((b) => [b.key, b.count])).toEqual([
-      ["ready", 8],
-      ["workable", 1],
+      ["ready", 3],
+      ["workable", 3],
     ]);
   });
 
@@ -41,14 +41,14 @@ describe("select", () => {
 
   it("orders categories by how often they were found", () => {
     const categories = categoriesByCount(sampleReport());
-    expect(categories[0]).toEqual({ category: "person_name", label: "Person name", count: 7 });
+    expect(categories[0]).toEqual({ category: "person_name", label: "Person name", count: 19 });
     expect(categories.find((c) => c.category === "iban")?.label).toBe("IBAN");
   });
 
   it("puts the least ready document first", () => {
     const rows = documentRows(sampleReport());
-    expect(rows).toHaveLength(9);
-    expect(rows[0]?.path).toContain("employee-record.pdf");
+    expect(rows).toHaveLength(6);
+    expect(rows[0]?.path).toContain("master-services-agreement.pdf");
     expect(rows[0]?.highest).toBe("high");
   });
 
@@ -76,10 +76,13 @@ describe("select", () => {
 
   it("says how far the readers of each document agree, and whether one reordered it", () => {
     const rows = documentRows(sampleAudit());
-    const contract = rows.find((row) => row.path.endsWith("terms-and-conditions.pdf"));
-    expect(contract?.agreement).toBeCloseTo(0.5143);
+    const contract = rows.find((row) => row.path.endsWith("master-services-agreement.pdf"));
+    expect(contract?.agreement).toBeCloseTo(0.3385);
     expect(contract?.reordered).toBe(true);
-    expect(rows.find((row) => row.path.endsWith(".docx"))?.agreement).toBeNull();
+
+    const report = sampleAudit();
+    report.documents[0]!.extractions = report.documents[0]!.extractions.slice(0, 1);
+    expect(documentRows(report).find((row) => row.index === 0)?.agreement).toBeNull();
     expect(rows.every((row, _, all) => all.filter((r) => r.index === row.index).length === 1)).toBe(true);
   });
 
@@ -90,6 +93,6 @@ describe("select", () => {
   it("finds each document's score, and calls a reading reordered only where it differs", () => {
     const rows = documentRows(sampleAudit());
     expect(rows.every((row) => row.score !== null)).toBe(true);
-    expect(rows.find((row) => row.path === "invoice-de.pdf")).toMatchObject({ agreement: 1, reordered: false });
+    expect(rows.find((row) => row.path === "annual-report-2025.pdf")).toMatchObject({ reordered: false });
   });
 });

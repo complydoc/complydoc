@@ -7,7 +7,7 @@ describe("SecurityPage", () => {
     render(<SecurityPage report={sampleAudit()} />);
     const found = screen.getByRole("region", { name: "Found" });
     expect(within(found).getByText("High severity").nextElementSibling).toHaveTextContent(/\d+/);
-    expect(within(found).getByText("Hidden instructions").nextElementSibling).toHaveTextContent("2");
+    expect(within(found).getByText("Hidden instructions").nextElementSibling).toHaveTextContent("1");
   });
 
   it("charts what was found and where, side by side", () => {
@@ -20,7 +20,7 @@ describe("SecurityPage", () => {
   it("quotes each hidden instruction with where it is and why it was flagged", () => {
     render(<SecurityPage report={sampleAudit()} />);
     const hidden = screen.getByRole("list", { name: "Hidden instructions" });
-    expect(within(hidden).getAllByRole("listitem")).toHaveLength(2);
+    expect(within(hidden).getAllByRole("listitem")).toHaveLength(1);
     expect(within(hidden).getAllByText("white text").length).toBeGreaterThan(0);
     expect(within(hidden).getAllByText("addresses an AI model directly").length).toBeGreaterThan(0);
   });

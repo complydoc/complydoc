@@ -16,13 +16,13 @@ describe("security", () => {
 
   it("counts each document's findings by severity, most first", () => {
     const [first, ...rest] = severityByDocument(sampleAudit());
-    expect(first?.path).toBe("employee-record.pdf");
+    expect(first?.path).toBe("rechnungen-2026-de.pdf");
     expect(rest.every((row) => row.high + row.medium + row.low > 0)).toBe(true);
   });
 
   it("says where each hidden instruction is and why it was flagged", () => {
     const found = hiddenInstructions(sampleAudit());
-    expect(found).toHaveLength(2);
+    expect(found).toHaveLength(1);
     expect(found[0]?.reasons).toContain("addresses an AI model directly");
     expect(found[0]?.hiddenBy).toContain("white text");
   });
