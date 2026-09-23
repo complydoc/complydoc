@@ -23,7 +23,7 @@ copyright: MIT licensed
 theme:
   name: material
   logo: assets/mark.svg
-  favicon: assets/mark.svg
+  favicon: assets/favicon.svg
   font:
     text: Inter
     code: JetBrains Mono

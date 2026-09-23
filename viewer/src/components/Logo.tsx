@@ -1,11 +1,13 @@
 /**
- * The complydoc mark, an owl's face in flat pieces, and the wordmark beside it.
+ * The complydoc mark, a check of two leaves with a dot above, and the wordmark beside it.
  *
  * The same geometry as brand/logo/mark-flat.svg, inlined so it takes the
- * theme's green. brand/logo/README.md says why an owl and where each version goes.
+ * theme's green. brand/logo/README.md says what it means and where each version goes.
  */
 const MARK =
-  "M26 30A17 17 0 0 1 8 6A17 17 0 0 1 26 30ZM92 6A17 17 0 0 1 74 30A17 17 0 0 1 92 6ZM8 54a20 20 0 1 0 40 0a20 20 0 1 0 -40 0ZM52 54a20 20 0 1 0 40 0a20 20 0 1 0 -40 0ZM23.5 56a7.5 7.5 0 1 0 15.0 0a7.5 7.5 0 1 0 -15.0 0ZM61.5 56a7.5 7.5 0 1 0 15.0 0a7.5 7.5 0 1 0 -15.0 0ZM50 72A15 15 0 0 1 50 96A15 15 0 0 1 50 72Z";
+  "M35 84A30 30 0 0 1 9 58A30 30 0 0 1 35 84Z" +
+  "M43 84A72 72 0 0 1 93 20A72 72 0 0 1 43 84Z" +
+  "M11 34a13 13 0 1 0 26 0a13 13 0 1 0 -26 0Z";
 
 interface LogoProps {
   /** Show the wordmark beside the mark. */
@@ -17,7 +19,7 @@ interface LogoProps {
 export function Logo({ withName = true, size = 24 }: LogoProps) {
   return (
     <span className="inline-flex items-center gap-2 text-primary" role="img" aria-label="complydoc">
-      <svg viewBox="0 0 100 100" width={size} height={size} aria-hidden="true" className="shrink-0">
+      <svg viewBox="9 20 84 64" width={size * (84 / 64)} height={size} aria-hidden="true" className="shrink-0">
         <path fill="currentColor" fillRule="evenodd" d={MARK} />
       </svg>
       {withName && (

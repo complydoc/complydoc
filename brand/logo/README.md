@@ -1,50 +1,56 @@
 # complydoc mark
 
-An owl's face, in complydoc green.
+A check mark whose two strokes are leaves, with a dot above the short one.
 
 ## The idea
 
-LangChain's world is birds and LlamaIndex's is llamas; complydoc sits beside
-them, so it takes an animal too. An owl because of what it does: it looks
-closely, in the dark, at what others miss. complydoc reads documents before a
-model does and finds what should not be sent, what is hidden and what a reader
-got wrong.
-
-It is drawn in the same vocabulary as LangChain's own mark, flat geometric
-pieces set apart by even gaps, so the two read as neighbours: two discs for
-eyes with the pupils knocked out and set a little inward, as if focused; two
-leaves for ear tufts, angled outward; one leaf for the beak. Seven pieces, one
-colour, no outlines.
+complydoc reads documents before a model does and says whether they are fit to
+send. The check is that answer. Its strokes are leaves rather than lines, and
+it is built the way LangChain's own mark is, from a few flat pieces with even
+gaps between them, so the two sit well side by side. The dot above the short
+stroke is what makes it complydoc's rather than any tick: a reader, looking
+over the check, or the one thing on the page that was found.
 
 ## Files
 
 ```
-mark-flat.svg   what ships in the UI: shapes only, currentColor
+mark-flat.svg   what ships in a UI: the shapes only, in currentColor
 mark.svg        the same shapes in complydoc green, for a light ground
-icon.svg        the icon: the mark in bright green on a near-black tile
+icon.svg        the icon: the mark in bright green on the near-black tile
 ```
+
+The wordmarks the README shows, the mark beside `complydoc` in Geist semibold,
+are `.github/images/logo-light.svg` and `logo-dark.svg`. The HTML report
+inlines the same mark and icon from `src/complydoc/report/assets.py`, and the
+docs site uses `docs/assets/mark.svg` (white, for the green header) and
+`docs/assets/favicon.svg`.
 
 ## Which one, where
 
-**In the UI**, header, footer, card: `mark-flat.svg` inline, coloured with the
-theme's primary green, beside the wordmark `complydoc` in Geist semibold,
-lowercase. No plate behind it.
+**In a UI**, header or footer: `mark-flat.svg` inline, in the theme's primary
+green, beside the name. No plate behind it.
 
 **As an icon**, a favicon, a social card or an app tile: `icon.svg`. An icon
 has no text around it and no known ground, so it brings its own.
 
-**Large, on a light ground**, a slide or a README banner: `mark.svg`.
+**Large, on a light ground**, a slide or a banner: `mark.svg`.
 
 ## Geometry
 
-Artwork is 100 x 100 with no padding, so it can be placed like a glyph. Eyes
-are discs of radius 20 at (28, 54) and (72, 54), 4 apart; pupils are holes of
-radius 7.5 set 3 units inward. Tufts are leaves (arcs of radius 17) from
-(26, 30) to (8, 6) and mirrored. The beak is a leaf of radius 15 from (50, 72)
-to (50, 96).
+On a 100 unit grid, the artwork spans x 9 to 93 and y 20 to 84; the files crop
+to that (`viewBox="9 20 84 64"`) so the mark can be placed like a glyph.
+
+- Short stroke: a leaf from (35, 84) to (9, 58), arcs of radius 30.
+- Long stroke: a leaf from (43, 84) to (93, 20), arcs of radius 72. The large
+  radius keeps it slim, so it reads as a stroke and not as foliage.
+- The two strokes meet low with an 8 unit gap between their feet.
+- Dot: radius 13 at (24, 34), above the short stroke.
+
+The icon centres the mark on a 128 tile of radius 28, at 1.05 scale.
 
 ## Rules
 
 - Inline the flat mark rather than loading it through `img src`, so
   `currentColor` resolves.
-- Don't add a plate behind the mark in the UI, stretch it, or outline it.
+- One colour at a time; don't outline, stretch or add a plate in a UI.
+- The name is always lowercase: complydoc.

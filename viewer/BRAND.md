@@ -19,10 +19,9 @@ every component picks them up without being told.
 ## Name and mark
 
 - The name is always lowercase: **complydoc**, even at the start of a sentence.
-- The mark is an owl's face in flat pieces: two discs for eyes, two leaves for
-  ear tufts, one for the beak. An owl looks closely at what others miss, which
-  is what complydoc does to documents before a model reads them. It shares
-  LangChain's vocabulary of flat geometric pieces, so the two sit well together.
+- The mark is a check mark whose two strokes are leaves, with a dot above the
+  short one: complydoc's answer about a document. It is built from flat pieces
+  with even gaps, as LangChain's mark is, so the two sit well together.
 - Use [`Logo`](src/components/Logo.tsx) in the app. The source files, and where
   each version goes, are in [`brand/logo`](../brand/logo/README.md).
 - In the UI the mark is one colour, the primary green, with no plate behind it.
