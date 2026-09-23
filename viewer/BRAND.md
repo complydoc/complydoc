@@ -33,17 +33,17 @@ Colour carries state. A colour that doesn't mean anything is grey.
 
 | Token | Light | Dark | Use |
 | --- | --- | --- | --- |
-| `background` | `#fbfbfa` | `#16181a` | The page ("paper") |
-| `card` | `#ffffff` | `#1d2023` | Cards, tables, panels |
+| `background` | `#fbfbfa` | `#000000` | The page ("paper"); in dark, the sidebar too |
+| `card` | `#ffffff` | `#0d0e0f` | Cards, tables, panels |
 | `foreground` | `#111111` | `#e9e9e7` | Body text ("ink") |
 | `muted-foreground` | `#666666` | `#9aa0a6` | Labels, secondary text |
 | `faint` | `#999999` | `#71767b` | Footnotes, weights, the least important text |
-| `border` | `#e8e8e6` | `#2b2f33` | Card edges, table rules, separators |
+| `border` | `#e8e8e6` | `#222427` | Card edges, table rules, separators |
 | `primary` | `#1a7f4b` | `#4cc38a` | **complydoc green.** Main action, focus ring, the mark |
 | `success` / `success-soft` | `#1a7f4b` / `#e3f2ea` | `#4cc38a` / `#1e3a2a` | Ready, kept, recommended |
 | `warning` / `warning-soft` | `#b0740f` / `#f7ecd8` | `#d9a441` / `#3a2f1b` | Needs work, close, medium severity |
 | `destructive` / `destructive-soft` | `#a4402f` / `#f6e5e1` | `#e08a72` / `#3a2622` | Not ready, missed, high severity |
-| `secondary` / `muted` | `#f1f1ef` | `#23272b` | Neutral badges, quiet fills |
+| `secondary` / `muted` | `#f1f1ef` | `#18191b` | Neutral badges, quiet fills |
 
 Rules:
 
@@ -52,8 +52,9 @@ Rules:
 - Green is the brand and "ready" at once, on purpose: a ready document is the
   point of the product.
 - The attention red is a brick, not a fire engine. It says "look here", not "danger".
-- Dark mode is its own validated palette, not an inversion. Don't write
-  `dark:` overrides; the tokens already switch.
+- Dark mode is black, not grey: the page and the sidebar are one black surface,
+  cards sit a step above it. It is its own palette, not an inversion. Don't
+  write `dark:` overrides; the tokens already switch.
 
 ## Typography
 

@@ -118,24 +118,26 @@
   --provider-8: #8a6d3b;
 }
 
+/* Dark is black: the page and the sidebar are one black surface, with no seam
+   between them, and cards sit a step above it. */
 .dark {
-  --background: #16181a;
+  --background: #000000;
   --foreground: #e9e9e7;
-  --card: #1d2023;
+  --card: #0d0e0f;
   --card-foreground: #e9e9e7;
-  --popover: #1d2023;
+  --popover: #0d0e0f;
   --popover-foreground: #e9e9e7;
   --primary: #4cc38a;
-  --primary-foreground: #16181a;
-  --secondary: #23272b;
+  --primary-foreground: #000000;
+  --secondary: #18191b;
   --secondary-foreground: #c9c9c6;
-  --muted: #23272b;
+  --muted: #18191b;
   --muted-foreground: #9aa0a6;
-  --accent: #23272b;
+  --accent: #18191b;
   --accent-foreground: #e9e9e7;
   --destructive: #e08a72;
-  --border: #2b2f33;
-  --input: #3a3f45;
+  --border: #222427;
+  --input: #2e3135;
   --ring: #4cc38a;
 
   --success: #4cc38a;
@@ -151,13 +153,13 @@
   --chart-4: #e08a72;
   --chart-5: #3987e5;
 
-  --sidebar: #121416;
+  --sidebar: #000000;
   --sidebar-foreground: #c9c9c6;
   --sidebar-primary: #4cc38a;
-  --sidebar-primary-foreground: #16181a;
-  --sidebar-accent: #23272b;
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent: #18191b;
   --sidebar-accent-foreground: #e9e9e7;
-  --sidebar-border: #2b2f33;
+  --sidebar-border: #222427;
   --sidebar-ring: #4cc38a;
 
   --provider-1: #e0876a;
