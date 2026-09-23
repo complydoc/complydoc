@@ -45,7 +45,8 @@ describe("App", () => {
   it("switches the theme from the header", async () => {
     render(<App />);
     await userEvent.click(screen.getByRole("button", { name: "pypdf against pdfplumber" }));
-    await userEvent.click(await screen.findByRole("radio", { name: "Dark" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Switch to the dark theme" }));
     expect(document.documentElement).toHaveClass("dark");
+    expect(screen.getByRole("button", { name: "Switch to the light theme" })).toBeInTheDocument();
   });
 });

@@ -78,7 +78,8 @@ Rules:
 
 The app follows the shape of LangSmith, the tool most of complydoc's readers
 already use: a slim sidebar that collapses to icons, with the mark, the open
-report and the pages; a thin bar across the top saying where you are; and the
+report and the pages; a thin bar across the top saying where you are, with the
+light and dark switch at its right; and the
 page beneath, dense and full width. Findings link to where they are: an
 identifier on the Security page opens its document on its page, boxed on the
 picture and marked in the text.
@@ -110,6 +111,7 @@ only put shadcn parts together:
 | Nothing to show yet | `Empty` | shadcn |
 | Side by side | `ResizablePanelGroup` | shadcn |
 | Choosing among a few | `ToggleGroup`, or `Select` for more | shadcn |
+| Light or dark | `ModeToggle`, one button at the top right | `Button`, `Tooltip` |
 | Navigation | `Sidebar` and `Breadcrumb` | shadcn |
 
 Two things are drawn here, because no shadcn registry has them (checked:

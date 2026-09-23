@@ -5,7 +5,8 @@ import { DataTable, type Columns } from "./DataTable";
 import { ReadinessChart } from "./ReadinessChart";
 import { Section, SectionStack } from "./Section";
 import { Stat } from "./Stat";
-import { ThemeToggle } from "./ThemeToggle";
+import { ModeToggle } from "./ModeToggle";
+import { TooltipProvider } from "./ui/tooltip";
 import { ToneBadge } from "./ToneBadge";
 
 describe("ReadinessChart", () => {
@@ -102,13 +103,15 @@ describe("Stat and ToneBadge", () => {
   });
 });
 
-describe("ThemeToggle", () => {
-  it("reports the chosen theme and ignores a second press on the same one", async () => {
-    const onChange = vi.fn();
-    render(<ThemeToggle theme="system" onChange={onChange} />);
-    await userEvent.click(screen.getByRole("radio", { name: "Dark" }));
-    expect(onChange).toHaveBeenCalledWith("dark");
-    await userEvent.click(screen.getByRole("radio", { name: "Match the system" }));
-    expect(onChange).toHaveBeenCalledTimes(1);
+describe("ModeToggle", () => {
+  it("shows the theme in use and offers the other", async () => {
+    const onToggle = vi.fn();
+    render(
+      <TooltipProvider>
+        <ModeToggle dark={false} onToggle={onToggle} />
+      </TooltipProvider>,
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Switch to the dark theme" }));
+    expect(onToggle).toHaveBeenCalledTimes(1);
   });
 });

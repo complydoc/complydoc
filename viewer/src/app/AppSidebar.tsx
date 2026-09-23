@@ -1,6 +1,5 @@
 import { FileJsonIcon, FolderOpenIcon } from "lucide-react";
 import { Logo } from "@/components/Logo";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import {
   Sidebar,
   SidebarContent,
@@ -15,7 +14,6 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar";
-import type { Theme } from "@/hooks/useTheme";
 import type { Report } from "@/report/types";
 import { PAGES, PAGE_INFO, type Page } from "./pages";
 
@@ -23,13 +21,11 @@ interface AppSidebarProps {
   report: Report;
   name: string;
   page: Page;
-  theme: Theme;
-  onTheme: (theme: Theme) => void;
   onClose: () => void;
 }
 
 /** The report's navigation: which report is open, its pages, and the controls that are not about any one page. */
-export function AppSidebar({ report, name, page, theme, onTheme, onClose }: AppSidebarProps) {
+export function AppSidebar({ report, name, page, onClose }: AppSidebarProps) {
   const counts: Record<Page, number | undefined> = {
     summary: undefined,
     security: report.aggregate.sensitive_total,
@@ -87,9 +83,6 @@ export function AppSidebar({ report, name, page, theme, onTheme, onClose }: AppS
       </SidebarContent>
 
       <SidebarFooter>
-        <div className="px-2 group-data-[collapsible=icon]:hidden">
-          <ThemeToggle theme={theme} onChange={onTheme} />
-        </div>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton onClick={onClose} tooltip="Open another report">

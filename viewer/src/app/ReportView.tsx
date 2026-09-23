@@ -13,7 +13,7 @@ import { DocumentsPage } from "@/features/documents/DocumentsPage";
 import { SecurityPage } from "@/features/security/SecurityPage";
 import { SummaryPage } from "@/features/summary/SummaryPage";
 import { useHashRoute } from "@/hooks/useHashRoute";
-import type { Theme } from "@/hooks/useTheme";
+import { ModeToggle } from "@/components/ModeToggle";
 import { fileName } from "@/report/format";
 import type { Report } from "@/report/types";
 import { AppSidebar } from "./AppSidebar";
@@ -22,19 +22,20 @@ import { PAGES, PAGE_INFO } from "./pages";
 interface ReportViewProps {
   report: Report;
   name: string;
-  theme: Theme;
-  onTheme: (theme: Theme) => void;
+  /** Whether the dark theme is showing, and how to switch. */
+  dark: boolean;
+  onToggleTheme: () => void;
   onClose: () => void;
 }
 
 /** One opened report: the sidebar, a bar saying where you are, and the page. */
-export function ReportView({ report, name, theme, onTheme, onClose }: ReportViewProps) {
+export function ReportView({ report, name, dark, onToggleTheme, onClose }: ReportViewProps) {
   const [{ page, detail }] = useHashRoute(PAGES);
   const open = page === "documents" && detail !== null ? report.documents[Number(detail.split("/")[0])] : undefined;
 
   return (
     <SidebarProvider>
-      <AppSidebar report={report} name={name} page={page} theme={theme} onTheme={onTheme} onClose={onClose} />
+      <AppSidebar report={report} name={name} page={page} onClose={onClose} />
       {/* min-w-0 lets the page shrink to the space beside the sidebar instead of widening to its widest chart. */}
       <SidebarInset className="min-w-0">
         <header className="sticky top-0 z-10 flex h-12 shrink-0 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur">
@@ -61,6 +62,9 @@ export function ReportView({ report, name, theme, onTheme, onClose }: ReportView
               )}
             </BreadcrumbList>
           </Breadcrumb>
+          <div className="ml-auto">
+            <ModeToggle dark={dark} onToggle={onToggleTheme} />
+          </div>
         </header>
         <main className="mx-auto w-full max-w-7xl p-4 md:p-6">
           {page === "summary" && <SummaryPage report={report} />}

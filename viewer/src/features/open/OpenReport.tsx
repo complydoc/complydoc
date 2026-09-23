@@ -1,6 +1,7 @@
 import { FileJsonIcon } from "lucide-react";
 import { useRef, useState, type DragEvent } from "react";
 import { Logo } from "@/components/Logo";
+import { ModeToggle } from "@/components/ModeToggle";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
@@ -8,6 +9,8 @@ import { cn } from "@/lib/utils";
 import { SAMPLES } from "./samples";
 
 interface OpenReportProps {
+  dark: boolean;
+  onToggleTheme: () => void;
   onFile: (file: File) => void;
   onSample: (id: string) => void;
   /** Why the last file could not be opened, if it could not. */
@@ -15,7 +18,7 @@ interface OpenReportProps {
 }
 
 /** The empty state: drop a report, pick one, or look at the sample. */
-export function OpenReport({ onFile, onSample, error }: OpenReportProps) {
+export function OpenReport({ dark, onToggleTheme, onFile, onSample, error }: OpenReportProps) {
   const input = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
 
@@ -27,7 +30,10 @@ export function OpenReport({ onFile, onSample, error }: OpenReportProps) {
   }
 
   return (
-    <main className="flex min-h-svh flex-col items-center justify-center gap-8 px-4 py-8">
+    <main className="relative flex min-h-svh flex-col items-center justify-center gap-8 px-4 py-8">
+      <div className="absolute top-3 right-4">
+        <ModeToggle dark={dark} onToggle={onToggleTheme} />
+      </div>
       <Logo size={36} />
       <Empty
         className={cn("max-w-md flex-none border bg-card py-10 transition-colors", dragging && "border-primary bg-success-soft")}

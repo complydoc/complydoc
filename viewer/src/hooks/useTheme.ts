@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useMediaQuery } from "./useMediaQuery";
 
 export type Theme = "system" | "light" | "dark";
 
@@ -20,10 +21,12 @@ function stored(): Theme {
  *
  * "system" follows the operating system, and keeps following it if it
  * changes; the other two pin it. The `dark` class on the root is what the
- * shadcn theme reads.
+ * shadcn theme reads. `toggle` switches to whichever is not showing.
  */
 export function useTheme() {
   const [theme, setTheme] = useState<Theme>(stored);
+  const systemDark = useMediaQuery(DARK_QUERY);
+  const dark = theme === "dark" || (theme === "system" && systemDark);
 
   useEffect(() => {
     const media = window.matchMedia(DARK_QUERY);
@@ -42,5 +45,7 @@ export function useTheme() {
     return () => media.removeEventListener("change", apply);
   }, [theme]);
 
-  return { theme, setTheme };
+  const toggle = useCallback(() => setTheme(dark ? "light" : "dark"), [dark]);
+
+  return { theme, setTheme, dark, toggle };
 }

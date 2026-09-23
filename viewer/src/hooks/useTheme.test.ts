@@ -26,4 +26,15 @@ describe("useTheme", () => {
     expect(result.current.theme).toBe("dark");
     expect(root).toHaveClass("dark");
   });
+
+  it("toggles to whichever theme is not showing, starting from the system's", () => {
+    setSystemDark(true);
+    const { result } = renderHook(() => useTheme());
+    expect(result.current.dark).toBe(true);
+    act(() => result.current.toggle());
+    expect(result.current.theme).toBe("light");
+    expect(root).not.toHaveClass("dark");
+    act(() => result.current.toggle());
+    expect(root).toHaveClass("dark");
+  });
 });

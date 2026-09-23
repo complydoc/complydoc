@@ -8,7 +8,7 @@ import { ReportView } from "./ReportView";
 
 /** Shows the opened report, or the way to open one. */
 export function App() {
-  const { theme, setTheme } = useTheme();
+  const { dark, toggle } = useTheme();
   const { state, openFile, openText, close } = useReportFile(embeddedReport);
 
   const openSample = useCallback(
@@ -22,9 +22,11 @@ export function App() {
   return (
     <TooltipProvider>
       {state.status === "ready" ? (
-        <ReportView report={state.report} name={state.name} theme={theme} onTheme={setTheme} onClose={close} />
+        <ReportView report={state.report} name={state.name} dark={dark} onToggleTheme={toggle} onClose={close} />
       ) : (
         <OpenReport
+          dark={dark}
+          onToggleTheme={toggle}
           onFile={openFile}
           onSample={openSample}
           error={state.status === "error" ? `${state.name}: ${state.message}` : undefined}
