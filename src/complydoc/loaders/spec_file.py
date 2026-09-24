@@ -115,8 +115,14 @@ def build_loaders(spec: ComparisonFile) -> dict[str, Any]:
     return built
 
 
-def compare_from_file(path: str | os.PathLike[str], *, config: Config | None = None) -> AuditReport:
-    """Run the comparison a file describes."""
+def compare_from_file(
+    path: str | os.PathLike[str],
+    *,
+    config: Config | None = None,
+    verify_with: str | None = None,
+    verify_scope: str = "flagged",
+) -> AuditReport:
+    """Run the comparison a file describes, verified by a vision model when one is named."""
     source = Path(path).expanduser().resolve()
     spec = read_comparison_file(source)
 
@@ -135,4 +141,6 @@ def compare_from_file(path: str | os.PathLike[str], *, config: Config | None = N
         facts=spec.facts or None,
         fact_threshold=spec.fact_threshold,
         cache_dir=resolve(spec.cache_dir) if spec.cache_dir else None,
+        verify_with=verify_with,
+        verify_scope=verify_scope,
     )

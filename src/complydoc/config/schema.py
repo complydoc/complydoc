@@ -358,6 +358,19 @@ class RoutingConfig(_Base):
     """OCR confidence below which the recognised characters are not the page's."""
     vision_for_complex_tables: bool = True
     """Send a page with merged or stacked header cells to a vision model."""
+    verify_min_coverage_pct: float = Field(default=90.0, ge=0.0, le=100.0)
+    """Share of a vision reading's words the kept reading must hold for a page to agree.
+
+    Only used by `--verify`. Below it, the vision model read something on the
+    page the kept reading does not have, and the page is reported as disagreeing.
+    """
+    verify_missing_words: int = Field(default=4, ge=1)
+    """Consecutive words the vision reading has and the kept one lacks that make a page disagree.
+
+    A share alone lets a whole sentence go missing from a long page. Scattered
+    single words are a transcription's noise; a run of them is a phrase the kept
+    reading does not have.
+    """
 
 
 class ReadinessConfig(_Base):

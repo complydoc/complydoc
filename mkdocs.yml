@@ -99,6 +99,7 @@ nav:
   - Guides:
       - Audit a folder: guides/audit-a-folder.md
       - Page routing: guides/routing.md
+      - Verifying pages with a vision model: guides/verify-with-vision.md
       - Python API: guides/python-api.md
       - Extracting masked text: guides/extract-masked-text.md
       - Inspecting a loader: guides/inspect-a-loader.md

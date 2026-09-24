@@ -45,13 +45,22 @@ def _content_sent_off_machine(run: RunMetadata) -> list[Limitation]:
     limitations: list[Limitation] = []
 
     if run.content_sent_to:
+        what = (
+            "Page images or text from these documents were sent to"
+            if run.verify_model
+            else "Text from these documents was sent to"
+        )
+        who = (
+            "A vision model or classifier registered against a hosted service read "
+            "what it was given"
+            if run.verify_model
+            else "A classifier registered against a hosted service read the passages it judged"
+        )
         limitations.append(
             Limitation(
                 area="Content sent off this machine",
                 statement=(
-                    f"Text from these documents was sent to "
-                    f"{', '.join(sorted(run.content_sent_to))}. A classifier registered "
-                    f"against a hosted service read the passages it judged, so the "
+                    f"{what} {', '.join(sorted(run.content_sent_to))}. {who}, so the "
                     f"guarantee that nothing leaves this machine does not hold for this "
                     f"run. Everything else in it stayed here."
                 ),
@@ -126,6 +135,150 @@ def _worker_restarts(run: RunMetadata) -> list[Limitation]:
                     f"for those documents come from a single process."
                 ),
                 severity="info",
+            )
+        )
+
+    return limitations
+
+
+def _pages_with(documents: list[DocumentReport], status: str) -> tuple[int, list[str]]:
+    """How many verified pages have `status`, and in which documents."""
+    total = 0
+    affected: list[str] = []
+    for document in documents:
+        if document.verification is None:
+            continue
+        found = document.verification.count(status)
+        if found:
+            total += found
+            affected.append(document.relative_path)
+    return total, affected
+
+
+def _verification(run: RunMetadata, documents: list[DocumentReport]) -> list[Limitation]:
+    """What a vision read of the pages covered, and what it could not settle."""
+    limitations: list[Limitation] = []
+    verified = [d for d in documents if d.verification is not None]
+    if run.verify_model is None or not verified:
+        return limitations
+    model = run.verify_model
+
+    disagree, affected = _pages_with(verified, "disagrees")
+    if disagree:
+        limitations.append(
+            Limitation(
+                area="Pages a vision model read differently",
+                statement=(
+                    f"{model} read words on {count(disagree, 'page')} that the kept reading "
+                    f"does not have. Every finding on those pages was made from the kept "
+                    f"reading, so what is missing from it was never scanned. The Documents "
+                    f"page puts the two readings side by side."
+                ),
+                affected=affected,
+                severity="important",
+            )
+        )
+
+    filled, affected = _pages_with(verified, "filled")
+    if filled:
+        limitations.append(
+            Limitation(
+                area="Pages read only by a vision model",
+                statement=(
+                    f"{count(filled, 'page')} had no usable reading, so {model}'s reading "
+                    f"became their text and was scanned. A vision model's transcription is "
+                    f"a judgement, not a text layer: nothing checked it against another reader."
+                ),
+                affected=affected,
+                severity="important",
+            )
+        )
+
+    failed, affected = _pages_with(verified, "failed")
+    if failed:
+        limitations.append(
+            Limitation(
+                area="Vision calls that failed",
+                statement=(
+                    f"{model} raised on {count(failed, 'page')}, so those pages were not "
+                    f"checked. They are missing from the comparison, not in agreement with it."
+                ),
+                affected=affected,
+                severity="important",
+            )
+        )
+
+    drawn, affected = _pages_with(verified, "not_rendered")
+    if drawn:
+        limitations.append(
+            Limitation(
+                area="Pages that could not be drawn",
+                statement=(
+                    f"{count(drawn, 'page')} could not be rendered as an image, so no vision "
+                    f"model saw them. Only PDFs and image files on disk can be drawn."
+                ),
+                affected=affected,
+            )
+        )
+
+    if run.verify_scope == "flagged":
+        checked = sum(
+            1
+            for d in verified
+            if d.verification
+            for page in d.verification.pages
+            if page.status != "not_rendered"
+        )
+        total = sum(d.verification.pages_total for d in verified if d.verification)
+        if checked < total:
+            limitations.append(
+                Limitation(
+                    area="Pages not read again",
+                    statement=(
+                        f"Only the pages routing flagged were read again: {checked} of "
+                        f"{count(total, 'page')}. A page that measured fine and was read "
+                        f"wrongly anyway was not checked. --verify-scope all reads every page."
+                    ),
+                )
+            )
+
+    unreadable = [
+        f"{d.relative_path} p{number}"
+        for d in verified
+        if d.verification
+        for number in d.verification.unreadable_pages
+    ]
+    if unreadable:
+        limitations.append(
+            Limitation(
+                area="Pages with nothing on them to read",
+                statement=(
+                    f"{count(len(unreadable), 'page')} carried no text and no image, known "
+                    f"before any model was called. Blank pages, or text drawn as vector "
+                    f"shapes, which only a vision read recovers."
+                ),
+                affected=unreadable,
+            )
+        )
+
+    unpriced = sorted(
+        {
+            page.cost.model or model
+            for d in verified
+            if d.verification
+            for page in d.verification.pages
+            if page.cost is not None and page.cost.basis == "unpriced"
+        }
+    )
+    if unpriced:
+        limitations.append(
+            Limitation(
+                area="Vision reads with no price",
+                statement=(
+                    f"No price is known for {', '.join(unpriced)}, so what the vision reads "
+                    f"cost is not stated. Return usd or token counts from the model, or add "
+                    f"it to pricing.yaml."
+                ),
             )
         )
 
@@ -676,6 +829,7 @@ def build_limitations(
         *_classifier_failures(run),
         *_classifier_and_workers(run),
         *_worker_restarts(run),
+        *_verification(run, documents),
         *_extractor_disagreement(documents),
         *_hidden_content(run, documents),
         *_imported_prices(documents),

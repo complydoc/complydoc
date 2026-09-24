@@ -28,6 +28,8 @@ on it.
 Nothing here reaches the network. The guard is armed for the duration of each
 audit and the socket module is restored afterwards, so an audit cannot leak a
 document and cannot break a host application that needs the network of its own.
+The two exceptions are code you bring yourself — a classifier, or a vision model
+passed as `verify_with` — and the report names every host either one reached.
 """
 
 from __future__ import annotations

@@ -38,16 +38,20 @@ __all__ = [
     "ContentFinding",
     "DocumentReport",
     "DocumentTiming",
+    "DocumentVerification",
     "ExtractorReading",
     "FactCheck",
     "IdentifierDifference",
     "Limitation",
     "LoaderComparison",
     "PageText",
+    "PageVerification",
+    "ReadingCost",
     "RunMetadata",
+    "VerificationSummary",
 ]
 
-SCHEMA_VERSION = 15
+SCHEMA_VERSION = 16
 
 
 def report_shape() -> dict[str, object]:
@@ -70,6 +74,7 @@ def report_shape() -> dict[str, object]:
             "loader",
             "loader_comparison",
             "routing",
+            "verification",
             "limitations",
             "staleness_warnings",
             "signal_weights",
@@ -78,7 +83,12 @@ def report_shape() -> dict[str, object]:
         "run": {
             "components_run": "list of cost | readiness | sensitive",
             "offline_guard": "armed | not_armed",
-            "content_sent_to": "hosts sent document text, empty unless a hosted classifier ran",
+            "content_sent_to": (
+                "hosts sent document text or page images, empty unless a hosted "
+                "classifier or a vision model ran"
+            ),
+            "verify_model": "the vision reader pages were checked against, null unless --verify",
+            "verify_scope": "flagged | all, null unless --verify",
             "classifier_missed_workers": "documents a registered classifier could not reach",
             "classifier_calls": "calls a registered classifier made, 0 unless one ran",
             "classifier_failures": "of those, calls that raised and so produced no score",
@@ -116,6 +126,18 @@ def report_shape() -> dict[str, object]:
                 "model rather than a pattern read it"
             ),
             "extractions[]": "one per reader asked for; the first is the one kept",
+            "extracted_text[].costs": (
+                "reader -> usd, basis (local | actual | estimated | unpriced), model, "
+                "input_tokens, output_tokens: what each reading of the page cost"
+            ),
+            "extracted_text[].vision_estimate": (
+                "what the cheapest priced vision model would cost for this page, estimated"
+            ),
+            "verification": (
+                "null unless --verify: model, scope, pages[] (number, status: agrees | "
+                "disagrees | filled | failed | not_rendered, why, similarity, coverage, "
+                "missing, cost), unreadable_pages[], sent_to[]"
+            ),
             "metadata_findings[]": "key, category, severity, evidence, masked (from metadata)",
             "content_findings[]": (
                 "page, visibility (visible | not_measured | suspected | confirmed), "
@@ -154,6 +176,11 @@ def report_shape() -> dict[str, object]:
         "aggregate": (
             "folder totals: cost, signal_distribution, sensitive_by_category, "
             "content_matrix (instruction -> visibility -> passages)"
+        ),
+        "verification": (
+            "null unless --verify: model, scope, min_coverage, pages_total, pages_checked, "
+            "pages_agree, pages_disagree, pages_filled, pages_failed, pages_unreadable, "
+            "usd, usd_basis, headline"
         ),
         "limitations[]": "area, statement, affected[], severity (info | important)",
     }
@@ -408,6 +435,13 @@ class RunMetadata:
     """
     classifier_calls: int = 0
     """Calls a registered classifier made during this run, across every process."""
+    verify_model: str | None = None
+    """The vision reader every checked page was read with again, by its reading name.
+
+    None for a run that verified nothing, which is every run without `--verify`.
+    """
+    verify_scope: str | None = None
+    """`flagged` for the pages routing marked, `all` for every page."""
     classifier_failures: int = 0
     """Of those, the calls that raised and so produced no score.
 
@@ -430,6 +464,28 @@ class DocumentTiming:
 
 
 @dataclass(frozen=True, slots=True)
+class ReadingCost:
+    """What one reading of one page cost to make.
+
+    A reader that runs on this machine — a text-layer library, local OCR — costs
+    machine time and no money, and says so as `local` rather than borrowing a
+    price to look comparable. A hosted reader is `actual` when the provider's
+    own token count came back with the reading, `estimated` when the figure is
+    worked out from the page's size and the price table, and `unpriced` when
+    no price for it is known.
+    """
+
+    usd: float | None
+    """None when the reader is `unpriced`."""
+    basis: str
+    """`local`, `actual`, `estimated` or `unpriced`."""
+    model: str | None = None
+    """The priced model the figure is for, where there is one."""
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class PageText:
     """The text read off one page, for checking extraction quality."""
 
@@ -441,6 +497,92 @@ class PageText:
     truncated: bool = False
     readings: dict[str, str] = field(default_factory=dict)
     """What each reader compared on this run made of the page, by name."""
+    kept: str = ""
+    """The reader whose text `text` is. Empty where the run could not tell."""
+    costs: dict[str, ReadingCost] = field(default_factory=dict)
+    """What each reading of this page cost, keyed like `readings`, with the kept one."""
+    vision_estimate: ReadingCost | None = None
+    """What sending this page to the cheapest priced vision model would cost.
+
+    Estimated from the page's size at the run's headline resolution. Set where
+    the run priced models, whether or not a vision model read the page, so the
+    reading kept can be weighed against what a vision read would have cost.
+    """
+
+
+@dataclass(frozen=True, slots=True)
+class PageVerification:
+    """One page read again by a vision model, and whether the two readings agree."""
+
+    number: int
+    status: str
+    """`agrees`, `disagrees`, `filled` (no usable reading, so the vision one was
+    kept), `failed` (the model raised) or `not_rendered` (no picture of the page
+    could be made)."""
+    why: str
+    """Why this page was checked."""
+    similarity: float | None = None
+    """How closely the two readings match word for word, in order, 0 to 1."""
+    coverage: float | None = None
+    """Share of the vision reading's words that are in the kept reading, 0 to 1.
+
+    What decides agreement. A vision model lays a page out its own way — table
+    pipes, headings, a different line order — so an in-order score is low
+    between two readings holding the same content. Coverage asks the question
+    that matters here: is there anything on the page the kept reading lacks.
+    """
+    missing: str = ""
+    """What the vision reading has that the kept one does not, longest run first,
+    masked unless the run used `reveal`, cut at 240 characters."""
+    cost: ReadingCost | None = None
+    error: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class DocumentVerification:
+    """Every page of one document a vision model read again, and what it found."""
+
+    model: str
+    """The reading's name, `vision:` and the model."""
+    scope: str
+    """`flagged` or `all`."""
+    pages_total: int
+    pages: list[PageVerification] = field(default_factory=list)
+    unreadable_pages: list[int] = field(default_factory=list)
+    """Pages with no text and no image on them, known before any model was called."""
+    sent_to: list[str] = field(default_factory=list)
+    """Hosts the page images went to, as the network guard recorded them."""
+
+    def count(self, status: str) -> int:
+        return sum(1 for page in self.pages if page.status == status)
+
+    @property
+    def usd(self) -> float | None:
+        values = [p.cost.usd for p in self.pages if p.cost is not None and p.cost.usd is not None]
+        return round(sum(values), 6) if values else None
+
+
+@dataclass(frozen=True, slots=True)
+class VerificationSummary:
+    """The folder against an independent vision read: pages checked, and pages that disagree."""
+
+    model: str
+    scope: str
+    min_coverage: float
+    """Coverage at or above which a page agrees, 0 to 1."""
+    documents: int
+    pages_total: int
+    pages_checked: int
+    pages_agree: int
+    pages_disagree: int
+    pages_filled: int
+    pages_failed: int
+    pages_unreadable: int
+    usd: float | None
+    usd_basis: str
+    """`actual`, `estimated`, `mixed`, or `unpriced` when no page carried a price."""
+    headline: str
+    """One sentence a person reads first, such as "3 of 80 pages disagree"."""
 
 
 _SIMILAR_ENOUGH = 0.95
@@ -497,6 +639,8 @@ class DocumentReport:
     """Identifiers in the metadata a loader returned. Empty for files read directly."""
     content_findings: list[ContentFinding] = field(default_factory=list)
     """Hidden passages and instruction-like text. See `complydoc.hidden`."""
+    verification: DocumentVerification | None = None
+    """Pages read again by a vision model. None unless the run used `--verify`."""
     visibility_checked: bool | None = None
     """Whether hidden text could be checked for. None when the scan did not run."""
     visibility_note: str | None = None
@@ -629,6 +773,8 @@ class AuditReport:
     routing: RoutingSummary | None = None
     """Pages per route for the folder, and what that mix costs. See
     `complydoc.report.routing`."""
+    verification: VerificationSummary | None = None
+    """How many pages an independent vision read agreed with. None unless `--verify`."""
 
     def to_pandas(self, table: str = "documents") -> Any:
         """One table of this report as a pandas DataFrame.

@@ -143,6 +143,7 @@ from complydoc.report.models import (
 from complydoc.report.pages import write_chunks_html, write_diff_html
 from complydoc.sensitive.base import Detector, DetectorContext, Finding
 from complydoc.sensitive.registry import register as register_detector
+from complydoc.verification.vision import VisionModel, VisionPage, VisionReading
 
 if TYPE_CHECKING:
     from complydoc.config.schema import Config
@@ -204,6 +205,9 @@ __all__ = [
     "TextResult",
     "TextScan",
     "UnknownModelError",
+    "VisionModel",
+    "VisionPage",
+    "VisionReading",
     "aiter_audit",
     "all_engines",
     "all_extractors",
@@ -280,6 +284,18 @@ class AuditOptions(TypedDict, total=False):
     who knows their process needs the network while this runs."""
     progress: Callable[[int, int, Path], None] | None
     """Called with (finished, total, path) as each document completes."""
+    verify_with: VisionModel | str | None
+    """Read pages again with a vision model of your own, and report where it disagrees.
+
+    A callable taking a `VisionPage` and returning a `VisionReading` or the
+    text, or a `"vision:module:function"` spec naming a factory for one. The
+    page images go wherever that code sends them, and the report names the
+    hosts. A callable keeps the run in one process; a spec crosses into
+    workers. Nothing is verified by default.
+    """
+    verify_scope: Literal["flagged", "all"]
+    """`flagged`, the default: the pages routing sent to vision, the pages with no
+    usable reading, and the pages two readers disagreed about. `all`: every page."""
 
 
 def _audit(
@@ -314,6 +330,8 @@ def _audit(
             jobs=options.get("jobs", 1),
             sample=options.get("sample"),
             timeout=options.get("timeout"),
+            verify_with=options.get("verify_with"),
+            verify_scope=options.get("verify_scope", "flagged"),
             progress=options.get("progress"),
         )
 

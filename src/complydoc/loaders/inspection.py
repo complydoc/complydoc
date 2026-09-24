@@ -48,7 +48,14 @@ from pathlib import Path, PurePath
 from typing import TYPE_CHECKING, Any
 
 from complydoc import __version__, offline
-from complydoc.audit.run import COMPONENTS, Work, assemble_report, build_entry, ner_available
+from complydoc.audit.run import (
+    COMPONENTS,
+    Work,
+    assemble_report,
+    build_entry,
+    ner_available,
+    verification_hosts,
+)
 from complydoc.config.loader import load_config
 from complydoc.config.schema import Config
 from complydoc.cost.estimator import resolve_models
@@ -195,8 +202,17 @@ def inspect_run(
     extracted_text: bool,
     models: Sequence[str] | None,
     allow_network: bool,
+    verify: bool = False,
+    verify_scope: str = "flagged",
 ) -> Inspection:
-    """Run the loader and build a report entry for each document it returned."""
+    """Run the loader and build a report entry for each document it returned.
+
+    With `verify`, each page is read again by the vision model registered in
+    this process, rendered from the file the loader's metadata names.
+    """
+    from complydoc.report.models import ReadingCost
+    from complydoc.verification.vision import model_name, registered_vision_model
+
     if isinstance(source, (str, bytes, os.PathLike)):
         raise TypeError(
             "inspect_documents takes documents or a loader; use full_audit to audit files on disk"
@@ -213,9 +229,11 @@ def inspect_run(
         )
 
         root = _common_root([document.path for document in documents])
+        vision = registered_vision_model() if verify else None
         work = Work(
             config=settings,
-            options=IngestOptions(),
+            # The loader is the reader whose text each page keeps.
+            options=IngestOptions(extractor=loader_run.name),
             target=root or Path(loader_run.name),
             requested=tuple(components),
             reveal=reveal,
@@ -228,6 +246,8 @@ def inspect_run(
                 else None
             ),
             today=dt.date.today(),
+            verifying=vision is not None,
+            verify_scope=verify_scope,
         )
 
         entries: list[DocumentReport] = []
@@ -237,6 +257,11 @@ def inspect_run(
             entry = build_entry(document, work, 0.0, relative)
             entry.metadata_findings = findings.get(str(document.path), [])
             entry.path_exposures = exposures.get(str(document.path), [])
+            if allow_network:
+                # A loader let onto the network may be a hosted parser with a
+                # bill of its own, which nothing here can see.
+                for page in entry.extracted_text:
+                    page.costs[loader_run.name] = ReadingCost(None, "unpriced")
             entries.append(entry)
             page_text[str(document.path)] = {
                 page.number: page.text or page.ocr_text for page in document.pages
@@ -263,6 +288,9 @@ def inspect_run(
             python_version=platform.python_version(),
             monthly_volume=None,
             extractor=loader_run.name,
+            content_sent_to=verification_hosts(entries),
+            verify_model=f"vision:{model_name(vision)}" if vision is not None else None,
+            verify_scope=verify_scope if vision is not None else None,
         )
 
     return Inspection(settings, tuple(components), entries, run, loader_run, page_text)

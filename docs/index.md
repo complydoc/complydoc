@@ -50,7 +50,7 @@ cd.write_html(report, "report.html")
 ## Output
 
 An HTML report and a JSON file with the same data. The JSON carries
-`schema_version`, currently 15. Identifiers are masked everywhere in both,
+`schema_version`, currently 16. Identifiers are masked everywhere in both,
 including the page text, unless the run used `--reveal`; `--page-images` adds a
 picture of each page, which shows them.
 

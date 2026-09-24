@@ -82,6 +82,19 @@ class ModelCostEstimate:
     batch_vision_input_usd_by_resolution: dict[str, float] = field(default_factory=dict)
     price_source: str = "verified"
     imported_on: dt.date | None = None
+    vision_tokens_by_page: dict[str, list[int]] = field(default_factory=dict)
+    """Image tokens for each page, in page order, per resolution.
+
+    The document totals above are these summed. Kept so one page can be priced
+    on its own: beside a reading of that page, what a vision read of it costs.
+    """
+
+    def vision_page_usd(self, resolution: str, index: int) -> float | None:
+        """What sending the page at `index` costs at `resolution`. None where it was not costed."""
+        tokens = self.vision_tokens_by_page.get(resolution)
+        if tokens is None or not 0 <= index < len(tokens):
+            return None
+        return tokens[index] / 1_000_000 * self.input_per_mtok_usd
 
 
 @dataclass(frozen=True, slots=True)
@@ -199,6 +212,7 @@ def _model_estimate(
 
     vision_tokens_by: dict[str, int] = {}
     vision_cost_by: dict[str, float] = {}
+    vision_by_page: dict[str, list[int]] = {}
     vision_unavailable: str | None = None
     formula = pricing.vision_formulas.get(model.vision_formula or "")
 
@@ -219,7 +233,9 @@ def _model_estimate(
         )
     else:
         for name in pricing.resolution_presets:
-            total = sum(vision_tokens(fact.rendered[name], formula) for fact in facts)
+            per_page = [vision_tokens(fact.rendered[name], formula) for fact in facts]
+            total = sum(per_page)
+            vision_by_page[name] = per_page
             vision_tokens_by[name] = total
             vision_cost_by[name] = total / 1_000_000 * price
 
@@ -259,6 +275,7 @@ def _model_estimate(
         batch_vision_input_usd_by_resolution=batch_vision,
         price_source=model.price_source,
         imported_on=model.imported_on,
+        vision_tokens_by_page=vision_by_page,
     )
 
 

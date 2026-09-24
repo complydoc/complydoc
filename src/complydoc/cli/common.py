@@ -46,6 +46,8 @@ __all__ = [
     "SaveTextOpt",
     "TargetArg",
     "TimeoutOpt",
+    "VerifyOpt",
+    "VerifyScopeOpt",
     "app",
     "console",
     "emit",
@@ -207,6 +209,24 @@ ClassifierThresholdOpt = Annotated[
         "--classifier-threshold",
         help="Score at or above which a passage is reported, 0 to 1. Defaults to the "
         "value in hidden.yaml, except for 'jev', which uses the 0.5 measured for it.",
+    ),
+]
+VerifyOpt = Annotated[
+    str | None,
+    typer.Option(
+        "--verify",
+        help="Read pages again with a vision model of your own, 'vision:module:function', "
+        "and report where it disagrees with the text kept. Your code makes the call with "
+        "your key, and SENDS EACH PAGE IMAGE to wherever it calls; the report names the "
+        "hosts. Nothing is verified by default.",
+    ),
+]
+VerifyScopeOpt = Annotated[
+    str,
+    typer.Option(
+        "--verify-scope",
+        help="Which pages --verify reads: 'flagged' (routing sent them to vision, they had "
+        "no usable reading, or two readers disagreed) or 'all' (every page).",
     ),
 ]
 QuietOpt = Annotated[bool, typer.Option("--quiet", "-q", help="Suppress progress output.")]

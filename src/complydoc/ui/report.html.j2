@@ -642,6 +642,50 @@ name and directory layout it came from.</p>
 </div>
 {% endif %}
 
+{% if report.verification %}
+{# Every page read again by a vision model the caller brought, and where it
+   found words the kept reading does not have. #}
+{% set vs = report.verification %}
+<div class="loaders">
+<h2>Vision verification</h2>
+<p class="verdict"><strong>{{ vs.headline }}.</strong></p>
+<p class="note">Read again with <span class="mono">{{ vs.model }}</span>:
+  {{ "every page" if vs.scope == "all" else "the pages routing flagged, the pages with no usable
+  reading, and the pages two readers disagreed about" }}. A page agrees when the kept reading
+  holds {{ "{:.0f}%".format(vs.min_coverage * 100) }} of the words the model read, in any order.
+  {% if vs.usd is not none %}The reads cost {{ "$%.4f" | format(vs.usd) }}{% if vs.usd_basis ==
+  "actual" %}, from the provider's token counts{% elif vs.usd_basis == "estimated" %}, estimated
+  from the page sizes{% else %}, partly estimated{% endif %}.{% else %}No price is known for the
+  model.{% endif %}</p>
+{% set vrows = [] %}
+{% for doc in report.documents if doc.verification %}
+  {% for p in doc.verification.pages if p.status != "agrees" %}
+    {% set _ = vrows.append((doc, p)) %}
+  {% endfor %}
+{% endfor %}
+{% if vrows %}
+<div class="scroll"><table class="sortable">
+  <thead><tr><th data-sort="text">Document</th><th class="n" data-sort="num">Page</th>
+    <th>Result</th><th class="n">Words matched</th><th class="n">Cost</th>
+    <th>What the kept reading lacks</th></tr></thead>
+  <tbody>
+  {% for doc, p in vrows %}
+    <tr><td class="mono">{{ doc.relative_path }}</td><td class="n">{{ p.number }}</td>
+      <td>{% if p.status == "disagrees" %}<span class="attn">disagrees</span>{% elif p.status ==
+        "filled" %}only the vision model read it{% elif p.status == "failed" %}<span
+        class="attn">call failed</span>{% else %}could not be drawn{% endif %}<br><span
+        class="why">{{ p.why }}</span></td>
+      <td class="n">{{ "—" if p.coverage is none else "{:.0f}%".format(p.coverage * 100) }}</td>
+      <td class="n">{{ "—" if not p.cost or p.cost.usd is none else "$%.4f" | format(p.cost.usd) }}</td>
+      <td>{% if p.missing %}<span class="near">&ldquo;{{ p.missing }}&rdquo;</span>{% elif
+        p.error %}<span class="why">{{ p.error }}</span>{% elif p.status == "disagrees"
+        %}the model read nothing on a page the kept reading has text for{% endif %}</td></tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% endif %}
+</div>
+{% endif %}
 
 <div class="explorer" id="explorer">
   <aside class="files">
@@ -727,7 +771,8 @@ name and directory layout it came from.</p>
         {% endif %}
         {% for row in rows %}
           {#- Named after the reader the report was built from, when several were compared. -#}
-          {%- set kept_label = (report.run.extractor if row.readings and row.source != "ocr"
+          {%- set kept_label = (row.kept if row.source == "vision"
+                                else report.run.extractor if row.readings and row.source != "ocr"
                                 else ("what OCR read" if row.source == "ocr" else "text layer")) -%}
           {#- A loader returns words without their positions, so there is no layout to
               draw. Where another reader read the same page, the space the layout would
@@ -813,7 +858,12 @@ name and directory layout it came from.</p>
                 {% if body is string %}
                   <div class="body"><pre>{{ body }}</pre></div>
                   <p class="pcap">{{ "{:,}".format(body | length) }} characters, {{ label }}
-                    {%- if loop.first and row.truncated %}, truncated for the report{% endif %}</p>
+                    {%- if loop.first and row.truncated %}, truncated for the report{% endif %}
+                    {%- set cost = row.costs.get(row.kept if loop.first else key) %}
+                    {%- if cost %} · {{ reading_cost(cost) }}{% endif %}
+                    {%- if loop.first and row.vision_estimate and not row.source == "vision"
+                           and not row.costs.get(report.run.verify_model or "") %} · a vision read
+                      of this page: {{ reading_cost(row.vision_estimate) }}{% endif %}</p>
                 {% else %}
                   <div class="body"><pre class="dif">{% for seg in body.segments -%}
 {%- if seg.kind == "same" %}{{ seg.text }}{% else %}<mark
@@ -826,7 +876,8 @@ name and directory layout it came from.</p>
                       {{ "{:.0f}%".format(body.similarity * 100) }} the same
                     {% else %}the same words as {{ kept_label }}, differently spaced{% endif %}
                     {%- if body.truncated %}, compared up to the first few thousand words
-                    {%- endif %}</p>
+                    {%- endif %}
+                    {%- if row.costs.get(label) %} · {{ reading_cost(row.costs[label]) }}{% endif %}</p>
                 {% endif %}
                 </div>
                 {% endfor %}

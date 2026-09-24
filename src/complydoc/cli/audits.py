@@ -53,6 +53,8 @@ from complydoc.cli.common import (
     SaveTextOpt,
     TargetArg,
     TimeoutOpt,
+    VerifyOpt,
+    VerifyScopeOpt,
     app,
     console,
     emit,
@@ -65,6 +67,7 @@ from complydoc.cost.estimator import UnknownModelError
 from complydoc.report.json_writer import Detail
 from complydoc.report.models import AuditReport
 from complydoc.utils.text import count
+from complydoc.verification.vision import VERIFY_SCOPES, VisionError
 
 __all__ = ["run", "summary", "watching"]
 
@@ -160,11 +163,26 @@ def summary(report: AuditReport) -> None:
         table.add_row("Unread pages", f"[yellow]{aggregate.pages_unreadable}[/]{why}")
     console.print(table)
 
+    verification = report.verification
+    if verification is not None:
+        spent = f" [dim]({_verification_cost(verification.usd, verification.usd_basis)})[/]"
+        colour = "yellow" if verification.pages_disagree or verification.pages_failed else "green"
+        console.print(f"[{colour}]{escape(verification.headline)}.[/]{spent}")
+        for document in report.documents:
+            v = document.verification
+            if v is None:
+                continue
+            disagreeing = [p.number for p in v.pages if p.status == "disagrees"]
+            if disagreeing:
+                pages = ", ".join(map(str, disagreeing))
+                console.print(f"  [dim]{escape(document.relative_path)}: pages {pages}[/]")
+
     if report.run.content_sent_to:
+        who = "A registered classifier" + (" or vision model" if verification else "")
         console.print(
-            f"[bold yellow]Text from these documents was sent to "
-            f"{', '.join(sorted(report.run.content_sent_to))}.[/] A registered classifier "
-            f"read the passages it judged; nothing else left this machine."
+            f"[bold yellow]Content from these documents was sent to "
+            f"{', '.join(sorted(report.run.content_sent_to))}.[/] {who} read what it was "
+            f"given; nothing else left this machine."
         )
     if report.run.classifier_failures:
         console.print(
@@ -188,6 +206,15 @@ def summary(report: AuditReport) -> None:
         )
     for warning in report.staleness_warnings:
         console.print(f"[yellow]Price provenance:[/] {warning}")
+
+
+def _verification_cost(usd: float | None, basis: str) -> str:
+    if usd is None:
+        return "no price known for the model"
+    label = {"actual": "from the provider's token counts", "estimated": "estimated"}.get(
+        basis, basis
+    )
+    return f"${usd:,.4f}, {label}"
 
 
 @contextlib.contextmanager
@@ -264,6 +291,8 @@ def run(
     classifier: str | None = None,
     classifier_threshold: float | None = None,
     detail: ReportDetail = ReportDetail.summary,
+    verify: str | None = None,
+    verify_scope: str = "flagged",
 ) -> None:
     """Audit `target` and write the reports: what every audit command does."""
     offline.arm()
@@ -279,6 +308,20 @@ def run(
     if not target.exists():
         errors.print(f"[bold red]No such path:[/] {target}")
         raise typer.Exit(code=2)
+
+    if verify_scope not in VERIFY_SCOPES:
+        errors.print(
+            f"[bold red]--verify-scope must be {' or '.join(VERIFY_SCOPES)}[/], not "
+            f"{escape(verify_scope)}"
+        )
+        raise typer.Exit(code=2)
+    if verify is not None:
+        which = "every page" if verify_scope == "all" else "the pages routing flagged"
+        errors.print(
+            f"[bold yellow]--verify {escape(verify)} is your own code.[/] It is given an "
+            f"image of {which} and sends it wherever it calls; the report names every host "
+            f"it reached."
+        )
 
     if reveal:
         errors.print(
@@ -322,10 +365,15 @@ def run(
                     sample=sample,
                     timeout=timeout,
                     classifier_spec=classifier,
+                    verify_with=verify,
+                    verify_scope=verify_scope,
                     progress=progress,
                 )
     except ClassifierError as exc:
         errors.print(f"[bold red]Cannot use that classifier[/] — {escape(str(exc))}")
+        raise typer.Exit(code=2) from exc
+    except VisionError as exc:
+        errors.print(f"[bold red]Cannot use that vision model[/] — {escape(str(exc))}")
         raise typer.Exit(code=2) from exc
     except UnknownModelError as exc:
         errors.print(f"[bold red]Unknown model[/] — {escape(str(exc))}")
@@ -379,6 +427,8 @@ def audit(
     quiet: QuietOpt = False,
     classifier: ClassifierOpt = None,
     classifier_threshold: ClassifierThresholdOpt = None,
+    verify: VerifyOpt = None,
+    verify_scope: VerifyScopeOpt = "flagged",
 ) -> None:
     """Run every check: cost, readiness, identifiers and hidden content."""
     run(
@@ -410,6 +460,8 @@ def audit(
         classifier=classifier,
         classifier_threshold=classifier_threshold,
         detail=detail,
+        verify=verify,
+        verify_scope=verify_scope,
     )
 
 

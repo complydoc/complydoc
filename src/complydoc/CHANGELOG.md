@@ -6,7 +6,31 @@ versioned separately.
 
 ## [Unreleased]
 
+`schema_version` is now 16. Every field it adds is new; reports of schema 15 still read.
+
 ### Added
+
+- `--verify vision:module:function` reads pages again from their images with a vision
+  model of your own, and reports where it read words the kept reading lacks: "3 of 80
+  pages disagree", each page with what is missing, in `verification` and
+  `documents[].verification`. `--verify-scope flagged`, the default, reads the pages
+  routing sent to vision, the pages with no usable reading and the pages two readers
+  disagreed about; `--verify-scope all` reads every page. A page no other reader could
+  read takes the vision reading as its text and is scanned. Also `verify_with=` on
+  `full_audit` and the other audits, and on `compare_loaders`, with `VisionModel`,
+  `VisionPage` and `VisionReading` exported. complydoc runs no model and holds no key;
+  the page images go wherever your code sends them, and the report names every host.
+  See the Verifying pages with a vision model guide.
+
+- Every reading of a page carries what it cost, in `extracted_text[].costs`: free for a
+  reader that ran on the machine, the provider's token counts for a vision model, a
+  parser preset's per-page price. `extracted_text[].vision_estimate` says what a vision
+  read of the page would cost, and `cost.models[].vision_tokens_by_page` keeps the
+  per-page figures the document totals were summed from.
+
+- The viewer reads schema 16: each reading's cost in the page comparison's picker and
+  badge, what a vision read would cost beside the kept reading, a Vision check section
+  and column on the Documents page, and a note on each page the check disputed.
 
 - A React viewer for the JSON report, in `viewer/`: Summary, Security, Cost and
   Documents pages, every finding linked to where it sits, and a document's pages beside

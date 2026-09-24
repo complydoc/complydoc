@@ -25,7 +25,7 @@ from complydoc.report.charts import (
     readiness_donut_svg,
 )
 from complydoc.report.diffing import ReadingDiff, compare_readings
-from complydoc.report.models import AuditReport, DocumentReport
+from complydoc.report.models import AuditReport, DocumentReport, ReadingCost
 from complydoc.report.overall import overall_readiness
 from complydoc.report.preview import Box, PagePreview
 from complydoc.report.quickwins import quick_wins
@@ -114,6 +114,9 @@ class PageRow:
     truncated: bool = False
     readings: dict[str, str] = field(default_factory=dict)
     """What each reader compared on this run made of the page, by name."""
+    kept: str = ""
+    costs: dict[str, ReadingCost] = field(default_factory=dict)
+    vision_estimate: ReadingCost | None = None
 
     diffs: list[ReadingDiff] = field(default_factory=list)
     """Every other reader's version of this page, against the kept one.
@@ -154,6 +157,9 @@ def page_rows(document: DocumentReport) -> list[PageRow]:
                 characters=text.characters if text else 0,
                 truncated=bool(text and text.truncated),
                 readings=dict(text.readings) if text else {},
+                kept=text.kept if text else "",
+                costs=dict(text.costs) if text else {},
+                vision_estimate=text.vision_estimate if text else None,
                 diffs=_diffs_for(text),
             )
         )
@@ -168,6 +174,24 @@ def _diffs_for(text: object) -> list[ReadingDiff]:
     if not kept or not others:
         return []
     return compare_readings(kept, others)
+
+
+def reading_cost_label(cost: ReadingCost | None) -> str:
+    """A reading's cost as a person reads it, saying what kind of figure it is.
+
+    A local reader is free rather than $0.00: the two read the same in a column
+    of prices, and only one of them is true of a reader with no bill at all.
+    """
+    if cost is None:
+        return ""
+    if cost.basis == "local":
+        return "free, ran on this machine"
+    if cost.usd is None:
+        return "no price known"
+    figure = _money(cost.usd, places=4)
+    if cost.basis == "actual":
+        return f"{figure}, from the provider's token counts"
+    return f"about {figure}, estimated" + (f" for {cost.model}" if cost.model else "")
 
 
 def _money(value: float | None, currency: str = "USD", places: int | None = None) -> str:
@@ -337,6 +361,7 @@ def render_html(report: AuditReport, config: Config) -> str:
         logo_svg=LOGO_SVG,
         favicon_uri=FAVICON_URI,
         page_rows=page_rows,
+        reading_cost=reading_cost_label,
         sensitive_rows=sensitive_rows,
         money=lambda v: _money(v, currency),
         # One precision across a set of figures being compared with each other.

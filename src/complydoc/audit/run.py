@@ -61,8 +61,10 @@ from complydoc.report.models import (
     AuditReport,
     DocumentReport,
     DocumentTiming,
+    DocumentVerification,
     ExtractorReading,
     PageText,
+    ReadingCost,
     RunMetadata,
     build_aggregate,
 )
@@ -70,9 +72,19 @@ from complydoc.report.overall import overall_readiness
 from complydoc.report.preview import build_previews
 from complydoc.report.quickwins import quick_wins
 from complydoc.report.routing import summarise_routes
+from complydoc.report.verification import summarise_verification
 from complydoc.sensitive.base import SensitiveMatch
 from complydoc.sensitive.scanner import ScanResult, scan, scan_text
 from complydoc.utils.files import relative_to_root
+from complydoc.verification.check import verify_document
+from complydoc.verification.vision import (
+    VERIFY_SCOPES,
+    VisionModel,
+    model_name,
+    register_vision_model,
+    registered_vision_model,
+    resolve_vision,
+)
 
 __all__ = ["COMPONENTS", "resolve_jobs", "run_audit"]
 
@@ -180,6 +192,17 @@ class Work:
     A classifier is a function, and a function does not cross into a worker. Its
     name does, so each worker resolves and registers its own.
     """
+    verifying: bool = False
+    """Read pages again with the registered vision model."""
+    verify_spec: str | None = None
+    """The `vision:module:function` each worker resolves, as for `classifier`.
+
+    None with `verifying` set means a model object registered in this process,
+    which cannot cross, so the run is kept to this process.
+    """
+    verify_scope: str = "flagged"
+    resolution: str = "medium"
+    """The headline vision resolution: what a page is rendered at and priced at."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -261,7 +284,78 @@ def extractor_readings(document: Document) -> list[ExtractorReading]:
     return readings
 
 
-def _page_text(page: Page, scanned: ScanResult | None, work: Work) -> PageText:
+def _mask(text: str, work: Work, located: list[SensitiveMatch] | None = None) -> str:
+    """`text` with its identifiers covered, unless the run reveals them."""
+    # Imported here: extract builds on the audit, which builds on this module.
+    from complydoc.extraction.extract import mask_matches
+
+    if not text.strip():
+        return text
+    if located is None:
+        located, _unavailable = scan_text(text, work.config.sensitive, reveal=work.reveal)
+    if work.reveal:
+        located = [m for m in located if m.revealed is None]
+    return mask_matches(text, located)[0]
+
+
+_LOCAL = ReadingCost(0.0, "local")
+"""A reader that ran on this machine: machine time, and no bill."""
+
+
+def _kept_by(page: Page, work: Work, verification: DocumentVerification | None) -> str:
+    """The reader whose text a page kept."""
+    if page.text_source == "vision" and verification is not None:
+        return verification.model
+    if page.text_source == "ocr":
+        return ocr_module.engine_name()
+    if page.text_source in ("native", "loader"):
+        return work.options.extractor
+    return ""
+
+
+def _reading_costs(
+    page: Page, kept: str, verification: DocumentVerification | None
+) -> dict[str, ReadingCost]:
+    """What each reading of a page cost: nothing for a local reader, a price for vision."""
+    costs = dict.fromkeys(page.readings, _LOCAL)
+    if kept:
+        costs[kept] = _LOCAL
+    if page.ocr_text.strip():
+        costs["ocr"] = _LOCAL
+    if verification is not None:
+        for checked in verification.pages:
+            if checked.number == page.number and checked.cost is not None:
+                costs[verification.model] = checked.cost
+    return costs
+
+
+def _vision_estimates(entry: DocumentReport, resolution: str) -> dict[int, ReadingCost]:
+    """Per page, the cheapest priced vision model's estimated cost, at `resolution`."""
+    if entry.cost is None:
+        return {}
+    estimates: dict[int, ReadingCost] = {}
+    for index, facts in enumerate(entry.cost.pages):
+        best: ReadingCost | None = None
+        for model in entry.cost.models:
+            usd = model.vision_page_usd(resolution, index)
+            # No tokens is a page whose size is unknown, not a free page.
+            if not usd:
+                continue
+            if best is None or (best.usd is not None and usd < best.usd):
+                tokens = model.vision_tokens_by_page[resolution][index]
+                best = ReadingCost(round(usd, 6), "estimated", model.display_name, tokens)
+        if best is not None:
+            estimates[facts.number] = best
+    return estimates
+
+
+def _page_text(
+    page: Page,
+    scanned: ScanResult | None,
+    work: Work,
+    verification: DocumentVerification | None = None,
+    vision_estimate: ReadingCost | None = None,
+) -> PageText:
     """A page's text for the report, with its identifiers masked.
 
     The findings table masks every value, and the text beside it used to carry
@@ -274,23 +368,15 @@ def _page_text(page: Page, scanned: ScanResult | None, work: Work) -> PageText:
     With --reveal the values are left, except in the categories configured
     never to be revealed.
     """
-    # Imported here: extract builds on the audit, which builds on this module.
-    from complydoc.extraction.extract import mask_matches
-
     matches: list[SensitiveMatch] | None = None
     if scanned is not None:
         matches = [m for m in scanned.matches if m.page == page.number]
 
     def masked(text: str, located: list[SensitiveMatch] | None = None) -> str:
-        if not text.strip():
-            return text
-        if located is None:
-            located, _unavailable = scan_text(text, work.config.sensitive, reveal=work.reveal)
-        if work.reveal:
-            located = [m for m in located if m.revealed is None]
-        return mask_matches(text, located)[0]
+        return _mask(text, work, located)
 
     text = masked(page.text, matches)
+    kept = _kept_by(page, work, verification)
     return PageText(
         number=page.number,
         source=page.text_source,
@@ -302,6 +388,30 @@ def _page_text(page: Page, scanned: ScanResult | None, work: Work) -> PageText:
             name: (text if reading == page.text else masked(reading))[:_MAX_TEXT_CHARS]
             for name, reading in page.readings.items()
         },
+        kept=kept,
+        costs=_reading_costs(page, kept, verification),
+        vision_estimate=vision_estimate,
+    )
+
+
+def _verify(document: Document, entry: DocumentReport, work: Work) -> DocumentVerification | None:
+    """Read the document's pages again with the vision model registered in this process."""
+    model = registered_vision_model()
+    if model is None or entry.routing is None:
+        return None
+    routing = work.config.readiness.routing
+    return verify_document(
+        document,
+        entry.routing,
+        model,
+        pricing=work.config.pricing,
+        scope=work.verify_scope,
+        resolution=work.resolution,
+        min_characters=routing.min_characters,
+        min_coverage=routing.verify_min_coverage_pct / 100,
+        missing_words=routing.verify_missing_words,
+        password=work.options.password,
+        mask=lambda text: _mask(text, work),
     )
 
 
@@ -331,6 +441,14 @@ def build_entry(
         entry.readiness = analyse(document, work.config.readiness)
     analyse_seconds = time.perf_counter() - analyse_started
 
+    # Priced before verification can fill a page: the text path is what the
+    # document's own text costs, not what a vision model recovered from it.
+    if work.models is not None:
+        entry.cost = estimate_document(document, work.config.pricing, work.today, list(work.models))
+    # Before the scan, so a page only the vision model could read is searched too.
+    if work.verifying:
+        entry.verification = _verify(document, entry, work)
+
     scan_started = time.perf_counter()
     if "sensitive" in work.requested:
         entry.sensitive = scan(document, work.config.sensitive, reveal=work.reveal)
@@ -347,8 +465,6 @@ def build_entry(
         entry.visibility_note = check.note
     scan_seconds = time.perf_counter() - scan_started
 
-    if work.models is not None:
-        entry.cost = estimate_document(document, work.config.pricing, work.today, list(work.models))
     if work.previews:
         entry.previews = build_previews(
             document,
@@ -357,7 +473,11 @@ def build_entry(
             categories=work.config.sensitive,
         )
     if work.extracted_text:
-        entry.extracted_text = [_page_text(page, entry.sensitive, work) for page in document.pages]
+        estimates = _vision_estimates(entry, work.resolution)
+        entry.extracted_text = [
+            _page_text(page, entry.sensitive, work, entry.verification, estimates.get(page.number))
+            for page in document.pages
+        ]
 
     total_seconds = read_seconds + analyse_seconds + scan_seconds
     entry.timing = DocumentTiming(
@@ -481,6 +601,8 @@ def _worker_init(work: Work) -> None:
         # classifier of the caller's may load a model, and `warm` is explicit
         # that a process which has done that is not safe to fork from.
         register_instruction_classifier(resolve_classifier(work.classifier))
+    if work.verify_spec is not None:
+        register_vision_model(resolve_vision(work.verify_spec))
     _WORKER_WORK = work
 
 
@@ -652,6 +774,10 @@ def plan_audit(
     sample: int | None = None,
     timeout: float | None = None,
     classifier_spec: str | None = None,
+    verify: bool = False,
+    verify_spec: str | None = None,
+    verify_scope: str = "flagged",
+    resolution: str = "medium",
 ) -> AuditPlan:
     """Discover the files and settle how each will be read, before opening any."""
     requested = [c for c in COMPONENTS if c in set(components)]
@@ -693,6 +819,10 @@ def plan_audit(
         ),
         today=dt.date.today(),
         classifier=classifier_spec,
+        verifying=verify,
+        verify_spec=verify_spec,
+        verify_scope=verify_scope,
+        resolution=resolution,
     )
     return AuditPlan(
         files=files,
@@ -748,8 +878,16 @@ def run_audit(
     sample: int | None = None,
     timeout: float | None = None,
     classifier_spec: str | None = None,
+    verify_with: str | VisionModel | None = None,
+    verify_scope: str = "flagged",
     progress: Callable[[int, int, Path], None] | None = None,
 ) -> AuditReport:
+    """Audit `target` and assemble the report.
+
+    `verify_with` reads pages again with a vision model: a `vision:module:function`
+    spec, which crosses into worker processes, or a model object, which keeps the
+    run in this process. `verify_scope` is `flagged` or `all`.
+    """
     started = time.monotonic()
     started_at = dt.datetime.now().astimezone()
     # A caller can run several audits in one process, and last run's calls are
@@ -758,6 +896,11 @@ def run_audit(
     _CLASSIFIER_HOSTS.clear()
     if classifier_spec is not None:
         register_instruction_classifier(resolve_classifier(classifier_spec))
+    verify_spec, verify_name = vision_setup(verify_with, verify_scope)
+    if verify_with is not None and verify_spec is None:
+        # A model object is a function in this process and cannot cross into a
+        # worker, so every document is read here, where it is.
+        jobs, timeout = 1, None
     plan = plan_audit(
         target,
         config,
@@ -779,6 +922,10 @@ def run_audit(
         sample=sample,
         timeout=timeout,
         classifier_spec=classifier_spec,
+        verify=verify_with is not None,
+        verify_spec=verify_spec,
+        verify_scope=verify_scope,
+        resolution=resolution,
     )
     files, skipped, work, jobs = plan.files, plan.skipped, plan.work, plan.jobs
     requested, found, chosen_extractor = plan.requested, plan.found, plan.extractor
@@ -787,14 +934,19 @@ def run_audit(
 
     documents: list[DocumentReport] = []
     recovered = 0
-    for index, outcome in enumerate(_outcomes(files, work, jobs, plan.timeout), start=1):
-        recovered += outcome.recovered
-        if progress is not None:
-            progress(index, len(files), files[index - 1])
-        if outcome.skipped is not None:
-            skipped.append(outcome.skipped)
-        if outcome.entry is not None:
-            documents.append(outcome.entry)
+    try:
+        for index, outcome in enumerate(_outcomes(files, work, jobs, plan.timeout), start=1):
+            recovered += outcome.recovered
+            if progress is not None:
+                progress(index, len(files), files[index - 1])
+            if outcome.skipped is not None:
+                skipped.append(outcome.skipped)
+            if outcome.entry is not None:
+                documents.append(outcome.entry)
+    finally:
+        if verify_with is not None:
+            # Registered for this run only, so a later one is not surprised by it.
+            register_vision_model(None)
 
     finished_at = dt.datetime.now().astimezone()
     run = RunMetadata(
@@ -809,7 +961,9 @@ def run_audit(
         config_digest=config.digest,
         offline_guard=offline.guard_status(),
         # Every process that scored anything, not only this one.
-        content_sent_to=sorted({*_CLASSIFIER_HOSTS, *_hosts_sent_content()}),
+        content_sent_to=sorted(
+            {*_CLASSIFIER_HOSTS, *_hosts_sent_content(), *verification_hosts(documents)}
+        ),
         classifier_missed_workers=_classifier_missed(classifier_spec, jobs, len(files), recovered),
         classifier_calls=_CLASSIFIER_TOTALS[0],
         classifier_failures=_CLASSIFIER_TOTALS[1],
@@ -831,6 +985,8 @@ def run_audit(
         compare_extractors=list(compare_extractors),
         compare_engines=list(compare_engines),
         documents_read_after_worker_failure=recovered,
+        verify_model=verify_name,
+        verify_scope=verify_scope if verify_name is not None else None,
     )
 
     return assemble_report(
@@ -885,8 +1041,46 @@ def assemble_report(
             if settings.enabled
         }
     report.limitations = build_limitations(run, documents, skipped, staleness, config)
+    report.verification = summarise_verification(
+        documents, config.readiness.routing.verify_min_coverage_pct / 100
+    )
     # Computed from the finished report so both the JSON and HTML carry them.
     report.overall = overall_readiness(report, config.readiness.overall)
     report.quick_wins = quick_wins(report)
     report.routing = summarise_routes(report, config.pricing)
     return report
+
+
+def vision_setup(
+    verify_with: str | VisionModel | None, scope: str
+) -> tuple[str | None, str | None]:
+    """Register the vision model for this run, and return its spec and its reading name.
+
+    The spec is None for a model passed as an object. Both are None when the
+    run verifies nothing.
+    """
+    if verify_with is None:
+        return None, None
+    if scope not in VERIFY_SCOPES:
+        raise ValueError(f"verify_scope must be one of {', '.join(VERIFY_SCOPES)}, not {scope!r}")
+    if isinstance(verify_with, str):
+        model = resolve_vision(verify_with)
+        register_vision_model(model)
+        return verify_with, f"vision:{model_name(model)}"
+    if not callable(verify_with):
+        raise TypeError(
+            f"verify_with takes a vision model or a 'vision:module:function' spec, "
+            f"not {type(verify_with).__name__}"
+        )
+    register_vision_model(verify_with)
+    return None, f"vision:{model_name(verify_with)}"
+
+
+def verification_hosts(documents: list[DocumentReport]) -> list[str]:
+    """Every host a vision model sent a page to, across documents, in order first seen."""
+    hosts: list[str] = []
+    for document in documents:
+        for host in document.verification.sent_to if document.verification else []:
+            if host not in hosts:
+                hosts.append(host)
+    return hosts

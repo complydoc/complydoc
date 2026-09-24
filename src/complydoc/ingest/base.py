@@ -59,7 +59,7 @@ class DocumentFormat(StrEnum):
 TIMED_OUT = "timed out"
 """Skip reason for a document still being read when the time limit passed."""
 
-TextSource = Literal["native", "ocr", "none", "loader"]
+TextSource = Literal["native", "ocr", "none", "loader", "vision"]
 """Where a page's text came from.
 
 `loader` is text an external loader supplied — a LangChain `Document`, say.

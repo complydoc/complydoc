@@ -16,6 +16,8 @@ from complydoc.cli.common import (
     OutDirOpt,
     PrintJsonOpt,
     QuietOpt,
+    VerifyOpt,
+    VerifyScopeOpt,
     app,
     console,
     emit,
@@ -25,6 +27,7 @@ from complydoc.cli.common import (
     route_output,
 )
 from complydoc.config.loader import ConfigError
+from complydoc.verification.vision import VERIFY_SCOPES, VisionError
 
 
 @app.command("compare-loaders", rich_help_panel="Compare readers and loaders")
@@ -40,6 +43,8 @@ def compare_loaders_command(
     config_dir: ConfigOpt = None,
     print_json: PrintJsonOpt = False,
     quiet: QuietOpt = False,
+    verify: VerifyOpt = None,
+    verify_scope: VerifyScopeOpt = "flagged",
 ) -> None:
     """Run several document loaders on the same documents and report their differences.
 
@@ -48,6 +53,9 @@ def compare_loaders_command(
     first loader is the baseline. Loaders run with network access blocked unless
     the file sets `allow_network: true`. See the Comparing loaders guide for the
     format.
+
+    `--verify vision:module:function` reads the baseline's pages again with a
+    vision model of your own, and puts its reading beside every loader's.
     """
     from complydoc.loaders.spec_file import compare_from_file, read_comparison_file
 
@@ -65,8 +73,24 @@ def compare_loaders_command(
             "[bold yellow]allow_network is set.[/] The loaders may send document content "
             "over the network. complydoc's own processing still runs with it blocked."
         )
+    if verify_scope not in VERIFY_SCOPES:
+        errors.print(
+            f"[bold red]--verify-scope must be {' or '.join(VERIFY_SCOPES)}[/], not "
+            f"{escape(verify_scope)}"
+        )
+        raise typer.Exit(code=2)
+    if verify is not None:
+        errors.print(
+            f"[bold yellow]--verify {escape(verify)} is your own code.[/] It is given page "
+            f"images and sends them wherever it calls; the report names every host it reached."
+        )
     try:
-        report = compare_from_file(spec, config=config)
+        report = compare_from_file(
+            spec, config=config, verify_with=verify, verify_scope=verify_scope
+        )
+    except VisionError as exc:
+        errors.print(f"[bold red]Cannot use that vision model[/] — {escape(str(exc))}")
+        raise typer.Exit(code=2) from exc
     except (ImportError, ValueError, FileNotFoundError) as exc:
         errors.print(f"[bold red]Comparison failed[/] — {escape(str(exc))}")
         raise typer.Exit(code=2) from exc
@@ -98,6 +122,8 @@ def compare_loaders_command(
             console.print(f"\n[bold green]Use {lc.recommended}[/] — {escape(lc.verdict)}")
         elif lc.verdict:
             console.print(f"\n[yellow]No recommendation[/] — {escape(lc.verdict)}")
+        if report.verification is not None:
+            console.print(f"[dim]{escape(report.verification.headline)}.[/]")
     emit(report, config, out, name, quiet)
     if print_json:
         print_report_json(report)

@@ -36,7 +36,7 @@ from pathlib import Path
 from typing import Any
 
 from complydoc.audit.discovery import discover
-from complydoc.audit.run import COMPONENTS
+from complydoc.audit.run import COMPONENTS, vision_setup
 from complydoc.config.loader import load_config
 from complydoc.config.schema import Config, ParserPricing
 from complydoc.extraction.facts import FUZZY_THRESHOLD, Fact, as_facts, evaluate_facts
@@ -60,10 +60,12 @@ from complydoc.report.models import (
     Limitation,
     LoaderComparison,
     LoaderSummary,
+    ReadingCost,
 )
 from complydoc.report.quickwins import quick_wins
 from complydoc.sensitive.base import SEVERITY_WEIGHT
 from complydoc.utils.text import MAX_WORDS, count, reading_similarity, same_words, words
+from complydoc.verification.vision import VisionModel, register_vision_model
 
 __all__ = ["compare_loaders"]
 
@@ -81,6 +83,8 @@ def compare_loaders(
     facts: Iterable[Fact | str] | None = None,
     fact_threshold: float = FUZZY_THRESHOLD,
     cache_dir: str | os.PathLike[str] | None = None,
+    verify_with: str | VisionModel | None = None,
+    verify_scope: str = "flagged",
 ) -> AuditReport:
     """Run several loaders on the same input and report where their output differs.
 
@@ -106,6 +110,11 @@ def compare_loaders(
 
     `facts` are passages the documents are expected to contain. Each is checked
     against every loader's text; see `complydoc.extraction.facts`.
+
+    `verify_with` reads the baseline's pages again with a vision model of the
+    caller's, as `full_audit` does, rendered from the files the loaders read.
+    The vision reading joins each page's `readings`, so it can be put beside any
+    loader's, with what each one cost.
     """
     named = _named(loaders)
     if len(named) < 2:
@@ -123,21 +132,32 @@ def compare_loaders(
     fact_list = as_facts(facts or ())
     specs = {name: value for name, value in named if isinstance(value, LoaderSpec)}
     started = time.monotonic()
-    inspections = [
-        inspect_run(
-            source,
-            name=name,
-            config=settings,
-            components=components,
-            reveal=reveal,
-            # The comparison is made from the text, so it is always kept while
-            # comparing and dropped afterwards if the caller did not ask for it.
-            extracted_text=True,
-            models=models,
-            allow_network=network,
-        )
-        for (name, _value), source, network in zip(named, sources, networks, strict=True)
-    ]
+    vision_setup(verify_with, verify_scope)
+    try:
+        inspections = [
+            inspect_run(
+                source,
+                name=name,
+                config=settings,
+                components=components,
+                reveal=reveal,
+                # The comparison is made from the text, so it is always kept while
+                # comparing and dropped afterwards if the caller did not ask for it.
+                extracted_text=True,
+                models=models,
+                allow_network=network,
+                # The baseline's pages only: each is read once, and every loader's
+                # reading of it can be set beside that one.
+                verify=verify_with is not None and index == 0,
+                verify_scope=verify_scope,
+            )
+            for index, ((name, _value), source, network) in enumerate(
+                zip(named, sources, networks, strict=True)
+            )
+        ]
+    finally:
+        if verify_with is not None:
+            register_vision_model(None)
     baseline, others = inspections[0], inspections[1:]
     by_path = [{str(entry.path): entry for entry in i.entries} for i in inspections]
     characters = {
@@ -147,6 +167,13 @@ def compare_loaders(
 
     for entry in baseline.entries:
         entry.extractions = _readings(entry, baseline, list(zip(others, by_path[1:], strict=True)))
+    _price_readings(
+        baseline.entries,
+        {
+            name: _loader_cost(specs.get(name), network, settings)
+            for (name, _value), network in zip(named, networks, strict=True)
+        },
+    )
     differences = _identifier_differences(inspections, by_path, reveal)
     fact_checks = evaluate_facts(
         {i.loader.name: i.entries for i in inspections}, fact_list, fact_threshold
@@ -249,6 +276,32 @@ def _network(name: str, value: Any, allow_network: bool) -> bool:
             f"{name} sends documents to a hosted service; pass allow_network=True to run it"
         )
     return value.network
+
+
+def _loader_cost(spec: LoaderSpec | None, network: bool, settings: Config) -> ReadingCost:
+    """What one page read by this loader costs.
+
+    A parser preset with a price in `pricing.yaml` is its per-page price. A
+    loader let onto the network is a hosted service whose price nothing here
+    knows. Anything else ran on this machine.
+    """
+    price = _parser_price(spec, settings)
+    if price is not None and price.usd_per_1000_pages is not None:
+        return ReadingCost(
+            round(price.usd_per_1000_pages / 1000, 6), "estimated", price.display_name
+        )
+    if network:
+        return ReadingCost(None, "unpriced")
+    return ReadingCost(0.0, "local")
+
+
+def _price_readings(entries: list[DocumentReport], costs: dict[str, ReadingCost]) -> None:
+    """Attach each loader's per-page cost to the baseline's pages, where it read them."""
+    for entry in entries:
+        for page in entry.extracted_text:
+            for name, cost in costs.items():
+                if name in page.readings or name == page.kept:
+                    page.costs[name] = cost
 
 
 def _parser_price(spec: LoaderSpec | None, settings: Config) -> ParserPricing | None:

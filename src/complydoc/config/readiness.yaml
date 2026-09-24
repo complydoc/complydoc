@@ -61,6 +61,13 @@ routing:
   min_ocr_confidence: 75
   # A table with merged or stacked header cells loses its shape in plain text.
   vision_for_complex_tables: true
+  # With --verify: the share of what a vision model read off a page that the kept
+  # reading must also hold, for the two to agree. Measured by word, in any order,
+  # because a vision model lays a page out its own way.
+  verify_min_coverage_pct: 90
+  # With --verify: this many words in a row that the vision model read and the
+  # kept reading lacks make a page disagree, however long the page is.
+  verify_missing_words: 4
 
 signals:
 

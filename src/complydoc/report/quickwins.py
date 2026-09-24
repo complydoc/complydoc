@@ -216,6 +216,30 @@ def _reader_disagreement(context: _Context) -> None:
     )
 
 
+def _vision_disagreement(context: _Context) -> None:
+    """Pages where a vision model read words the kept reading lacks."""
+    report = context.report
+    documents = [
+        d.relative_path
+        for d in report.documents
+        if d.verification is not None and d.verification.count("disagrees")
+    ]
+    summary = report.verification
+    context.add(
+        id="vision_disagrees",
+        title="Look at the pages a vision model read differently",
+        detail=(
+            "A vision model read these pages again, from their images, and found words "
+            "the kept reading does not have. Put the two readings side by side on the "
+            "Documents page: where the vision reading is right, the page needs another "
+            "reader, or OCR, before its text reaches a model."
+        ),
+        documents=documents,
+        actor="you",
+        effect=summary.headline if summary is not None else None,
+    )
+
+
 def _high_severity_exposure(context: _Context) -> None:
     """Identifiers you would not want leaving the building."""
     exposed = []
@@ -331,6 +355,7 @@ _BUILDERS = (
     _no_text_layer,
     _skipped_documents,
     _reader_disagreement,
+    _vision_disagreement,
     _high_severity_exposure,
     _poor_ocr,
     _identifying_metadata,

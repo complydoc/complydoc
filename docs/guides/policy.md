@@ -37,7 +37,7 @@ off without deleting it.
 | `readiness_at_least` | `score` | A document scores below it |
 | `global_score_at_least` | `score` | Global readiness is below it |
 | `facts_found` | `facts`, `threshold` | A loader misses a fact |
-| `no_network` | none | A loader attempted or made a connection, or a registered classifier sent document text to a host |
+| `no_network` | none | A loader attempted or made a connection, or a registered classifier or `--verify` vision model sent document content to a host |
 | `no_failures` | none | A loader failed on a file, or a file was skipped |
 | `all_categories_scanned` | none | An identifier category could not be scanned |
 | `no_regressions` | `baseline`, `score_tolerance` | Anything got worse than the baseline |

@@ -106,6 +106,10 @@ def test_the_public_surface_is_exactly_what_was_promised():
         "ConfigError",
         "UnknownModelError",
         "NetworkAccessError",
+        # a vision model of your own, to read pages again
+        "VisionModel",
+        "VisionPage",
+        "VisionReading",
         # bringing your own reader
         "register_loader",
         "register_extractor",
