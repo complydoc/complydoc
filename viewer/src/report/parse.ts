@@ -1,7 +1,7 @@
 import type { Report } from "./types";
 
 /** The report schemas this viewer was written against. */
-export const SUPPORTED_SCHEMAS = [15] as const;
+export const SUPPORTED_SCHEMAS = [15, 16] as const;
 
 export class ReportError extends Error {
   override name = "ReportError";
@@ -28,7 +28,7 @@ export function parseReport(text: string): Report {
     throw new ReportError("This JSON is not a complydoc report.");
   }
   const schema = data.run.schema_version;
-  if (typeof schema !== "number" || !SUPPORTED_SCHEMAS.includes(schema as 15)) {
+  if (typeof schema !== "number" || !SUPPORTED_SCHEMAS.includes(schema as (typeof SUPPORTED_SCHEMAS)[number])) {
     throw new ReportError(
       `This report uses schema ${String(schema)}. The viewer reads schema ${SUPPORTED_SCHEMAS.join(", ")}.`,
     );
@@ -36,5 +36,5 @@ export function parseReport(text: string): Report {
   if (!Array.isArray(data.documents)) {
     throw new ReportError("This report has no document list.");
   }
-  return { loader_comparison: null, cost: null, ...data } as unknown as Report;
+  return { loader_comparison: null, cost: null, verification: null, ...data } as unknown as Report;
 }

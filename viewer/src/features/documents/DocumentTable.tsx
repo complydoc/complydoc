@@ -2,8 +2,8 @@ import { createColumnHelper } from "@tanstack/react-table";
 import { DataTable, type Columns } from "@/components/DataTable";
 import { ToneBadge } from "@/components/ToneBadge";
 import { Button } from "@/components/ui/button";
-import { fileName, formatCount, formatPercent, formatScore } from "@/report/format";
-import { agreementTone, bandOf, bandTone, severityTone, type DocumentRow } from "@/report/select";
+import { fileName, formatCount, formatPercent, formatPageUsd, formatScore } from "@/report/format";
+import { agreementTone, bandOf, bandTone, severityTone, visionTone, type DocumentRow } from "@/report/select";
 
 const column = createColumnHelper<DocumentRow>();
 const numeric = { meta: { numeric: true } } as const;
@@ -50,7 +50,28 @@ const columns: Columns<DocumentRow> = [
   }),
 ];
 
+/** Pages a vision model read again, how many it disagreed about, and what the reads cost. */
+const visionColumn = column.accessor((row) => row.vision?.disagree, {
+  id: "vision",
+  header: "Vision check",
+  sortUndefined: "last",
+  cell: ({ row }) => {
+    const vision = row.original.vision;
+    if (!vision) return "–";
+    const outcome = vision.disagree > 0 ? `${vision.disagree} of ${vision.checked} disagree` : `${vision.checked} checked`;
+    return (
+      <ToneBadge tone={visionTone(vision)}>
+        {outcome}
+        {vision.usd !== null && ` · ${formatPageUsd(vision.usd)}`}
+      </ToneBadge>
+    );
+  },
+  ...numeric,
+});
+
 /** Every document, least ready first. A name opens the document's page comparison. */
 export function DocumentTable({ rows }: { rows: DocumentRow[] }) {
-  return <DataTable caption="Documents" columns={columns} rows={rows} rowKey={(row) => String(row.index)} sortable />;
+  // Only a run that verified pages has anything to put in the column.
+  const shown = rows.some((row) => row.vision) ? [...columns, visionColumn] : columns;
+  return <DataTable caption="Documents" columns={shown} rows={rows} rowKey={(row) => String(row.index)} sortable />;
 }

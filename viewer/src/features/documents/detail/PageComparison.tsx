@@ -2,9 +2,9 @@ import { Fragment, useState } from "react";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { plural } from "@/report/format";
-import { defaultPair, diffReadings, type Reading } from "@/report/readings";
+import { defaultPair, diffReadings, isVision, type Reading } from "@/report/readings";
 import type { Highlight } from "@/report/highlight";
-import type { PagePreview } from "@/report/types";
+import type { PagePreview, ReadingCost } from "@/report/types";
 import { PagePane } from "./PagePane";
 import { ReadingPane } from "./ReadingPane";
 
@@ -17,6 +17,8 @@ interface PageComparisonProps {
   highlight: Highlight | null;
   /** Leave room below for something else on screen, such as the page picker. */
   reserve?: boolean;
+  /** What the cheapest priced vision model would cost for this page, estimated. */
+  visionEstimate?: ReadingCost | null;
 }
 
 function pick(readings: Reading[], id: string): Reading {
@@ -29,7 +31,15 @@ function pick(readings: Reading[], id: string): Reading {
  * resizable on a wide screen and stacked on a narrow one. A page read only one way has
  * nothing to compare, so it is the page and that reading, in two halves.
  */
-export function PageComparison({ number, name, readings, preview, highlight, reserve = false }: PageComparisonProps) {
+export function PageComparison({
+  number,
+  name,
+  readings,
+  preview,
+  highlight,
+  reserve = false,
+  visionEstimate = null,
+}: PageComparisonProps) {
   const wide = useMediaQuery("(min-width: 64rem)");
   const [[leftId, rightId], setPair] = useState(() => defaultPair(readings));
   const left = pick(readings, leftId);
@@ -39,6 +49,9 @@ export function PageComparison({ number, name, readings, preview, highlight, res
     left.id === right.id ? "same reading" : diff.differences === 0 ? "identical" : plural(diff.differences, "difference");
 
   const single = readings.length < 2;
+  // What a vision read would have cost, beside the kept reading, only where none was made:
+  // once one was, its own price is in the picker.
+  const estimate = readings.some(isVision) ? null : visionEstimate;
   const needle = highlight?.needle ?? null;
   const page = <PagePane key="page" number={number} name={name} preview={preview} mark={highlight?.box ?? null} />;
 
@@ -55,6 +68,7 @@ export function PageComparison({ number, name, readings, preview, highlight, res
           side="left"
           note={left.kept ? "kept" : "only reading"}
           needle={needle}
+          estimate={left.kept ? estimate : null}
         />,
       ]
     : [
@@ -69,6 +83,7 @@ export function PageComparison({ number, name, readings, preview, highlight, res
           side="left"
           note={left.kept ? "kept" : shared}
           needle={needle}
+          estimate={left.kept ? estimate : null}
         />,
         <ReadingPane
           key="right"

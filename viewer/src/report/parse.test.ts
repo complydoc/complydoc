@@ -22,6 +22,13 @@ describe("parseReport", () => {
     expect(() => parseReport(old)).toThrow("uses schema 8");
   });
 
+  it("reads schema 16, which added the vision check and reading costs", () => {
+    const verified = JSON.stringify({ run: { schema_version: 16 }, overall: {}, documents: [] });
+    const report = parseReport(verified);
+    expect(report.run.schema_version).toBe(16);
+    expect(report.verification).toBeNull();
+  });
+
   it("gives a single-loader report an empty comparison", () => {
     const single = JSON.stringify({ run: { schema_version: 15 }, overall: {}, documents: [] });
     expect(parseReport(single).loader_comparison).toBeNull();

@@ -32,6 +32,13 @@ export function SummaryPage({ report }: { report: Report }) {
           />
           <Stat label="Hidden instructions" value={formatCount(aggregate.content_findings_total)} />
           <Stat label="Time per document" value={formatSeconds(aggregate.seconds_per_document)} note="on this machine" />
+          {report.verification && (
+            <Stat
+              label="Pages a vision read disputes"
+              value={formatCount(report.verification.pages_disagree)}
+              note={`of ${plural(report.verification.pages_checked, "page")} checked`}
+            />
+          )}
         </StatGrid>
       </Section>
 

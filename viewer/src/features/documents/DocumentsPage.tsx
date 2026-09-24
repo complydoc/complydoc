@@ -5,6 +5,7 @@ import type { Report } from "@/report/types";
 import { DocumentDetail } from "./detail/DocumentDetail";
 import { DocumentTable } from "./DocumentTable";
 import { LoadersSection } from "./loaders/LoadersSection";
+import { VerificationSection } from "./verification/VerificationSection";
 
 interface DocumentsPageProps {
   report: Report;
@@ -32,6 +33,7 @@ export function DocumentsPage({ report, open }: DocumentsPageProps) {
   return (
     <SectionStack>
       {report.loader_comparison && <LoadersSection comparison={report.loader_comparison} />}
+      {report.verification && <VerificationSection report={report} />}
       <Section title="Documents">
         <DocumentTable rows={documentRows(report)} />
       </Section>

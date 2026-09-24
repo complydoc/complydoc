@@ -5,7 +5,16 @@
  * only lay things out.
  */
 import { humanise } from "./format";
-import type { Band, DocumentEntry, Evidence, LoaderComparison, Report, Severity } from "./types";
+import type {
+  Band,
+  DocumentEntry,
+  Evidence,
+  LoaderComparison,
+  PageVerification,
+  Report,
+  Severity,
+  VerificationStatus,
+} from "./types";
 
 /** Limitation areas about loaders and readers. They are told on the Documents page. */
 const READER_AREAS = new Set(["Loaders", "Extraction"]);
@@ -86,6 +95,59 @@ export interface DocumentRow {
   /** The least any other reader agreed with the kept one, 0 to 1; null when no other read it. */
   agreement: number | null;
   reordered: boolean;
+  /** How a vision model's second read of the document went; null when none was made. */
+  vision: DocumentVision | null;
+}
+
+export interface DocumentVision {
+  checked: number;
+  disagree: number;
+  /** Pages it read that nothing else could, or could not read, or could not be sent. */
+  unsettled: number;
+  usd: number | null;
+}
+
+/** A document's vision check in totals, or null when the run made none. */
+export function documentVision(document: DocumentEntry): DocumentVision | null {
+  const verification = document.verification;
+  if (!verification) return null;
+  const sent = verification.pages.filter((p) => p.status !== "not_rendered");
+  const priced = verification.pages.map((p) => p.cost?.usd).filter((usd): usd is number => typeof usd === "number");
+  return {
+    checked: sent.length,
+    disagree: verification.pages.filter((p) => p.status === "disagrees").length,
+    unsettled: verification.pages.filter((p) => p.status !== "agrees" && p.status !== "disagrees").length,
+    usd: priced.length > 0 ? priced.reduce((sum, usd) => sum + usd, 0) : null,
+  };
+}
+
+export function visionTone(vision: DocumentVision): Tone {
+  if (vision.disagree > 0) return "bad";
+  if (vision.unsettled > 0) return "warn";
+  return "good";
+}
+
+export const VERIFICATION_STATUS: Record<VerificationStatus, { label: string; tone: Tone }> = {
+  agrees: { label: "agrees", tone: "good" },
+  disagrees: { label: "disagrees", tone: "bad" },
+  filled: { label: "only vision read it", tone: "warn" },
+  failed: { label: "call failed", tone: "warn" },
+  not_rendered: { label: "not drawn", tone: "neutral" },
+};
+
+export interface VerifiedPage extends PageVerification {
+  /** Position of the document in the report, to open the page. */
+  index: number;
+  path: string;
+}
+
+/** Every page a vision read did not simply agree with, document by document, in page order. */
+export function unsettledPages(report: Report): VerifiedPage[] {
+  return report.documents.flatMap((document, index) =>
+    (document.verification?.pages ?? [])
+      .filter((page) => page.status !== "agrees")
+      .map((page) => ({ ...page, index, path: document.relative_path })),
+  );
 }
 
 function highestSeverity(document: DocumentEntry): Severity | null {
@@ -133,6 +195,7 @@ export function documentRows(report: Report): DocumentRow[] {
       findings: document.sensitive.matches.length,
       highest: highestSeverity(document),
       ...agreement(document),
+      vision: documentVision(document),
     }))
     .sort((a, b) => (a.score ?? -1) - (b.score ?? -1) || a.path.localeCompare(b.path));
 }

@@ -40,3 +40,14 @@ export function formatUsd(value: number | null): string {
   const digits = value !== 0 && Math.abs(value) < 0.01 ? 4 : 2;
   return `$${value.toLocaleString("en-GB", { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
 }
+
+/**
+ * A per-page price, to four places under a dollar. One page through a model
+ * costs fractions of a cent to a few cents, and at two places a vision read and
+ * a cheaper one round to the same figure.
+ */
+export function formatPageUsd(value: number | null): string {
+  if (value === null) return "–";
+  const digits = value !== 0 && Math.abs(value) < 1 ? 4 : 2;
+  return `$${value.toLocaleString("en-GB", { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
+}

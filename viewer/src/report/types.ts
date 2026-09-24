@@ -1,7 +1,7 @@
 /**
  * The parts of complydoc's report JSON the viewer reads.
  *
- * A subset of schema 15, written by `complydoc audit --json` or
+ * A subset of schemas 15 and 16, written by `complydoc audit --json` or
  * `complydoc.write_json`. Fields the viewer does not use are left out, so an
  * addition to the report never breaks it.
  */
@@ -22,6 +22,8 @@ export interface Report {
   documents: DocumentEntry[];
   loader_comparison: LoaderComparison | null;
   cost: Cost | null;
+  /** Schema 16: pages read again by a vision model. Null or absent without --verify. */
+  verification?: VerificationSummary | null;
 }
 
 export interface RunMetadata {
@@ -36,6 +38,10 @@ export interface RunMetadata {
   started_at: string;
   duration_seconds: number;
   offline_guard: string;
+  /** Schema 16: the vision reading pages were checked against, e.g. "vision:claude-opus-5". */
+  verify_model?: string | null;
+  verify_scope?: "flagged" | "all" | null;
+  content_sent_to?: string[];
 }
 
 export interface Factor {
@@ -107,17 +113,78 @@ export interface Extraction {
   reordered: boolean;
 }
 
+/**
+ * What one reading of one page cost. `local` is a reader that ran on the
+ * auditing machine, and has no bill; `actual` came from the provider's own
+ * token counts; `estimated` from the page's size and a price table.
+ */
+export interface ReadingCost {
+  usd: number | null;
+  basis: "local" | "actual" | "estimated" | "unpriced";
+  model: string | null;
+  input_tokens: number | null;
+  output_tokens: number | null;
+}
+
 /** The text read off one page: the kept reading, the others, and OCR's. */
 export interface PageText {
   number: number;
-  /** Where the kept text came from: the text layer, OCR, or a loader. */
-  source: "native" | "ocr" | "loader";
+  /** Where the kept text came from: the text layer, OCR, a loader, or a vision model. */
+  source: "native" | "ocr" | "loader" | "vision" | "none";
   characters: number;
   text: string;
   ocr_text: string;
   truncated: boolean;
   /** What each other reader made of the page, by name. */
   readings: Record<string, string>;
+  /** Schema 16: the reader whose text `text` is. */
+  kept?: string;
+  /** Schema 16: what each reading cost, keyed like `readings`, with the kept one and "ocr". */
+  costs?: Record<string, ReadingCost>;
+  /** Schema 16: what the cheapest priced vision model would cost for this page. */
+  vision_estimate?: ReadingCost | null;
+}
+
+export type VerificationStatus = "agrees" | "disagrees" | "filled" | "failed" | "not_rendered";
+
+/** One page read again by a vision model. */
+export interface PageVerification {
+  number: number;
+  status: VerificationStatus;
+  why: string;
+  similarity: number | null;
+  /** Share of the vision reading's words the kept reading holds, 0 to 1. */
+  coverage: number | null;
+  /** What the vision reading has that the kept one lacks, masked. */
+  missing: string;
+  cost: ReadingCost | null;
+  error: string | null;
+}
+
+export interface DocumentVerification {
+  model: string;
+  scope: "flagged" | "all";
+  pages_total: number;
+  pages: PageVerification[];
+  unreadable_pages: number[];
+  sent_to: string[];
+}
+
+export interface VerificationSummary {
+  model: string;
+  scope: "flagged" | "all";
+  min_coverage: number;
+  documents: number;
+  pages_total: number;
+  pages_checked: number;
+  pages_agree: number;
+  pages_disagree: number;
+  pages_filled: number;
+  pages_failed: number;
+  pages_unreadable: number;
+  usd: number | null;
+  usd_basis: "actual" | "estimated" | "mixed" | "unpriced";
+  headline: string;
 }
 
 /** A rectangle on the page, as fractions of its width and height. */
@@ -154,6 +221,8 @@ export interface DocumentEntry {
   extracted_text: PageText[];
   /** Left out of a summary report. */
   previews?: PagePreview[];
+  /** Schema 16: pages read again by a vision model. */
+  verification?: DocumentVerification | null;
 }
 
 export interface LoaderRow {

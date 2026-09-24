@@ -1,15 +1,24 @@
 import { useState } from "react";
 import { ToneBadge } from "@/components/ToneBadge";
 import { Badge } from "@/components/ui/badge";
-import { fileName, formatPercent, formatScore, plural } from "@/report/format";
+import { fileName, formatPercent, formatPageUsd, formatScore, plural } from "@/report/format";
 import { findingHighlight } from "@/report/highlight";
 import { pageReadings } from "@/report/readings";
 import { documentHref, type FindingRef } from "@/report/route";
-import { agreementTone, bandOf, bandTone, documentScore, worthCallingReordered } from "@/report/select";
+import {
+  agreementTone,
+  bandOf,
+  bandTone,
+  documentScore,
+  documentVision,
+  visionTone,
+  worthCallingReordered,
+} from "@/report/select";
 import type { DocumentEntry, Report } from "@/report/types";
 import { FindingBanner } from "./FindingBanner";
 import { PageComparison } from "./PageComparison";
 import { PagePicker } from "./PagePicker";
+import { VisionNote } from "./VisionNote";
 
 interface DocumentDetailProps {
   report: Report;
@@ -35,6 +44,8 @@ export function DocumentDetail({ report, document, index, page: startPage = null
   const others = document.extractions.slice(1);
   const readings = page ? pageReadings(page, report.run.extractor) : [];
   const shown = highlight && page && (highlight.page === null || highlight.page === page.number) ? highlight : null;
+  const vision = documentVision(document);
+  const checked = page ? document.verification?.pages.find((p) => p.number === page.number) : undefined;
 
   return (
     <div className="flex flex-col gap-6">
@@ -49,9 +60,16 @@ export function DocumentDetail({ report, document, index, page: startPage = null
             {worthCallingReordered(reading) && " · reordered"}
           </ToneBadge>
         ))}
+        {vision && (
+          <ToneBadge tone={visionTone(vision)}>
+            vision {vision.disagree > 0 ? `${vision.disagree} of ${vision.checked} disagree` : `${vision.checked} checked`}
+            {vision.usd !== null && ` · ${formatPageUsd(vision.usd)}`}
+          </ToneBadge>
+        )}
       </div>
 
       {shown && <FindingBanner highlight={shown} clearHref={documentHref(index, page?.number)} />}
+      {checked && checked.status !== "agrees" && <VisionNote page={checked} model={document.verification?.model ?? ""} />}
 
       {page ? (
         <PageComparison
@@ -64,6 +82,7 @@ export function DocumentDetail({ report, document, index, page: startPage = null
           highlight={shown}
           // Room below for the page picker, when there is more than one page.
           reserve={pages > 1}
+          visionEstimate={page.vision_estimate ?? null}
         />
       ) : (
         <p className="text-muted-foreground">
