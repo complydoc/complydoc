@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime as dt
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated
 
@@ -18,6 +19,7 @@ from complydoc.cli.common import (
     ClassifierThresholdOpt,
     ConfigOpt,
     ExtractorOpt,
+    IgnoreFileOpt,
     JobsOpt,
     NameOpt,
     OcrOpt,
@@ -36,6 +38,7 @@ from complydoc.cli.common import (
 )
 from complydoc.config.loader import ConfigError
 from complydoc.cost.estimator import UnknownModelError
+from complydoc.ignores import IgnoreError, apply_ignores, load_ignores
 
 if TYPE_CHECKING:  # pragma: no cover - type-checking imports only
     from complydoc.report.policy import PolicyResult, RuleResult
@@ -129,6 +132,7 @@ def check(
     quiet: QuietOpt = False,
     classifier: ClassifierOpt = None,
     classifier_threshold: ClassifierThresholdOpt = None,
+    ignore_file: IgnoreFileOpt = None,
 ) -> None:
     """Check documents against a policy file, and exit non-zero when they fail it.
 
@@ -166,6 +170,15 @@ def check(
         except (OSError, ValueError, KeyError, TypeError) as exc:
             errors.print(f"[bold red]Cannot read the report[/] {report} — {escape(str(exc))}")
             raise typer.Exit(code=2) from exc
+        if ignore_file is not None:
+            # A report written before the ignore was, checked as if after it.
+            try:
+                audit.ignores = apply_ignores(
+                    audit.documents, ignore_file, load_ignores(ignore_file), dt.date.today()
+                )
+            except IgnoreError as exc:
+                errors.print(f"[bold red]Cannot read the ignore file[/] — {escape(str(exc))}")
+                raise typer.Exit(code=2) from exc
     else:
         assert target is not None
         if not target.exists():
@@ -191,7 +204,11 @@ def check(
                     sample=sample,
                     timeout=timeout or None,
                     classifier_spec=classifier,
+                    ignore_file=ignore_file,
                 )
+        except IgnoreError as exc:
+            errors.print(f"[bold red]Cannot read the ignore file[/] — {escape(str(exc))}")
+            raise typer.Exit(code=2) from exc
         except ClassifierError as exc:
             errors.print(f"[bold red]Cannot use that classifier[/] — {escape(str(exc))}")
             raise typer.Exit(code=2) from exc

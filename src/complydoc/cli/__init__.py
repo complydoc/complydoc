@@ -10,6 +10,7 @@ Each module registers its commands on `app` when imported:
 - `chunks`: `chunks`
 - `routing`: `routing`
 - `check`: `check`
+- `ignore`: `ignore` — set a finding aside, with a reason
 - `assist`: `assist` — sends a finished report to a hosted chat model
 - `diff`: `diff`
 - `benchmark`: `benchmark`
@@ -30,6 +31,7 @@ from complydoc.cli import (
     routing,
     loaders,
     check,
+    ignore,
     assist,
     diff,
     clean,
@@ -51,6 +53,7 @@ COMMAND_MODULES = (
     routing,
     loaders,
     check,
+    ignore,
     assist,
     diff,
     clean,

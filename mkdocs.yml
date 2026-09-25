@@ -109,6 +109,7 @@ nav:
       - Report tables: guides/report-tables.md
       - Baselines and tests: guides/baselines-and-tests.md
       - Policy files: guides/policy.md
+      - Ignoring findings: guides/ignore-findings.md
       - GitHub Action: guides/github-action.md
       - Drafting quick wins: guides/assist.md
       - Safe copies: guides/clean.md

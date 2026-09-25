@@ -54,8 +54,8 @@ describe("useLocalReports", () => {
     expect(result.current.status).toBe("loading");
     await waitFor(() => expect(result.current.status).toBe("ready"));
     expect(addTexts).toHaveBeenCalledWith([
-      { name: "complydoc.json", text: sampleText },
-      { name: "contracts/complydoc.json", text: sampleText },
+      { name: "complydoc.json", text: sampleText, source: "api/reports/a" },
+      { name: "contracts/complydoc.json", text: sampleText, source: "api/reports/b" },
     ]);
     expect(result.current.sources).toEqual(["/work/.complydoc"]);
     remove();

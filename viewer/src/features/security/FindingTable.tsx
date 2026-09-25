@@ -7,6 +7,7 @@ import { fileName } from "@/report/format";
 import { documentHref } from "@/report/route";
 import type { FindingRow } from "@/report/security";
 import { EVIDENCE, SEVERITIES, severityTone } from "@/report/select";
+import { IgnoreButton } from "./IgnoreButton";
 
 const column = createColumnHelper<FindingRow>();
 
@@ -43,6 +44,15 @@ const columns: Columns<FindingRow> = [
     sortingFn: (a, b) =>
       EVIDENCE.findIndex((e) => e.key === a.original.evidence) - EVIDENCE.findIndex((e) => e.key === b.original.evidence),
     cell: ({ row, getValue }) => <EvidenceBadge evidence={getValue()} match={row.original.source} />,
+  }),
+  column.display({
+    id: "ignore",
+    header: () => <span className="sr-only">Ignore</span>,
+    cell: ({ row }) => (
+      <div className="flex justify-end">
+        <IgnoreButton fingerprint={row.original.source.fingerprint} what={`${row.original.label} ${row.original.masked}`} />
+      </div>
+    ),
   }),
 ];
 

@@ -1,7 +1,7 @@
 /**
  * The parts of complydoc's report JSON the viewer reads.
  *
- * A subset of schemas 15 and 16, written by `complydoc audit --json` or
+ * A subset of schemas 15 to 17, written by `complydoc audit --json` or
  * `complydoc.write_json`. Fields the viewer does not use are left out, so an
  * addition to the report never breaks it.
  */
@@ -24,6 +24,39 @@ export interface Report {
   cost: Cost | null;
   /** Schema 16: pages read again by a vision model. Null or absent without --verify. */
   verification?: VerificationSummary | null;
+  /** Schema 17: the ignore file the run read, and what each entry did. Null or absent without one. */
+  ignores?: IgnoreSummary | null;
+}
+
+/** One entry of an ignore file: a finding set aside, and why. */
+export interface IgnoreRule {
+  finding: string;
+  reason: string;
+  by?: string | null;
+  until?: string | null;
+  paths?: string[];
+  what?: string | null;
+  added?: string | null;
+  /** On the run: findings it set aside. */
+  matched?: number;
+  /** On the run: past its end date, so it set nothing aside. */
+  expired?: boolean;
+}
+
+export interface IgnoreSummary {
+  file: string;
+  rules: IgnoreRule[];
+}
+
+/** A finding an ignore file set aside: out of every count, kept with its reason. */
+export interface IgnoredFinding {
+  fingerprint: string;
+  kind: "identifier" | "content";
+  reason: string;
+  by: string | null;
+  until: string | null;
+  identifier: SensitiveMatch | null;
+  content: ContentFinding | null;
 }
 
 export interface RunMetadata {
@@ -71,6 +104,8 @@ export interface Aggregate {
   documents_with_sensitive_data: number;
   content_findings_total: number;
   seconds_per_document: number;
+  /** Schema 17: findings an ignore file set aside, left out of the counts above. */
+  ignored_total?: number;
 }
 
 export interface QuickWin {
@@ -101,6 +136,8 @@ export interface SensitiveMatch {
   context_term?: string | null;
   /** The name model's score, where a model found it, 0 to 1. */
   confidence?: number | null;
+  /** Schema 17: the same for this value in every document and run; what an ignore names. */
+  fingerprint?: string;
 }
 
 /** A passage that reads as an instruction to a model and is hidden from a person. */
@@ -110,6 +147,8 @@ export interface ContentFinding {
   severity: Severity;
   hidden_reasons: string[];
   instruction_reasons: string[];
+  /** Schema 17: the same for this passage in every run; what an ignore names. */
+  fingerprint?: string;
 }
 
 export interface Extraction {
@@ -231,6 +270,8 @@ export interface DocumentEntry {
   page_count: number;
   sensitive: { matches: SensitiveMatch[] };
   content_findings: ContentFinding[];
+  /** Schema 17: findings an ignore file set aside. Not in `sensitive.matches` or `content_findings`. */
+  ignored?: IgnoredFinding[];
   extractions: Extraction[];
   extracted_text: PageText[];
   /** Left out of a summary report. */

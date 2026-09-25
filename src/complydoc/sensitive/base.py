@@ -85,6 +85,11 @@ class SensitiveMatch:
     validators_passed: list[str] = field(default_factory=list)
     context_term: str | None = None
     """The nearby label that justified reporting a generic pattern."""
+    fingerprint: str = ""
+    """The same for this value in every document and run; see `complydoc.fingerprint`.
+
+    What an ignore file names. Empty in reports written before it existed.
+    """
 
 
 SEVERITY_WEIGHT: Final[dict[str, int]] = {"high": 3, "medium": 2, "low": 1}

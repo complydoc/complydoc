@@ -1,7 +1,7 @@
 import type { Report } from "./types";
 
 /** The report schemas this viewer was written against. */
-export const SUPPORTED_SCHEMAS = [15, 16] as const;
+export const SUPPORTED_SCHEMAS = [15, 16, 17] as const;
 
 export class ReportError extends Error {
   override name = "ReportError";

@@ -7,6 +7,23 @@ separately.
 
 ## [Unreleased]
 
+The report JSON moves to schema 17, which only adds fields; reports of schema 16 still
+load.
+
+### Added
+
+- Ignoring findings. `complydoc ignore <fingerprint> --reason …` records a finding that is
+  not a problem in `.complydoc-ignore.yaml`, with who decided, an optional end date and
+  optional path globs. An audit reads that file at the top of the folder, or the one
+  `--ignore-file` names. Each ignored finding moves into the document's `ignored` list
+  with its reason, and every count, limitation, quick win and policy rule leaves it out,
+  so `complydoc check` passes on it. The report says how many findings were ignored,
+  which entries expired and which matched nothing. Every identifier and passage now has
+  a `fingerprint`, the same in every run, which never contains the value.
+  `check --report --ignore-file` applies the file to a report written before it. In
+  `complydoc ui`, the Security page can ignore a finding and stop ignoring it, writing
+  the audited folder's ignore file. It accepts that write only from its own page.
+
 ### Changed
 
 - One kind of price. Every model is priced from the vendored table, from models.dev and

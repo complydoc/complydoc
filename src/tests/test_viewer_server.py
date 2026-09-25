@@ -199,3 +199,99 @@ def test_an_audit_says_how_to_open_the_viewer(tmp_path: Path):
     assert result.exit_code == 0, result.output
     # The folder follows the command, since it is not the default; a narrow terminal cuts it short.
     assert "View    complydoc ui /" in result.output
+
+
+def send(
+    port: int, method: str, path: str, body: object, origin: str | None, content_type: str
+) -> tuple[int, bytes]:
+    connection = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+    headers = {"Content-Type": content_type}
+    if origin is not None:
+        headers["Origin"] = origin
+    connection.request(method, path, body=json.dumps(body), headers=headers)
+    response = connection.getresponse()
+    data = response.read()
+    connection.close()
+    return response.status, data
+
+
+FINGERPRINT = "id-3f2a9c1e0b7d4e55"
+
+
+def test_the_viewer_can_set_a_finding_aside_in_the_audited_folder(tmp_path: Path, dist: Path):
+    audited = tmp_path / "contracts"
+    audited.mkdir()
+    reports = tmp_path / ".complydoc"
+    write_report(reports / "complydoc.json", target=str(audited), schema=17)
+    viewer = launch_ui(reports, port=0, open_browser=False, dist=dist)
+    try:
+        (report,) = viewer.reports()
+        url = f"/api/reports/{report.id}/ignores"
+        origin = f"http://127.0.0.1:{viewer.port}"
+        status, _headers, body = get(viewer.port, url)
+        assert status == 200
+        assert json.loads(body)["ignores"] == []
+
+        entry = {"finding": FINGERPRINT, "reason": "Our own account.", "until": "2027-01-01"}
+        status, body = send(viewer.port, "POST", url, entry, origin, "application/json")
+        assert status == 200, body
+        (written,) = json.loads(body)["ignores"]
+        assert written["reason"] == "Our own account."
+        assert written["by"]
+        assert (audited / ".complydoc-ignore.yaml").is_file()
+
+        status, body = send(
+            viewer.port, "DELETE", url, {"finding": FINGERPRINT}, origin, "application/json"
+        )
+        assert status == 200
+        assert json.loads(body)["ignores"] == []
+
+        status, body = send(
+            viewer.port, "POST", url, {"finding": "nope", "reason": "x"}, origin, "application/json"
+        )
+        assert status == 400
+    finally:
+        viewer.stop()
+
+
+@pytest.mark.parametrize(
+    ("origin", "content_type"),
+    [
+        ("http://evil.example", "application/json"),
+        (None, "application/json"),
+        ("http://127.0.0.1:{port}", "text/plain"),
+    ],
+)
+def test_refuses_a_write_from_anywhere_but_its_own_page(
+    tmp_path: Path, dist: Path, origin: str | None, content_type: str
+):
+    audited = tmp_path / "contracts"
+    audited.mkdir()
+    reports = tmp_path / ".complydoc"
+    write_report(reports / "complydoc.json", target=str(audited), schema=17)
+    viewer = launch_ui(reports, port=0, open_browser=False, dist=dist)
+    try:
+        (report,) = viewer.reports()
+        entry = {"finding": FINGERPRINT, "reason": "Planted."}
+        status, _body = send(
+            viewer.port,
+            "POST",
+            f"/api/reports/{report.id}/ignores",
+            entry,
+            origin.format(port=viewer.port) if origin else None,
+            content_type,
+        )
+        assert status == 403
+        assert not (audited / ".complydoc-ignore.yaml").exists()
+    finally:
+        viewer.stop()
+
+
+def test_a_report_whose_folder_is_not_here_cannot_be_changed(reports: Path, dist: Path):
+    viewer = launch_ui(reports, port=0, open_browser=False, dist=dist)
+    try:
+        report = viewer.reports()[0]
+        status, _headers, _body = get(viewer.port, f"/api/reports/{report.id}/ignores")
+        assert status == 404
+    finally:
+        viewer.stop()

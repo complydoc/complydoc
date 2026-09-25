@@ -23,6 +23,7 @@ from complydoc.ingest.base import DocumentFormat, SkipRecord
 from complydoc.readiness.analyser import ReadinessReport
 from complydoc.readiness.base import SignalStatus
 from complydoc.report.preview import PagePreview
+from complydoc.sensitive.base import SensitiveMatch
 from complydoc.sensitive.scanner import ScanResult
 
 if TYPE_CHECKING:  # pragma: no cover - type-checking imports only
@@ -42,6 +43,9 @@ __all__ = [
     "ExtractorReading",
     "FactCheck",
     "IdentifierDifference",
+    "IgnoreRule",
+    "IgnoreSummary",
+    "IgnoredFinding",
     "Limitation",
     "LoaderComparison",
     "PageText",
@@ -51,7 +55,7 @@ __all__ = [
     "VerificationSummary",
 ]
 
-SCHEMA_VERSION = 16
+SCHEMA_VERSION = 17
 
 
 def report_shape() -> dict[str, object]:
@@ -75,6 +79,7 @@ def report_shape() -> dict[str, object]:
             "loader_comparison",
             "routing",
             "verification",
+            "ignores",
             "limitations",
             "staleness_warnings",
             "signal_weights",
@@ -117,7 +122,7 @@ def report_shape() -> dict[str, object]:
             "readiness.signals[]": "id, value, rating, weight, why, status",
             "readiness.score": "value 0-100, higher is better; label; low_confidence",
             "sensitive.matches[]": (
-                "category, page, line, column, masked, severity, and evidence: "
+                "category, page, line, column, masked, severity, fingerprint, and evidence: "
                 "confirmed | corroborated | pattern | model"
             ),
             "sensitive.unreadable_pages": "pages that were not searched at all",
@@ -147,7 +152,12 @@ def report_shape() -> dict[str, object]:
             "content_findings[]": (
                 "page, visibility (visible | not_measured | suspected | confirmed), "
                 "instruction (confirmed | pattern | model | none), severity, excerpt, "
-                "hidden_reasons[], instruction_reasons[], score, in_loader_output"
+                "hidden_reasons[], instruction_reasons[], score, in_loader_output, fingerprint"
+            ),
+            "ignored[]": (
+                "findings an ignore file set aside, left out of every count and rule: "
+                "fingerprint, kind (identifier | content), reason, by, until, and the "
+                "finding itself as identifier or content"
             ),
             "visibility_checked": "bool, null when the scan did not run",
             "path_exposures": "metadata keys holding an absolute filesystem path",
@@ -188,6 +198,10 @@ def report_shape() -> dict[str, object]:
             "null unless --verify: model, scope, min_coverage, pages_total, pages_checked, "
             "pages_agree, pages_disagree, pages_filled, pages_failed, pages_unreadable, "
             "usd, usd_basis, headline"
+        ),
+        "ignores": (
+            "null unless an ignore file was read: file, rules[] (finding, reason, by, "
+            "until, paths[], what, matched, expired)"
         ),
         "limitations[]": "area, statement, affected[], severity (info | important)",
     }
@@ -268,6 +282,8 @@ class ContentFinding:
     """The registered classifier's score, when there is one."""
     in_loader_output: bool | None = None
     """For loader output: whether the loader's text contains this passage."""
+    fingerprint: str = ""
+    """The same for this passage in every document and run; what an ignore file names."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -636,6 +652,60 @@ class ExtractorReading:
 
 
 @dataclass(slots=True)
+class IgnoredFinding:
+    """A finding an ignore file set aside, with the reason it gave.
+
+    Kept in the report, so what was ignored stays visible, and out of every
+    count, limitation, quick win and rule, so it no longer fails a check.
+    """
+
+    fingerprint: str
+    kind: str
+    """`identifier` (one of `sensitive.matches`) or `content` (one of `content_findings`)."""
+    reason: str
+    by: str | None = None
+    until: str | None = None
+    """The date the ignore stops applying, ISO format, or None for never."""
+    identifier: SensitiveMatch | None = None
+    content: ContentFinding | None = None
+
+
+@dataclass(slots=True)
+class IgnoreRule:
+    """One entry of the ignore file, and what it did on this run."""
+
+    finding: str
+    reason: str
+    by: str | None = None
+    until: str | None = None
+    paths: list[str] = field(default_factory=list)
+    """Globs of relative paths it is limited to. Empty means every document."""
+    what: str | None = None
+    """What the finding is, in words, as the person who ignored it wrote it."""
+    added: str | None = None
+    matched: int = 0
+    """Findings it set aside on this run."""
+    expired: bool = False
+    """Past its `until`: it set nothing aside, and the findings are counted again."""
+
+
+@dataclass(slots=True)
+class IgnoreSummary:
+    """The ignore file a run read, and each of its entries."""
+
+    file: str
+    rules: list[IgnoreRule] = field(default_factory=list)
+
+    @property
+    def expired(self) -> list[IgnoreRule]:
+        return [rule for rule in self.rules if rule.expired]
+
+    @property
+    def unused(self) -> list[IgnoreRule]:
+        return [rule for rule in self.rules if not rule.expired and rule.matched == 0]
+
+
+@dataclass(slots=True)
 class DocumentReport:
     path: Path
     relative_path: str
@@ -665,6 +735,8 @@ class DocumentReport:
     visibility_checked: bool | None = None
     """Whether hidden text could be checked for. None when the scan did not run."""
     visibility_note: str | None = None
+    ignored: list[IgnoredFinding] = field(default_factory=list)
+    """Findings an ignore file set aside. Not in `sensitive.matches` or `content_findings`."""
     path_exposures: list[str] = field(default_factory=list)
     """Metadata keys whose value is an absolute filesystem path.
 
@@ -742,6 +814,8 @@ class Aggregate:
     content_findings_high: int = 0
     documents_with_content_findings: int = 0
     documents_visibility_unchecked: int = 0
+    ignored_total: int = 0
+    """Findings an ignore file set aside, and so left out of the counts above."""
 
     total_seconds: float = 0.0
     """Wall clock for the whole run, measured on the machine that ran it."""
@@ -796,6 +870,8 @@ class AuditReport:
     `complydoc.report.routing`."""
     verification: VerificationSummary | None = None
     """How many pages an independent vision read agreed with. None unless `--verify`."""
+    ignores: IgnoreSummary | None = None
+    """The ignore file this run read, and what each entry set aside. None without one."""
 
     def to_pandas(self, table: str = "documents") -> Any:
         """One table of this report as a pandas DataFrame.
@@ -944,6 +1020,7 @@ def build_aggregate(
         content_findings_high=content.high,
         documents_with_content_findings=content.documents_with_findings,
         documents_visibility_unchecked=content.documents_unchecked,
+        ignored_total=sum(len(d.ignored) for d in documents),
         total_seconds=round(measured_seconds, 3),
         seconds_per_document=(round(measured_seconds / len(timings), 3) if timings else None),
         seconds_per_page=round(measured_seconds / pages, 3) if pages else None,

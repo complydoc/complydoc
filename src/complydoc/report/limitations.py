@@ -8,15 +8,16 @@ unverified.
 from __future__ import annotations
 
 from collections import defaultdict
+from pathlib import Path
 
 from complydoc.config.loader import StalenessWarning
 from complydoc.config.schema import Config
 from complydoc.ingest.base import TIMED_OUT, SkipRecord
 from complydoc.readiness.base import SignalStatus
-from complydoc.report.models import DocumentReport, Limitation, RunMetadata
+from complydoc.report.models import DocumentReport, IgnoreSummary, Limitation, RunMetadata
 from complydoc.utils.text import count, plural
 
-__all__ = ["build_limitations"]
+__all__ = ["build_limitations", "ignore_limitations"]
 
 
 def _sampling(run: RunMetadata) -> list[Limitation]:
@@ -809,6 +810,58 @@ def _components_not_run(run: RunMetadata) -> list[Limitation]:
         )
 
     return limitations
+
+
+def ignore_limitations(summary: IgnoreSummary | None, ignored: int) -> list[Limitation]:
+    """What an ignore file set aside, and which of its entries no longer do anything.
+
+    Said every time, because a count with findings taken out of it reads the
+    same as a count without them.
+    """
+    if summary is None:
+        return []
+    name = Path(summary.file).name
+    notes: list[Limitation] = []
+    if ignored:
+        notes.append(
+            Limitation(
+                area="Ignored findings",
+                statement=(
+                    f"{count(ignored, 'finding')} {plural(ignored, 'was', 'were')} set aside "
+                    f"by {name}, each with a reason, and left out of every count and "
+                    f"rule in this report. They are listed under each document's ignored "
+                    f"findings."
+                ),
+            )
+        )
+    if summary.expired:
+        notes.append(
+            Limitation(
+                area="Expired ignores",
+                statement=(
+                    f"{count(len(summary.expired), 'entry', 'entries')} in {name} passed "
+                    f"{plural(len(summary.expired), 'its', 'their')} end date, so what "
+                    f"{plural(len(summary.expired), 'it', 'they')} set aside is counted "
+                    f"again. Look at it again, then renew or remove "
+                    f"{plural(len(summary.expired), 'the entry', 'each entry')}."
+                ),
+                affected=[f"{rule.finding} (until {rule.until})" for rule in summary.expired],
+                severity="important",
+            )
+        )
+    if summary.unused:
+        notes.append(
+            Limitation(
+                area="Ignores that matched nothing",
+                statement=(
+                    f"{count(len(summary.unused), 'entry', 'entries')} in {name} "
+                    f"matched no finding in this run. The document may have changed, or the "
+                    f"entry may belong to another folder."
+                ),
+                affected=[rule.what or rule.finding for rule in summary.unused],
+            )
+        )
+    return notes
 
 
 def build_limitations(

@@ -46,6 +46,9 @@ off without deleting it.
 `error`. Relative paths, such as a baseline, are resolved from the policy file's
 own directory.
 
+A finding that is not a problem, such as your own company's account number, can
+be [ignored with a reason](ignore-findings.md). Every rule then skips it.
+
 ## Exit codes
 
 | Code | Meaning |

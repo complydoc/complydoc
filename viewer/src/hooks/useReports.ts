@@ -10,10 +10,10 @@ export interface ReportsState {
 
 let counter = 0;
 
-function read(name: string, text: string): Loaded | string {
+function read(name: string, text: string, source?: string): Loaded | string {
   try {
     counter += 1;
-    return { id: `${counter}:${name}`, name, report: parseReport(text) };
+    return { id: `${counter}:${name}`, name, report: parseReport(text), ...(source ? { source } : {}) };
   } catch (error) {
     return `${name}: ${error instanceof ReportError ? error.message : "The report could not be read."}`;
   }
@@ -28,8 +28,8 @@ function read(name: string, text: string): Loaded | string {
 export function useReports(initial: () => ReportsState = () => ({ loaded: [], errors: [] })) {
   const [state, setState] = useState<ReportsState>(initial);
 
-  const addTexts = useCallback((files: { name: string; text: string }[]) => {
-    const results = files.map((file) => read(file.name, file.text));
+  const addTexts = useCallback((files: { name: string; text: string; source?: string }[]) => {
+    const results = files.map((file) => read(file.name, file.text, file.source));
     setState((current) => ({
       loaded: [...current.loaded, ...results.filter((r): r is Loaded => typeof r !== "string")],
       errors: results.filter((r): r is string => typeof r === "string"),

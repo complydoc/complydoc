@@ -14,6 +14,8 @@ export interface Loaded {
   /** The file it was opened from. */
   name: string;
   report: Report;
+  /** Where `complydoc ui` serves it from, e.g. `api/reports/3f2a…`. Absent for a file opened in the browser. */
+  source?: string;
 }
 
 export interface Collection {

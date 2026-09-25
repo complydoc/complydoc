@@ -39,7 +39,9 @@ export function localConfig(): LocalConfig | null {
  * They come from the server on this machine that served the page; the viewer
  * asks nothing of any other.
  */
-export function useLocalReports(addTexts: (files: { name: string; text: string }[]) => void): LocalState {
+export function useLocalReports(
+  addTexts: (files: { name: string; text: string; source?: string }[]) => void,
+): LocalState {
   const [config] = useState(localConfig);
   const [state, setState] = useState<LocalState>(() => ({
     status: config ? "loading" : "off",
@@ -58,7 +60,11 @@ export function useLocalReports(addTexts: (files: { name: string; text: string }
       try {
         const list = (await (await get(config.reports)).json()) as { reports: ListedReport[] };
         const files = await Promise.all(
-          list.reports.map(async (report) => ({ name: report.name, text: await (await get(report.url)).text() })),
+          list.reports.map(async (report) => ({
+            name: report.name,
+            text: await (await get(report.url)).text(),
+            source: report.url,
+          })),
         );
         if (abort.signal.aborted) return;
         if (files.length) addTexts(files);

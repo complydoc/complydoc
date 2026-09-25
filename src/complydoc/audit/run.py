@@ -45,6 +45,7 @@ from complydoc.hidden.instructions import (
     register_instruction_classifier,
     resolve_classifier,
 )
+from complydoc.ignores import IgnoreFile, apply_ignores, find_ignore_file, load_ignores
 from complydoc.ingest import ocr as ocr_module
 from complydoc.ingest.base import (
     TIMED_OUT,
@@ -57,7 +58,7 @@ from complydoc.ingest.base import (
 from complydoc.ingest.extractors.registry import DEFAULT_EXTRACTOR
 from complydoc.ingest.registry import load_document
 from complydoc.readiness.analyser import analyse
-from complydoc.report.limitations import build_limitations
+from complydoc.report.limitations import build_limitations, ignore_limitations
 from complydoc.report.models import (
     SCHEMA_VERSION,
     AuditReport,
@@ -966,8 +967,12 @@ def run_audit(
     verify_with: str | VisionModel | None = None,
     verify_scope: str = "flagged",
     progress: Callable[[int, int, Path], None] | None = None,
+    ignore_file: Path | None = None,
 ) -> AuditReport:
     """Audit `target` and assemble the report.
+
+    `ignore_file` names findings to set aside (see `complydoc.ignores`). Without
+    it, `.complydoc-ignore.yaml` at the top of `target` is read when it exists.
 
     `verify_with` reads pages again with a vision model: a `vision:module:function`
     spec, which crosses into worker processes, or a model object, which keeps the
@@ -975,6 +980,9 @@ def run_audit(
     """
     started = time.monotonic()
     started_at = dt.datetime.now().astimezone()
+    # Read before any document is, so a broken file stops the run at once.
+    ignore_path = ignore_file or find_ignore_file(target)
+    ignores = (ignore_path, load_ignores(ignore_path)) if ignore_path is not None else None
     # A caller can run several audits in one process, and last run's calls are
     # not this run's.
     _CLASSIFIER_TOTALS[:] = (0, 0)
@@ -1082,6 +1090,7 @@ def run_audit(
         run,
         resolution=resolution,
         monthly_volume=monthly_volume,
+        ignores=ignores,
     )
 
 
@@ -1094,12 +1103,20 @@ def assemble_report(
     *,
     resolution: str = "medium",
     monthly_volume: int | None = None,
+    ignores: tuple[Path, IgnoreFile] | None = None,
 ) -> AuditReport:
     """The report around a finished set of entries: totals, limitations, scores.
+
+    `ignores` sets findings aside first, so they leave everything counted after.
 
     Shared by a folder audit and by an inspection of a loader's output, so the
     two cannot drift into different ideas of what a report contains.
     """
+    ignore_summary = (
+        apply_ignores(documents, ignores[0], ignores[1], dt.date.today())
+        if ignores is not None
+        else None
+    )
     folder_cost = None
     if "cost" in requested:
         folder_cost = folder_from_estimates(
@@ -1118,6 +1135,7 @@ def assemble_report(
         aggregate=build_aggregate(documents, skipped, folder_cost),
         staleness_warnings=[w.message for w in staleness],
         config_masking=config.sensitive.masking,
+        ignores=ignore_summary,
     )
     if "readiness" in requested and config.readiness.scoring.enabled:
         report.signal_weights = {
@@ -1126,6 +1144,9 @@ def assemble_report(
             if settings.enabled
         }
     report.limitations = build_limitations(run, documents, skipped, staleness, config)
+    report.limitations += ignore_limitations(
+        ignore_summary, report.aggregate.ignored_total if report.aggregate else 0
+    )
     report.verification = summarise_verification(
         documents, config.readiness.routing.verify_min_coverage_pct / 100
     )

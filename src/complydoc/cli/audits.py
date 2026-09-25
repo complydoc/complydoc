@@ -36,6 +36,7 @@ from complydoc.cli.common import (
     DetailOpt,
     ExtractedTextOpt,
     ExtractorOpt,
+    IgnoreFileOpt,
     JobsOpt,
     ModelOpt,
     NameOpt,
@@ -64,6 +65,7 @@ from complydoc.cli.common import (
     route_output,
 )
 from complydoc.cost.estimator import UnknownModelError
+from complydoc.ignores import IgnoreError
 from complydoc.report.json_writer import Detail
 from complydoc.report.models import AuditReport
 from complydoc.utils.text import count
@@ -156,6 +158,18 @@ def summary(report: AuditReport) -> None:
         high = aggregate.content_findings_high
         found = count(passages, "passage") if passages else "none found"
         table.add_row("Hidden content", f"[red]{found}, {high} high[/]" if high else found)
+        if aggregate.ignored_total:
+            table.add_row(
+                "Ignored",
+                f"{count(aggregate.ignored_total, 'finding')} "
+                f"[dim](set aside with a reason; complydoc ignore --list)[/]",
+            )
+        expired = report.ignores.expired if report.ignores else []
+        if expired:
+            table.add_row(
+                "Expired ignores",
+                f"[yellow]{len(expired)}[/] — counted again until renewed or removed",
+            )
     if aggregate.pages_unreadable:
         why = ""
         if report.run.ocr_requested and not report.run.ocr_available:
@@ -293,6 +307,7 @@ def run(
     detail: ReportDetail = ReportDetail.summary,
     verify: str | None = None,
     verify_scope: str = "flagged",
+    ignore_file: Path | None = None,
 ) -> None:
     """Audit `target` and write the reports: what every audit command does."""
     offline.arm()
@@ -368,7 +383,11 @@ def run(
                     verify_with=verify,
                     verify_scope=verify_scope,
                     progress=progress,
+                    ignore_file=ignore_file,
                 )
+    except IgnoreError as exc:
+        errors.print(f"[bold red]Cannot read the ignore file[/] — {escape(str(exc))}")
+        raise typer.Exit(code=2) from exc
     except ClassifierError as exc:
         errors.print(f"[bold red]Cannot use that classifier[/] — {escape(str(exc))}")
         raise typer.Exit(code=2) from exc
@@ -429,6 +448,7 @@ def audit(
     classifier_threshold: ClassifierThresholdOpt = None,
     verify: VerifyOpt = None,
     verify_scope: VerifyScopeOpt = "flagged",
+    ignore_file: IgnoreFileOpt = None,
 ) -> None:
     """Run every check: cost, readiness, identifiers and hidden content."""
     run(
@@ -462,6 +482,7 @@ def audit(
         detail=detail,
         verify=verify,
         verify_scope=verify_scope,
+        ignore_file=ignore_file,
     )
 
 

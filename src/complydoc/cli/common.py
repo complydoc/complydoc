@@ -86,6 +86,14 @@ OutDirOpt = Annotated[
 ]
 DEFAULT_OUT = Path(".complydoc")
 """Hidden, so a second run does not discover the first run's own reports."""
+IgnoreFileOpt = Annotated[
+    Path | None,
+    typer.Option(
+        "--ignore-file",
+        help="Findings to set aside, each with a reason. Without it, "
+        ".complydoc-ignore.yaml at the top of the folder is read when there is one.",
+    ),
+]
 ConfigOpt = Annotated[
     Path | None, typer.Option("--config-dir", help="Override the config directory.")
 ]

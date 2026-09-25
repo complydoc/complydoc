@@ -11,6 +11,11 @@ What the server does, and does not do:
   elsewhere cannot use DNS rebinding to read the reports through it.
 - It serves the viewer's own files and the reports it found, nothing else. A
   report is asked for by an id the server gave it, never by a path.
+- It writes one file: the ignore file of a folder a report audited, when the
+  viewer's own page asks it to set a finding aside. A write must come from that
+  page — same origin, JSON body — so another site open in the browser cannot
+  make one. It writes `.complydoc-ignore.yaml` in the audited folder, or the
+  ignore file the run read if it is still a valid one, never any other file.
 - It makes no outbound connection. The viewer it serves makes none either.
 
 Reports are found again on every request for the list, so a report written
@@ -19,6 +24,7 @@ while the server runs appears when the page is reloaded.
 
 from __future__ import annotations
 
+import datetime as dt
 import hashlib
 import json
 import mimetypes
@@ -37,6 +43,7 @@ __all__ = [
     "ViewerNotBuiltError",
     "ViewerServer",
     "find_reports",
+    "ignore_file_for",
     "launch_ui",
 ]
 
@@ -169,6 +176,33 @@ def find_reports(*sources: str | Path) -> list[FoundReport]:
     return sorted(found.values(), key=lambda report: report.modified, reverse=True)
 
 
+def ignore_file_for(report_path: Path) -> Path | None:
+    """The ignore file a finding in this report is set aside in, or None.
+
+    The one the run read, when it is still there and still an ignore file, else
+    `.complydoc-ignore.yaml` at the top of the folder the report audited. None
+    when that folder is not on this machine.
+    """
+    from complydoc.ignores import IGNORE_FILENAME, IgnoreError, load_ignores
+
+    try:
+        data = json.loads(report_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, ValueError):
+        return None
+    read = (data.get("ignores") or {}).get("file") if isinstance(data, dict) else None
+    if isinstance(read, str) and read.endswith((".yaml", ".yml")) and Path(read).is_file():
+        try:
+            load_ignores(Path(read))
+            return Path(read)
+        except IgnoreError:
+            pass
+    target = Path(str((data.get("run") or {}).get("target") or ""))
+    if not target.is_absolute():
+        return None
+    folder = target if target.is_dir() else target.parent
+    return folder / IGNORE_FILENAME if folder.is_dir() else None
+
+
 def _index_html(dist: Path, sources: list[str]) -> bytes:
     """The viewer's page, told where the reports are."""
     page = (dist / "index.html").read_text(encoding="utf-8")
@@ -210,6 +244,89 @@ class _Handler(BaseHTTPRequestHandler):
     def do_HEAD(self) -> None:
         self.do_GET()
 
+    def _same_origin(self) -> bool:
+        """Whether a write came from the viewer's own page.
+
+        A page elsewhere can send a form to this port, and the Host check alone
+        lets it through, since the browser names this machine for it. A JSON body
+        makes the browser ask first, which this server never answers, and the
+        Origin says who is asking.
+        """
+        port = self.server.server_address[1]
+        origin = (self.headers.get("Origin") or "").strip().lower()
+        content_type = (self.headers.get("Content-Type") or "").split(";")[0].strip().lower()
+        return content_type == "application/json" and origin in {
+            f"http://127.0.0.1:{port}",
+            f"http://localhost:{port}",
+            f"http://[::1]:{port}",
+        }
+
+    def _json(self, status: HTTPStatus, data: Any) -> None:
+        self._send(status, json.dumps(data).encode("utf-8"), "application/json")
+
+    def _ignores_of(self, path: str) -> tuple[FoundReport, Path] | None:
+        """The report a `/api/reports/{id}/ignores` path names, and its ignore file."""
+        wanted = path.removeprefix(f"/{API}/reports/").split("/")[0]
+        report = next((r for r in find_reports(*self.server.sources) if r.id == wanted), None)
+        if report is None:
+            return None
+        file = ignore_file_for(report.path)
+        return None if file is None else (report, file)
+
+    def _ignores(self, file: Path) -> None:
+        from complydoc.ignores import load_ignores
+
+        entries = [entry.model_dump(mode="json") for entry in load_ignores(file).ignores]
+        self._json(HTTPStatus.OK, {"file": str(file), "ignores": entries})
+
+    def _write_ignore(self) -> None:
+        from complydoc.ignores import (
+            IgnoreEntry,
+            IgnoreError,
+            add_ignore,
+            remove_ignore,
+            who,
+        )
+
+        if not self._local_host() or not self._same_origin():
+            self._error(HTTPStatus.FORBIDDEN, "only the viewer's own page can change an ignore")
+            return
+        path = unquote(urlsplit(self.path).path)
+        found = self._ignores_of(path) if path.endswith("/ignores") else None
+        if found is None:
+            self._error(HTTPStatus.NOT_FOUND, "no such report, or its folder is gone")
+            return
+        _report, file = found
+        try:
+            length = min(int(self.headers.get("Content-Length") or 0), 64_000)
+            body = json.loads(self.rfile.read(length) or b"{}")
+            if not isinstance(body, dict):
+                raise ValueError("expected an object")
+            if self.command == "DELETE":
+                remove_ignore(file, str(body.get("finding", "")))
+            else:
+                add_ignore(
+                    file,
+                    IgnoreEntry.model_validate(
+                        {
+                            key: body[key]
+                            for key in ("finding", "reason", "what", "paths", "until")
+                            if body.get(key) not in (None, "")
+                        }
+                        | {"by": who(), "added": dt.date.today()}
+                    ),
+                )
+        except (IgnoreError, ValueError, OSError) as exc:
+            self._error(HTTPStatus.BAD_REQUEST, str(exc))
+            return
+        self._ignores(file)
+
+    def do_POST(self) -> None:
+        self._write_ignore()
+
+    def do_DELETE(self) -> None:
+        self._write_ignore()
+
     def do_GET(self) -> None:
         if not self._local_host():
             self._error(HTTPStatus.FORBIDDEN, "complydoc ui answers requests to this machine only")
@@ -226,6 +343,15 @@ class _Handler(BaseHTTPRequestHandler):
             reports = [report.to_dict() for report in find_reports(*server.sources)]
             body = json.dumps({"reports": reports, "sources": server.source_names}).encode("utf-8")
             self._send(HTTPStatus.OK, body, "application/json")
+        elif path.startswith(f"/{API}/reports/") and path.endswith("/ignores"):
+            found = self._ignores_of(path)
+            if found is None:
+                self._error(HTTPStatus.NOT_FOUND, "no such report, or its folder is gone")
+                return
+            try:
+                self._ignores(found[1])
+            except ValueError as exc:
+                self._error(HTTPStatus.CONFLICT, str(exc))
         elif path.startswith(f"/{API}/reports/"):
             wanted = path.removeprefix(f"/{API}/reports/")
             report = next((r for r in find_reports(*server.sources) if r.id == wanted), None)

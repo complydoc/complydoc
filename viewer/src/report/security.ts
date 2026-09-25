@@ -70,6 +70,7 @@ export interface HiddenInstruction {
   severity: Severity;
   reasons: string[];
   hiddenBy: string[];
+  fingerprint?: string | undefined;
 }
 
 /** Passages written for a model and hidden from a person, where they are and why each was flagged. */
@@ -85,6 +86,7 @@ export function hiddenInstructions(report: Report): HiddenInstruction[] {
       severity: finding.severity,
       reasons: finding.instruction_reasons,
       hiddenBy: finding.hidden_reasons,
+      fingerprint: finding.fingerprint,
     })),
   );
 }
@@ -94,5 +96,40 @@ export function evidenceCounts(report: Report): { label: string; count: number }
   const matches = report.documents.flatMap((document) => document.sensitive.matches);
   return EVIDENCE.map(({ key, label }) => ({ label, count: matches.filter((m) => m.evidence === key).length })).filter(
     (row) => row.count > 0,
+  );
+}
+
+export interface IgnoredRow {
+  id: string;
+  document: number;
+  path: string;
+  page: number | null;
+  fingerprint: string;
+  /** The finding in words: the identifier and its masked value, or the passage. */
+  what: string;
+  reason: string;
+  by: string | null;
+  until: string | null;
+}
+
+/** Every finding an ignore file set aside on this run, in document order. */
+export function ignoredRows(report: Report): IgnoredRow[] {
+  return report.documents.flatMap((document, index) =>
+    (document.ignored ?? []).map((ignored, position) => {
+      const finding = ignored.identifier ?? ignored.content;
+      return {
+        id: `${index}-${position}`,
+        document: index,
+        path: document.relative_path,
+        page: finding?.page ?? null,
+        fingerprint: ignored.fingerprint,
+        what: ignored.identifier
+          ? `${ignored.identifier.label} ${ignored.identifier.masked}`
+          : `“${ignored.content?.excerpt ?? ""}”`,
+        reason: ignored.reason,
+        by: ignored.by,
+        until: ignored.until,
+      };
+    }),
   );
 }

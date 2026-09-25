@@ -6,6 +6,7 @@ import { fileName } from "@/report/format";
 import { documentHref } from "@/report/route";
 import type { HiddenInstruction } from "@/report/security";
 import { severityTone } from "@/report/select";
+import { IgnoreButton } from "./IgnoreButton";
 
 /** Each passage written for a model and hidden from a person: where, what it says, and why it was flagged. */
 export function HiddenInstructions({ found }: { found: HiddenInstruction[] }) {
@@ -30,6 +31,7 @@ export function HiddenInstructions({ found }: { found: HiddenInstruction[] }) {
           </ItemContent>
           <ItemActions>
             <ToneBadge tone={severityTone(finding.severity)}>{finding.severity}</ToneBadge>
+            <IgnoreButton fingerprint={finding.fingerprint} what="this passage" />
           </ItemActions>
           <ItemFooter className="flex-wrap justify-start gap-1.5">
             {finding.hiddenBy.map((reason) => (

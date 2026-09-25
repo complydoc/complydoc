@@ -5,11 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { ChartConfig } from "@/components/ui/chart";
 import { fileName, formatCount, humanise } from "@/report/format";
 import { documentHref } from "@/report/route";
-import { evidenceCounts, findingRows, hiddenInstructions, severityByDocument } from "@/report/security";
+import { evidenceCounts, findingRows, hiddenInstructions, ignoredRows, severityByDocument } from "@/report/security";
 import { SEVERITIES, categoriesByCount } from "@/report/select";
 import type { Report } from "@/report/types";
 import { FindingTable } from "./FindingTable";
 import { HiddenInstructions } from "./HiddenInstructions";
+import { IgnoredFindings } from "./IgnoredFindings";
 
 const BY_KIND = { count: { label: "Found", color: "var(--chart-5)" } } satisfies ChartConfig;
 const BY_EVIDENCE = { count: { label: "Found", color: "var(--primary)" } } satisfies ChartConfig;
@@ -29,6 +30,7 @@ export function SecurityPage({ report }: { report: Report }) {
     index: report.documents.findIndex((d) => d.relative_path === row.path),
   }));
   const kinds = categoriesByCount(report);
+  const ignored = ignoredRows(report);
 
   return (
     <SectionStack>
@@ -42,6 +44,7 @@ export function SecurityPage({ report }: { report: Report }) {
             />
           ))}
           <Stat label="Hidden instructions" value={formatCount(hidden.length)} />
+          {ignored.length > 0 && <Stat label="Ignored" value={formatCount(ignored.length)} />}
         </StatGrid>
       </Section>
 
@@ -90,6 +93,12 @@ export function SecurityPage({ report }: { report: Report }) {
       <Section title="Every finding">
         <FindingTable rows={findingRows(report)} />
       </Section>
+
+      {ignored.length > 0 && (
+        <Section title="Ignored" aside="Set aside with a reason, and left out of every count above">
+          <IgnoredFindings rows={ignored} />
+        </Section>
+      )}
     </SectionStack>
   );
 }

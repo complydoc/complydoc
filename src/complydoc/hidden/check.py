@@ -24,6 +24,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from complydoc.config.schema import Config
+from complydoc.fingerprint import passage_fingerprint
 from complydoc.hidden.instructions import (
     InstructionMatch,
     InstructionMatcher,
@@ -452,6 +453,7 @@ def _finding(
         instruction_reasons=list(instruction_reasons),
         score=score,
         in_loader_output=in_loader_output,
+        fingerprint=passage_fingerprint(clean),
     )
 
 

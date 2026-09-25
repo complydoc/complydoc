@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from complydoc.config.schema import CategoryConfig, SensitiveConfig
+from complydoc.fingerprint import identifier_fingerprint
 from complydoc.ingest.base import Document
 from complydoc.sensitive.base import (
     DetectorContext,
@@ -267,6 +268,7 @@ def _scan_page(
                 ),
                 validators_passed=candidate.validators_passed,
                 context_term=finding.context_term,
+                fingerprint=identifier_fingerprint(candidate.category_id, value),
             )
         )
 

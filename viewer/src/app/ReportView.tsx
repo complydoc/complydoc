@@ -16,6 +16,7 @@ import { useHashRoute } from "@/hooks/useHashRoute";
 import { ModeToggle } from "@/components/ModeToggle";
 import { PlanBar } from "@/components/PlanBar";
 import { PlanProvider } from "@/components/PlanProvider";
+import { IgnoreProvider } from "@/components/IgnoreProvider";
 import { cn } from "@/lib/utils";
 import { CollectionSwitcher, type Selection } from "@/components/CollectionSwitcher";
 import { OverviewPage } from "@/features/collections/OverviewPage";
@@ -145,10 +146,12 @@ export function ReportView({
             </div>
           </header>
           <main className={cn("mx-auto w-full p-4 md:p-6", page === "documents" ? "max-w-none" : "max-w-7xl")}>
-            {page === "home" && <HomePage report={report} previous={previous?.report ?? null} />}
-            {page === "security" && <SecurityPage report={report} />}
-            {page === "cost" && <CostPage report={report} />}
-            {page === "documents" && <DocumentsPage report={report} open={detail} />}
+            <IgnoreProvider report={report} {...(run.source ? { source: run.source } : {})}>
+              {page === "home" && <HomePage report={report} previous={previous?.report ?? null} />}
+              {page === "security" && <SecurityPage report={report} />}
+              {page === "cost" && <CostPage report={report} />}
+              {page === "documents" && <DocumentsPage report={report} open={detail} />}
+            </IgnoreProvider>
           </main>
         </SidebarInset>
       </SidebarProvider>
