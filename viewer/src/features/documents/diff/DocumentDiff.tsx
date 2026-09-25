@@ -64,7 +64,16 @@ function SidePicker({ label, report, side, onChange }: SidePickerProps) {
  * document's text layer against another reader or OCR, or one document
  * against another, such as two versions of a contract.
  */
-export function DocumentDiff({ report, index }: { report: Report; index: number }) {
+interface DocumentDiffProps {
+  report: Report;
+  index: number;
+  /** A page to scroll to, asked for by the page picker. */
+  jump?: { page: number } | null;
+  /** Called with the page at the top of the diff as it scrolls. */
+  onVisiblePage?: (page: number) => void;
+}
+
+export function DocumentDiff({ report, index, jump = null, onVisiblePage }: DocumentDiffProps) {
   const [[base, compare], setSides] = useState<[Side, Side]>(() => defaultSides(report, index));
   const [split, setSplit] = useState(true);
   const [layout, setLayout] = useState<Layout>("sentences");
@@ -117,6 +126,8 @@ export function DocumentDiff({ report, index }: { report: Report; index: number 
           newName={sideName(report, compare)}
           newText={sideText(report, compare, layout)}
           split={split}
+          jump={jump}
+          {...(onVisiblePage && { onVisiblePage })}
         />
       </Suspense>
     </div>

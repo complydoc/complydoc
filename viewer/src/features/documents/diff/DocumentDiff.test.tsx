@@ -26,4 +26,15 @@ describe("the diff view", () => {
     await userEvent.click(await screen.findByRole("option", { name: /\(kept\)/ }));
     expect(await screen.findByText(/No differences/, {}, { timeout: 5000 })).toBeInTheDocument();
   });
+
+  it("scrolls to the page picked, and follows the page as it is scrolled", async () => {
+    const report = sampleAudit();
+    const index = report.documents.findIndex((d) => d.relative_path.endsWith("annual-report-2025.pdf"));
+    renderPage(<DocumentsPage report={report} open={String(index)} />);
+    await userEvent.click(screen.getByRole("radio", { name: "Diff" }));
+    const scroller = await screen.findByTestId("diff-scroller", {}, { timeout: 5000 });
+    const scrolled = vi.spyOn(scroller, "scrollTo");
+    await userEvent.click(screen.getByRole("link", { name: /page 2|^2$/i }));
+    await vi.waitFor(() => expect(scrolled).toHaveBeenCalled());
+  });
 });

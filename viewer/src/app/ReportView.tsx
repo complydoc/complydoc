@@ -16,6 +16,7 @@ import { useHashRoute } from "@/hooks/useHashRoute";
 import { ModeToggle } from "@/components/ModeToggle";
 import { PlanBar } from "@/components/PlanBar";
 import { PlanProvider } from "@/components/PlanProvider";
+import { cn } from "@/lib/utils";
 import { fileName } from "@/report/format";
 import type { Report } from "@/report/types";
 import { AppSidebar } from "./AppSidebar";
@@ -71,7 +72,7 @@ export function ReportView({ report, name, dark, onToggleTheme, onClose }: Repor
               <ModeToggle dark={dark} onToggle={onToggleTheme} />
             </div>
           </header>
-          <main className="mx-auto w-full max-w-7xl p-4 md:p-6">
+          <main className={cn("mx-auto w-full p-4 md:p-6", page === "documents" ? "max-w-none" : "max-w-7xl")}>
             {page === "summary" && <SummaryPage report={report} />}
             {page === "security" && <SecurityPage report={report} />}
             {page === "cost" && <CostPage report={report} />}

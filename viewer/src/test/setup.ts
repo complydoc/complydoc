@@ -26,6 +26,7 @@ beforeEach(() => {
   Element.prototype.hasPointerCapture ??= () => false;
   Element.prototype.releasePointerCapture ??= () => {};
   Element.prototype.scrollIntoView ??= () => {};
+  Element.prototype.scrollTo ??= () => {};
   window.ResizeObserver ??= class {
     observe() {}
     unobserve() {}

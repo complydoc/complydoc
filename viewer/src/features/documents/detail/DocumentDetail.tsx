@@ -50,6 +50,18 @@ export function DocumentDetail({
   const priced = page && models.length > 0 && page.tokens !== undefined;
   const checked = page ? document.verification?.pages.find((p) => p.number === page.number) : undefined;
   const [view, setView] = useState<"pages" | "diff">("pages");
+  // A page the diff should scroll to. A new object each time, so picking the same page again still scrolls.
+  const [jump, setJump] = useState<{ page: number } | null>(null);
+  const pageAt = (number: number) =>
+    Math.max(
+      0,
+      document.extracted_text.findIndex((p) => p.number === number),
+    );
+  const openView = (next: "pages" | "diff") => {
+    setView(next);
+    // The diff opens on the page being read, not on page one.
+    if (next === "diff" && page) setJump({ page: page.number });
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -62,7 +74,7 @@ export function DocumentDetail({
             size="sm"
             value={view}
             aria-label="View"
-            onValueChange={(value) => value && setView(value as "pages" | "diff")}
+            onValueChange={(value) => value && openView(value as "pages" | "diff")}
           >
             <ToggleGroupItem value="pages">Pages</ToggleGroupItem>
             <ToggleGroupItem value="diff">Diff</ToggleGroupItem>
@@ -77,7 +89,25 @@ export function DocumentDetail({
       </div>
 
       {view === "diff" ? (
-        <DocumentDiff report={report} index={index} />
+        <>
+          <DocumentDiff
+            report={report}
+            index={index}
+            jump={jump}
+            onVisiblePage={(number) => setPageIndex(pageAt(number))}
+          />
+          <div className="flex justify-center">
+            <PagePicker
+              count={pages}
+              current={pageIndex}
+              onPick={(next) => {
+                setPageIndex(next);
+                const target = document.extracted_text[next];
+                if (target) setJump({ page: target.number });
+              }}
+            />
+          </div>
+        </>
       ) : (
         <>
           {shown && <FindingBanner highlight={shown} clearHref={documentHref(index, page?.number)} />}
