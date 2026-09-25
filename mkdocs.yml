@@ -14,7 +14,7 @@
 site_name: complydoc
 site_description: >-
   Check documents before they reach an LLM.
-site_url: https://complydoc.github.io/complydoc/
+site_url: https://complydoc.github.io/complydoc/docs/
 repo_url: https://github.com/complydoc/complydoc
 repo_name: complydoc/complydoc
 edit_uri: edit/main/docs/

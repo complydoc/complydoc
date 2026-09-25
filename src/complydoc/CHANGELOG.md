@@ -17,6 +17,10 @@ versioned separately.
   Grok 4.7, compared as imported prices. `build_price_table.py` names itself to
   models.dev, which refuses Python's default agent.
 
+- The documentation moves to https://complydoc.github.io/complydoc/docs/, and the site's
+  root is a landing page for complydoc, from `landing/`. Every old documentation address
+  redirects to its new one.
+
 ### Added
 
 - `--verify vision:module:function` reads pages again from their images with a vision

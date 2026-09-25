@@ -80,3 +80,11 @@ YAML grammars. Its colours are CSS variables set from complydoc's tokens in
 The viewer's [BRAND.md](../viewer/BRAND.md) applies: tokens, never raw colours;
 Geist and Geist Mono; lowercase complydoc; sentence case; no em dashes in our
 own copy.
+
+## Publishing
+
+The landing page and the documentation share one GitHub Pages site, published
+from `main` by `.github/workflows/docs.yml`: the landing page at
+`https://complydoc.github.io/complydoc/`, the documentation under `docs/`.
+`src/scripts/assemble_site.py` puts them together and leaves a redirect at every
+address the documentation had before it moved.
