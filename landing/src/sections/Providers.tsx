@@ -1,13 +1,12 @@
-import { FileTextIcon } from "lucide-react";
 import { BrandLogo } from "@/components/BrandLogo";
 import type { Brand } from "@/lib/logos";
 
 interface Provider {
   name: string;
-  brand?: Brand;
+  brand: Brand;
 }
 
-/** The loaders complydoc reads the output of: any with load(), load_data() or lazy_load(), and these presets. */
+/** Loaders with a preset or a tested integration. Any loader with load(), load_data() or lazy_load() works. */
 const LOADERS: Provider[] = [
   { name: "LangChain", brand: "langchain" },
   { name: "LlamaIndex", brand: "llamaindex" },
@@ -15,8 +14,6 @@ const LOADERS: Provider[] = [
   { name: "Unstructured", brand: "unstructured" },
   { name: "LlamaParse", brand: "llamaindex" },
   { name: "Azure Document Intelligence", brand: "azure" },
-  { name: "pypdf" },
-  { name: "pdfplumber" },
 ];
 
 /** The providers in complydoc's price table (src/complydoc/config). */
@@ -31,24 +28,18 @@ const MODELS: Provider[] = [
   { name: "xAI", brand: "xai" },
 ];
 
-function Row({ label, providers }: { label: string; providers: Provider[] }) {
+function Row({ label, providers, more }: { label: string; providers: Provider[]; more: string }) {
   return (
-    <div className="grid items-center gap-4 md:grid-cols-[11rem_1fr]">
+    <div className="grid items-center gap-4 md:grid-cols-[9rem_1fr]">
       <p className="text-sm text-muted-foreground">{label}</p>
-      <ul className="flex flex-wrap items-center gap-x-8 gap-y-4">
+      <ul className="flex flex-wrap items-center gap-x-7 gap-y-4 text-sm font-medium">
         {providers.map((provider) => (
-          <li
-            key={provider.name}
-            className="group flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-          >
-            {provider.brand ? (
-              <BrandLogo brand={provider.brand} className="size-5 grayscale transition group-hover:grayscale-0" />
-            ) : (
-              <FileTextIcon aria-hidden="true" className="size-5" />
-            )}
+          <li key={provider.name} className="flex items-center gap-2">
+            <BrandLogo brand={provider.brand} className="size-5" />
             {provider.name}
           </li>
         ))}
+        <li className="text-muted-foreground">{more}</li>
       </ul>
     </div>
   );
@@ -58,8 +49,8 @@ export function Providers() {
   return (
     <section aria-label="Works with" className="border-t bg-muted/30">
       <div className="mx-auto flex max-w-6xl flex-col gap-8 px-6 py-12">
-        <Row label="Reads what these load" providers={LOADERS} />
-        <Row label="Prices and verifies with" providers={MODELS} />
+        <Row label="Loaders" providers={LOADERS} more="pypdf, pdfplumber and more" />
+        <Row label="Model providers" providers={MODELS} more="and more" />
       </div>
     </section>
   );

@@ -40,9 +40,9 @@ export function Footer() {
           <div className="flex max-w-sm flex-col gap-4">
             <Logo size={22} />
             <p className="text-sm text-muted-foreground">
-              A document audit tool for AI pipelines. complydoc Cloud, for teams, is planned:{" "}
+              A document audit tool for AI pipelines. A hosted version for teams, complydoc Cloud, is planned.{" "}
               <a href={links.discussions} className="text-foreground underline underline-offset-4">
-                say if you would use it
+                Tell us if you would use it
               </a>
               .
             </p>
@@ -66,7 +66,7 @@ export function Footer() {
         </div>
         <Separator />
         <p className="text-xs text-muted-foreground">
-          MIT licensed. Logos belong to their owners and are shown to say complydoc works with their products.
+          MIT licensed. Logos belong to their owners and are shown only to indicate compatibility.
         </p>
       </div>
     </footer>

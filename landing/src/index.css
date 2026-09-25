@@ -203,18 +203,27 @@
   user-select: none;
 }
 
-/* Shiki writes both themes as variables; the page's theme picks one. */
+/* Code colours, from complydoc's tokens: the brand green for keywords, and the
+   chart and provider hues for the rest, so code matches the viewer in both themes. */
+:root {
+  --code-foreground: var(--foreground);
+  --code-background: transparent;
+  --code-token-keyword: var(--primary);
+  --code-token-string: var(--chart-5);
+  --code-token-string-expression: var(--chart-5);
+  --code-token-constant: var(--warning);
+  --code-token-function: var(--provider-3);
+  --code-token-parameter: var(--foreground);
+  --code-token-comment: var(--faint);
+  --code-token-punctuation: var(--muted-foreground);
+  --code-token-link: var(--primary);
+}
+
 @layer components {
   .code {
     @apply font-mono text-[13px] leading-6;
   }
   .code pre {
     background: transparent !important;
-  }
-  .code span {
-    color: var(--shiki-light);
-  }
-  .dark .code span {
-    color: var(--shiki-dark);
   }
 }

@@ -5,7 +5,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { links, VERSION } from "@/links";
 
 const SECTIONS = [
-  { href: "#problem", label: "Why" },
+  { href: "#problem", label: "Problem" },
   { href: "#questions", label: "Questions" },
   { href: "#router", label: "Page router" },
   { href: "#integrations", label: "Integrations" },

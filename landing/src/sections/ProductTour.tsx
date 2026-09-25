@@ -13,7 +13,7 @@ const VIEWS = [
     icon: FileDiffIcon,
     src: diff,
     alt: "The viewer's Diff view: pdfplumber's reading of the annual report beside pypdf's, split, with added and lost lines marked",
-    caption: "Any two readings of a document, split or unified, by sentence or by line as read. pypdf adds a running header that pdfplumber drops.",
+    caption: "Two readings of the same document, side by side or unified, compared by sentence or by line. Here pypdf keeps a running header that pdfplumber drops.",
   },
   {
     value: "pages",
@@ -21,7 +21,7 @@ const VIEWS = [
     icon: FilesIcon,
     src: pages,
     alt: "The viewer's page comparison: the page image with identifiers boxed, beside the pdfplumber and pypdf readings",
-    caption: "The page itself, identifiers boxed where they sit, beside every reading of it, with what each one costs.",
+    caption: "The page image with each identifier outlined, next to every reading of that page and what it cost.",
   },
   {
     value: "cost",
@@ -29,7 +29,7 @@ const VIEWS = [
     icon: CoinsIcon,
     src: cost,
     alt: "The viewer's Cost and time page: the price per 1,000 documents for every model, grouped by provider",
-    caption: "Every model priced on your documents, per provider, as text, as images, or routed page by page.",
+    caption: "Every priced model on your documents, grouped by provider: text only, images only, or routed by page.",
   },
   {
     value: "security",
@@ -37,7 +37,7 @@ const VIEWS = [
     icon: ShieldAlertIcon,
     src: security,
     alt: "The viewer's Security page: a hidden instruction in white text, and every identifier found, masked, with its severity and confidence",
-    caption: "Hidden instructions quoted with why they were flagged, and every identifier, masked, linked to its page.",
+    caption: "Hidden instructions with the reasons they were flagged, and every identifier found, masked and linked to its page.",
   },
 ];
 

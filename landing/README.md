@@ -70,8 +70,13 @@ for reduced motion see it still.
 Everything is shadcn/ui, in `src/components/ui`, in the viewer's `radix-nova`
 style. Tabs, ScrollArea, AspectRatio and ButtonGroup were taken from shadcn's
 radix sources with the nova classes applied, as `npx shadcn add` does; run it
-to bring them up to date. Code is highlighted with Shiki, loaded on demand with
-only the Python, Bash and YAML grammars.
+to bring them up to date. The terminal is Magic UI's (`@magicui/terminal`, on
+`motion`), with its window dots moved onto the theme's state colours.
+
+Code is highlighted with Shiki, loaded on demand with only the Python, Bash and
+YAML grammars. Its colours are CSS variables set from complydoc's tokens in
+`src/index.css`, so code follows the brand and the light and dark themes.
 
 The viewer's [BRAND.md](../viewer/BRAND.md) applies: tokens, never raw colours;
-lowercase complydoc; sentence case; no em dashes in our own copy.
+Geist and Geist Mono; lowercase complydoc; sentence case; no em dashes in our
+own copy.

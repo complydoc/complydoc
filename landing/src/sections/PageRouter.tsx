@@ -7,9 +7,9 @@ import { ROUTED_DOCUMENTS, ROUTING_COST_USD, ROUTING_MODEL } from "@/data/routin
 import { links } from "@/links";
 
 const PLANS = [
-  { label: "Routed page by page", usd: ROUTING_COST_USD.routed, strong: true },
-  { label: "Everything from the text layer", usd: ROUTING_COST_USD.text_layer, note: "loses 4 pages" },
-  { label: "Everything as page images", usd: ROUTING_COST_USD.vision },
+  { label: "Routed by page", usd: ROUTING_COST_USD.routed, strong: true },
+  { label: "Text layer only", usd: ROUTING_COST_USD.text_layer, note: "loses 4 pages" },
+  { label: "Images only", usd: ROUTING_COST_USD.vision },
 ];
 
 const MAX = Math.max(...PLANS.map((plan) => plan.usd));
@@ -44,8 +44,8 @@ for doc in plan["documents"]:
 complydoc audit ./documents --verify vision:mymodels:claude`,
     note: (
       <>
-        complydoc runs no model and holds no key: <code className="font-mono text-xs">mymodels.claude</code> is your
-        function. The page images go where it sends them, and the report names the host.
+        complydoc does not run models or store keys. <code className="font-mono text-xs">mymodels.claude</code> is
+        your function; page images go wherever it sends them, and the report records the host.
       </>
     ),
   },
@@ -55,15 +55,15 @@ export function PageRouter() {
   return (
     <Section
       id="router"
-      eyebrow="The page router"
-      title="Route every page, not every document."
-      lead="Sending a folder to a vision model is the safe choice and the expensive one. The router decides page by page: the text layer when it is usable, local OCR for a scan it can read, a vision model only when plain text would lose the page. Every page carries its reason."
+      eyebrow="Page router"
+      title="Routing by page"
+      lead="Sending every page to a vision model handles any layout and costs the most. The router gives each page one of three routes: the text layer when it is usable, local OCR for a readable scan, or a vision model when plain text would lose content. Each route comes with its reason."
     >
       <div className="grid gap-6 *:min-w-0 lg:grid-cols-[1.4fr_1fr]">
         <Card>
           <CardHeader>
             <CardTitle>33 pages, 6 documents</CardTitle>
-            <CardDescription>Hover a page for the reason it was sent where it was.</CardDescription>
+            <CardDescription>Hover a page to see why it got its route.</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-6">
             <RouteMap documents={ROUTED_DOCUMENTS} />
@@ -72,8 +72,8 @@ export function PageRouter() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>What it costs</CardTitle>
-            <CardDescription>The folder on {ROUTING_MODEL}, three ways.</CardDescription>
+            <CardTitle>Cost by plan</CardTitle>
+            <CardDescription>The whole folder on {ROUTING_MODEL}.</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-5">
             {PLANS.map((plan) => (
@@ -89,7 +89,8 @@ export function PageRouter() {
               </div>
             ))}
             <p className="text-sm text-muted-foreground">
-              In the viewer, &ldquo;Routed page by page&rdquo; prices every document this way, beside every model.
+              The viewer&apos;s &ldquo;Routed page by page&rdquo; option prices every document this way, for every
+              model.
             </p>
           </CardContent>
         </Card>
@@ -98,7 +99,7 @@ export function PageRouter() {
         <CodeTabs tabs={USE_THE_PLAN} />
       </div>
       <p className="mt-6 text-sm text-muted-foreground">
-        The thresholds (text coverage, scan resolution, OCR confidence, complex tables) are YAML you can change.{" "}
+        Routing thresholds (text coverage, scan resolution, OCR confidence, complex tables) are set in YAML.{" "}
         <TextLink href={links.routing}>How each page is decided</TextLink>.
       </p>
     </Section>

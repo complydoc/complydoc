@@ -18,12 +18,12 @@ export function Hero() {
             <AsciiMark art={MARK_SMALL} className="text-[9px] lg:hidden" />
             <p className="font-mono text-xs text-muted-foreground">document audit for AI pipelines · open source</p>
             <h1 id="hero-title" className="text-4xl font-semibold tracking-tight text-balance md:text-6xl">
-              See what your loader actually read.
+              Know what your document loader extracted.
             </h1>
             <p className="text-lg text-pretty text-muted-foreground">
-              complydoc audits your documents, and what LangChain, LlamaIndex, Docling or any other loader made of them.
-              It shows the security, cost, time and content problems in both, page by page, before anything is embedded
-              or sent to a model.
+              complydoc audits documents, and the output of LangChain, LlamaIndex, Docling or any other loader, before
+              they are embedded or sent to a model. It reports on security, cost, processing time and extracted content,
+              page by page.
             </p>
             <div className="flex flex-wrap items-center gap-3">
               <ButtonGroup>

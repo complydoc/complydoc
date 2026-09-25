@@ -15,13 +15,13 @@ from complydoc.integrations.langchain import as_transformer
 import complydoc as cd
 
 loader = PyPDFLoader("contract.pdf")
-report = cd.inspect_documents(loader)       # what it read, attached and tried to reach
+report = cd.inspect_documents(loader)       # text, metadata and network attempts
 report.loader.network_attempts
 report.loader.metadata_keys
 
 mask = as_transformer(cd.MaskIdentifiers(metadata=True))
 docs = mask.transform_documents(loader.load())`,
-    note: "Any loader with load(), load_data() or lazy_load() works the same way, or any callable that returns documents.",
+    note: "Any loader with load(), load_data() or lazy_load() works, as does any callable that returns documents.",
   },
   {
     value: "llamaindex",
@@ -42,7 +42,7 @@ pipeline = IngestionPipeline(transformations=[
     splitter,
     embed_model,
 ])`,
-    note: "Each step records what it changed, and in which document, in step.changes.",
+    note: "Each step records its changes, and the document each was made in, in step.changes.",
   },
   {
     value: "local",
@@ -61,7 +61,7 @@ report = cd.compare_loaders(
     facts=["Payment is due within thirty days"],
 )
 report.to_pandas("loaders")   # text, identifiers, facts, failures and time per loader`,
-    note: "The first loader is the baseline; every other one is measured against it, document by document and page by page.",
+    note: "The first loader is the baseline. The others are compared against it per document and per page.",
   },
   {
     value: "hosted",
@@ -78,7 +78,7 @@ report.to_pandas("loaders")   # text, identifiers, facts, failures and time per 
     allow_network=True,   # hosted parsers run only when you say so
     cache_dir=".cache",   # parse each file once, compare as often as you like
 )`,
-    note: "Hosted parsers are priced per page from their published rates, so the table shows what each reading cost.",
+    note: "Hosted parsers are priced per page at their published rates.",
   },
   {
     value: "pytest",
@@ -93,7 +93,7 @@ def test_documents_are_safe_to_index():
         .no_hidden(severity="high")
         .no_failures()
         .no_regressions("baseline.json"))`,
-    note: "A failing expectation lists every document and page that broke it.",
+    note: "A failed expectation lists every document and page that broke it.",
   },
   {
     value: "ci",
@@ -114,7 +114,7 @@ jobs:
           path: documents
           policy: policy.yaml
           sarif: true   # failures in code scanning`,
-    note: "It comments a summary on the pull request, and exits non-zero when a rule in policy.yaml fails.",
+    note: "Posts a summary on the pull request, and fails the job when an error rule in policy.yaml fails.",
   },
 ];
 
@@ -123,8 +123,8 @@ export function Integrations() {
     <Section
       id="integrations"
       eyebrow="Integrations"
-      title="Drops into the pipeline you already have."
-      lead="complydoc reads documents by shape, so it needs no adapter for your loader, and imports no framework it does not need. Point it at a loader, a folder or a list of documents."
+      title="Works with your existing loaders"
+      lead="complydoc reads documents by their shape, so it needs no adapter per loader and imports no framework you do not use. Pass it a loader, a folder or a list of documents."
     >
       <CodeTabs tabs={TABS} />
       <p className="mt-6 text-sm text-muted-foreground">

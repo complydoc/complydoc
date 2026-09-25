@@ -21,7 +21,7 @@ const QUESTIONS: Question[] = [
     value: "vision",
     question: "Should I use vision for this document?",
     answer:
-      "For 4 of its 33 pages. The page router reads every page and gives each one the cheapest route that still reads it: page 3 of the annual report has a table with stacked headers, and the invoices were scanned at 150 dpi, too coarse for OCR.",
+      "Only for 4 of its 33 pages. The page router checks each page and picks the cheapest route that still extracts it. Page 3 of the annual report has a table with stacked headers, which plain text loses. The invoices were scanned at 150 dpi, below the 200 dpi OCR needs.",
     body: <VisionAnswer />,
     more: { label: "Page routing", href: links.routing },
   },
@@ -29,7 +29,7 @@ const QUESTIONS: Question[] = [
     value: "section",
     question: "Why can't I see section 7 of the document in my RAG results?",
     answer:
-      "Because your loader never produced it as one passage. On page 4 of the contract, pdfplumber reads across both columns, so the heading and clause 7.1 are spliced into section 6.",
+      "Your loader never extracted it as one passage. Page 4 of the contract has two columns, and pdfplumber reads each line across both. The section 7 heading ends up after a section 6 sentence, and clause 7.1 is interleaved with 6.1 and 6.2.",
     body: <SectionAnswer />,
     more: { label: "Comparing loaders", href: links.compareLoaders },
   },
@@ -37,7 +37,7 @@ const QUESTIONS: Question[] = [
     value: "cost",
     question: "How much would it cost to process this whole folder using Sonnet 5?",
     answer:
-      "$0.036 from the text layer, $0.106 as page images, $0.048 routed page by page. At 20,000 documents a month, $1,725 or $4,224 a year. Every other model is priced on the same tokens.",
+      "$0.036 from the text layer, $0.106 as page images, or $0.048 routed by page. At 20,000 documents a month, that is $1,725 or $4,224 a year. The same token counts price every other model in the table.",
     body: <CostAnswer />,
     more: { label: "Audit a folder", href: links.docs },
   },
@@ -45,7 +45,7 @@ const QUESTIONS: Question[] = [
     value: "mask",
     question: "Do we have values in the documents that should be masked before ingestion?",
     answer:
-      "Yes: 42 identifiers in 4 of 6 documents, 11 confirmed by checksum, and one hidden instruction. complydoc masks them in your pipeline, or writes clean copies of the files.",
+      "Yes. 42 identifiers in 4 of the 6 documents, 11 of them validated by checksum, plus one hidden instruction. complydoc can mask them inside your pipeline or write masked copies of the files.",
     body: <MaskAnswer />,
     more: { label: "Identifiers it finds", href: links.identifiers },
   },
@@ -56,9 +56,9 @@ export function Questions() {
   return (
     <Section
       id="questions"
-      eyebrow="What it answers"
-      title="The questions you get asked after something goes wrong, answered before ingestion."
-      lead="Each answer below is what complydoc reports on the sample folder."
+      eyebrow="Questions"
+      title="Questions it answers before ingestion"
+      lead="Each answer comes from complydoc's report on the sample folder."
     >
       <Tabs ref={ref} defaultValue="vision" orientation="vertical" className="flex-col gap-6 lg:flex-row">
         <TabsList variant="line" className="h-fit w-full shrink-0 items-stretch gap-2 lg:w-96">
