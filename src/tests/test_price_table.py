@@ -174,12 +174,15 @@ def test_a_batch_price_is_used_where_published(config):
 
 
 def test_a_batch_price_is_never_invented(config):
-    """Anthropic runs a batch API; this table does not publish its price.
+    """A model whose provider publishes no batch price is given none.
 
-    No batch price is assumed.
+    Not the customary half price, nor anything else: it is left empty.
     """
+    unbatched = next(
+        m for m in config.pricing.models if m.is_priced and m.batch_input_per_mtok_usd is None
+    )
     document = load_document(FIXTURES / "native_text.pdf", IngestOptions())
-    models = resolve_models(config.pricing, ["claude-opus-5"])
+    models = resolve_models(config.pricing, [unbatched.id])
     priced = estimate_document(document, config.pricing, models=models).models[0]
     assert priced.batch_input_per_mtok_usd is None
     assert priced.batch_text_path_input_usd is None

@@ -8,6 +8,15 @@ versioned separately.
 
 `schema_version` is now 16. Every field it adds is new; reports of schema 15 still read.
 
+### Changed
+
+- Prices refreshed on 2026-09-25. Claude Opus 5.5 ($4 input, $20 output, $2 batch
+  input per million tokens) joins the verified comparison in place of Opus 5, and the
+  Claude prices are verified again against Anthropic's page, now with their published
+  batch prices. The catalogue behind it adds GPT-6 Sol, GPT-6 Luna, GPT-6 Astra and
+  Grok 4.7, compared as imported prices. `build_price_table.py` names itself to
+  models.dev, which refuses Python's default agent.
+
 ### Added
 
 - `--verify vision:module:function` reads pages again from their images with a vision

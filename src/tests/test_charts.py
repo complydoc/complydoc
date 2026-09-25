@@ -66,9 +66,9 @@ def test_reach_never_exceeds_the_folder(comparisons):
 
 def test_cost_scales_with_price(comparisons):
     by_id = {c.model_id: c for c in comparisons}
-    opus = by_id["claude-opus-5"].by_key("vision").folder_usd
+    opus = by_id["claude-opus-5-5"].by_key("vision").folder_usd
     haiku = by_id["claude-haiku-4-5"].by_key("vision").folder_usd
-    assert opus == pytest.approx(haiku * 5, rel=1e-6)
+    assert opus == pytest.approx(haiku * 4, rel=1e-6)
 
 
 def test_annual_needs_a_volume(config):

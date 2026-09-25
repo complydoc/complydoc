@@ -97,8 +97,10 @@ def test_a_never_verified_price_always_warns(config):
 
 
 def test_staleness_uses_the_configured_threshold(config):
-    verified = config.pricing.models[0].last_verified
-    assert verified is not None
+    # Measured from the price checked longest ago: every other is younger than it.
+    dates = [m.last_verified for m in config.pricing.models if m.last_verified is not None]
+    assert dates
+    verified = min(dates)
     just_inside = verified + dt.timedelta(days=config.pricing.staleness_warn_days)
     just_outside = just_inside + dt.timedelta(days=1)
     assert not check_staleness(config.pricing, just_inside)

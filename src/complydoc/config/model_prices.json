@@ -1,11 +1,11 @@
 {
  "batch_source_url": "https://github.com/BerriAI/litellm",
- "imported": "2026-09-09",
+ "imported": "2026-09-25",
  "models": {
   "claude-fable-5": {
    "accepts_image": true,
    "accepts_pdf": true,
-   "batch_input_per_mtok_usd": null,
+   "batch_input_per_mtok_usd": 5.0,
    "display_name": "Claude Fable 5",
    "family": "claude-fable-5",
    "input_per_mtok_usd": 10.0,
@@ -17,7 +17,7 @@
   "claude-fable-5-1": {
    "accepts_image": true,
    "accepts_pdf": true,
-   "batch_input_per_mtok_usd": null,
+   "batch_input_per_mtok_usd": 5.0,
    "display_name": "Claude Fable 5.1",
    "family": "claude-fable-5-1",
    "input_per_mtok_usd": 10.0,
@@ -29,7 +29,7 @@
   "claude-haiku-4-5": {
    "accepts_image": true,
    "accepts_pdf": true,
-   "batch_input_per_mtok_usd": null,
+   "batch_input_per_mtok_usd": 0.5,
    "display_name": "Claude Haiku 4.5 (latest)",
    "family": "claude-haiku-4-5",
    "input_per_mtok_usd": 1.0,
@@ -53,7 +53,7 @@
   "claude-opus-4-5": {
    "accepts_image": true,
    "accepts_pdf": true,
-   "batch_input_per_mtok_usd": null,
+   "batch_input_per_mtok_usd": 2.5,
    "display_name": "Claude Opus 4.5 (latest)",
    "family": "claude-opus-4-5",
    "input_per_mtok_usd": 5.0,
@@ -77,7 +77,7 @@
   "claude-opus-4-6": {
    "accepts_image": true,
    "accepts_pdf": true,
-   "batch_input_per_mtok_usd": null,
+   "batch_input_per_mtok_usd": 2.5,
    "display_name": "Claude Opus 4.6",
    "family": "claude-opus-4-6",
    "input_per_mtok_usd": 5.0,
@@ -89,7 +89,7 @@
   "claude-opus-4-7": {
    "accepts_image": true,
    "accepts_pdf": true,
-   "batch_input_per_mtok_usd": null,
+   "batch_input_per_mtok_usd": 2.5,
    "display_name": "Claude Opus 4.7",
    "family": "claude-opus-4-7",
    "input_per_mtok_usd": 5.0,
@@ -101,7 +101,7 @@
   "claude-opus-4-8": {
    "accepts_image": true,
    "accepts_pdf": true,
-   "batch_input_per_mtok_usd": null,
+   "batch_input_per_mtok_usd": 2.5,
    "display_name": "Claude Opus 4.8",
    "family": "claude-opus-4-8",
    "input_per_mtok_usd": 5.0,
@@ -113,7 +113,7 @@
   "claude-opus-5": {
    "accepts_image": true,
    "accepts_pdf": true,
-   "batch_input_per_mtok_usd": null,
+   "batch_input_per_mtok_usd": 2.5,
    "display_name": "Claude Opus 5",
    "family": "claude-opus-5",
    "input_per_mtok_usd": 5.0,
@@ -121,6 +121,18 @@
    "output_per_mtok_usd": 25.0,
    "provider": "anthropic",
    "release_date": "2026-07-24"
+  },
+  "claude-opus-5-5": {
+   "accepts_image": true,
+   "accepts_pdf": true,
+   "batch_input_per_mtok_usd": 2.5,
+   "display_name": "Claude Opus 5.5",
+   "family": "claude-opus-5-5",
+   "input_per_mtok_usd": 4.0,
+   "max_input_tokens": 1000000,
+   "output_per_mtok_usd": 20.0,
+   "provider": "anthropic",
+   "release_date": "2026-09-22"
   },
   "claude-sonnet-4-5": {
    "accepts_image": true,
@@ -149,7 +161,7 @@
   "claude-sonnet-4-6": {
    "accepts_image": true,
    "accepts_pdf": true,
-   "batch_input_per_mtok_usd": null,
+   "batch_input_per_mtok_usd": 1.5,
    "display_name": "Claude Sonnet 4.6",
    "family": "claude-sonnet-4-6",
    "input_per_mtok_usd": 3.0,
@@ -161,7 +173,7 @@
   "claude-sonnet-5": {
    "accepts_image": true,
    "accepts_pdf": true,
-   "batch_input_per_mtok_usd": null,
+   "batch_input_per_mtok_usd": 1.0,
    "display_name": "Claude Sonnet 5",
    "family": "claude-sonnet-5",
    "input_per_mtok_usd": 2.0,
@@ -182,17 +194,29 @@
    "provider": "mistral",
    "release_date": "2024-05-29"
   },
+  "deepseek-flash": {
+   "accepts_image": true,
+   "accepts_pdf": false,
+   "batch_input_per_mtok_usd": null,
+   "display_name": "DeepSeek V4.1 Flash",
+   "family": "deepseek-flash",
+   "input_per_mtok_usd": 0.15,
+   "max_input_tokens": 1000000,
+   "output_per_mtok_usd": 0.6,
+   "provider": "deepseek",
+   "release_date": "2026-09-10"
+  },
   "deepseek-v4-flash": {
-   "accepts_image": false,
+   "accepts_image": true,
    "accepts_pdf": false,
    "batch_input_per_mtok_usd": null,
    "display_name": "DeepSeek V4 Flash",
    "family": "deepseek-v4-flash",
-   "input_per_mtok_usd": 0.14,
+   "input_per_mtok_usd": 0.15,
    "max_input_tokens": 1000000,
-   "output_per_mtok_usd": 0.28,
+   "output_per_mtok_usd": 0.6,
    "provider": "deepseek",
-   "release_date": "2026-07-31"
+   "release_date": "2026-09-10"
   },
   "deepseek-v4-flash-vision-exp": {
    "accepts_image": true,
@@ -200,11 +224,11 @@
    "batch_input_per_mtok_usd": null,
    "display_name": "DeepSeek V4 Flash Vision Exp",
    "family": "deepseek-v4-flash-vision-exp",
-   "input_per_mtok_usd": 0.14,
+   "input_per_mtok_usd": 0.15,
    "max_input_tokens": 1000000,
-   "output_per_mtok_usd": 0.28,
+   "output_per_mtok_usd": 0.6,
    "provider": "deepseek",
-   "release_date": "2026-08-21"
+   "release_date": "2026-09-10"
   },
   "deepseek-v4-pro": {
    "accepts_image": false,
@@ -297,7 +321,7 @@
    "display_name": "Gemini 2.5 Computer Use Preview 10-2025",
    "family": "gemini-2.5-computer-use-preview-10",
    "input_per_mtok_usd": 1.25,
-   "max_input_tokens": 131072,
+   "max_input_tokens": 128000,
    "output_per_mtok_usd": 10.0,
    "provider": "gemini",
    "release_date": "2025-10-07"
@@ -305,7 +329,7 @@
   "gemini-2.5-flash": {
    "accepts_image": true,
    "accepts_pdf": true,
-   "batch_input_per_mtok_usd": null,
+   "batch_input_per_mtok_usd": 0.15,
    "display_name": "Gemini 2.5 Flash",
    "family": "gemini-2.5-flash",
    "input_per_mtok_usd": 0.3,
@@ -317,7 +341,7 @@
   "gemini-2.5-flash-lite": {
    "accepts_image": true,
    "accepts_pdf": true,
-   "batch_input_per_mtok_usd": null,
+   "batch_input_per_mtok_usd": 0.05,
    "display_name": "Gemini 2.5 Flash-Lite",
    "family": "gemini-2.5-flash-lite",
    "input_per_mtok_usd": 0.1,
@@ -329,7 +353,7 @@
   "gemini-2.5-flash-preview-tts": {
    "accepts_image": false,
    "accepts_pdf": false,
-   "batch_input_per_mtok_usd": null,
+   "batch_input_per_mtok_usd": 0.25,
    "display_name": "Gemini 2.5 Flash Preview TTS",
    "family": "gemini-2.5-flash-preview-tts",
    "input_per_mtok_usd": 0.5,
@@ -341,7 +365,7 @@
   "gemini-2.5-pro": {
    "accepts_image": true,
    "accepts_pdf": true,
-   "batch_input_per_mtok_usd": null,
+   "batch_input_per_mtok_usd": 0.625,
    "display_name": "Gemini 2.5 Pro",
    "family": "gemini-2.5-pro",
    "input_per_mtok_usd": 1.25,
@@ -353,7 +377,7 @@
   "gemini-2.5-pro-preview-tts": {
    "accepts_image": false,
    "accepts_pdf": false,
-   "batch_input_per_mtok_usd": null,
+   "batch_input_per_mtok_usd": 0.5,
    "display_name": "Gemini 2.5 Pro Preview TTS",
    "family": "gemini-2.5-pro-preview-tts",
    "input_per_mtok_usd": 1.0,
@@ -365,7 +389,7 @@
   "gemini-3-flash-preview": {
    "accepts_image": true,
    "accepts_pdf": true,
-   "batch_input_per_mtok_usd": null,
+   "batch_input_per_mtok_usd": 0.25,
    "display_name": "Gemini 3 Flash Preview",
    "family": "gemini-3-flash-preview",
    "input_per_mtok_usd": 0.5,
@@ -389,7 +413,7 @@
   "gemini-3.1-flash-lite-preview": {
    "accepts_image": true,
    "accepts_pdf": true,
-   "batch_input_per_mtok_usd": null,
+   "batch_input_per_mtok_usd": 0.125,
    "display_name": "Gemini 3.1 Flash Lite Preview",
    "family": "gemini-3.1-flash-lite-preview",
    "input_per_mtok_usd": 0.25,
@@ -413,7 +437,7 @@
   "gemini-3.1-flash-tts-preview": {
    "accepts_image": false,
    "accepts_pdf": false,
-   "batch_input_per_mtok_usd": null,
+   "batch_input_per_mtok_usd": 0.5,
    "display_name": "Gemini 3.1 Flash TTS Preview",
    "family": "gemini-3.1-flash-tts-preview",
    "input_per_mtok_usd": 1.0,
@@ -521,7 +545,7 @@
   "gemini-flash-latest": {
    "accepts_image": true,
    "accepts_pdf": true,
-   "batch_input_per_mtok_usd": null,
+   "batch_input_per_mtok_usd": 0.375,
    "display_name": "Gemini Flash Latest",
    "family": "gemini-flash",
    "input_per_mtok_usd": 0.75,
@@ -533,7 +557,7 @@
   "gemini-flash-lite-latest": {
    "accepts_image": true,
    "accepts_pdf": true,
-   "batch_input_per_mtok_usd": null,
+   "batch_input_per_mtok_usd": 0.15,
    "display_name": "Gemini Flash-Lite Latest",
    "family": "gemini-flash-lite",
    "input_per_mtok_usd": 0.3,
@@ -704,11 +728,23 @@
    "batch_input_per_mtok_usd": null,
    "display_name": "GLM-5.3-Flash",
    "family": "glm-5.3-flash",
-   "input_per_mtok_usd": 0.075,
+   "input_per_mtok_usd": 0.15,
    "max_input_tokens": 1000000,
-   "output_per_mtok_usd": 0.25,
+   "output_per_mtok_usd": 0.5,
    "provider": "zai",
    "release_date": "2026-08-26"
+  },
+  "glm-5.3-flashx": {
+   "accepts_image": true,
+   "accepts_pdf": true,
+   "batch_input_per_mtok_usd": null,
+   "display_name": "GLM-5.3-FlashX",
+   "family": "glm-5.3-flashx",
+   "input_per_mtok_usd": 0.37,
+   "max_input_tokens": 1000000,
+   "output_per_mtok_usd": 1.25,
+   "provider": "zai",
+   "release_date": "2026-09-18"
   },
   "glm-5v-turbo": {
    "accepts_image": true,
@@ -761,7 +797,7 @@
   "gpt-4.1": {
    "accepts_image": true,
    "accepts_pdf": true,
-   "batch_input_per_mtok_usd": 1.0,
+   "batch_input_per_mtok_usd": 1.1,
    "display_name": "GPT-4.1",
    "family": "gpt-4.1",
    "input_per_mtok_usd": 2.0,
@@ -773,7 +809,7 @@
   "gpt-4.1-mini": {
    "accepts_image": true,
    "accepts_pdf": true,
-   "batch_input_per_mtok_usd": 0.2,
+   "batch_input_per_mtok_usd": 0.22,
    "display_name": "GPT-4.1 mini",
    "family": "gpt-4.1-mini",
    "input_per_mtok_usd": 0.4,
@@ -785,7 +821,7 @@
   "gpt-4.1-nano": {
    "accepts_image": true,
    "accepts_pdf": false,
-   "batch_input_per_mtok_usd": 0.05,
+   "batch_input_per_mtok_usd": 0.055,
    "display_name": "GPT-4.1 nano",
    "family": "gpt-4.1-nano",
    "input_per_mtok_usd": 0.1,
@@ -809,7 +845,7 @@
   "gpt-4o-2024-05-13": {
    "accepts_image": true,
    "accepts_pdf": false,
-   "batch_input_per_mtok_usd": 2.5,
+   "batch_input_per_mtok_usd": 2.75,
    "display_name": "GPT-4o (2024-05-13)",
    "family": "gpt-4o",
    "input_per_mtok_usd": 5.0,
@@ -857,7 +893,7 @@
   "gpt-5": {
    "accepts_image": true,
    "accepts_pdf": false,
-   "batch_input_per_mtok_usd": null,
+   "batch_input_per_mtok_usd": 0.6875,
    "display_name": "GPT-5",
    "family": "gpt-5",
    "input_per_mtok_usd": 1.25,
@@ -869,7 +905,7 @@
   "gpt-5-mini": {
    "accepts_image": true,
    "accepts_pdf": false,
-   "batch_input_per_mtok_usd": null,
+   "batch_input_per_mtok_usd": 0.1375,
    "display_name": "GPT-5 Mini",
    "family": "gpt-5-mini",
    "input_per_mtok_usd": 0.25,
@@ -881,7 +917,7 @@
   "gpt-5-nano": {
    "accepts_image": true,
    "accepts_pdf": false,
-   "batch_input_per_mtok_usd": null,
+   "batch_input_per_mtok_usd": 0.0275,
    "display_name": "GPT-5 Nano",
    "family": "gpt-5-nano",
    "input_per_mtok_usd": 0.05,
@@ -893,7 +929,7 @@
   "gpt-5-pro": {
    "accepts_image": true,
    "accepts_pdf": false,
-   "batch_input_per_mtok_usd": 7.5,
+   "batch_input_per_mtok_usd": 8.25,
    "display_name": "GPT-5 Pro",
    "family": "gpt-5-pro",
    "input_per_mtok_usd": 15.0,
@@ -905,7 +941,7 @@
   "gpt-5.1": {
    "accepts_image": true,
    "accepts_pdf": false,
-   "batch_input_per_mtok_usd": null,
+   "batch_input_per_mtok_usd": 0.625,
    "display_name": "GPT-5.1",
    "family": "gpt-5.1",
    "input_per_mtok_usd": 1.25,
@@ -917,7 +953,7 @@
   "gpt-5.2": {
    "accepts_image": true,
    "accepts_pdf": false,
-   "batch_input_per_mtok_usd": null,
+   "batch_input_per_mtok_usd": 0.9625,
    "display_name": "GPT-5.2",
    "family": "gpt-5.2",
    "input_per_mtok_usd": 1.75,
@@ -941,7 +977,7 @@
   "gpt-5.2-pro": {
    "accepts_image": true,
    "accepts_pdf": false,
-   "batch_input_per_mtok_usd": null,
+   "batch_input_per_mtok_usd": 11.55,
    "display_name": "GPT-5.2 Pro",
    "family": "gpt-5.2-pro",
    "input_per_mtok_usd": 21.0,
@@ -1001,7 +1037,7 @@
   "gpt-5.4-mini": {
    "accepts_image": true,
    "accepts_pdf": false,
-   "batch_input_per_mtok_usd": 0.375,
+   "batch_input_per_mtok_usd": 0.4125,
    "display_name": "GPT-5.4 mini",
    "family": "gpt-5.4-mini",
    "input_per_mtok_usd": 0.75,
@@ -1013,7 +1049,7 @@
   "gpt-5.4-nano": {
    "accepts_image": true,
    "accepts_pdf": false,
-   "batch_input_per_mtok_usd": 0.1,
+   "batch_input_per_mtok_usd": 0.11,
    "display_name": "GPT-5.4 nano",
    "family": "gpt-5.4-nano",
    "input_per_mtok_usd": 0.2,
@@ -1025,7 +1061,7 @@
   "gpt-5.4-pro": {
    "accepts_image": true,
    "accepts_pdf": false,
-   "batch_input_per_mtok_usd": 15.0,
+   "batch_input_per_mtok_usd": 16.5,
    "display_name": "GPT-5.4 Pro",
    "family": "gpt-5.4-pro",
    "input_per_mtok_usd": 30.0,
@@ -1118,6 +1154,30 @@
    "provider": "openai",
    "release_date": "2026-09-04"
   },
+  "gpt-6-luna": {
+   "accepts_image": true,
+   "accepts_pdf": true,
+   "batch_input_per_mtok_usd": 0.05,
+   "display_name": "GPT-6 Luna",
+   "family": "gpt-6-luna",
+   "input_per_mtok_usd": 0.1,
+   "max_input_tokens": 1050000,
+   "output_per_mtok_usd": 0.5,
+   "provider": "openai",
+   "release_date": "2026-09-22"
+  },
+  "gpt-6-sol": {
+   "accepts_image": true,
+   "accepts_pdf": true,
+   "batch_input_per_mtok_usd": 1.0,
+   "display_name": "GPT-6 Sol",
+   "family": "gpt-6-sol",
+   "input_per_mtok_usd": 2.0,
+   "max_input_tokens": 1050000,
+   "output_per_mtok_usd": 10.0,
+   "provider": "openai",
+   "release_date": "2026-09-22"
+  },
   "gpt-realtime-2.1": {
    "accepts_image": true,
    "accepts_pdf": false,
@@ -1201,6 +1261,18 @@
    "output_per_mtok_usd": 6.0,
    "provider": "xai",
    "release_date": "2026-08-12"
+  },
+  "grok-4.7": {
+   "accepts_image": true,
+   "accepts_pdf": true,
+   "batch_input_per_mtok_usd": null,
+   "display_name": "Grok 4.7",
+   "family": "grok-4.7",
+   "input_per_mtok_usd": 2.0,
+   "max_input_tokens": 500000,
+   "output_per_mtok_usd": 6.0,
+   "provider": "xai",
+   "release_date": "2026-09-21"
   },
   "grok-build-0.1": {
    "accepts_image": true,
@@ -1457,7 +1529,7 @@
   "o1": {
    "accepts_image": true,
    "accepts_pdf": true,
-   "batch_input_per_mtok_usd": null,
+   "batch_input_per_mtok_usd": 7.5,
    "display_name": "o1",
    "family": "o1",
    "input_per_mtok_usd": 15.0,
@@ -1481,7 +1553,7 @@
   "o3": {
    "accepts_image": true,
    "accepts_pdf": true,
-   "batch_input_per_mtok_usd": null,
+   "batch_input_per_mtok_usd": 1.0,
    "display_name": "o3",
    "family": "o3",
    "input_per_mtok_usd": 2.0,
@@ -1493,7 +1565,7 @@
   "o3-mini": {
    "accepts_image": false,
    "accepts_pdf": false,
-   "batch_input_per_mtok_usd": null,
+   "batch_input_per_mtok_usd": 0.55,
    "display_name": "o3-mini",
    "family": "o3-mini",
    "input_per_mtok_usd": 1.1,
@@ -1517,7 +1589,7 @@
   "o4-mini": {
    "accepts_image": true,
    "accepts_pdf": false,
-   "batch_input_per_mtok_usd": null,
+   "batch_input_per_mtok_usd": 0.55,
    "display_name": "o4-mini",
    "family": "o4-mini",
    "input_per_mtok_usd": 1.1,
@@ -1621,6 +1693,18 @@
    "output_per_mtok_usd": 4.4,
    "provider": "mistral",
    "release_date": "2026-06-13"
+  },
+  "zai-glm-5-3": {
+   "accepts_image": false,
+   "accepts_pdf": false,
+   "batch_input_per_mtok_usd": null,
+   "display_name": "GLM-5.3",
+   "family": "zai-glm-5-3",
+   "input_per_mtok_usd": 1.4,
+   "max_input_tokens": 1000000,
+   "output_per_mtok_usd": 4.4,
+   "provider": "mistral",
+   "release_date": "2026-08-14"
   }
  },
  "source_licence": "MIT",

@@ -73,9 +73,14 @@ def _family(model_id: str) -> str:
         stem = trimmed
 
 
+USER_AGENT = "complydoc-price-table (+https://github.com/complydoc/complydoc)"
+"""Says what is asking. models.dev refuses Python's default agent string."""
+
+
 def _fetch(url: str) -> Any:
     print(f"fetching {url}")
-    with urllib.request.urlopen(url, timeout=60) as response:
+    request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+    with urllib.request.urlopen(request, timeout=60) as response:
         return json.loads(response.read().decode("utf-8"))
 
 

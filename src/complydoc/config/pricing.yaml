@@ -67,12 +67,13 @@ resolution_presets:
     long_edge_px: 2048
 
 models:
-  - id: claude-opus-5
+  - id: claude-opus-5-5
     provider: anthropic
-    display_name: Claude Opus 5
+    display_name: Claude Opus 5.5
     enabled: true
-    input_per_mtok_usd: 5.00
-    output_per_mtok_usd: 25.00
+    input_per_mtok_usd: 4.00
+    output_per_mtok_usd: 20.00
+    batch_input_per_mtok_usd: 2.00
     supports_vision: true
     vision_formula: width_height_area
     tokenizer:
@@ -82,8 +83,27 @@ models:
       approximation_note: >
         Anthropic does not publish an offline tokenizer, so text token counts are
         approximated with the o200k_base encoding.
-    last_verified: 2026-06-24
-    source_url: https://docs.anthropic.com/en/docs/about-claude/pricing
+    last_verified: 2026-09-25
+    source_url: https://platform.claude.com/docs/en/about-claude/pricing
+
+  - id: claude-opus-5
+    provider: anthropic
+    display_name: Claude Opus 5
+    enabled: true
+    input_per_mtok_usd: 5.00
+    output_per_mtok_usd: 25.00
+    batch_input_per_mtok_usd: 2.50
+    supports_vision: true
+    vision_formula: width_height_area
+    tokenizer:
+      encoding: o200k_base
+      fidelity: approximate
+      approximate_ratio: 1.0
+      approximation_note: >
+        Anthropic does not publish an offline tokenizer, so text token counts are
+        approximated with the o200k_base encoding.
+    last_verified: 2026-09-25
+    source_url: https://platform.claude.com/docs/en/about-claude/pricing
 
   - id: claude-sonnet-5
     provider: anthropic
@@ -91,6 +111,7 @@ models:
     enabled: true
     input_per_mtok_usd: 2.00
     output_per_mtok_usd: 10.00
+    batch_input_per_mtok_usd: 1.00
     supports_vision: true
     vision_formula: width_height_area
     tokenizer:
@@ -100,8 +121,8 @@ models:
       approximation_note: >
         Anthropic does not publish an offline tokenizer, so text token counts are
         approximated with the o200k_base encoding.
-    last_verified: 2026-06-24
-    source_url: https://docs.anthropic.com/en/docs/about-claude/pricing
+    last_verified: 2026-09-25
+    source_url: https://platform.claude.com/docs/en/about-claude/pricing
 
   - id: claude-haiku-4-5
     provider: anthropic
@@ -109,6 +130,7 @@ models:
     enabled: true
     input_per_mtok_usd: 1.00
     output_per_mtok_usd: 5.00
+    batch_input_per_mtok_usd: 0.50
     supports_vision: true
     vision_formula: width_height_area
     tokenizer:
@@ -118,8 +140,8 @@ models:
       approximation_note: >
         Anthropic does not publish an offline tokenizer, so text token counts are
         approximated with the o200k_base encoding.
-    last_verified: 2026-06-24
-    source_url: https://docs.anthropic.com/en/docs/about-claude/pricing
+    last_verified: 2026-09-25
+    source_url: https://platform.claude.com/docs/en/about-claude/pricing
 
   # Imported from the litellm price table on 2026-09-09.
   # Prices are per million tokens, USD. Check prices before relying on them.
