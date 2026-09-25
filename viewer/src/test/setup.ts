@@ -40,3 +40,8 @@ afterEach(() => {
   document.documentElement.classList.remove("dark");
   localStorage.clear();
 });
+
+// jsdom draws nothing, and git-diff-view measures its line numbers' width on a canvas.
+HTMLCanvasElement.prototype.getContext = function getContext() {
+  return { font: "", measureText: (text: string) => ({ width: text.length * 7 }) };
+} as unknown as typeof HTMLCanvasElement.prototype.getContext;

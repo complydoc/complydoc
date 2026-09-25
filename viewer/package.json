@@ -16,6 +16,8 @@
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",
     "@fontsource-variable/geist-mono": "^5.3.0",
+    "@git-diff-view/file": "^0.1.7",
+    "@git-diff-view/react": "^0.1.7",
     "@tailwindcss/vite": "^4.3.3",
     "@tanstack/react-table": "^8.21.3",
     "class-variance-authority": "^0.7.1",

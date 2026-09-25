@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { DocumentDiff } from "@/features/documents/diff/DocumentDiff";
 import { usePlan } from "@/hooks/usePlan";
 import { documentTotals, pageEstimate } from "@/report/plan";
 import { fileName } from "@/report/format";
@@ -24,11 +26,20 @@ interface DocumentDetailProps {
 }
 
 /** One document: every reader's reading of each page, beside the page itself, and a finding shown where it sits. */
-export function DocumentDetail({ report, document, index, page: startPage = null, finding = null }: DocumentDetailProps) {
+export function DocumentDetail({
+  report,
+  document,
+  index,
+  page: startPage = null,
+  finding = null,
+}: DocumentDetailProps) {
   const highlight = finding ? findingHighlight(document, finding) : null;
   const opening = highlight?.page ?? startPage;
   const [pageIndex, setPageIndex] = useState(() =>
-    Math.max(0, document.extracted_text.findIndex((p) => p.number === opening)),
+    Math.max(
+      0,
+      document.extracted_text.findIndex((p) => p.number === opening),
+    ),
   );
   const page = document.extracted_text[pageIndex];
   const pages = document.extracted_text.length;
@@ -38,11 +49,25 @@ export function DocumentDetail({ report, document, index, page: startPage = null
   // A report written before pages carried token counts has nothing to price them by.
   const priced = page && models.length > 0 && page.tokens !== undefined;
   const checked = page ? document.verification?.pages.find((p) => p.number === page.number) : undefined;
+  const [view, setView] = useState<"pages" | "diff">("pages");
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-heading text-lg font-semibold tracking-tight">{fileName(document.relative_path)}</h2>
+        <div className="flex items-center gap-3">
+          <h2 className="font-heading text-lg font-semibold tracking-tight">{fileName(document.relative_path)}</h2>
+          <ToggleGroup
+            type="single"
+            variant="outline"
+            size="sm"
+            value={view}
+            aria-label="View"
+            onValueChange={(value) => value && setView(value as "pages" | "diff")}
+          >
+            <ToggleGroupItem value="pages">Pages</ToggleGroupItem>
+            <ToggleGroupItem value="diff">Diff</ToggleGroupItem>
+          </ToggleGroup>
+        </div>
         {priced && (
           <DocumentTotals
             page={pageEstimate(report, document, page, plan)}
@@ -51,31 +76,39 @@ export function DocumentDetail({ report, document, index, page: startPage = null
         )}
       </div>
 
-      {shown && <FindingBanner highlight={shown} clearHref={documentHref(index, page?.number)} />}
-      {checked && checked.status !== "agrees" && <VisionNote page={checked} model={document.verification?.model ?? ""} />}
-
-      {page ? (
-        <PageComparison
-          // A fresh pair of readings for each page, since pages can have different readers.
-          key={page.number}
-          number={page.number}
-          name={fileName(document.relative_path)}
-          readings={readings}
-          preview={document.previews?.find((p) => p.number === page.number)}
-          highlight={shown}
-          // Room below for the page picker, when there is more than one page.
-          reserve={pages > 1}
-          pricing={priced ? { page, text: plan.text, vision: plan.vision } : null}
-        />
+      {view === "diff" ? (
+        <DocumentDiff report={report} index={index} />
       ) : (
-        <p className="text-muted-foreground">
-          This report carries no text for the document. Run the audit with <code>--extracted-text</code>.
-        </p>
-      )}
+        <>
+          {shown && <FindingBanner highlight={shown} clearHref={documentHref(index, page?.number)} />}
+          {checked && checked.status !== "agrees" && (
+            <VisionNote page={checked} model={document.verification?.model ?? ""} />
+          )}
 
-      <div className="flex justify-center">
-        <PagePicker count={pages} current={pageIndex} onPick={setPageIndex} />
-      </div>
+          {page ? (
+            <PageComparison
+              // A fresh pair of readings for each page, since pages can have different readers.
+              key={page.number}
+              number={page.number}
+              name={fileName(document.relative_path)}
+              readings={readings}
+              preview={document.previews?.find((p) => p.number === page.number)}
+              highlight={shown}
+              // Room below for the page picker, when there is more than one page.
+              reserve={pages > 1}
+              pricing={priced ? { page, text: plan.text, vision: plan.vision } : null}
+            />
+          ) : (
+            <p className="text-muted-foreground">
+              This report carries no text for the document. Run the audit with <code>--extracted-text</code>.
+            </p>
+          )}
+
+          <div className="flex justify-center">
+            <PagePicker count={pages} current={pageIndex} onPick={setPageIndex} />
+          </div>
+        </>
+      )}
     </div>
   );
 }

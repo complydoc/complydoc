@@ -49,6 +49,12 @@ versioned separately.
   the audit. A reader nothing timed is left out rather than written as zero; a loader's
   time is its total over every file.
 
+- A document in the viewer opens as a git diff: any reading of any document against any
+  other, split or unified, with lines added and removed counted, drawn by git-diff-view.
+  Each page starts with a `# Page N` line so hunks say where they are, and the text can
+  be laid out one sentence per line, so readers breaking lines in different places does
+  not read as a difference. Two versions of a contract in one folder diff the same way.
+
 - The viewer prices and times the folder under a loading plan chosen in the top bar: the
   reader (the kept reading, another reader, OCR on every page, vision on every page, or
   routed page by page) and the text and vision models. The Cost page is now Cost & time,
