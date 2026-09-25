@@ -386,24 +386,20 @@ def _hidden_content(run: RunMetadata, documents: list[DocumentReport]) -> list[L
 
 
 def _imported_prices(documents: list[DocumentReport]) -> list[Limitation]:
-    """Prices taken from a third-party table rather than the provider."""
+    """Where the prices come from, and as of when: said once, for every model."""
     limitations: list[Limitation] = []
 
     priced = next((d.cost.models for d in documents if d.cost), [])
-    imported = sorted({m.display_name for m in priced if m.price_source == "imported"})
-    if imported:
-        taken = next((m.imported_on for m in priced if m.imported_on), None)
+    taken = next((m.imported_on for m in priced if m.imported_on), None)
+    if taken is not None:
         limitations.append(
             Limitation(
                 area="Price provenance",
                 statement=(
-                    f"{count(len(imported), 'model')} "
-                    f"{'is' if len(imported) == 1 else 'are'} priced from a maintained "
-                    f"third-party table{f' taken on {taken.isoformat()}' if taken else ''}. "
-                    f"{'That price has' if len(imported) == 1 else 'Those prices have'} not been "
-                    f"checked against the provider's own page."
+                    f"Prices are as of {taken.isoformat()}, from the price table complydoc "
+                    f"carries, refreshed each week from models.dev and litellm. A provider can "
+                    f"change a price between refreshes."
                 ),
-                affected=imported,
                 # A caveat on a cost estimate, not on what the documents hold: it
                 # sat among the important limitations of every run, beside unread
                 # pages and unscanned categories, and drowned them out.

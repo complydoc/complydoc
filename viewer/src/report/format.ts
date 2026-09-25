@@ -57,3 +57,9 @@ export function formatPageUsd(value: number | null): string {
   const digits = value !== 0 && Math.abs(value) < 1 ? 4 : 2;
   return `$${value.toLocaleString("en-GB", { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
 }
+
+/** An ISO date as a person reads it, such as "25 Sept 2026"; the input as it was when it is not a date. */
+export function formatDate(iso: string): string {
+  const date = new Date(`${iso.slice(0, 10)}T00:00:00`);
+  return Number.isNaN(date.getTime()) ? iso : date.toLocaleDateString("en-GB", { dateStyle: "medium" });
+}

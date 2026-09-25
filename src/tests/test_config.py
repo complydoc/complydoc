@@ -97,14 +97,21 @@ def test_a_never_verified_price_always_warns(config):
 
 
 def test_staleness_uses_the_configured_threshold(config):
-    # Measured from the price checked longest ago: every other is younger than it.
-    dates = [m.last_verified for m in config.pricing.models if m.last_verified is not None]
+    # Measured from the oldest price compared: every other is younger than it.
+    dates = [
+        m.imported_on or m.last_verified
+        for m in config.pricing.models
+        if m.enabled and (m.imported_on or m.last_verified)
+    ]
     assert dates
-    verified = min(dates)
-    just_inside = verified + dt.timedelta(days=config.pricing.staleness_warn_days)
+    oldest = min(d for d in dates if d is not None)
+    just_inside = oldest + dt.timedelta(days=config.pricing.staleness_warn_days)
     just_outside = just_inside + dt.timedelta(days=1)
     assert not check_staleness(config.pricing, just_inside)
-    assert check_staleness(config.pricing, just_outside)
+    stale = check_staleness(config.pricing, just_outside)
+    assert stale
+    # The table's prices share its date, so a stale table is one warning, not one per model.
+    assert sum(1 for w in stale if w.entry == "the price table") == 1
 
 
 def test_unknown_vision_formula_is_rejected(config):

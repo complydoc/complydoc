@@ -153,6 +153,8 @@ class FolderCostEstimate:
     summary report, which leaves `documents` out, still carries what the folder
     would cost on each model and reads back with it.
     """
+    prices_as_of: dt.date | None = None
+    """How old the prices are: the oldest date among the models compared."""
 
     def total_text_path_usd(self) -> float | None:
         values = [d.cheapest_text_path_usd() for d in self.documents]
@@ -392,6 +394,10 @@ def folder_from_estimates(
         headline_resolution=headline_resolution,
         resolutions=resolutions,
         documents=estimates,
+        prices_as_of=min(
+            (d for m in pricing.models if m.enabled and (d := m.imported_on or m.last_verified)),
+            default=None,
+        ),
     )
     if monthly_volume:
         folder.volume = _extrapolate(estimates, monthly_volume, headline_resolution)

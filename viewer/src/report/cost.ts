@@ -57,7 +57,6 @@ export interface PricedModel {
   id: string;
   name: string;
   provider: string;
-  verified: boolean;
   usd: number;
 }
 
@@ -68,7 +67,7 @@ export function pricedOn(report: Report, path: CostPath, unit: CostUnit = "per_1
       const usd = costOf(model, path, unit);
       return usd === null
         ? []
-        : [{ id: model.model_id, name: model.display_name, provider: model.provider, verified: model.price_source === "verified", usd }];
+        : [{ id: model.model_id, name: model.display_name, provider: model.provider, usd }];
     })
     .sort((a, b) => a.usd - b.usd || a.name.localeCompare(b.name));
 }
@@ -77,7 +76,6 @@ export interface CostRow {
   id: string;
   name: string;
   provider: string;
-  verified: boolean;
   text: number | null;
   vision: number | null;
 }
@@ -88,7 +86,6 @@ export function costRows(report: Report): CostRow[] {
     id: model.model_id,
     name: model.display_name,
     provider: model.provider,
-    verified: model.price_source === "verified",
     text: perThousand(model, "text_ocr"),
     vision: perThousand(model, "vision"),
   }));

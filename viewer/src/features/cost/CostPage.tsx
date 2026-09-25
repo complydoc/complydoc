@@ -9,7 +9,7 @@ import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { PATHS, UNITS, byProvider, costRows, pricedOn, providerColour, providerName, providersOf, type CostUnit } from "@/report/cost";
-import { formatUsd } from "@/report/format";
+import { formatDate, formatUsd } from "@/report/format";
 import type { CostPath, Report } from "@/report/types";
 import { CostTable } from "./CostTable";
 import { PlanComparison } from "./PlanComparison";
@@ -121,7 +121,10 @@ export function CostPage({ report }: { report: Report }) {
         </Card>
       </Section>
 
-      <Section title="Every model">
+      <Section
+        title="Every model"
+        aside={report.cost?.prices_as_of ? `Prices as of ${formatDate(report.cost.prices_as_of)}` : undefined}
+      >
         <CostTable rows={costRows(report)} />
       </Section>
     </SectionStack>

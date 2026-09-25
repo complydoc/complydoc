@@ -141,11 +141,22 @@ def test_an_imported_price_is_not_reported_as_a_stale_verification(config):
     assert not [w for w in warnings if w.entry.removeprefix("model ") in imported]
 
 
-def test_a_curated_price_is_never_replaced_by_an_imported_one(config):
-    curated = {m.id for m in config.pricing.models if m.price_source == "verified"}
-    assert curated, "the shipped config carries verified entries"
-    for model_id in curated:
-        assert config.pricing.model_by_id(model_id).price_source == "verified"
+def test_every_compared_model_is_priced_from_the_one_table(config):
+    """No price is a hand-copied number going stale beside the table's."""
+    from complydoc.cost.price_table import table_provenance
+
+    _, taken, _ = table_provenance()
+    compared = [m for m in config.pricing.models if m.enabled]
+    assert compared
+    assert {m.imported_on for m in compared} == {taken}
+
+
+def test_a_price_written_in_pricing_yaml_corrects_the_table(config):
+    """The table has Opus 5.5's batch input at 2.50; Anthropic's page says 2.00."""
+    opus = config.pricing.model_by_id("claude-opus-5-5")
+    assert opus.batch_input_per_mtok_usd == 2.00
+    # The rest of its prices still come from the table.
+    assert opus.input_per_mtok_usd == 4.00
 
 
 def test_a_model_from_the_table_can_be_named(config):
@@ -188,21 +199,23 @@ def test_a_batch_price_is_never_invented(config):
     assert priced.batch_text_path_input_usd is None
 
 
-def test_using_an_imported_price_is_disclosed(config):
+def test_the_report_says_once_how_old_the_prices_are(config):
     report = run_audit(FIXTURES, config, ("cost",), ocr=False, select_models=["gpt-4.1-mini"])
-    entry = next(x for x in report.limitations if x.area == "Price provenance")
-    # Disclosed, but as a caveat on cost: it is not among the important ones.
-    assert entry.severity == "info"
-    assert entry.affected, "it names the models it is talking about"
-    assert "third-party" in entry.statement
+    entries = [x for x in report.limitations if x.area == "Price provenance"]
+    assert len(entries) == 1, "one statement for every model, not one per model"
+    # A caveat on cost, not among the important ones.
+    assert entries[0].severity == "info"
+    assert "Prices are as of" in entries[0].statement
+    assert report.cost is not None and report.cost.prices_as_of is not None
 
 
-def test_a_verified_only_run_carries_no_provenance_caveat(config):
-    # Staleness is its own caveat, and it comes due with the calendar, not the code.
+def test_fresh_prices_carry_no_warning_only_their_date(config):
+    # Staleness comes due with the calendar, not the code, so the threshold is lifted.
     pricing = config.pricing.model_copy(update={"staleness_warn_days": 100_000})
     config = config.model_copy(update={"pricing": pricing})
-    report = run_audit(FIXTURES, config, ("cost",), ocr=False, select_models=["claude-opus-5"])
-    assert not [x for x in report.limitations if x.area == "Price provenance"]
+    report = run_audit(FIXTURES, config, ("cost",), ocr=False, select_models=["claude-opus-5-5"])
+    provenance = [x for x in report.limitations if x.area == "Price provenance"]
+    assert [x.severity for x in provenance] == ["info"]
 
 
 def test_the_catalogue_knows_when_models_were_released():

@@ -135,7 +135,7 @@ def test_doctor_reports_the_environment():
     result = runner.invoke(app, ["doctor"])
     assert result.exit_code == 0
     assert "Network guard: armed" in result.output
-    assert "Price provenance" in result.output
+    assert "Prices:" in result.output
 
 
 def test_the_run_never_crashes_on_the_awkward_folder(tmp_path):
@@ -162,7 +162,10 @@ def test_models_command_lists_configured_models(monkeypatch):
     result = runner.invoke(app, ["models"])
     assert result.exit_code == 0
     assert "claude-opus-5" in result.output
-    assert "verified" in result.output, "the table says where each price came from"
+    assert "Price as of" in result.output, "the table says how old each price is"
+    assert "verified" not in result.output and "imported" not in result.output, (
+        "one kind of price, so no model is labelled differently"
+    )
 
 
 def test_model_selection_narrows_the_report(tmp_path):
@@ -347,13 +350,16 @@ def test_models_can_be_listed_newest_first(monkeypatch):
     )
 
 
-def test_searching_the_catalogue_finds_imported_models(monkeypatch):
+def test_searching_the_catalogue_finds_models_beyond_the_comparison(monkeypatch):
     from complydoc.cli import common as cli
 
     monkeypatch.setattr(cli.console, "width", 200)
     result = runner.invoke(app, ["models", "gemini"])
     assert result.exit_code == 0
-    assert "imported" in result.output
+    assert "gemini" in result.output
+    assert result.output.count("\n") > 5, (
+        "every gemini model in the table, not only the compared ones"
+    )
 
 
 def test_the_demo_audits_the_samples_that_ship_with_the_tool(tmp_path):

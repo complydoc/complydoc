@@ -154,6 +154,7 @@ def report_shape() -> dict[str, object]:
         },
         "cost": (
             "null unless cost ran: currency, headline_resolution, resolutions[], volume, "
+            "prices_as_of (the date of the oldest price used), "
             "models[] (the folder's cost per model and per path: text_layer, text_ocr, "
             "vision, each with folder_usd, per_1000_usd and annual_usd; and the model's "
             "input_per_mtok_usd, supports_vision, vision_formula and tokenizer, to price "

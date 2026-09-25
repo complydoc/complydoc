@@ -1,14 +1,13 @@
-# Model prices and vision token formulas.
+# Which models are compared, and how each counts images and text.
 #
-# Every entry carries its own `last_verified` date. complydoc prints that date in
-# every report and warns when it is older than `staleness_warn_days`. An
-# entry with `last_verified: null` is treated as never verified and warned about
-# on every run until you check it and set the date yourself.
+# Prices are not written here. Every model the vendored price table lists
+# (model_prices.json, from models.dev and litellm, refreshed each week) takes its
+# price from there, so every price in a report is as of the same date and none is
+# a hand-copied number going stale. Reports say that date once.
 #
-# Entries with `enabled: false` and null prices are templates. The token formula
-# shape is filled in; the price is not, because it was not sourced when this file
-# was written. Fill in the price, set last_verified, flip enabled to true.
-# complydoc will not invent a price for you.
+# An entry for a model the table does not list keeps a price here, with the
+# `last_verified` date it was checked on, and is warned about when that is older
+# than `staleness_warn_days`. complydoc will not invent a price for you.
 
 schema_version: 1
 staleness_warn_days: 90
@@ -71,9 +70,9 @@ models:
     provider: anthropic
     display_name: Claude Opus 5.5
     enabled: true
-    input_per_mtok_usd: 4.00
-    output_per_mtok_usd: 20.00
+    # A correction: the table has 2.50, Anthropic's pricing page 2.00 (2026-09-25).
     batch_input_per_mtok_usd: 2.00
+    notes: Batch input price from https://platform.claude.com/docs/en/about-claude/pricing
     supports_vision: true
     vision_formula: width_height_area
     tokenizer:
@@ -83,16 +82,11 @@ models:
       approximation_note: >
         Anthropic does not publish an offline tokenizer, so text token counts are
         approximated with the o200k_base encoding.
-    last_verified: 2026-09-25
-    source_url: https://platform.claude.com/docs/en/about-claude/pricing
 
   - id: claude-opus-5
     provider: anthropic
     display_name: Claude Opus 5
     enabled: true
-    input_per_mtok_usd: 5.00
-    output_per_mtok_usd: 25.00
-    batch_input_per_mtok_usd: 2.50
     supports_vision: true
     vision_formula: width_height_area
     tokenizer:
@@ -102,16 +96,11 @@ models:
       approximation_note: >
         Anthropic does not publish an offline tokenizer, so text token counts are
         approximated with the o200k_base encoding.
-    last_verified: 2026-09-25
-    source_url: https://platform.claude.com/docs/en/about-claude/pricing
 
   - id: claude-sonnet-5
     provider: anthropic
     display_name: Claude Sonnet 5
     enabled: true
-    input_per_mtok_usd: 2.00
-    output_per_mtok_usd: 10.00
-    batch_input_per_mtok_usd: 1.00
     supports_vision: true
     vision_formula: width_height_area
     tokenizer:
@@ -121,16 +110,11 @@ models:
       approximation_note: >
         Anthropic does not publish an offline tokenizer, so text token counts are
         approximated with the o200k_base encoding.
-    last_verified: 2026-09-25
-    source_url: https://platform.claude.com/docs/en/about-claude/pricing
 
   - id: claude-haiku-4-5
     provider: anthropic
     display_name: Claude Haiku 4.5
     enabled: true
-    input_per_mtok_usd: 1.00
-    output_per_mtok_usd: 5.00
-    batch_input_per_mtok_usd: 0.50
     supports_vision: true
     vision_formula: width_height_area
     tokenizer:
@@ -140,19 +124,12 @@ models:
       approximation_note: >
         Anthropic does not publish an offline tokenizer, so text token counts are
         approximated with the o200k_base encoding.
-    last_verified: 2026-09-25
-    source_url: https://platform.claude.com/docs/en/about-claude/pricing
 
-  # Imported from the litellm price table on 2026-09-09.
-  # Prices are per million tokens, USD. Check prices before relying on them.
-  # Only the import date is recorded.
 
   - id: deepseek-v4-flash-vision-exp
     provider: deepseek
     display_name: "DeepSeek V4 Flash Vision Exp"
     enabled: true
-    input_per_mtok_usd: 0.44
-    output_per_mtok_usd: 1.32
     supports_vision: true
     vision_formula: tiled_512
     tokenizer:
@@ -162,8 +139,6 @@ models:
       approximation_note: >
         deepseek does not publish an offline tokenizer; token counts are
         approximated with the o200k_base encoding.
-    last_verified: 2026-09-09
-    source_url: https://github.com/BerriAI/litellm/blob/main/model_prices_and_context_window.json
     notes: >
       Token prices are from the litellm table. The vision token formula is
       assumed to follow the OpenAI tiling convention because this provider
@@ -174,8 +149,6 @@ models:
     provider: gemini
     display_name: "Gemini 3.7 Flash"
     enabled: true
-    input_per_mtok_usd: 0.75
-    output_per_mtok_usd: 3.75
     supports_vision: true
     vision_formula: flat_then_tiled
     tokenizer:
@@ -185,15 +158,11 @@ models:
       approximation_note: >
         gemini does not publish an offline tokenizer; token counts are
         approximated with the o200k_base encoding.
-    last_verified: 2026-09-09
-    source_url: https://github.com/BerriAI/litellm/blob/main/model_prices_and_context_window.json
 
   - id: gemini/gemini-3.1-pro-preview
     provider: gemini
     display_name: "Gemini 3.1 Pro Preview"
     enabled: true
-    input_per_mtok_usd: 2.0
-    output_per_mtok_usd: 12.0
     supports_vision: true
     vision_formula: flat_then_tiled
     tokenizer:
@@ -203,15 +172,11 @@ models:
       approximation_note: >
         gemini does not publish an offline tokenizer; token counts are
         approximated with the o200k_base encoding.
-    last_verified: 2026-09-09
-    source_url: https://github.com/BerriAI/litellm/blob/main/model_prices_and_context_window.json
 
   - id: moonshot/kimi-k3
     provider: moonshot
     display_name: "Kimi K3"
     enabled: true
-    input_per_mtok_usd: 3.0
-    output_per_mtok_usd: 15.0
     supports_vision: true
     vision_formula: tiled_512
     tokenizer:
@@ -221,8 +186,6 @@ models:
       approximation_note: >
         moonshot does not publish an offline tokenizer; token counts are
         approximated with the o200k_base encoding.
-    last_verified: 2026-09-09
-    source_url: https://github.com/BerriAI/litellm/blob/main/model_prices_and_context_window.json
     notes: >
       Token prices are from the litellm table. The vision token formula is
       assumed to follow the OpenAI tiling convention because this provider
@@ -233,36 +196,26 @@ models:
     provider: openai
     display_name: "GPT-5 Mini"
     enabled: true
-    input_per_mtok_usd: 0.25
-    output_per_mtok_usd: 2.0
     supports_vision: true
     vision_formula: tiled_512
     tokenizer:
       encoding: o200k_base
       fidelity: exact
-    last_verified: 2026-09-09
-    source_url: https://github.com/BerriAI/litellm/blob/main/model_prices_and_context_window.json
 
   - id: gpt-5.2
     provider: openai
     display_name: "GPT-5.2"
     enabled: true
-    input_per_mtok_usd: 1.75
-    output_per_mtok_usd: 14.0
     supports_vision: true
     vision_formula: tiled_512
     tokenizer:
       encoding: o200k_base
       fidelity: exact
-    last_verified: 2026-09-09
-    source_url: https://github.com/BerriAI/litellm/blob/main/model_prices_and_context_window.json
 
   - id: zai/glm-5.3-flash
     provider: zai
     display_name: "GLM-5.3-Flash"
     enabled: true
-    input_per_mtok_usd: 0.15
-    output_per_mtok_usd: 0.5
     supports_vision: true
     vision_formula: tiled_512
     tokenizer:
@@ -272,8 +225,6 @@ models:
       approximation_note: >
         zai does not publish an offline tokenizer; token counts are
         approximated with the o200k_base encoding.
-    last_verified: 2026-09-09
-    source_url: https://github.com/BerriAI/litellm/blob/main/model_prices_and_context_window.json
     notes: >
       Token prices are from the litellm table. The vision token formula is
       assumed to follow the OpenAI tiling convention because this provider

@@ -1,6 +1,6 @@
 {
   "aggregate": {
-    "analyse_seconds": 0.586,
+    "analyse_seconds": 0.545,
     "annual_text_usd": null,
     "annual_vision_usd": null,
     "categories_not_scanned": {},
@@ -20,7 +20,7 @@
     "formats": {
       "pdf": 6
     },
-    "hours_per_1000_documents": 0.25,
+    "hours_per_1000_documents": 0.23,
     "mean_readiness_score": 93.2,
     "monthly_text_usd": null,
     "monthly_vision_usd": null,
@@ -30,18 +30,18 @@
     "pages_total": 33,
     "pages_unreadable": 3,
     "projected_seconds": {
-      "100": 89.3,
-      "1000": 892.7,
-      "10000": 8926.7,
-      "100000": 89266.7
+      "100": 82.0,
+      "1000": 819.5,
+      "10000": 8195.0,
+      "100000": 81950.0
     },
     "read_seconds": 0.0,
     "readiness_bands": {
       "ready": 6
     },
-    "scan_seconds": 4.772,
-    "seconds_per_document": 0.893,
-    "seconds_per_page": 0.162,
+    "scan_seconds": 4.371,
+    "seconds_per_document": 0.82,
+    "seconds_per_page": 0.149,
     "sensitive_by_category": {
       "bank_account_number": 2,
       "card_number": 1,
@@ -225,7 +225,7 @@
         "poor": 0
       }
     },
-    "total_seconds": 5.356,
+    "total_seconds": 4.917,
     "total_text_path_usd": 0.0018214000000000001,
     "total_vision_path_usd": null
   },
@@ -281,7 +281,7 @@
         "display_name": "Claude Opus 5.5",
         "input_per_mtok_usd": 4.0,
         "model_id": "claude-opus-5-5",
-        "price_source": "verified",
+        "price_source": "imported",
         "provider": "anthropic",
         "supports_vision": true,
         "tokenizer": "o200k_basex1",
@@ -327,7 +327,7 @@
         "display_name": "Claude Sonnet 5",
         "input_per_mtok_usd": 2.0,
         "model_id": "claude-sonnet-5",
-        "price_source": "verified",
+        "price_source": "imported",
         "provider": "anthropic",
         "supports_vision": true,
         "tokenizer": "o200k_basex1",
@@ -373,7 +373,7 @@
         "display_name": "Claude Haiku 4.5",
         "input_per_mtok_usd": 1.0,
         "model_id": "claude-haiku-4-5",
-        "price_source": "verified",
+        "price_source": "imported",
         "provider": "anthropic",
         "supports_vision": true,
         "tokenizer": "o200k_basex1",
@@ -396,12 +396,12 @@
             "annual_usd": null,
             "documents_served": 5,
             "documents_total": 6,
-            "folder_usd": 0.00801416,
+            "folder_usd": 0.0027321,
             "key": "text_ocr",
             "label": "Text + local OCR",
             "note": "Every document. Scans are read locally first, which costs nothing to send.",
-            "per_1000_usd": 1.6028319999999998,
-            "per_document_usd": 0.0016028319999999998
+            "per_1000_usd": 0.5464199999999999,
+            "per_document_usd": 0.0005464199999999999
           },
           {
             "annual_usd": null,
@@ -417,9 +417,9 @@
         ],
         "batch_per_1000_usd": null,
         "display_name": "DeepSeek V4 Flash Vision Exp",
-        "input_per_mtok_usd": 0.44,
+        "input_per_mtok_usd": 0.15,
         "model_id": "deepseek-v4-flash-vision-exp",
-        "price_source": "verified",
+        "price_source": "imported",
         "provider": "deepseek",
         "supports_vision": true,
         "tokenizer": "o200k_basex1",
@@ -461,11 +461,11 @@
             "per_document_usd": null
           }
         ],
-        "batch_per_1000_usd": null,
+        "batch_per_1000_usd": 3.6428000000000003,
         "display_name": "Gemini 3.1 Pro Preview",
         "input_per_mtok_usd": 2.0,
         "model_id": "gemini/gemini-3.1-pro-preview",
-        "price_source": "verified",
+        "price_source": "imported",
         "provider": "gemini",
         "supports_vision": true,
         "tokenizer": "o200k_basex1",
@@ -511,7 +511,7 @@
         "display_name": "Kimi K3",
         "input_per_mtok_usd": 3.0,
         "model_id": "moonshot/kimi-k3",
-        "price_source": "verified",
+        "price_source": "imported",
         "provider": "moonshot",
         "supports_vision": true,
         "tokenizer": "o200k_basex1",
@@ -557,7 +557,7 @@
         "display_name": "GLM-5.3-Flash",
         "input_per_mtok_usd": 0.15,
         "model_id": "zai/glm-5.3-flash",
-        "price_source": "verified",
+        "price_source": "imported",
         "provider": "zai",
         "supports_vision": true,
         "tokenizer": "o200k_basex1",
@@ -1392,6 +1392,7 @@
         "vision_formula": "tiled_512"
       }
     ],
+    "prices_as_of": "2026-09-25",
     "resolutions": [
       "low",
       "medium",
@@ -1997,11 +1998,11 @@
       },
       "sha256": "b9293ef1ccaacdd8e49c4282661652bbc81c564fe68b290c8c382d658c74e93f",
       "timing": {
-        "analyse_seconds": 0.004,
+        "analyse_seconds": 0.006,
         "read_seconds": 0.0,
-        "scan_seconds": 0.027,
-        "seconds_per_page": 0.01,
-        "total_seconds": 0.031
+        "scan_seconds": 0.037,
+        "seconds_per_page": 0.014,
+        "total_seconds": 0.043
       },
       "verification": null,
       "visibility_checked": true,
@@ -3254,11 +3255,11 @@
       },
       "sha256": "3153e66cd7a6fd813457f450d3eec04784ffa93e76b664f9a8defdee9e5ebf50",
       "timing": {
-        "analyse_seconds": 0.559,
+        "analyse_seconds": 0.518,
         "read_seconds": 0.0,
-        "scan_seconds": 1.224,
-        "seconds_per_page": 0.297,
-        "total_seconds": 1.782
+        "scan_seconds": 1.216,
+        "seconds_per_page": 0.289,
+        "total_seconds": 1.735
       },
       "verification": null,
       "visibility_checked": true,
@@ -4269,9 +4270,9 @@
       "timing": {
         "analyse_seconds": 0.003,
         "read_seconds": 0.0,
-        "scan_seconds": 0.396,
-        "seconds_per_page": 0.08,
-        "total_seconds": 0.398
+        "scan_seconds": 0.384,
+        "seconds_per_page": 0.077,
+        "total_seconds": 0.387
       },
       "verification": null,
       "visibility_checked": true,
@@ -5365,9 +5366,9 @@
       "timing": {
         "analyse_seconds": 0.001,
         "read_seconds": 0.0,
-        "scan_seconds": 0.164,
-        "seconds_per_page": 0.055,
-        "total_seconds": 0.165
+        "scan_seconds": 0.133,
+        "seconds_per_page": 0.045,
+        "total_seconds": 0.134
       },
       "verification": null,
       "visibility_checked": true,
@@ -6457,11 +6458,11 @@
       },
       "sha256": "6911df5d52683c1388947080657a022016a1f02c8fdd9f51cb690d2e8fc8efa2",
       "timing": {
-        "analyse_seconds": 0.01,
+        "analyse_seconds": 0.009,
         "read_seconds": 0.0,
-        "scan_seconds": 1.6,
-        "seconds_per_page": 0.201,
-        "total_seconds": 1.61
+        "scan_seconds": 1.423,
+        "seconds_per_page": 0.179,
+        "total_seconds": 1.432
       },
       "verification": null,
       "visibility_checked": true,
@@ -7881,11 +7882,11 @@
       },
       "sha256": "8186812a462e216e9789ac8f2a99bdc60dea2ab1e123e4f80d971b2627d917cf",
       "timing": {
-        "analyse_seconds": 0.009,
+        "analyse_seconds": 0.008,
         "read_seconds": 0.0,
-        "scan_seconds": 1.361,
-        "seconds_per_page": 0.171,
-        "total_seconds": 1.37
+        "scan_seconds": 1.178,
+        "seconds_per_page": 0.148,
+        "total_seconds": 1.186
       },
       "verification": null,
       "visibility_checked": true,
@@ -7957,29 +7958,10 @@
       "statement": "Hidden-text checks cover the text layer of PDFs and the markup of Word, Excel, PowerPoint, HTML, Markdown and email files. In HTML and Markdown, hidden passages are reported only when they read as instructions. Text inside images, which a vision model reads, is not checked. Instruction patterns cover English and six other European languages; wording outside those is found only by a classifier."
     },
     {
-      "affected": [
-        "Claude Fable 5.1",
-        "DeepSeek V4 Pro",
-        "DeepSeek V4.1 Flash",
-        "GLM-5.3",
-        "GLM-5.3-FlashX",
-        "GLM-5V-Turbo",
-        "GPT-5.6 Terra",
-        "GPT-6 Astra",
-        "GPT-6 Luna",
-        "GPT-6 Sol",
-        "Gemini 3.5 Flash Lite",
-        "Gemini 3.8 Flash",
-        "Grok 4.7",
-        "Kimi K2.7 Code",
-        "Magistral Medium (latest)",
-        "Magistral Small",
-        "Mistral Medium 3.5",
-        "Mistral Small 4"
-      ],
+      "affected": [],
       "area": "Price provenance",
       "severity": "info",
-      "statement": "18 models are priced from a maintained third-party table taken on 2026-09-25. Those prices have not been checked against the provider's own page."
+      "statement": "Prices are as of 2026-09-25, from the price table complydoc carries, refreshed each week from models.dev and litellm. A provider can change a price between refreshes."
     },
     {
       "affected": [
@@ -8254,7 +8236,7 @@
     "name": "pypdf",
     "network_allowed": false,
     "network_attempts": [],
-    "seconds": 0.129,
+    "seconds": 0.133,
     "tags": [
       "LangChain"
     ]
@@ -8423,7 +8405,7 @@
           "pdfplumber"
         ],
         "severity": "medium",
-        "value": "••• •••• 0101"
+        "value": "••• •••• 0104"
       },
       {
         "category": "phone_number",
@@ -8439,7 +8421,39 @@
           "pdfplumber"
         ],
         "severity": "medium",
-        "value": "••• •••• 0104"
+        "value": "••• •••• 0101"
+      },
+      {
+        "category": "phone_number",
+        "document": "viewer/sample/documents/employee-handbook.pdf",
+        "evidence": "pattern",
+        "found_by": [
+          "pdfplumber"
+        ],
+        "keys": [],
+        "label": "Phone number",
+        "location": "text",
+        "missed_by": [
+          "pypdf"
+        ],
+        "severity": "medium",
+        "value": "••• •••• 0100 "
+      },
+      {
+        "category": "phone_number",
+        "document": "viewer/sample/documents/employee-handbook.pdf",
+        "evidence": "pattern",
+        "found_by": [
+          "pdfplumber"
+        ],
+        "keys": [],
+        "label": "Phone number",
+        "location": "text",
+        "missed_by": [
+          "pypdf"
+        ],
+        "severity": "medium",
+        "value": "••• •••• 0101 "
       },
       {
         "category": "phone_number",
@@ -8488,38 +8502,6 @@
         ],
         "severity": "medium",
         "value": "••• •••• 0103 "
-      },
-      {
-        "category": "phone_number",
-        "document": "viewer/sample/documents/employee-handbook.pdf",
-        "evidence": "pattern",
-        "found_by": [
-          "pdfplumber"
-        ],
-        "keys": [],
-        "label": "Phone number",
-        "location": "text",
-        "missed_by": [
-          "pypdf"
-        ],
-        "severity": "medium",
-        "value": "••• •••• 0100 "
-      },
-      {
-        "category": "phone_number",
-        "document": "viewer/sample/documents/employee-handbook.pdf",
-        "evidence": "pattern",
-        "found_by": [
-          "pdfplumber"
-        ],
-        "keys": [],
-        "label": "Phone number",
-        "location": "text",
-        "missed_by": [
-          "pypdf"
-        ],
-        "severity": "medium",
-        "value": "••• •••• 0101 "
       },
       {
         "category": "person_name",
@@ -8571,7 +8553,7 @@
         "pages": 33,
         "parser_usd": null,
         "readiness_score": 93.2,
-        "seconds": 0.129,
+        "seconds": 0.133,
         "tags": [
           "LangChain"
         ],
@@ -8609,7 +8591,7 @@
         "pages": 33,
         "parser_usd": null,
         "readiness_score": 93.7,
-        "seconds": 1.159,
+        "seconds": 1.146,
         "tags": [
           "LangChain"
         ],
@@ -8758,14 +8740,14 @@
       "readiness",
       "sensitive"
     ],
-    "config_digest": "081540129973dc02",
+    "config_digest": "228e94365a6157ca",
     "config_dir": "src/complydoc/config",
     "content_sent_to": [],
     "documents_read_after_worker_failure": 0,
-    "duration_seconds": 25.655,
+    "duration_seconds": 25.003,
     "extracted_text_used": true,
     "extractor": "pypdf",
-    "finished_at": "2026-09-25T15:15:49+01:00",
+    "finished_at": "2026-09-26T00:12:00+01:00",
     "jobs": 1,
     "monthly_volume": null,
     "ner_available": true,
@@ -8781,10 +8763,10 @@
     "sample_size": null,
     "sampled_from": null,
     "schema_version": 16,
-    "started_at": "2026-09-25T15:15:23+01:00",
+    "started_at": "2026-09-26T00:11:35+01:00",
     "target": "pypdf",
     "timeout_seconds": null,
-    "tool_version": "0.5.0",
+    "tool_version": "0.6.0",
     "verify_model": null,
     "verify_scope": null
   },

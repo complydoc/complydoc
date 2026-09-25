@@ -147,22 +147,13 @@ def doctor(config_dir: ConfigOpt = None) -> None:
 
     warnings = check_staleness(config.pricing)
     for warning in warnings:
-        console.print(f"[yellow]Price provenance:[/] {escape(warning.message)}")
-    # Imported prices are left out of the staleness check, which covers them with
-    # one limitation in the report instead. Saying "all verified" here while the
-    # report of the same install lists them as unchecked told two stories.
-    enabled = [m for m in config.pricing.models if m.enabled]
-    imported = [m for m in enabled if m.price_source == "imported"]
-    if imported:
-        taken = max((m.imported_on for m in imported if m.imported_on), default=None)
-        console.print(
-            f"Price provenance: {len(enabled) - len(imported)} of {len(enabled)} enabled "
-            f"models verified at the provider; [yellow]{len(imported)} imported from a "
-            f"third-party table{f' on {taken.isoformat()}' if taken else ''}[/] and not "
-            f"checked"
+        console.print(f"[yellow]Prices:[/] {escape(warning.message)}")
+    if not warnings:
+        taken = next(
+            (m.imported_on for m in config.pricing.models if m.enabled and m.imported_on), None
         )
-    elif not warnings:
-        console.print("Price provenance: [green]all enabled models verified recently[/]")
+        when = f"as of {taken.isoformat()}" if taken else "of an unknown date"
+        console.print(f"Prices: [green]{when}[/], one table for every model")
 
 
 @app.command(rich_help_panel="Information")
@@ -183,10 +174,11 @@ def models(
     ] = None,
     config_dir: ConfigOpt = None,
 ) -> None:
-    """List the models available to price against, and where each price came from.
+    """List the models available to price against, and the date of their prices.
 
-    The default comparison uses prices verified against the provider's own page.
-    Several hundred more from the vendored table can be named with --model.
+    Every price comes from the vendored price table, refreshed each week. The
+    default comparison is each provider's current line-up; the rest of the table
+    can be named with --model.
     """
     import datetime as dt
 
@@ -226,22 +218,18 @@ def models(
     table.add_column("Batch", justify="right")
     table.add_column("Takes images")
     table.add_column("Released")
-    table.add_column("Price from")
+    table.add_column("Price as of")
 
     for entry in chosen:
+        as_of = entry.imported_on or entry.last_verified
         if not entry.is_priced:
             state = "[yellow]no price[/]"
-        elif entry.price_source == "imported":
-            when = entry.imported_on.isoformat() if entry.imported_on else "unknown date"
-            state = f"[dim]imported {when}[/]"
+        elif as_of is None:
+            state = "[red]no date[/]"
+        elif (today - as_of).days > pricing.staleness_warn_days:
+            state = f"[red]{as_of.isoformat()} ({(today - as_of).days}d)[/]"
         else:
-            age = entry.days_since_verified(today)
-            if age is None:
-                state = "[red]never verified[/]"
-            elif age > pricing.staleness_warn_days:
-                state = f"[red]verified {entry.last_verified} ({age}d)[/]"
-            else:
-                state = f"verified {entry.last_verified}"
+            state = f"[dim]{as_of.isoformat()}[/]"
         table.add_row(
             entry.id if entry.enabled else f"[dim]{entry.id}[/]",
             entry.provider,
@@ -264,7 +252,7 @@ def models(
         )
     console.print(
         f"\n[dim]Price one model with [/][bold]--model <id>[/][dim], repeat for several. "
-        f"Imported prices come from {source} as of "
+        f"Prices come from {source} as of "
         f"{imported_on.isoformat() if imported_on else 'an unknown date'}; refresh with "
         f"[/][bold]make prices[/][dim].[/]"
     )

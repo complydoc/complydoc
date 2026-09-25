@@ -1,0 +1,56 @@
+# Refresh the model price table each week, and propose the change.
+#
+# Every price complydoc quotes comes from src/complydoc/config/model_prices.json,
+# built from models.dev and litellm by src/scripts/build_price_table.py. This
+# rebuilds it every Monday and, when any price moved, opens a pull request into
+# development, so a person sees the change before a release carries it.
+#
+# Nothing here runs during an audit, which never reaches the network.
+#
+# The repository has to allow GitHub Actions to create pull requests
+# (Settings → Actions → General). A pull request opened with the built-in token
+# does not start other workflows, so run the checks on it by hand or push to it.
+name: prices
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  UV_FROZEN: "1"
+
+jobs:
+  refresh:
+    name: refresh the price table
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: development
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: rebuild the table
+        run: uv run python src/scripts/build_price_table.py
+      - name: propose it when a price moved
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet -- src/complydoc/config/model_prices.json; then
+            echo "No price moved."
+            exit 0
+          fi
+          branch="prices/$(date -u +%Y-%m-%d)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "${branch}"
+          git commit -am "chore: refresh model prices"
+          git push -u origin "${branch}"
+          gh pr create --base development --head "${branch}" \
+            --title "chore: refresh model prices ($(date -u +%Y-%m-%d))" \
+            --body "The weekly refresh of src/complydoc/config/model_prices.json from models.dev and litellm. Check the diff for a price that moved further than expected, and correct it in pricing.yaml if the provider's own page disagrees."

@@ -105,9 +105,9 @@ fixtures: ## Rebuild the committed test fixtures
 	$(PYTHON) python $(TESTS)/generate_fixtures.py
 
 .PHONY: prices
-prices: ## Refresh the vendored model price table from litellm
+prices: ## Refresh the vendored model price table from models.dev and litellm
 	$(PYTHON) python src/scripts/build_price_table.py
-	@echo "Review the diff. Entries are marked imported."
+	@echo "Review the diff. A wrong price is corrected in pricing.yaml."
 
 .PHONY: diagrams
 diagrams: ## Re-export the README architecture diagrams to SVG

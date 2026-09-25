@@ -7,6 +7,20 @@ separately.
 
 ## [Unreleased]
 
+### Changed
+
+- One kind of price. Every model is priced from the vendored table, from models.dev and
+  litellm, which a workflow refreshes each week by pull request, and a report says once
+  how old the prices are (`cost.prices_as_of`). `pricing.yaml` no longer carries prices
+  for models the table lists; it says which are compared and how they count images and
+  tokens, and a price written there corrects the table's for that model. The verified
+  and imported labels are gone from the report, `complydoc models` and the viewer.
+
+- The viewer's Summary is now Home: figures that each open what they count, the surest
+  high-severity findings, and the documents to look at first with why. The quick wins,
+  the numbers grid, the suggested commands, the notes on what a run could not check and
+  the Cost page's cards of cheapest prices are gone.
+
 ## [0.6.0] — 2026-09-25
 
 The minor number moves for `complydoc ui`, a new way to read reports. Nothing in the

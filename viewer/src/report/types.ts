@@ -304,8 +304,6 @@ export interface ModelCost {
   model_id: string;
   display_name: string;
   provider: string;
-  /** "verified" by hand, or imported from a third-party table. */
-  price_source: string;
   architectures: Architecture[];
   /** Schema 16: what pricing one page takes. */
   input_per_mtok_usd?: number | null;
@@ -317,4 +315,6 @@ export interface ModelCost {
 export interface Cost {
   currency: string;
   models: ModelCost[];
+  /** Schema 16: the date of the oldest price used, as ISO. */
+  prices_as_of?: string | null;
 }
