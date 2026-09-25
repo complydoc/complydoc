@@ -12,6 +12,11 @@ export const SAMPLES: readonly Sample[] = [
     load: async () => (await import("@/fixtures/audit.json?raw")).default,
   },
   {
+    id: "share",
+    label: "A shared drive, folders within folders",
+    load: async () => (await import("@/fixtures/share.json?raw")).default,
+  },
+  {
     id: "loaders",
     label: "pypdf against pdfplumber",
     load: async () => (await import("@/fixtures/loaders.json?raw")).default,

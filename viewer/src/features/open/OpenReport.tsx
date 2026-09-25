@@ -77,7 +77,7 @@ export function OpenReport({ dark, onToggleTheme, onFiles, onSamples, error }: O
                 {sample.label}
               </Button>
             ))}
-            <Button variant="link" size="sm" onClick={() => onSamples(SAMPLES.map((s) => s.id))}>
+            <Button variant="link" size="sm" onClick={() => onSamples(["audit", "loaders"])}>
               Both, as two runs of one folder
             </Button>
           </div>

@@ -1,5 +1,6 @@
 import auditRaw from "@/fixtures/audit.json?raw";
 import loadersRaw from "@/fixtures/loaders.json?raw";
+import shareRaw from "@/fixtures/share.json?raw";
 import { parseReport } from "@/report/parse";
 import type { LoaderComparison, Report } from "@/report/types";
 
@@ -85,4 +86,9 @@ export function sampleVerified(): Report {
     headline: `1 of ${document.page_count} pages checked against an independent vision read: 1 disagrees`,
   };
   return report;
+}
+
+/** The sample documents filed into a shared drive, folders within folders, audited as one folder. */
+export function sampleShare(): Report {
+  return parseReport(shareRaw);
 }

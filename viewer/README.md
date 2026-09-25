@@ -38,7 +38,7 @@ src/
                   selectors (select, security, cost), and readings.ts, which lines
                   up and diffs a page's readings
   lib/            shadcn's utilities
-  fixtures/       the two sample reports, written by sample/make_reports.py
+  fixtures/       the sample reports, written by sample/make_reports.py
   test/           test setup and the sample loader
   index.css       the theme: brand tokens on shadcn's names
 ```
@@ -60,8 +60,11 @@ Six synthetic documents, 33 pages in all, in `sample/documents`: a two-column
 contract, an annual report with tables and a chart, a staff handbook, scanned
 invoices, a questionnaire hiding an instruction to a model, and German invoices.
 Every identifier in them is invented or a published test value. From them come
-the two reports the open screen offers: a full audit with page pictures, pypdf
-compared and OCR, and pypdf against pdfplumber as LangChain loaders.
+the three reports the open screen offers: a full audit with page pictures, pypdf
+compared and OCR; pypdf against pdfplumber as LangChain loaders; and the same
+documents filed into a shared drive, `finance/invoices/2026` and the like, audited
+in one run as a folder is, with everything under it. The last is built into
+`sample/share` when the reports are made, and not kept.
 
 ```bash
 uv run python viewer/sample/make_documents.py
