@@ -1,5 +1,7 @@
 import { ChevronRightIcon } from "lucide-react";
+import { NextSteps } from "@/components/NextSteps";
 import { Section, SectionStack } from "@/components/Section";
+import { nextSteps } from "@/report/next";
 import { Stat, StatGrid } from "@/components/Stat";
 import { formatCount, formatSeconds, plural } from "@/report/format";
 import { summaryCaveats } from "@/report/select";
@@ -41,6 +43,10 @@ export function SummaryPage({ report }: { report: Report }) {
             />
           )}
         </StatGrid>
+      </Section>
+
+      <Section title="Find out more">
+        <NextSteps steps={nextSteps(report)} />
       </Section>
 
       {caveats.length > 0 && (

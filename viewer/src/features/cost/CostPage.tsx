@@ -14,6 +14,8 @@ import { formatUsd } from "@/report/format";
 import type { CostPath, Report } from "@/report/types";
 import { CostTable } from "./CostTable";
 import { PlanComparison } from "./PlanComparison";
+import { NextSteps } from "@/components/NextSteps";
+import { nextSteps } from "@/report/next";
 
 const ALL = "all";
 
@@ -50,6 +52,10 @@ export function CostPage({ report }: { report: Report }) {
     <SectionStack>
       <Section title="Ways to read this folder">
         <PlanComparison report={report} />
+      </Section>
+
+      <Section title="Measure more of it">
+        <NextSteps steps={nextSteps(report).filter((step) => step.timing)} />
       </Section>
 
       <Section title="Per 1,000 documents">
