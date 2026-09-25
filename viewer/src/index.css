@@ -183,3 +183,33 @@
     @apply bg-background text-foreground tabular-nums;
   }
 }
+
+/*
+ * The git diff in the viewer's own colours rather than GitHub's: added and
+ * lost text in the same success and destructive tones the reading panes mark
+ * differences with, on the card and muted surfaces around it. Tokens, so light
+ * and dark follow the theme. The doubled class outranks the library's own
+ * stylesheet, which loads after this one.
+ */
+.diff-tailwindcss-wrapper[data-theme] .diff-style-root.diff-style-root {
+  --diff-add-content--: var(--success-soft);
+  --diff-add-content-highlight--: color-mix(in oklab, var(--success) 30%, var(--success-soft));
+  --diff-add-lineNumber--: color-mix(in oklab, var(--success) 18%, var(--success-soft));
+  --diff-del-content--: var(--destructive-soft);
+  --diff-del-content-highlight--: color-mix(in oklab, var(--destructive) 30%, var(--destructive-soft));
+  --diff-del-lineNumber--: color-mix(in oklab, var(--destructive) 18%, var(--destructive-soft));
+  --diff-plain-content--: var(--card);
+  --diff-plain-lineNumber--: var(--muted);
+  --diff-plain-lineNumber-color--: var(--muted-foreground);
+  --diff-empty-content--: var(--muted);
+  --diff-expand-content--: var(--muted);
+  --diff-expand-lineNumber--: var(--muted);
+  --diff-expand-lineNumber-color--: var(--muted-foreground);
+  --diff-hunk-content--: var(--accent);
+  --diff-hunk-content-color--: var(--muted-foreground);
+  --diff-hunk-lineNumber--: var(--accent);
+  --diff-hunk-lineNumber-hover--: var(--primary);
+  --diff-border--: var(--border);
+  color: var(--foreground);
+  font-family: var(--font-mono);
+}
