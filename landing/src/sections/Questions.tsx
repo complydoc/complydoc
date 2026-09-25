@@ -67,7 +67,7 @@ export function Questions() {
               value={q.value}
               style={{ animationDelay: `${i * 180}ms` }}
               className={cn(
-                "h-auto justify-start gap-3 rounded-xl border bg-card px-4 py-3 text-left text-sm whitespace-normal data-active:border-primary/40 data-active:bg-card",
+                "h-auto justify-start gap-3 rounded-xl border bg-card px-4 py-3 text-left text-sm whitespace-normal after:hidden data-active:border-primary/40 data-active:bg-card",
                 seen ? "animate-in fill-mode-both fade-in slide-in-from-bottom-3 duration-500" : "opacity-0",
                 "motion-reduce:animate-none motion-reduce:opacity-100",
               )}
