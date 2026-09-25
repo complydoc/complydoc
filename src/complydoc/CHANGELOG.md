@@ -49,6 +49,15 @@ versioned separately.
   the audit. A reader nothing timed is left out rather than written as zero; a loader's
   time is its total over every file.
 
+- The viewer opens several reports at once, each as the folder it audited, with its
+  subfolders: a collection. Reports of the same folder are its runs, newest first. A
+  switcher at the top of the sidebar moves between folders and runs, and with more than
+  one folder open, an overview sets them side by side: documents, pages, readiness,
+  sensitive items, and cost and time under the chosen plan, each with its change since
+  the run before. A folder's Summary says what changed since its previous run, down to
+  the documents added and gone. A loader comparison is filed under the folder its
+  documents share, not under its loader's name.
+
 - A document in the viewer opens as a git diff: any reading of any document against any
   other, split or unified, with lines added and removed counted, drawn by git-diff-view.
   Each page starts with a `# Page N` line so hunks say where they are, and the text can

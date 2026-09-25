@@ -2,10 +2,11 @@ import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { useModelChoice } from "@/hooks/useModelChoice";
 import { PlanContext } from "@/hooks/usePlan";
 import { planOptions, type ReaderChoice } from "@/report/plan";
+import { PLAN_KEYS } from "@/report/planChoice";
 import { pricedModels } from "@/report/pricing";
 import type { Report } from "@/report/types";
 
-const KEY = "complydoc-plan-reader";
+const KEY = PLAN_KEYS.reader;
 
 function stored(): string | null {
   try {

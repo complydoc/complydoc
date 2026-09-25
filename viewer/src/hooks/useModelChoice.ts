@@ -1,7 +1,8 @@
 import { useCallback, useState } from "react";
+import { PLAN_KEYS } from "@/report/planChoice";
 import type { PricedModel } from "@/report/pricing";
 
-const KEYS = { text: "complydoc-model-text", vision: "complydoc-model-vision" } as const;
+const KEYS = PLAN_KEYS;
 
 function stored(key: string): string | null {
   try {

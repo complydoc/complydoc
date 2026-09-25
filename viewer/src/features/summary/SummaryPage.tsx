@@ -9,9 +9,10 @@ import type { Report } from "@/report/types";
 import { Caveats } from "./Caveats";
 import { QuickWins } from "./QuickWins";
 import { ReadinessCard } from "./ReadinessCard";
+import { RunChanges } from "./RunChanges";
 
 /** The folder at a glance: how ready it is, what to do first, and the headline figures. */
-export function SummaryPage({ report }: { report: Report }) {
+export function SummaryPage({ report, previous = null }: { report: Report; previous?: Report | null }) {
   const { aggregate } = report;
   const caveats = summaryCaveats(report);
 
@@ -20,6 +21,12 @@ export function SummaryPage({ report }: { report: Report }) {
       <Section title="Readiness">
         <ReadinessCard report={report} />
       </Section>
+
+      {previous && (
+        <Section title="Changed since the run before">
+          <RunChanges report={report} previous={previous} />
+        </Section>
+      )}
 
       <Section title="Quick wins">
         <QuickWins wins={report.quick_wins} />

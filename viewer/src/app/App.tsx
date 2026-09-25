@@ -1,35 +1,60 @@
-import { useCallback } from "react";
+import { useCallback, useMemo, useState } from "react";
+import type { Selection } from "@/components/CollectionSwitcher";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { OpenReport } from "@/features/open/OpenReport";
 import { SAMPLES } from "@/features/open/samples";
-import { embeddedReport, useReportFile } from "@/hooks/useReportFile";
+import { embeddedReports, useReports } from "@/hooks/useReports";
 import { useTheme } from "@/hooks/useTheme";
+import { collectionsOf } from "@/report/collections";
 import { ReportView } from "./ReportView";
 
-/** Shows the opened report, or the way to open one. */
+/** Shows the open reports, or the way to open some. */
 export function App() {
   const { dark, toggle } = useTheme();
-  const { state, openFile, openText, close } = useReportFile(embeddedReport);
+  const { state, addTexts, addFiles, closeAll } = useReports(embeddedReports);
+  const collections = useMemo(() => collectionsOf(state.loaded), [state.loaded]);
+  const [chosen, setChosen] = useState<Selection | null>(null);
 
-  const openSample = useCallback(
-    async (id: string) => {
-      const sample = SAMPLES.find((s) => s.id === id);
-      if (sample) openText(`sample: ${sample.label}`, await sample.load());
+  // One folder open goes straight to it; several open on the overview, until one is chosen.
+  const selection: Selection =
+    chosen && (chosen.collection === null || collections.some((c) => c.id === chosen.collection))
+      ? chosen
+      : collections.length === 1
+        ? { collection: collections[0]?.id ?? null, run: collections[0]?.runs[0]?.id ?? null }
+        : { collection: null, run: null };
+
+  const openSamples = useCallback(
+    async (ids: string[]) => {
+      const samples = SAMPLES.filter((s) => ids.includes(s.id));
+      addTexts(await Promise.all(samples.map(async (s) => ({ name: `sample: ${s.label}`, text: await s.load() }))));
     },
-    [openText],
+    [addTexts],
   );
+
+  const close = useCallback(() => {
+    setChosen(null);
+    closeAll();
+  }, [closeAll]);
 
   return (
     <TooltipProvider>
-      {state.status === "ready" ? (
-        <ReportView report={state.report} name={state.name} dark={dark} onToggleTheme={toggle} onClose={close} />
+      {state.loaded.length > 0 ? (
+        <ReportView
+          collections={collections}
+          selection={selection}
+          onSelect={setChosen}
+          onAdd={(files) => void addFiles(files)}
+          onCloseAll={close}
+          dark={dark}
+          onToggleTheme={toggle}
+        />
       ) : (
         <OpenReport
           dark={dark}
           onToggleTheme={toggle}
-          onFile={openFile}
-          onSample={openSample}
-          error={state.status === "error" ? `${state.name}: ${state.message}` : undefined}
+          onFiles={(files) => void addFiles(files)}
+          onSamples={(ids) => void openSamples(ids)}
+          error={state.errors.join(" ") || undefined}
         />
       )}
     </TooltipProvider>

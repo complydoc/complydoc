@@ -12,10 +12,10 @@ describe("App", () => {
   it("opens a chosen report on the summary, and moves between pages", async () => {
     render(<App />);
     const file = new File([sampleText], "loaders.json", { type: "application/json" });
-    await userEvent.upload(screen.getByLabelText("Report file"), file);
+    await userEvent.upload(screen.getByLabelText("Report files"), file);
 
     expect((await screen.findAllByRole("link", { name: "Summary", current: "page" })).length).toBeGreaterThan(0);
-    expect(screen.getAllByText("loaders.json").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("documents").length).toBeGreaterThan(0);
 
     await userEvent.click(screen.getAllByRole("link", { name: "Documents" })[0] as HTMLElement);
     expect(await screen.findByRole("region", { name: "Loaders" })).toBeInTheDocument();
@@ -25,20 +25,43 @@ describe("App", () => {
   it("explains a file it cannot open and stays put", async () => {
     render(<App />);
     const file = new File(["{}"], "package.json", { type: "application/json" });
-    await userEvent.upload(screen.getByLabelText("Report file"), file);
+    await userEvent.upload(screen.getByLabelText("Report files"), file);
     expect(await screen.findByRole("alert")).toHaveTextContent("package.json: This JSON is not a complydoc report.");
   });
 
-  it("opens the bundled sample", async () => {
+  it("opens the bundled sample, named after the folder it read", async () => {
     render(<App />);
     await userEvent.click(screen.getByRole("button", { name: "pypdf against pdfplumber" }));
-    expect((await screen.findAllByText(/sample: pypdf against pdfplumber/)).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText("documents")).length).toBeGreaterThan(0);
+  });
+
+  it("opens several reports of one folder as its runs, and says what changed", async () => {
+    render(<App />);
+    await userEvent.click(screen.getByRole("button", { name: "Both, as two runs of one folder" }));
+    expect(await screen.findByRole("region", { name: "Changed since the run before" })).toBeInTheDocument();
+  });
+
+  it("shows several folders side by side, and opens one", async () => {
+    render(<App />);
+    const files = ["/data/contracts", "/data/invoices"].map((target) => {
+      const data = JSON.parse(sampleText);
+      data.run.target = target;
+      data.loader_comparison = null;
+      return new File([JSON.stringify(data)], `${target.split("/").pop()}.json`, { type: "application/json" });
+    });
+    await userEvent.upload(screen.getByLabelText("Report files"), files);
+    const folders = await screen.findByRole("table", { name: "Folders" });
+    expect(folders).toHaveTextContent("contracts");
+    expect(folders).toHaveTextContent("invoices");
+    await userEvent.click(screen.getByRole("button", { name: "invoices" }));
+    expect((await screen.findAllByRole("link", { name: "Summary", current: "page" })).length).toBeGreaterThan(0);
   });
 
   it("goes back to the open screen", async () => {
     render(<App />);
     await userEvent.click(screen.getByRole("button", { name: "pypdf against pdfplumber" }));
-    await userEvent.click((await screen.findAllByRole("button", { name: /Open another/ }))[0] as HTMLElement);
+    await userEvent.click(await screen.findByRole("button", { name: "Switch collection" }));
+    await userEvent.click(await screen.findByRole("menuitem", { name: /Close all/ }));
     expect(screen.getByRole("heading", { name: "Open a report" })).toBeInTheDocument();
   });
 
