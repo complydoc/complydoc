@@ -2,6 +2,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Footer } from "@/sections/Footer";
 import { GetStarted } from "@/sections/GetStarted";
 import { Hero } from "@/sections/Hero";
+import { Injection } from "@/sections/Injection";
 import { Integrations } from "@/sections/Integrations";
 import { Models } from "@/sections/Models";
 import { Nav } from "@/sections/Nav";
@@ -20,6 +21,7 @@ export function App() {
         <Problem />
         <Questions />
         <PageRouter />
+        <Injection />
         <Integrations />
         <Models />
         <GetStarted />

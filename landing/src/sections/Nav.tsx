@@ -8,6 +8,7 @@ const SECTIONS = [
   { href: "#problem", label: "Problem" },
   { href: "#questions", label: "Questions" },
   { href: "#router", label: "Page router" },
+  { href: "#injection", label: "Prompt injection" },
   { href: "#integrations", label: "Integrations" },
   { href: "#models", label: "Models" },
 ];

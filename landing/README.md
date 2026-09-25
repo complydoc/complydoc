@@ -22,8 +22,9 @@ npm run build    # static files in dist/
 | The problem | Loaders get chosen without checking what they extract, on four counts |
 | Questions | Four questions, each with a short answer and one example |
 | The page router | Every sample page, the route it needs and why, and what that saves |
+| Prompt injection | How complydoc uses TypeSafe AI's System One models, with an interactive demo |
 | Integrations | LangChain, LlamaIndex, Docling, Unstructured, LlamaParse, Azure, pytest, CI |
-| Models | Prices checked against each provider, and Jev from TypeSafe AI for hidden instructions |
+| Models | The newest model from each provider in the price table |
 
 ## Where the content comes from
 
@@ -34,8 +35,10 @@ on the six sample documents in [`viewer/sample/documents`](../viewer/sample/docu
 | --- | --- |
 | The section 7 example | pdfplumber's reading of page 4 of `master-services-agreement.pdf`, as the audit fixture holds it |
 | The page router and `src/data/routing.ts` | `complydoc routing ./documents`, the `complydoc-routing.json` it writes |
-| The Jev table | [Detection accuracy](../docs/explanation/accuracy.md) |
-| The verified models | `src/complydoc/config/pricing.yaml` |
+| The prompt injection demo, `src/data/injection.ts` | The labelled passages in `src/complydoc/benchmark/corpus.yaml` and what the patterns report for each. The System One scores are illustrative, within the ranges [Detection accuracy](../docs/explanation/accuracy.md) measured |
+| The measured table | [Detection accuracy](../docs/explanation/accuracy.md) |
+| The System One call | `src/complydoc/integrations/typesafe.py` |
+| The models | `src/complydoc/config/model_prices.json` and `pricing.yaml` |
 
 When a release changes what these print, run them again and update the page.
 
@@ -48,8 +51,8 @@ file with a new one of the same name to update the tour.
 ## Logos
 
 `src/assets/logos` holds the marks of the loaders and model providers, from
-[@lobehub/icons](https://github.com/lobehub/lobe-icons) (MIT) and Docling's own
-repository (MIT). Each belongs to its company and is shown only to say that
+[@lobehub/icons](https://github.com/lobehub/lobe-icons) (MIT), Docling's own
+repository (MIT) and TypeSafe AI (drawn in `currentColor`). Each belongs to its company and is shown only to say that
 complydoc works with it. The "K" in Kimi's mark is drawn in `currentColor`
 rather than white, so it shows on the light theme too.
 
