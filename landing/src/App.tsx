@@ -4,7 +4,6 @@ import { GetStarted } from "@/sections/GetStarted";
 import { Hero } from "@/sections/Hero";
 import { Injection } from "@/sections/Injection";
 import { Integrations } from "@/sections/Integrations";
-import { Models } from "@/sections/Models";
 import { Nav } from "@/sections/Nav";
 import { PageRouter } from "@/sections/PageRouter";
 import { Problem } from "@/sections/Problem";
@@ -23,7 +22,6 @@ export function App() {
         <PageRouter />
         <Injection />
         <Integrations />
-        <Models />
         <GetStarted />
       </main>
       <Footer />

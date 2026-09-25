@@ -22,9 +22,8 @@ npm run build    # static files in dist/
 | The problem | Loaders get chosen without checking what they extract, on four counts |
 | Questions | Four questions, each with a short answer and one example |
 | The page router | Every sample page, the route it needs and why, and what that saves |
-| Prompt injection | How complydoc uses TypeSafe AI's System One models, with an interactive demo |
+| Prompt injection | Hidden text revealed, the question complydoc asks a System One model, and the finding |
 | Integrations | LangChain, LlamaIndex, Docling, Unstructured, LlamaParse, Azure, pytest, CI |
-| Models | The newest model from each provider in the price table |
 
 ## Where the content comes from
 
@@ -35,10 +34,8 @@ on the six sample documents in [`viewer/sample/documents`](../viewer/sample/docu
 | --- | --- |
 | The section 7 example | pdfplumber's reading of page 4 of `master-services-agreement.pdf`, as the audit fixture holds it |
 | The page router and `src/data/routing.ts` | `complydoc routing ./documents`, the `complydoc-routing.json` it writes |
-| The prompt injection demo, `src/data/injection.ts` | The labelled passages in `src/complydoc/benchmark/corpus.yaml` and what the patterns report for each. The System One scores are illustrative, within the ranges [Detection accuracy](../docs/explanation/accuracy.md) measured |
-| The measured table | [Detection accuracy](../docs/explanation/accuracy.md) |
+| The prompt injection demo | An oblique passage from `src/complydoc/benchmark/corpus.yaml` that no pattern matches. Jev's score is illustrative, within the range [Detection accuracy](../docs/explanation/accuracy.md) measured |
 | The System One call | `src/complydoc/integrations/typesafe.py` |
-| The models | `src/complydoc/config/model_prices.json` and `pricing.yaml` |
 
 When a release changes what these print, run them again and update the page.
 

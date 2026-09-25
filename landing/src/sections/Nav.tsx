@@ -10,7 +10,6 @@ const SECTIONS = [
   { href: "#router", label: "Page router" },
   { href: "#injection", label: "Prompt injection" },
   { href: "#integrations", label: "Integrations" },
-  { href: "#models", label: "Models" },
 ];
 
 /** A thin bar across the top, as in the viewer: the mark, where to go, the theme at the right. */

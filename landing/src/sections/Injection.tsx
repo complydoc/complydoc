@@ -3,7 +3,6 @@ import { CodeBlock } from "@/components/CodeBlock";
 import { InjectionDemo } from "@/components/injection/InjectionDemo";
 import { Section, TextLink } from "@/components/Section";
 import { Separator } from "@/components/ui/separator";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { links } from "@/links";
 
 /** The call in src/complydoc/integrations/typesafe.py, shortened. */
@@ -30,14 +29,6 @@ const RULES = [
   ["No score is not a zero", "If the call fails, the passage gets no score. A service that is down does not read as a clean document."],
 ];
 
-/** From docs/explanation/accuracy.md: seven hidden instructions and three decoys. */
-const MEASURED = [
-  { how: "Patterns alone", found: "4/7", decoys: "0/3" },
-  { how: "With Jev, threshold 0.8", found: "4/7", decoys: "0/3" },
-  { how: "With Jev, threshold 0.6", found: "6/7", decoys: "0/3" },
-  { how: "With Jev, threshold 0.5", found: "7/7", decoys: "0/3" },
-];
-
 export function Injection() {
   return (
     <Section
@@ -46,9 +37,9 @@ export function Injection() {
       title="How complydoc uses System One models to flag prompt injection"
       lead={
         <>
-          Patterns catch instructions written plainly, on your machine. For a passage no pattern matches, complydoc asks
-          a System One model from TypeSafe AI one question: is this passage addressed to an AI model reading the
-          document? The answer is a probability, and the passage is reported when it reaches the threshold.
+          Documents can carry text written for the model that reads them, not for the person. complydoc finds hidden
+          text on your machine, catches plainly written instructions with patterns, and asks a System One model from
+          TypeSafe AI about the rest.
         </>
       }
     >
@@ -57,10 +48,6 @@ export function Injection() {
         With TypeSafe AI&apos;s Jev
       </div>
       <InjectionDemo />
-      <p className="mt-3 text-xs text-muted-foreground">
-        The passages are from complydoc&apos;s labelled benchmark. The scores are illustrative, within the ranges measured
-        for Jev.
-      </p>
 
       <div className="mt-16 grid gap-10 *:min-w-0 lg:grid-cols-[1.2fr_1fr]">
         <div className="flex flex-col gap-4">
@@ -80,36 +67,13 @@ export function Injection() {
               </div>
             ))}
           </dl>
+          <CodeBlock title="shell" lang="bash" code="complydoc audit ./documents --classifier jev" />
+          <p className="text-sm text-muted-foreground">
+            More in <TextLink href={links.hiddenContent}>Hidden content</TextLink>.
+          </p>
         </div>
       </div>
 
-      <div className="mt-16 flex max-w-3xl flex-col gap-4">
-        <h3 className="text-lg font-semibold">Measured</h3>
-        <p className="text-sm text-muted-foreground">
-          On ten labelled passages: seven hidden instructions, three of them phrased without naming a model, and three
-          decoys written for people. complydoc uses 0.5 for Jev.{" "}
-          <TextLink href={links.accuracy}>How it was measured</TextLink>.
-        </p>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>How</TableHead>
-              <TableHead className="text-right">Instructions found</TableHead>
-              <TableHead className="text-right">Decoys flagged</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {MEASURED.map((row) => (
-              <TableRow key={row.how}>
-                <TableCell>{row.how}</TableCell>
-                <TableCell className="text-right font-mono text-xs">{row.found}</TableCell>
-                <TableCell className="text-right font-mono text-xs">{row.decoys}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        <CodeBlock title="shell" lang="bash" code="complydoc audit ./documents --classifier jev" />
-      </div>
     </Section>
   );
 }
