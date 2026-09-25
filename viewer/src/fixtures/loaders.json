@@ -1,6 +1,6 @@
 {
   "aggregate": {
-    "analyse_seconds": 0.549,
+    "analyse_seconds": 0.586,
     "annual_text_usd": null,
     "annual_vision_usd": null,
     "categories_not_scanned": {},
@@ -20,7 +20,7 @@
     "formats": {
       "pdf": 6
     },
-    "hours_per_1000_documents": 0.24,
+    "hours_per_1000_documents": 0.25,
     "mean_readiness_score": 93.2,
     "monthly_text_usd": null,
     "monthly_vision_usd": null,
@@ -30,18 +30,18 @@
     "pages_total": 33,
     "pages_unreadable": 3,
     "projected_seconds": {
-      "100": 85.0,
-      "1000": 850.2,
-      "10000": 8501.7,
-      "100000": 85016.7
+      "100": 89.3,
+      "1000": 892.7,
+      "10000": 8926.7,
+      "100000": 89266.7
     },
     "read_seconds": 0.0,
     "readiness_bands": {
       "ready": 6
     },
-    "scan_seconds": 4.553,
-    "seconds_per_document": 0.85,
-    "seconds_per_page": 0.155,
+    "scan_seconds": 4.772,
+    "seconds_per_document": 0.893,
+    "seconds_per_page": 0.162,
     "sensitive_by_category": {
       "bank_account_number": 2,
       "card_number": 1,
@@ -225,8 +225,8 @@
         "poor": 0
       }
     },
-    "total_seconds": 5.101,
-    "total_text_path_usd": 0.0025499600000000004,
+    "total_seconds": 5.356,
+    "total_text_path_usd": 0.0018214000000000001,
     "total_vision_path_usd": null
   },
   "config_masking": {
@@ -258,12 +258,12 @@
             "annual_usd": null,
             "documents_served": 5,
             "documents_total": 6,
-            "folder_usd": 0.09107,
+            "folder_usd": 0.072856,
             "key": "text_ocr",
             "label": "Text + local OCR",
             "note": "Every document. Scans are read locally first, which costs nothing to send.",
-            "per_1000_usd": 18.214000000000002,
-            "per_document_usd": 0.018214
+            "per_1000_usd": 14.571200000000001,
+            "per_document_usd": 0.014571200000000001
           },
           {
             "annual_usd": null,
@@ -277,10 +277,10 @@
             "per_document_usd": null
           }
         ],
-        "batch_per_1000_usd": null,
-        "display_name": "Claude Opus 5",
-        "input_per_mtok_usd": 5.0,
-        "model_id": "claude-opus-5",
+        "batch_per_1000_usd": 7.2856000000000005,
+        "display_name": "Claude Opus 5.5",
+        "input_per_mtok_usd": 4.0,
+        "model_id": "claude-opus-5-5",
         "price_source": "verified",
         "provider": "anthropic",
         "supports_vision": true,
@@ -323,7 +323,7 @@
             "per_document_usd": null
           }
         ],
-        "batch_per_1000_usd": null,
+        "batch_per_1000_usd": 3.6428000000000003,
         "display_name": "Claude Sonnet 5",
         "input_per_mtok_usd": 2.0,
         "model_id": "claude-sonnet-5",
@@ -369,7 +369,7 @@
             "per_document_usd": null
           }
         ],
-        "batch_per_1000_usd": null,
+        "batch_per_1000_usd": 1.8214000000000001,
         "display_name": "Claude Haiku 4.5",
         "input_per_mtok_usd": 1.0,
         "model_id": "claude-haiku-4-5",
@@ -599,7 +599,7 @@
             "per_document_usd": null
           }
         ],
-        "batch_per_1000_usd": null,
+        "batch_per_1000_usd": 18.214000000000002,
         "display_name": "Claude Fable 5.1",
         "input_per_mtok_usd": 10.0,
         "model_id": "claude-fable-5-1",
@@ -626,12 +626,12 @@
             "annual_usd": null,
             "documents_served": 5,
             "documents_total": 6,
-            "folder_usd": 0.0025499600000000004,
+            "folder_usd": 0.0027321,
             "key": "text_ocr",
             "label": "Text + local OCR",
             "note": "Every document. Scans are read locally first, which costs nothing to send.",
-            "per_1000_usd": 0.5099920000000001,
-            "per_document_usd": 0.0005099920000000001
+            "per_1000_usd": 0.5464199999999999,
+            "per_document_usd": 0.0005464199999999999
           },
           {
             "annual_usd": null,
@@ -646,14 +646,14 @@
           }
         ],
         "batch_per_1000_usd": null,
-        "display_name": "DeepSeek V4 Flash",
-        "input_per_mtok_usd": 0.14,
-        "model_id": "deepseek-v4-flash",
+        "display_name": "DeepSeek V4.1 Flash",
+        "input_per_mtok_usd": 0.15,
+        "model_id": "deepseek-flash",
         "price_source": "imported",
         "provider": "deepseek",
-        "supports_vision": false,
+        "supports_vision": true,
         "tokenizer": "o200k_basex1",
-        "vision_formula": null
+        "vision_formula": "tiled_512"
       },
       {
         "architectures": [
@@ -810,52 +810,6 @@
             "annual_usd": null,
             "documents_served": 5,
             "documents_total": 6,
-            "folder_usd": 0.0218568,
-            "key": "text_ocr",
-            "label": "Text + local OCR",
-            "note": "Every document. Scans are read locally first, which costs nothing to send.",
-            "per_1000_usd": 4.371359999999999,
-            "per_document_usd": 0.0043713599999999995
-          },
-          {
-            "annual_usd": null,
-            "documents_served": 0,
-            "documents_total": 6,
-            "folder_usd": null,
-            "key": "vision",
-            "label": "Vision",
-            "note": "Every document, sent as page images.",
-            "per_1000_usd": null,
-            "per_document_usd": null
-          }
-        ],
-        "batch_per_1000_usd": null,
-        "display_name": "GLM-5-Turbo",
-        "input_per_mtok_usd": 1.2,
-        "model_id": "glm-5-turbo",
-        "price_source": "imported",
-        "provider": "zai",
-        "supports_vision": false,
-        "tokenizer": "o200k_basex1",
-        "vision_formula": null
-      },
-      {
-        "architectures": [
-          {
-            "annual_usd": null,
-            "documents_served": 0,
-            "documents_total": 6,
-            "folder_usd": null,
-            "key": "text_layer",
-            "label": "Text layer",
-            "note": "Only documents that already carry a text layer.",
-            "per_1000_usd": null,
-            "per_document_usd": null
-          },
-          {
-            "annual_usd": null,
-            "documents_served": 5,
-            "documents_total": 6,
             "folder_usd": 0.025499599999999997,
             "key": "text_ocr",
             "label": "Text + local OCR",
@@ -902,6 +856,52 @@
             "annual_usd": null,
             "documents_served": 5,
             "documents_total": 6,
+            "folder_usd": 0.00673918,
+            "key": "text_ocr",
+            "label": "Text + local OCR",
+            "note": "Every document. Scans are read locally first, which costs nothing to send.",
+            "per_1000_usd": 1.347836,
+            "per_document_usd": 0.001347836
+          },
+          {
+            "annual_usd": null,
+            "documents_served": 0,
+            "documents_total": 6,
+            "folder_usd": null,
+            "key": "vision",
+            "label": "Vision",
+            "note": "Every document, sent as page images.",
+            "per_1000_usd": null,
+            "per_document_usd": null
+          }
+        ],
+        "batch_per_1000_usd": null,
+        "display_name": "GLM-5.3-FlashX",
+        "input_per_mtok_usd": 0.37,
+        "model_id": "glm-5.3-flashx",
+        "price_source": "imported",
+        "provider": "zai",
+        "supports_vision": true,
+        "tokenizer": "o200k_basex1",
+        "vision_formula": "tiled_512"
+      },
+      {
+        "architectures": [
+          {
+            "annual_usd": null,
+            "documents_served": 0,
+            "documents_total": 6,
+            "folder_usd": null,
+            "key": "text_layer",
+            "label": "Text layer",
+            "note": "Only documents that already carry a text layer.",
+            "per_1000_usd": null,
+            "per_document_usd": null
+          },
+          {
+            "annual_usd": null,
+            "documents_served": 5,
+            "documents_total": 6,
             "folder_usd": 0.0218568,
             "key": "text_ocr",
             "label": "Text + local OCR",
@@ -929,98 +929,6 @@
         "provider": "zai",
         "supports_vision": true,
         "tokenizer": "o200k_basex1",
-        "vision_formula": "tiled_512"
-      },
-      {
-        "architectures": [
-          {
-            "annual_usd": null,
-            "documents_served": 0,
-            "documents_total": 6,
-            "folder_usd": null,
-            "key": "text_layer",
-            "label": "Text layer",
-            "note": "Only documents that already carry a text layer.",
-            "per_1000_usd": null,
-            "per_document_usd": null
-          },
-          {
-            "annual_usd": null,
-            "documents_served": 5,
-            "documents_total": 6,
-            "folder_usd": 0.0036428000000000007,
-            "key": "text_ocr",
-            "label": "Text + local OCR",
-            "note": "Every document. Scans are read locally first, which costs nothing to send.",
-            "per_1000_usd": 0.7285600000000002,
-            "per_document_usd": 0.0007285600000000002
-          },
-          {
-            "annual_usd": null,
-            "documents_served": 0,
-            "documents_total": 6,
-            "folder_usd": null,
-            "key": "vision",
-            "label": "Vision",
-            "note": "Every document, sent as page images.",
-            "per_1000_usd": null,
-            "per_document_usd": null
-          }
-        ],
-        "batch_per_1000_usd": 0.3642800000000001,
-        "display_name": "GPT-5.6 Luna",
-        "input_per_mtok_usd": 0.2,
-        "model_id": "gpt-5.6-luna",
-        "price_source": "imported",
-        "provider": "openai",
-        "supports_vision": true,
-        "tokenizer": "o200k_base",
-        "vision_formula": "tiled_512"
-      },
-      {
-        "architectures": [
-          {
-            "annual_usd": null,
-            "documents_served": 0,
-            "documents_total": 6,
-            "folder_usd": null,
-            "key": "text_layer",
-            "label": "Text layer",
-            "note": "Only documents that already carry a text layer.",
-            "per_1000_usd": null,
-            "per_document_usd": null
-          },
-          {
-            "annual_usd": null,
-            "documents_served": 5,
-            "documents_total": 6,
-            "folder_usd": 0.072856,
-            "key": "text_ocr",
-            "label": "Text + local OCR",
-            "note": "Every document. Scans are read locally first, which costs nothing to send.",
-            "per_1000_usd": 14.571200000000001,
-            "per_document_usd": 0.014571200000000001
-          },
-          {
-            "annual_usd": null,
-            "documents_served": 0,
-            "documents_total": 6,
-            "folder_usd": null,
-            "key": "vision",
-            "label": "Vision",
-            "note": "Every document, sent as page images.",
-            "per_1000_usd": null,
-            "per_document_usd": null
-          }
-        ],
-        "batch_per_1000_usd": 7.2856000000000005,
-        "display_name": "GPT-5.6 Sol",
-        "input_per_mtok_usd": 4.0,
-        "model_id": "gpt-5.6-sol",
-        "price_source": "imported",
-        "provider": "openai",
-        "supports_vision": true,
-        "tokenizer": "o200k_base",
         "vision_formula": "tiled_512"
       },
       {
@@ -1132,6 +1040,98 @@
             "annual_usd": null,
             "documents_served": 5,
             "documents_total": 6,
+            "folder_usd": 0.0018214000000000004,
+            "key": "text_ocr",
+            "label": "Text + local OCR",
+            "note": "Every document. Scans are read locally first, which costs nothing to send.",
+            "per_1000_usd": 0.3642800000000001,
+            "per_document_usd": 0.0003642800000000001
+          },
+          {
+            "annual_usd": null,
+            "documents_served": 0,
+            "documents_total": 6,
+            "folder_usd": null,
+            "key": "vision",
+            "label": "Vision",
+            "note": "Every document, sent as page images.",
+            "per_1000_usd": null,
+            "per_document_usd": null
+          }
+        ],
+        "batch_per_1000_usd": 0.18214000000000005,
+        "display_name": "GPT-6 Luna",
+        "input_per_mtok_usd": 0.1,
+        "model_id": "gpt-6-luna",
+        "price_source": "imported",
+        "provider": "openai",
+        "supports_vision": true,
+        "tokenizer": "o200k_base",
+        "vision_formula": "tiled_512"
+      },
+      {
+        "architectures": [
+          {
+            "annual_usd": null,
+            "documents_served": 0,
+            "documents_total": 6,
+            "folder_usd": null,
+            "key": "text_layer",
+            "label": "Text layer",
+            "note": "Only documents that already carry a text layer.",
+            "per_1000_usd": null,
+            "per_document_usd": null
+          },
+          {
+            "annual_usd": null,
+            "documents_served": 5,
+            "documents_total": 6,
+            "folder_usd": 0.036428,
+            "key": "text_ocr",
+            "label": "Text + local OCR",
+            "note": "Every document. Scans are read locally first, which costs nothing to send.",
+            "per_1000_usd": 7.2856000000000005,
+            "per_document_usd": 0.007285600000000001
+          },
+          {
+            "annual_usd": null,
+            "documents_served": 0,
+            "documents_total": 6,
+            "folder_usd": null,
+            "key": "vision",
+            "label": "Vision",
+            "note": "Every document, sent as page images.",
+            "per_1000_usd": null,
+            "per_document_usd": null
+          }
+        ],
+        "batch_per_1000_usd": 3.6428000000000003,
+        "display_name": "GPT-6 Sol",
+        "input_per_mtok_usd": 2.0,
+        "model_id": "gpt-6-sol",
+        "price_source": "imported",
+        "provider": "openai",
+        "supports_vision": true,
+        "tokenizer": "o200k_base",
+        "vision_formula": "tiled_512"
+      },
+      {
+        "architectures": [
+          {
+            "annual_usd": null,
+            "documents_served": 0,
+            "documents_total": 6,
+            "folder_usd": null,
+            "key": "text_layer",
+            "label": "Text layer",
+            "note": "Only documents that already carry a text layer.",
+            "per_1000_usd": null,
+            "per_document_usd": null
+          },
+          {
+            "annual_usd": null,
+            "documents_served": 5,
+            "documents_total": 6,
             "folder_usd": 0.036428,
             "key": "text_ocr",
             "label": "Text + local OCR",
@@ -1152,9 +1152,9 @@
           }
         ],
         "batch_per_1000_usd": null,
-        "display_name": "Grok 4.6",
+        "display_name": "Grok 4.7",
         "input_per_mtok_usd": 2.0,
-        "model_id": "grok-4.6",
+        "model_id": "grok-4.7",
         "price_source": "imported",
         "provider": "xai",
         "supports_vision": true,
@@ -1997,11 +1997,11 @@
       },
       "sha256": "b9293ef1ccaacdd8e49c4282661652bbc81c564fe68b290c8c382d658c74e93f",
       "timing": {
-        "analyse_seconds": 0.007,
+        "analyse_seconds": 0.004,
         "read_seconds": 0.0,
-        "scan_seconds": 0.126,
-        "seconds_per_page": 0.044,
-        "total_seconds": 0.132
+        "scan_seconds": 0.027,
+        "seconds_per_page": 0.01,
+        "total_seconds": 0.031
       },
       "verification": null,
       "visibility_checked": true,
@@ -3254,11 +3254,11 @@
       },
       "sha256": "3153e66cd7a6fd813457f450d3eec04784ffa93e76b664f9a8defdee9e5ebf50",
       "timing": {
-        "analyse_seconds": 0.52,
+        "analyse_seconds": 0.559,
         "read_seconds": 0.0,
-        "scan_seconds": 1.23,
-        "seconds_per_page": 0.292,
-        "total_seconds": 1.75
+        "scan_seconds": 1.224,
+        "seconds_per_page": 0.297,
+        "total_seconds": 1.782
       },
       "verification": null,
       "visibility_checked": true,
@@ -4269,9 +4269,9 @@
       "timing": {
         "analyse_seconds": 0.003,
         "read_seconds": 0.0,
-        "scan_seconds": 0.386,
-        "seconds_per_page": 0.078,
-        "total_seconds": 0.389
+        "scan_seconds": 0.396,
+        "seconds_per_page": 0.08,
+        "total_seconds": 0.398
       },
       "verification": null,
       "visibility_checked": true,
@@ -5365,9 +5365,9 @@
       "timing": {
         "analyse_seconds": 0.001,
         "read_seconds": 0.0,
-        "scan_seconds": 0.131,
-        "seconds_per_page": 0.044,
-        "total_seconds": 0.132
+        "scan_seconds": 0.164,
+        "seconds_per_page": 0.055,
+        "total_seconds": 0.165
       },
       "verification": null,
       "visibility_checked": true,
@@ -6457,11 +6457,11 @@
       },
       "sha256": "6911df5d52683c1388947080657a022016a1f02c8fdd9f51cb690d2e8fc8efa2",
       "timing": {
-        "analyse_seconds": 0.009,
+        "analyse_seconds": 0.01,
         "read_seconds": 0.0,
-        "scan_seconds": 1.448,
-        "seconds_per_page": 0.182,
-        "total_seconds": 1.457
+        "scan_seconds": 1.6,
+        "seconds_per_page": 0.201,
+        "total_seconds": 1.61
       },
       "verification": null,
       "visibility_checked": true,
@@ -7883,9 +7883,9 @@
       "timing": {
         "analyse_seconds": 0.009,
         "read_seconds": 0.0,
-        "scan_seconds": 1.232,
-        "seconds_per_page": 0.155,
-        "total_seconds": 1.241
+        "scan_seconds": 1.361,
+        "seconds_per_page": 0.171,
+        "total_seconds": 1.37
       },
       "verification": null,
       "visibility_checked": true,
@@ -7959,18 +7959,18 @@
     {
       "affected": [
         "Claude Fable 5.1",
-        "DeepSeek V4 Flash",
         "DeepSeek V4 Pro",
-        "GLM-5-Turbo",
+        "DeepSeek V4.1 Flash",
         "GLM-5.3",
+        "GLM-5.3-FlashX",
         "GLM-5V-Turbo",
-        "GPT-5.6 Luna",
-        "GPT-5.6 Sol",
         "GPT-5.6 Terra",
         "GPT-6 Astra",
+        "GPT-6 Luna",
+        "GPT-6 Sol",
         "Gemini 3.5 Flash Lite",
         "Gemini 3.8 Flash",
-        "Grok 4.6",
+        "Grok 4.7",
         "Kimi K2.7 Code",
         "Magistral Medium (latest)",
         "Magistral Small",
@@ -7979,7 +7979,7 @@
       ],
       "area": "Price provenance",
       "severity": "info",
-      "statement": "18 models are priced from a maintained third-party table taken on 2026-09-09. Those prices have not been checked against the provider's own page."
+      "statement": "18 models are priced from a maintained third-party table taken on 2026-09-25. Those prices have not been checked against the provider's own page."
     },
     {
       "affected": [
@@ -7990,24 +7990,6 @@
       "statement": "3 pages carried no readable text because OCR was not requested (pass --ocr to read scanned pages). Those pages were not searched for sensitive information."
     },
     {
-      "affected": [],
-      "area": "Price provenance",
-      "severity": "important",
-      "statement": "model claude-opus-5: last verified 2026-06-24 (93 days ago, threshold 90). Re-check before relying on this figure."
-    },
-    {
-      "affected": [],
-      "area": "Price provenance",
-      "severity": "important",
-      "statement": "model claude-sonnet-5: last verified 2026-06-24 (93 days ago, threshold 90). Re-check before relying on this figure."
-    },
-    {
-      "affected": [],
-      "area": "Price provenance",
-      "severity": "important",
-      "statement": "model claude-haiku-4-5: last verified 2026-06-24 (93 days ago, threshold 90). Re-check before relying on this figure."
-    },
-    {
       "affected": [
         "claude-fable-5",
         "claude-haiku-4-5-20251001",
@@ -8016,10 +7998,12 @@
         "claude-opus-4-6",
         "claude-opus-4-7",
         "claude-opus-4-8",
+        "claude-opus-5",
         "claude-sonnet-4-5",
         "claude-sonnet-4-5-20250929",
         "claude-sonnet-4-6",
         "codestral-latest",
+        "deepseek-v4-flash",
         "devstral-2512",
         "devstral-latest",
         "devstral-medium-2507",
@@ -8053,6 +8037,7 @@
         "glm-4.7",
         "glm-4.7-flashx",
         "glm-5",
+        "glm-5-turbo",
         "glm-5.1",
         "glm-5.2",
         "gpt-3.5-turbo",
@@ -8084,12 +8069,15 @@
         "gpt-5.5",
         "gpt-5.5-pro",
         "gpt-5.6",
+        "gpt-5.6-luna",
+        "gpt-5.6-sol",
         "gpt-realtime-2.1",
         "grok-4.20-0309-non-reasoning",
         "grok-4.20-0309-reasoning",
         "grok-4.20-multi-agent-0309",
         "grok-4.3",
         "grok-4.5",
+        "grok-4.6",
         "grok-build-0.1",
         "kimi-k2.6",
         "kimi-k2.7-code-highspeed",
@@ -8118,16 +8106,17 @@
         "pixtral-12b",
         "pixtral-large-latest",
         "voxtral-small-latest",
-        "zai-glm-5-2"
+        "zai-glm-5-2",
+        "zai-glm-5-3"
       ],
       "area": "Models not costed",
       "severity": "info",
-      "statement": "110 model entr(y/ies) in pricing.yaml carry no price and are switched off, so no cost was computed for them. complydoc does not invent prices; fill them in and set last_verified to include them."
+      "statement": "117 model entr(y/ies) in pricing.yaml carry no price and are switched off, so no cost was computed for them. complydoc does not invent prices; fill them in and set last_verified to include them."
     },
     {
       "affected": [
         "Claude Haiku 4.5",
-        "Claude Opus 5",
+        "Claude Opus 5.5",
         "Claude Sonnet 5"
       ],
       "area": "Token counting",
@@ -8176,8 +8165,8 @@
     },
     {
       "affected": [
-        "DeepSeek V4 Flash",
-        "DeepSeek V4 Pro"
+        "DeepSeek V4 Pro",
+        "DeepSeek V4.1 Flash"
       ],
       "area": "Token counting",
       "severity": "info",
@@ -8194,8 +8183,8 @@
     },
     {
       "affected": [
-        "GLM-5-Turbo",
         "GLM-5.3",
+        "GLM-5.3-FlashX",
         "GLM-5V-Turbo"
       ],
       "area": "Token counting",
@@ -8204,7 +8193,7 @@
     },
     {
       "affected": [
-        "Grok 4.6"
+        "Grok 4.7"
       ],
       "area": "Token counting",
       "severity": "info",
@@ -8265,7 +8254,7 @@
     "name": "pypdf",
     "network_allowed": false,
     "network_attempts": [],
-    "seconds": 0.137,
+    "seconds": 0.129,
     "tags": [
       "LangChain"
     ]
@@ -8386,39 +8375,7 @@
           "pdfplumber"
         ],
         "severity": "medium",
-        "value": "••• •••• 0101"
-      },
-      {
-        "category": "phone_number",
-        "document": "viewer/sample/documents/employee-handbook.pdf",
-        "evidence": "pattern",
-        "found_by": [
-          "pypdf"
-        ],
-        "keys": [],
-        "label": "Phone number",
-        "location": "text",
-        "missed_by": [
-          "pdfplumber"
-        ],
-        "severity": "medium",
-        "value": "••• •••• 0103"
-      },
-      {
-        "category": "phone_number",
-        "document": "viewer/sample/documents/employee-handbook.pdf",
-        "evidence": "pattern",
-        "found_by": [
-          "pypdf"
-        ],
-        "keys": [],
-        "label": "Phone number",
-        "location": "text",
-        "missed_by": [
-          "pdfplumber"
-        ],
-        "severity": "medium",
-        "value": "••• •••• 0104"
+        "value": "••• •••• 0100"
       },
       {
         "category": "phone_number",
@@ -8450,23 +8407,39 @@
           "pdfplumber"
         ],
         "severity": "medium",
-        "value": "••• •••• 0100"
+        "value": "••• •••• 0103"
       },
       {
         "category": "phone_number",
         "document": "viewer/sample/documents/employee-handbook.pdf",
         "evidence": "pattern",
         "found_by": [
-          "pdfplumber"
+          "pypdf"
         ],
         "keys": [],
         "label": "Phone number",
         "location": "text",
         "missed_by": [
-          "pypdf"
+          "pdfplumber"
         ],
         "severity": "medium",
-        "value": "••• •••• 0101 "
+        "value": "••• •••• 0101"
+      },
+      {
+        "category": "phone_number",
+        "document": "viewer/sample/documents/employee-handbook.pdf",
+        "evidence": "pattern",
+        "found_by": [
+          "pypdf"
+        ],
+        "keys": [],
+        "label": "Phone number",
+        "location": "text",
+        "missed_by": [
+          "pdfplumber"
+        ],
+        "severity": "medium",
+        "value": "••• •••• 0104"
       },
       {
         "category": "phone_number",
@@ -8483,6 +8456,22 @@
         ],
         "severity": "medium",
         "value": "••• •••• 0104 "
+      },
+      {
+        "category": "phone_number",
+        "document": "viewer/sample/documents/employee-handbook.pdf",
+        "evidence": "pattern",
+        "found_by": [
+          "pdfplumber"
+        ],
+        "keys": [],
+        "label": "Phone number",
+        "location": "text",
+        "missed_by": [
+          "pypdf"
+        ],
+        "severity": "medium",
+        "value": "••• •••• 0102 "
       },
       {
         "category": "phone_number",
@@ -8530,7 +8519,7 @@
           "pypdf"
         ],
         "severity": "medium",
-        "value": "••• •••• 0102 "
+        "value": "••• •••• 0101 "
       },
       {
         "category": "person_name",
@@ -8582,11 +8571,11 @@
         "pages": 33,
         "parser_usd": null,
         "readiness_score": 93.2,
-        "seconds": 0.137,
+        "seconds": 0.129,
         "tags": [
           "LangChain"
         ],
-        "text_path_usd": 0.0025499600000000004
+        "text_path_usd": 0.0018214000000000001
       },
       {
         "cached_files": 0,
@@ -8620,11 +8609,11 @@
         "pages": 33,
         "parser_usd": null,
         "readiness_score": 93.7,
-        "seconds": 1.298,
+        "seconds": 1.159,
         "tags": [
           "LangChain"
         ],
-        "text_path_usd": 0.0025159400000000004
+        "text_path_usd": 0.0017971
       }
     ],
     "metadata_keys": {
@@ -8769,14 +8758,14 @@
       "readiness",
       "sensitive"
     ],
-    "config_digest": "ffc3a40c82142d8b",
+    "config_digest": "081540129973dc02",
     "config_dir": "src/complydoc/config",
     "content_sent_to": [],
     "documents_read_after_worker_failure": 0,
-    "duration_seconds": 26.538,
+    "duration_seconds": 25.655,
     "extracted_text_used": true,
     "extractor": "pypdf",
-    "finished_at": "2026-09-25T14:48:54+01:00",
+    "finished_at": "2026-09-25T15:15:49+01:00",
     "jobs": 1,
     "monthly_volume": null,
     "ner_available": true,
@@ -8792,7 +8781,7 @@
     "sample_size": null,
     "sampled_from": null,
     "schema_version": 16,
-    "started_at": "2026-09-25T14:48:27+01:00",
+    "started_at": "2026-09-25T15:15:23+01:00",
     "target": "pypdf",
     "timeout_seconds": null,
     "tool_version": "0.5.0",
@@ -8825,10 +8814,6 @@
     "unmapped_glyphs": 0.03
   },
   "skipped": [],
-  "staleness_warnings": [
-    "model claude-opus-5: last verified 2026-06-24 (93 days ago, threshold 90). Re-check before relying on this figure.",
-    "model claude-sonnet-5: last verified 2026-06-24 (93 days ago, threshold 90). Re-check before relying on this figure.",
-    "model claude-haiku-4-5: last verified 2026-06-24 (93 days ago, threshold 90). Re-check before relying on this figure."
-  ],
+  "staleness_warnings": [],
   "verification": null
 }

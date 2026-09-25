@@ -16,7 +16,7 @@ interface DocumentsPageProps {
   open: string | null;
 }
 
-/** Every document and, when loaders were compared, which one read them best; or one document, page by page. */
+/** Every document first, then which loader read them best and what a vision check found; or one document, page by page. */
 export function DocumentsPage({ report, open }: DocumentsPageProps) {
   const { plan } = usePlan();
   const target = open === null ? null : parseTarget(open);
@@ -36,14 +36,14 @@ export function DocumentsPage({ report, open }: DocumentsPageProps) {
 
   return (
     <SectionStack>
-      {report.loader_comparison && <LoadersSection comparison={report.loader_comparison} />}
-      {report.verification && <VerificationSection report={report} />}
       <Section title="Documents" aside={<FolderTotals report={report} />}>
         <DocumentTree
           nodes={documentTree(report, plan)}
           vision={report.documents.some((document) => document.verification)}
         />
       </Section>
+      {report.loader_comparison && <LoadersSection comparison={report.loader_comparison} />}
+      {report.verification && <VerificationSection report={report} />}
     </SectionStack>
   );
 }
