@@ -7,6 +7,31 @@ separately.
 
 ## [Unreleased]
 
+LangChain sunset `langchain-community` on 22 May 2026 and archived it on 19 June. Nothing
+in complydoc needs it any more.
+
+### Added
+
+- A guide, "Replacing a langchain-community loader", with where each loader went, a
+  runnable comparison of `PyPDFLoader` and `PyMuPDF4LLMLoader`, and what changes on a
+  two-column contract.
+
+- Loaders from `langchain-pymupdf4llm` and `langchain-opendataloader-pdf` are tagged with
+  their library, as `langchain-community`'s were.
+
+### Changed
+
+- `cd.parsers.azure_document_intelligence()` calls Azure's SDK,
+  `azure-ai-documentintelligence`, in place of `langchain-community`'s loader, with the
+  same request. Its tags are `Azure Document Intelligence` without `LangChain`. In
+  `mode="page"` Azure's page numbers, which start at 1, are reported as `page_number`;
+  they were under `page`, which counts from 0.
+
+- `cd.parsers.docling()` names `langchain-docling[local]` when Docling is missing, the
+  extra that converts on this machine.
+
+- The examples, the README and the landing page use `PyMuPDF4LLMLoader`.
+
 ## [0.6.0] — 2026-09-25
 
 The minor number moves for `complydoc ui`, a new way to read reports. Nothing in the

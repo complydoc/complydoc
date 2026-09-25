@@ -42,11 +42,12 @@ export function CostAnswer() {
   );
 }
 
-const MASK = `from complydoc.integrations.langchain import as_transformer
+const MASK = `from langchain_pymupdf4llm import PyMuPDF4LLMLoader
+from complydoc.integrations.langchain import as_transformer
 import complydoc as cd
 
 mask = as_transformer(cd.MaskIdentifiers(metadata=True))
-docs = mask.transform_documents(PyPDFLoader("contract.pdf").load())`;
+docs = mask.transform_documents(PyMuPDF4LLMLoader("contract.pdf").load())`;
 
 export function MaskAnswer() {
   return <CodeBlock title="ingest.py" lang="python" code={MASK} />;

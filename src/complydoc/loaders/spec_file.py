@@ -1,10 +1,10 @@
 """A loader comparison described in a YAML file, for `complydoc compare-loaders`.
 
     loaders:
-      pypdf: langchain_community.document_loaders:PyPDFLoader
-      plumber:
-        loader: langchain_community.document_loaders:PDFPlumberLoader
-        options: {extract_images: false}
+      pymupdf4llm: langchain_pymupdf4llm:PyMuPDF4LLMLoader
+      pages:
+        loader: langchain_pymupdf4llm:PyMuPDF4LLMLoader
+        options: {mode: single}
       docling:
         preset: docling
     paths: ./contracts

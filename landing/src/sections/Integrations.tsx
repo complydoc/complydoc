@@ -10,11 +10,11 @@ const TABS: CodeTab[] = [
     label: "LangChain",
     icon: <BrandLogo brand="langchain" />,
     lang: "python",
-    code: `from langchain_community.document_loaders import PyPDFLoader
+    code: `from langchain_pymupdf4llm import PyMuPDF4LLMLoader
 from complydoc.integrations.langchain import as_transformer
 import complydoc as cd
 
-loader = PyPDFLoader("contract.pdf")
+loader = PyMuPDF4LLMLoader("contract.pdf")
 report = cd.inspect_documents(loader)       # text, metadata and network attempts
 report.loader.network_attempts
 report.loader.metadata_keys
@@ -49,11 +49,12 @@ pipeline = IngestionPipeline(transformations=[
     label: "Docling & Unstructured",
     icon: <BrandLogo brand="docling" />,
     lang: "python",
-    code: `import complydoc as cd
+    code: `from langchain_pymupdf4llm import PyMuPDF4LLMLoader
+import complydoc as cd
 
 report = cd.compare_loaders(
     {
-        "pypdf": PyPDFLoader,
+        "pymupdf4llm": PyMuPDF4LLMLoader,
         "docling": cd.parsers.docling(),
         "unstructured": cd.parsers.unstructured(strategy="hi_res"),
     },
@@ -70,7 +71,7 @@ report.to_pandas("loaders")   # text, identifiers, facts, failures and time per 
     lang: "python",
     code: `report = cd.compare_loaders(
     {
-        "pypdf": PyPDFLoader,
+        "pymupdf4llm": PyMuPDF4LLMLoader,
         "llamaparse": cd.parsers.llamaparse(tier="agentic"),
         "azure": cd.parsers.azure_document_intelligence(endpoint=ENDPOINT, api_key=KEY),
     },

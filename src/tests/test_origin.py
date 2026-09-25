@@ -28,6 +28,17 @@ def loader_class(module: str, name: str) -> type:
 @pytest.mark.parametrize(
     ("module", "name", "expected"),
     [
+        (
+            "langchain_pymupdf4llm.pymupdf4llm_loader",
+            "PyMuPDF4LLMLoader",
+            ["LangChain", "PyMuPDF4LLM"],
+        ),
+        (
+            "langchain_opendataloader_pdf.document_loaders",
+            "OpenDataLoaderPDFLoader",
+            ["LangChain", "OpenDataLoader PDF"],
+        ),
+        ("langchain_docling.loader", "DoclingLoader", ["LangChain", "Docling"]),
         ("langchain_community.document_loaders.pdf", "PyPDFLoader", ["LangChain", "pypdf"]),
         (
             "langchain_community.document_loaders.pdf",

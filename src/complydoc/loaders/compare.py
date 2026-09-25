@@ -1,10 +1,11 @@
 """Several loaders on the same input, side by side.
 
     import complydoc as cd
-    from langchain_community.document_loaders import PDFPlumberLoader, PyPDFLoader
+    from langchain_pymupdf4llm import PyMuPDF4LLMLoader
 
     report = cd.compare_loaders(
-        {"pypdf": PyPDFLoader("contract.pdf"), "pdfplumber": PDFPlumberLoader("contract.pdf")}
+        {"pymupdf4llm": PyMuPDF4LLMLoader, "docling": cd.parsers.docling()},
+        paths="contract.pdf",
     )
     cd.write_html(report, "loaders.html")
 

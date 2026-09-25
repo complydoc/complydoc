@@ -1,9 +1,9 @@
 """Inspect what another loader produced.
 
     import complydoc as cd
-    from langchain_community.document_loaders import PyPDFLoader
+    from langchain_pymupdf4llm import PyMuPDF4LLMLoader
 
-    report = cd.inspect_documents(PyPDFLoader("contract.pdf"))
+    report = cd.inspect_documents(PyMuPDF4LLMLoader("contract.pdf"))
     cd.write_html(report, "inspection.html")
 
 complydoc does not replace the loader. It runs it — or takes the documents it
