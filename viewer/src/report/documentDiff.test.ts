@@ -33,7 +33,15 @@ describe("document diffs", () => {
     expect(sentences.some((line) => line.endsWith("in the year."))).toBe(true);
   });
 
-  it("names each side like a file", () => {
-    expect(sideName(report, { document: index, reader: "pypdf" })).toBe("annual-report-2025.pdf · pypdf");
+  it("names each side by its reader, the document being the one on screen", () => {
+    expect(sideName(report, { document: index, reader: "pypdf" })).toBe("pypdf");
+    expect(sideName(report, { document: index, reader: KEPT })).toBe("pdfplumber (kept)");
+  });
+
+  it("compares a document read only one way with itself, never with another document", () => {
+    const scanned = report.documents.findIndex((d) => d.relative_path.endsWith("supplier-invoices-scanned.pdf"));
+    const [base, compare] = defaultSides(report, scanned);
+    expect(base.document).toBe(scanned);
+    expect(compare.document).toBe(scanned);
   });
 });

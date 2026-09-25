@@ -12,10 +12,20 @@ describe("the diff view", () => {
     await userEvent.click(screen.getByRole("radio", { name: "Diff" }));
     const changed = await screen.findByLabelText("Lines changed", {}, { timeout: 5000 });
     expect(changed).toHaveTextContent(/\+\d+\s*−\d+/);
-    expect(screen.getByText(/annual-report-2025\.pdf · pdfplumber \(kept\)/)).toBeInTheDocument();
-    expect(within(screen.getByRole("group", { name: "Compare" })).getByRole("combobox", { name: "Compare reader" })).toHaveTextContent(
-      "pypdf",
-    );
+    expect(changed.parentElement).toHaveTextContent(/pdfplumber \(kept\)\s*→\s*pypdf/);
+    expect(screen.getByRole("combobox", { name: "Compare reader" })).toHaveTextContent("pypdf");
+  });
+
+  it("compares extraction methods of this document only, each with what it costs", async () => {
+    const report = sampleAudit();
+    renderPage(<DocumentsPage report={report} open="0" />);
+    await userEvent.click(screen.getByRole("radio", { name: "Diff" }));
+    // No document to pick: the diff is always of the document on screen.
+    expect(screen.queryByRole("combobox", { name: /document/i })).not.toBeInTheDocument();
+    const base = screen.getByRole("combobox", { name: "Base reader" });
+    expect(within(base.parentElement as HTMLElement).getByTitle(/The whole document/)).toHaveTextContent(/^\$\d/);
+    // A page's cost means nothing across the whole diff, so the page and document figures step aside.
+    expect(screen.queryByRole("group", { name: "Cost and time" })).not.toBeInTheDocument();
   });
 
   it("says so when the two sides read the same", async () => {

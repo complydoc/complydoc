@@ -6,7 +6,6 @@
  * readings is mostly line endings; laid out one sentence per line, the only
  * lines that differ are the ones whose words do.
  */
-import { fileName } from "./format";
 import type { DocumentEntry, PageText, Report } from "./types";
 
 export type Layout = "lines" | "sentences";
@@ -77,19 +76,17 @@ export function sideText(report: Report, side: Side, layout: Layout): string {
   return `${lines.join("\n")}\n`;
 }
 
-/** What a side is called in the diff's header, like a file path. */
+/** What a side is called in the diff's header: its reader, the document being the one on screen. */
 export function sideName(report: Report, side: Side): string {
   const document = report.documents[side.document];
   const reader = document ? readersOf(report, document).find((r) => r.id === side.reader)?.label : undefined;
-  return `${fileName(document?.relative_path ?? "?")} · ${reader ?? side.reader}`;
+  return reader ?? side.reader;
 }
 
-/** What to compare on opening: the kept reading against the next reader, OCR, or the next document. */
+/** What to compare on opening: the kept reading against the next reader, or OCR. The same document either way. */
 export function defaultSides(report: Report, index: number): [Side, Side] {
   const document = report.documents[index];
   const base: Side = { document: index, reader: KEPT };
   const other = document ? readersOf(report, document)[1] : undefined;
-  if (other) return [base, { document: index, reader: other.id }];
-  const next = report.documents.length > 1 ? (index + 1) % report.documents.length : index;
-  return [base, { document: next, reader: KEPT }];
+  return [base, { document: index, reader: other?.id ?? KEPT }];
 }

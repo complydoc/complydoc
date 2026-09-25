@@ -80,7 +80,8 @@ export function DocumentDetail({
             <ToggleGroupItem value="diff">Diff</ToggleGroupItem>
           </ToggleGroup>
         </div>
-        {priced && (
+        {/* In the diff, each reader's cost sits beside it; a page's figure means nothing across the whole text. */}
+        {priced && view === "pages" && (
           <DocumentTotals
             page={pageEstimate(report, document, page, plan)}
             document={documentTotals(report, document, plan)}

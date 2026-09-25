@@ -6,7 +6,8 @@ function Figure({ label, usd, seconds, note }: { label: string; usd: number | nu
     <span className="flex items-baseline gap-2" title={note}>
       <span className="text-muted-foreground">{label}</span>
       <span className="font-medium tabular-nums">{formatPageUsd(usd)}</span>
-      <span className="tabular-nums text-muted-foreground">{seconds === null ? "not timed" : formatSeconds(seconds)}</span>
+      {/* A reader nothing timed has no time to show, which is said nowhere better than by leaving it out. */}
+      {seconds !== null && <span className="tabular-nums text-muted-foreground">{formatSeconds(seconds)}</span>}
     </span>
   );
 }
