@@ -84,7 +84,7 @@ summary for a pull request comment and SARIF for code scanning. On GitHub, the r
 is also an action that does all three:
 
 ```yaml
-- uses: complydoc/complydoc@v0.5.0
+- uses: complydoc/complydoc@v0.5.1
   with:
     path: documents
     policy: policy.yaml

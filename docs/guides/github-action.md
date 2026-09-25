@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: complydoc/complydoc@v0.5.0
+      - uses: complydoc/complydoc@v0.5.1
         with:
           path: documents
           policy: policy.yaml
@@ -48,7 +48,7 @@ rules:
 | --- | --- | --- |
 | `policy` | required | The [policy file](policy.md) |
 | `path` | `.` | File or folder to check, from the repository root |
-| `version` | the tag | complydoc to install. Empty installs the version in the tag the action was used at (`@v0.5.0` installs 0.5.0), or the latest release for any other ref |
+| `version` | the tag | complydoc to install. Empty installs the version in the tag the action was used at (`@v0.5.1` installs 0.5.1), or the latest release for any other ref |
 | `extras` | `ocr` | Optional extras, comma separated. `multilingual-names` finds names in European languages and is a large download |
 | `args` | | More arguments for `complydoc check`, such as `--timeout 120` |
 | `comment` | `true` | Keep one comment on the pull request with the result |
@@ -96,7 +96,7 @@ check reads from:
           uv run --no-project --with transformers --with torch python -c
           "from transformers import pipeline;
           pipeline('token-classification', model='Babelscape/wikineural-multilingual-ner')"
-      - uses: complydoc/complydoc@v0.5.0
+      - uses: complydoc/complydoc@v0.5.1
         with:
           path: documents
           policy: policy.yaml

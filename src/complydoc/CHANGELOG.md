@@ -6,6 +6,8 @@ versioned separately.
 
 ## [Unreleased]
 
+## [0.5.1] — 2026-09-25
+
 `schema_version` is now 16. Every field it adds is new; reports of schema 15 still read.
 
 ### Changed
