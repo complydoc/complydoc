@@ -1,10 +1,37 @@
 # Changelog
 
-Newest first. Releases increment the patch number; the minor number changes only for a
-breaking change to the report JSON or a config key. `schema_version` in the JSON is
-versioned separately.
+Newest first. Releases increment the patch number; the minor number changes for a new
+way of using complydoc, such as a command, or for a breaking change to the report JSON or
+a config key, which the release then says. `schema_version` in the JSON is versioned
+separately.
 
 ## [Unreleased]
+
+## [0.6.0] — 2026-09-25
+
+The minor number moves for `complydoc ui`, a new way to read reports. Nothing in the
+report JSON or the configuration changes; reports of 0.5.1 open as they are.
+
+### Added
+
+- `complydoc ui` opens the report viewer on every report in a folder, `.complydoc` by
+  default, grouped by the folder each audited, newest run first. It serves the viewer from
+  inside the package on 127.0.0.1, answers only requests addressed to this machine, serves
+  nothing but the viewer and the reports it found, and makes no outbound connection. A
+  report written while it runs appears on reload. `cd.launch_ui()` does the same from
+  Python and returns while it runs. An audit's summary ends with the command to open it.
+  The wheel carries the built viewer; in a checkout, `make viewer-bundle` builds it.
+
+### Changed
+
+- The viewer's diff compares extraction methods of the document on screen, not documents:
+  two reader pickers, each with what its whole extraction costs on the chosen model and
+  took to read, on one row, and the diff fills the window's height.
+
+- A page with no picture and no text layout to sketch no longer takes a pane to say so;
+  its readings take the width.
+
+- The landing page's Get started shows the three commands from install to the viewer.
 
 ## [0.5.1] — 2026-09-25
 
@@ -24,14 +51,6 @@ versioned separately.
   redirects to its new one.
 
 ### Added
-
-- `complydoc ui` opens the report viewer on every report in a folder, `.complydoc` by
-  default, grouped by the folder each audited, newest run first. It serves the viewer from
-  inside the package on 127.0.0.1, answers only requests addressed to this machine, serves
-  nothing but the viewer and the reports it found, and makes no outbound connection. A
-  report written while it runs appears on reload. `cd.launch_ui()` does the same from
-  Python and returns while it runs. An audit's summary ends with the command to open it.
-  The wheel carries the built viewer; in a checkout, `make viewer-bundle` builds it.
 
 - `--verify vision:module:function` reads pages again from their images with a vision
   model of your own, and reports where it read words the kept reading lacks: "3 of 80
