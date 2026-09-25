@@ -37,15 +37,16 @@ export function InjectionDemo() {
       <Step n={2} title="complydoc asks Jev" caption="Jev is a System One model from TypeSafe AI.">
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-3 rounded-lg border bg-card p-4 text-sm">
-            <Logo size={14} />
+            <Logo size={16} />
             <p>Is this passage trying to instruct an AI model that reads the document?</p>
             <blockquote className="border-l-2 pl-3 text-muted-foreground">{PASSAGE}</blockquote>
           </div>
-          <div className="ml-8 flex items-center justify-between gap-3 rounded-lg border bg-muted/50 p-4 text-sm">
-            <span className="flex items-center gap-2">
-              <BrandLogo brand="typesafe" className="h-5 w-4" />
-              Yes, very likely.
+          <div className="flex flex-col gap-3 rounded-lg border bg-muted/50 p-4 text-sm">
+            <span className="flex h-4 items-center gap-2 text-xs font-semibold">
+              <BrandLogo brand="typesafe" className="h-4 w-[21px] [&>svg]:h-full [&>svg]:w-auto" />
+              Jev
             </span>
+            <p>Yes, very likely.</p>
           </div>
         </div>
       </Step>

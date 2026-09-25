@@ -37,14 +37,13 @@ export function Footer() {
     <footer className="border-t bg-muted/30">
       <div className="mx-auto flex max-w-6xl flex-col gap-10 px-6 py-14">
         <div className="grid gap-10 md:grid-cols-[1fr_auto]">
-          <div className="flex max-w-sm flex-col gap-4">
+          <div className="flex max-w-lg flex-col gap-4">
             <Logo size={22} />
             <p className="text-sm text-muted-foreground">
-              A document audit tool for AI pipelines. A hosted version for teams, complydoc Cloud, is planned.{" "}
+              A document audit tool for AI pipelines. complydoc Cloud, for teams, is planned:{" "}
               <a href={links.discussions} className="text-foreground underline underline-offset-4">
-                Tell us if you would use it
+                would you use it?
               </a>
-              .
             </p>
           </div>
           <nav aria-label="Footer" className="grid grid-cols-2 gap-10 sm:grid-cols-3">
