@@ -5,6 +5,7 @@ import { ModeToggle } from "@/components/ModeToggle";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
+import type { LocalState } from "@/hooks/useLocalReports";
 import { cn } from "@/lib/utils";
 import { SAMPLES } from "./samples";
 
@@ -16,10 +17,14 @@ interface OpenReportProps {
   onSamples: (ids: string[]) => void;
   /** Why the last file could not be opened, if it could not. */
   error?: string | undefined;
+  /** Set when `complydoc ui` served the page and found no reports to open. */
+  local?: LocalState | undefined;
 }
 
 /** The empty state: drop a report, pick one, or look at the sample. */
-export function OpenReport({ dark, onToggleTheme, onFiles, onSamples, error }: OpenReportProps) {
+export function OpenReport({ dark, onToggleTheme, onFiles, onSamples, error, local }: OpenReportProps) {
+  const served = local !== undefined && local.status !== "off";
+  const where = local?.sources.join(", ") || ".complydoc";
   const input = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
 
@@ -50,10 +55,18 @@ export function OpenReport({ dark, onToggleTheme, onFiles, onSamples, error }: O
             <FileJsonIcon />
           </EmptyMedia>
           <EmptyTitle>
-            <h1 className="text-lg">Open a report</h1>
+            <h1 className="text-lg">{served ? "No reports yet" : "Open a report"}</h1>
           </EmptyTitle>
           <EmptyDescription>
-            Drop the JSON complydoc wrote, or choose it. Several at once open side by side, one folder each.
+            {served ? (
+              <>
+                There are no reports in <code className="font-mono">{where}</code>. Run{" "}
+                <code className="font-mono">complydoc audit ./documents</code>, then reload this page. Or drop a
+                report JSON here.
+              </>
+            ) : (
+              "Drop the JSON complydoc wrote, or choose it. Several at once open side by side, one folder each."
+            )}
           </EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
@@ -70,6 +83,7 @@ export function OpenReport({ dark, onToggleTheme, onFiles, onSamples, error }: O
             }}
           />
           <Button onClick={() => input.current?.click()}>Choose file</Button>
+          {SAMPLES.length > 0 && (
           <div className="flex flex-col items-center">
             <span className="text-xs text-muted-foreground">or open a sample</span>
             {SAMPLES.map((sample) => (
@@ -81,6 +95,7 @@ export function OpenReport({ dark, onToggleTheme, onFiles, onSamples, error }: O
               Both, as two runs of one folder
             </Button>
           </div>
+          )}
         </EmptyContent>
       </Empty>
       {error && (

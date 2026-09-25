@@ -40,6 +40,7 @@ It runs on your machine. Nothing leaves it unless you ask for that: see
 ```bash
 uv tool install complydoc
 complydoc audit ./documents
+complydoc ui                  # the reports in the viewer, served from this machine
 ```
 
 ```python

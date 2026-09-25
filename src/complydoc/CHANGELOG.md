@@ -25,6 +25,14 @@ versioned separately.
 
 ### Added
 
+- `complydoc ui` opens the report viewer on every report in a folder, `.complydoc` by
+  default, grouped by the folder each audited, newest run first. It serves the viewer from
+  inside the package on 127.0.0.1, answers only requests addressed to this machine, serves
+  nothing but the viewer and the reports it found, and makes no outbound connection. A
+  report written while it runs appears on reload. `cd.launch_ui()` does the same from
+  Python and returns while it runs. An audit's summary ends with the command to open it.
+  The wheel carries the built viewer; in a checkout, `make viewer-bundle` builds it.
+
 - `--verify vision:module:function` reads pages again from their images with a vision
   model of your own, and reports where it read words the kept reading lacks: "3 of 80
   pages disagree", each page with what is missing, in `verification` and

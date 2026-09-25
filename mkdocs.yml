@@ -98,6 +98,7 @@ nav:
   - Overview: index.md
   - Guides:
       - Audit a folder: guides/audit-a-folder.md
+      - The report viewer: guides/viewer.md
       - Page routing: guides/routing.md
       - Verifying pages with a vision model: guides/verify-with-vision.md
       - Python API: guides/python-api.md

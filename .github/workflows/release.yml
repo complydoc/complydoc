@@ -74,9 +74,24 @@ jobs:
         with:
           enable-cache: true
       - run: uv sync --group dev
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: viewer/package-lock.json
+
+      # `complydoc ui` serves the React viewer from inside the package, so it is
+      # built first and carried in both the wheel and the sdist.
+      - name: build the viewer into the package
+        run: make viewer-bundle
 
       - name: build the sdist and wheel
         run: uv build
+
+      - name: the wheel carries the viewer
+        run: |
+          python3 -m zipfile -l dist/*.whl | grep -q "complydoc/viewer/dist/index.html" \
+            || { echo "::error::the wheel has no viewer; complydoc ui would not start"; exit 1; }
 
       - name: build the SBOM
         run: uv run python src/scripts/build_sbom.py --out dist/complydoc-sbom.json

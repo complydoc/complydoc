@@ -1,8 +1,8 @@
 # complydoc viewer
 
-A React viewer for complydoc's JSON report. It's a proof of concept, on its own
-branch, for a richer way to read a large run than the single-file HTML report.
-It reads the file in the browser and makes no network request.
+A React viewer for complydoc's JSON report, and what `complydoc ui` serves: the
+package carries it built, and opens it on every report in a folder. Opened any
+other way, it reads the file in the browser and makes no network request.
 
 ```bash
 npm install
@@ -104,9 +104,21 @@ still diff them.
 
 - **Choose or drop** the JSON that `complydoc audit --json` or
   `complydoc.write_json` wrote.
+- **Served by `complydoc ui`**: the page it serves carries `<script
+  type="application/json" id="complydoc-local">` saying where its list of
+  reports is, and the viewer opens every one of them straight away
+  (`src/hooks/useLocalReports.ts`). It asks nothing of any server but the one
+  on this machine that served the page.
 - **Embedded**: a page that carries `<script type="application/json"
-  id="complydoc-report">` opens on it straight away. That's how a future
-  `complydoc view report.json` could hand a report over.
+  id="complydoc-report">` opens on it straight away.
 
-The viewer reads report schema 15. It says so plainly when a file is some other
+## Built into the package
+
+`make viewer-bundle`, at the root of the repository, builds the viewer into
+`src/complydoc/viewer/dist`, where `complydoc ui` serves it from. It builds with
+`VITE_SAMPLES=false`, which leaves the sample reports out: several megabytes a
+user never needs, since `complydoc ui` opens their own. Release builds run it
+before building the wheel.
+
+The viewer reads report schemas 15 and 16. It says so plainly when a file is some other
 schema, or isn't a report.

@@ -2,7 +2,9 @@ import { useCallback, useMemo, useState } from "react";
 import type { Selection } from "@/components/CollectionSwitcher";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { OpenReport } from "@/features/open/OpenReport";
+import { LocalLoading } from "@/features/open/LocalLoading";
 import { SAMPLES } from "@/features/open/samples";
+import { useLocalReports } from "@/hooks/useLocalReports";
 import { embeddedReports, useReports } from "@/hooks/useReports";
 import { useTheme } from "@/hooks/useTheme";
 import { collectionsOf } from "@/report/collections";
@@ -12,6 +14,7 @@ import { ReportView } from "./ReportView";
 export function App() {
   const { dark, toggle } = useTheme();
   const { state, addTexts, addFiles, closeAll } = useReports(embeddedReports);
+  const local = useLocalReports(addTexts);
   const collections = useMemo(() => collectionsOf(state.loaded), [state.loaded]);
   const [chosen, setChosen] = useState<Selection | null>(null);
 
@@ -38,7 +41,9 @@ export function App() {
 
   return (
     <TooltipProvider>
-      {state.loaded.length > 0 ? (
+      {local.status === "loading" && state.loaded.length === 0 ? (
+        <LocalLoading sources={local.sources} />
+      ) : state.loaded.length > 0 ? (
         <ReportView
           collections={collections}
           selection={selection}
@@ -54,7 +59,8 @@ export function App() {
           onToggleTheme={toggle}
           onFiles={(files) => void addFiles(files)}
           onSamples={(ids) => void openSamples(ids)}
-          error={state.errors.join(" ") || undefined}
+          error={[local.error, ...state.errors].filter(Boolean).join(" ") || undefined}
+          local={local}
         />
       )}
     </TooltipProvider>
