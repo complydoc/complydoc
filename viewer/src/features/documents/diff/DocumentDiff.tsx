@@ -87,9 +87,10 @@ export function DocumentDiff({ report, index, jump = null, onVisiblePage }: Docu
   const [layout, setLayout] = useState<Layout>("sentences");
 
   return (
-    <div className="flex flex-col gap-3">
+    // Takes whatever height its parent leaves, and gives all of it but the controls to the text.
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
       {/* One row, so the text below gets the height. */}
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+      <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2">
         <ReaderPicker
           label="Base reader"
           report={report}
@@ -138,7 +139,7 @@ export function DocumentDiff({ report, index, jump = null, onVisiblePage }: Docu
         </div>
       </div>
 
-      <Suspense fallback={<Skeleton className="h-96 w-full rounded-xl" />}>
+      <Suspense fallback={<Skeleton className="min-h-0 w-full flex-1 rounded-xl" />}>
         <GitDiff
           oldName={sideName(report, base)}
           oldText={sideText(report, base, layout)}

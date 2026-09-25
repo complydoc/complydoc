@@ -99,8 +99,9 @@ export default function GitDiff({ oldName, oldText, newName, newText, split, jum
   };
 
   return (
-    <div className="overflow-hidden rounded-xl border">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b bg-muted/40 px-4 py-2 font-mono text-xs">
+    // Fills the height it is given: the header keeps its line, and the diff scrolls in the rest.
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border">
+      <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-b bg-muted/40 px-4 py-2 font-mono text-xs">
         <FileDiffIcon className="size-4 text-muted-foreground" />
         <span className="truncate">
           {oldName} <span className="text-muted-foreground">→</span> {newName}
@@ -119,7 +120,7 @@ export default function GitDiff({ oldName, oldText, newName, newText, split, jum
           ref={scroller}
           onScroll={onScroll}
           data-testid="diff-scroller"
-          className="h-[calc(100svh-22rem)] min-h-[28rem] overflow-y-auto"
+          className="min-h-0 flex-1 overflow-y-auto"
         >
           <DiffView
             diffFile={file}

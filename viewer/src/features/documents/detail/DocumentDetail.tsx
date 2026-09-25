@@ -64,8 +64,16 @@ export function DocumentDetail({
   };
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    // The diff fills the window below the bar, less the page's own padding: 3rem of bar, and 2rem
+    // or 3rem of padding. Its text scrolls inside, so the page itself never scrolls past it.
+    <div
+      className={
+        view === "diff"
+          ? "flex h-[calc(100svh-5rem)] min-h-[28rem] flex-col gap-4 md:h-[calc(100svh-6rem)]"
+          : "flex flex-col gap-6"
+      }
+    >
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <h2 className="font-heading text-lg font-semibold tracking-tight">{fileName(document.relative_path)}</h2>
           <ToggleGroup
@@ -97,7 +105,7 @@ export function DocumentDetail({
             jump={jump}
             onVisiblePage={(number) => setPageIndex(pageAt(number))}
           />
-          <div className="flex justify-center">
+          <div className="flex shrink-0 justify-center">
             <PagePicker
               count={pages}
               current={pageIndex}
