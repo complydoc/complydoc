@@ -1,11 +1,13 @@
 import {
   flexRender,
   getCoreRowModel,
+  getExpandedRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
   type ColumnDef,
+  type ExpandedState,
   type RowData,
   type SortingState,
 } from "@tanstack/react-table";
@@ -47,6 +49,8 @@ interface DataTableProps<T> {
   search?: string;
   /** Rows per page. Without it every row shows. */
   pageSize?: number;
+  /** A row's own rows, for a tree such as folders of documents. They open expanded. */
+  subRows?: (row: T) => T[] | undefined;
 }
 
 const SORT_ICON = {
@@ -68,13 +72,12 @@ export function DataTable<T>({
   sortable = false,
   search,
   pageSize,
+  subRows,
 }: DataTableProps<T>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [query, setQuery] = useState("");
-  const [pagination, setPagination] = useState({
-    pageIndex: 0,
-    pageSize: pageSize ?? rows.length,
-  });
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: pageSize ?? Number.MAX_SAFE_INTEGER });
+  const [expanded, setExpanded] = useState<ExpandedState>(true);
   // TanStack Table returns functions the React Compiler cannot memoise; it is the documented way to use it.
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
@@ -85,6 +88,13 @@ export function DataTable<T>({
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
+    getExpandedRowModel: getExpandedRowModel(),
+    ...(subRows && { getSubRows: subRows }),
+    onExpandedChange: setExpanded,
+    // A search keeps the folders a match sits in, and shows it inside them.
+    filterFromLeafRows: true,
+    // Pages count the rows on screen, folders open or closed.
+    paginateExpandedRows: true,
     onSortingChange: setSorting,
     onGlobalFilterChange: setQuery,
     onPaginationChange: setPagination,
@@ -92,9 +102,9 @@ export function DataTable<T>({
     // A new search starts from the first page.
     autoResetPageIndex: true,
     enableSorting: sortable,
-    state: { sorting, globalFilter: query, pagination },
+    state: { sorting, globalFilter: query, pagination, expanded: query ? true : expanded },
   });
-  const matching = table.getFilteredRowModel().rows.length;
+  const matching = table.getPrePaginationRowModel().rows.length;
   const first = pagination.pageIndex * pagination.pageSize;
   const paged = pageSize !== undefined && matching > pageSize;
 

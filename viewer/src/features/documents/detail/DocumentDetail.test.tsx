@@ -1,4 +1,5 @@
-import { render, screen, within } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
+import { renderPage } from "@/test/render";
 import userEvent from "@testing-library/user-event";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { required, sampleAudit, sampleReport } from "@/test/sample";
@@ -10,7 +11,7 @@ function open(report: Report, name: string, where: { page?: number; finding?: Fi
   const index = report.documents.findIndex((d) => d.relative_path.endsWith(name));
   const document = report.documents[index];
   if (!document) throw new Error(`no ${name} in the sample`);
-  render(
+  renderPage(
     <TooltipProvider>
       <DocumentDetail report={report} document={document} index={index} page={where.page ?? null} finding={where.finding ?? null} />
     </TooltipProvider>,
@@ -19,12 +20,12 @@ function open(report: Report, name: string, where: { page?: number; finding?: Fi
 }
 
 describe("DocumentDetail", () => {
-  it("names the document, with the models its pages are priced on and nothing else", () => {
+  it("names the document, with what the page and the document cost and take, and nothing else", () => {
     open(sampleAudit(), "master-services-agreement.pdf");
     expect(screen.getByRole("heading", { name: "master-services-agreement.pdf" })).toBeInTheDocument();
-    const bar = screen.getByRole("group", { name: "Price this page" });
-    expect(within(bar).getByRole("button", { name: "Text model" })).toBeInTheDocument();
-    expect(within(bar).getByLabelText("This page as text")).toHaveTextContent(/^\$\d/);
+    const totals = screen.getByRole("group", { name: "Cost and time" });
+    expect(totals).toHaveTextContent(/This page\s*\$\d/);
+    expect(totals).toHaveTextContent(/Document\s*\$\d/);
     expect(screen.queryByText(/pypdf \d+%/)).not.toBeInTheDocument();
     expect(screen.queryByText("kept")).not.toBeInTheDocument();
   });

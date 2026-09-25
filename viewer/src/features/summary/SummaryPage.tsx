@@ -1,3 +1,4 @@
+import { ChevronRightIcon } from "lucide-react";
 import { Section, SectionStack } from "@/components/Section";
 import { Stat, StatGrid } from "@/components/Stat";
 import { formatCount, formatSeconds, plural } from "@/report/format";
@@ -43,9 +44,16 @@ export function SummaryPage({ report }: { report: Report }) {
       </Section>
 
       {caveats.length > 0 && (
-        <Section title="Worth knowing">
-          <Caveats caveats={caveats} />
-        </Section>
+        // Useful when a figure above needs its footnote, so it waits to be opened rather than taking the page.
+        <details className="group text-sm">
+          <summary className="flex cursor-pointer list-none items-center gap-2 text-muted-foreground hover:text-foreground">
+            <ChevronRightIcon className="size-4 transition-transform group-open:rotate-90" />
+            {plural(caveats.length, "note")} on what this run could not check
+          </summary>
+          <div className="mt-3">
+            <Caveats caveats={caveats} />
+          </div>
+        </details>
       )}
     </SectionStack>
   );

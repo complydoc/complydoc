@@ -13,6 +13,7 @@ import { PATHS, UNITS, byProvider, cheapest, costRows, pricedOn, providerColour,
 import { formatUsd } from "@/report/format";
 import type { CostPath, Report } from "@/report/types";
 import { CostTable } from "./CostTable";
+import { PlanComparison } from "./PlanComparison";
 
 const ALL = "all";
 
@@ -47,6 +48,10 @@ export function CostPage({ report }: { report: Report }) {
 
   return (
     <SectionStack>
+      <Section title="Ways to read this folder">
+        <PlanComparison report={report} />
+      </Section>
+
       <Section title="Per 1,000 documents">
         <StatGrid>
           <Stat label="Cheapest as text" value={formatUsd(text?.usd ?? null)} note={text?.name ?? "no model priced"} />

@@ -1,9 +1,12 @@
 import { Section, SectionStack } from "@/components/Section";
-import { documentRows } from "@/report/select";
+import { usePlan } from "@/hooks/usePlan";
+import { formatPageUsd, formatSeconds, plural } from "@/report/format";
+import { reportTotals } from "@/report/plan";
+import { documentTree } from "@/report/tree";
 import { parseTarget } from "@/report/route";
 import type { Report } from "@/report/types";
 import { DocumentDetail } from "./detail/DocumentDetail";
-import { DocumentTable } from "./DocumentTable";
+import { DocumentTree } from "./DocumentTree";
 import { LoadersSection } from "./loaders/LoadersSection";
 import { VerificationSection } from "./verification/VerificationSection";
 
@@ -15,6 +18,7 @@ interface DocumentsPageProps {
 
 /** Every document and, when loaders were compared, which one read them best; or one document, page by page. */
 export function DocumentsPage({ report, open }: DocumentsPageProps) {
+  const { plan } = usePlan();
   const target = open === null ? null : parseTarget(open);
   const document = target ? report.documents[target.document] : undefined;
   if (target && document) {
@@ -34,9 +38,24 @@ export function DocumentsPage({ report, open }: DocumentsPageProps) {
     <SectionStack>
       {report.loader_comparison && <LoadersSection comparison={report.loader_comparison} />}
       {report.verification && <VerificationSection report={report} />}
-      <Section title="Documents">
-        <DocumentTable rows={documentRows(report)} />
+      <Section title="Documents" aside={<FolderTotals report={report} />}>
+        <DocumentTree
+          nodes={documentTree(report, plan)}
+          vision={report.documents.some((document) => document.verification)}
+        />
       </Section>
     </SectionStack>
+  );
+}
+
+/** The whole folder, beside the heading: what every document costs and takes under the plan. */
+function FolderTotals({ report }: { report: Report }) {
+  const { plan } = usePlan();
+  const totals = reportTotals(report, plan);
+  return (
+    <span className="tabular-nums">
+      {plural(totals.documents, "document")} · {plural(totals.pages, "page")} · {formatPageUsd(totals.usd)} ·{" "}
+      {totals.seconds === null ? "not timed" : formatSeconds(totals.seconds)}
+    </span>
   );
 }

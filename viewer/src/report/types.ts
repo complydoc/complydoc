@@ -149,6 +149,8 @@ export interface PageText {
   costs?: Record<string, ReadingCost>;
   /** Schema 16: what the cheapest priced vision model would cost for this page. */
   vision_estimate?: ReadingCost | null;
+  /** Schema 16: how long each reader took on this page, where it was timed. */
+  seconds?: Record<string, number>;
   /** Schema 16: text tokens in each reading, by reader, then by `ModelCost.tokenizer`. */
   tokens?: Record<string, Record<string, number>>;
   /** Schema 16: image tokens for the page, by `ModelCost.vision_formula`. */
@@ -169,6 +171,8 @@ export interface PageVerification {
   missing: string;
   cost: ReadingCost | null;
   error: string | null;
+  /** How long the model took to answer for this page. */
+  seconds?: number | null;
 }
 
 export interface DocumentVerification {
@@ -233,6 +237,14 @@ export interface DocumentEntry {
   previews?: PagePreview[];
   /** Schema 16: pages read again by a vision model. */
   verification?: DocumentVerification | null;
+  /** The route each page needs: its text layer, OCR, or a vision model. */
+  routing?: { pages: PageRoute[] } | null;
+}
+
+export interface PageRoute {
+  number: number;
+  route: "text" | "ocr" | "vision";
+  reason: string;
 }
 
 export interface LoaderRow {
@@ -240,7 +252,8 @@ export interface LoaderRow {
   documents: number;
   pages: number;
   characters: number;
-  seconds: number;
+  /** How long the loader took over every file, or null for documents passed in already loaded. */
+  seconds: number | null;
   readiness_score: number | null;
   facts_found: number;
   identifiers_in_text: number;

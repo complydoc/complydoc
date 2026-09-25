@@ -14,6 +14,8 @@ import { SecurityPage } from "@/features/security/SecurityPage";
 import { SummaryPage } from "@/features/summary/SummaryPage";
 import { useHashRoute } from "@/hooks/useHashRoute";
 import { ModeToggle } from "@/components/ModeToggle";
+import { PlanBar } from "@/components/PlanBar";
+import { PlanProvider } from "@/components/PlanProvider";
 import { fileName } from "@/report/format";
 import type { Report } from "@/report/types";
 import { AppSidebar } from "./AppSidebar";
@@ -34,45 +36,48 @@ export function ReportView({ report, name, dark, onToggleTheme, onClose }: Repor
   const open = page === "documents" && detail !== null ? report.documents[Number(detail.split("/")[0])] : undefined;
 
   return (
-    <SidebarProvider>
-      <AppSidebar report={report} name={name} page={page} onClose={onClose} />
-      {/* min-w-0 lets the page shrink to the space beside the sidebar instead of widening to its widest chart. */}
-      <SidebarInset className="min-w-0">
-        <header className="sticky top-0 z-10 flex h-12 shrink-0 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur">
-          <SidebarTrigger className="-ml-1" />
-          <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem className="hidden md:block">{name}</BreadcrumbItem>
-              <BreadcrumbSeparator className="hidden md:block" />
-              <BreadcrumbItem>
-                {open ? (
-                  <BreadcrumbLink href={`#${page}`}>{PAGE_INFO[page].label}</BreadcrumbLink>
-                ) : (
-                  <BreadcrumbPage>{PAGE_INFO[page].label}</BreadcrumbPage>
+    <PlanProvider report={report}>
+      <SidebarProvider>
+        <AppSidebar report={report} name={name} page={page} onClose={onClose} />
+        {/* min-w-0 lets the page shrink to the space beside the sidebar instead of widening to its widest chart. */}
+        <SidebarInset className="min-w-0">
+          <header className="sticky top-0 z-10 flex h-12 shrink-0 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur">
+            <SidebarTrigger className="-ml-1" />
+            <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem className="hidden md:block">{name}</BreadcrumbItem>
+                <BreadcrumbSeparator className="hidden md:block" />
+                <BreadcrumbItem>
+                  {open ? (
+                    <BreadcrumbLink href={`#${page}`}>{PAGE_INFO[page].label}</BreadcrumbLink>
+                  ) : (
+                    <BreadcrumbPage>{PAGE_INFO[page].label}</BreadcrumbPage>
+                  )}
+                </BreadcrumbItem>
+                {open && (
+                  <>
+                    <BreadcrumbSeparator />
+                    <BreadcrumbItem>
+                      <BreadcrumbPage>{fileName(open.relative_path)}</BreadcrumbPage>
+                    </BreadcrumbItem>
+                  </>
                 )}
-              </BreadcrumbItem>
-              {open && (
-                <>
-                  <BreadcrumbSeparator />
-                  <BreadcrumbItem>
-                    <BreadcrumbPage>{fileName(open.relative_path)}</BreadcrumbPage>
-                  </BreadcrumbItem>
-                </>
-              )}
-            </BreadcrumbList>
-          </Breadcrumb>
-          <div className="ml-auto">
-            <ModeToggle dark={dark} onToggle={onToggleTheme} />
-          </div>
-        </header>
-        <main className="mx-auto w-full max-w-7xl p-4 md:p-6">
-          {page === "summary" && <SummaryPage report={report} />}
-          {page === "security" && <SecurityPage report={report} />}
-          {page === "cost" && <CostPage report={report} />}
-          {page === "documents" && <DocumentsPage report={report} open={detail} />}
-        </main>
-      </SidebarInset>
-    </SidebarProvider>
+              </BreadcrumbList>
+            </Breadcrumb>
+            <div className="ml-auto flex items-center gap-2">
+              <PlanBar />
+              <ModeToggle dark={dark} onToggle={onToggleTheme} />
+            </div>
+          </header>
+          <main className="mx-auto w-full max-w-7xl p-4 md:p-6">
+            {page === "summary" && <SummaryPage report={report} />}
+            {page === "security" && <SecurityPage report={report} />}
+            {page === "cost" && <CostPage report={report} />}
+            {page === "documents" && <DocumentsPage report={report} open={detail} />}
+          </main>
+        </SidebarInset>
+      </SidebarProvider>
+    </PlanProvider>
   );
 }

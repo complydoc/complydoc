@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
-import { useModelChoice } from "@/hooks/useModelChoice";
-import { pricedModels } from "@/report/pricing";
+import { useState } from "react";
+import { usePlan } from "@/hooks/usePlan";
+import { documentTotals, pageEstimate } from "@/report/plan";
 import { fileName } from "@/report/format";
 import { findingHighlight } from "@/report/highlight";
 import { pageReadings } from "@/report/readings";
@@ -9,7 +9,7 @@ import type { DocumentEntry, Report } from "@/report/types";
 import { FindingBanner } from "./FindingBanner";
 import { PageComparison } from "./PageComparison";
 import { PagePicker } from "./PagePicker";
-import { PricingBar } from "./PricingBar";
+import { DocumentTotals } from "./DocumentTotals";
 import { VisionNote } from "./VisionNote";
 
 interface DocumentDetailProps {
@@ -34,8 +34,7 @@ export function DocumentDetail({ report, document, index, page: startPage = null
   const pages = document.extracted_text.length;
   const readings = page ? pageReadings(page, report.run.extractor) : [];
   const shown = highlight && page && (highlight.page === null || highlight.page === page.number) ? highlight : null;
-  const models = useMemo(() => pricedModels(report), [report]);
-  const choice = useModelChoice(models);
+  const { plan, models } = usePlan();
   // A report written before pages carried token counts has nothing to price them by.
   const priced = page && models.length > 0 && page.tokens !== undefined;
   const checked = page ? document.verification?.pages.find((p) => p.number === page.number) : undefined;
@@ -44,7 +43,12 @@ export function DocumentDetail({ report, document, index, page: startPage = null
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="font-heading text-lg font-semibold tracking-tight">{fileName(document.relative_path)}</h2>
-        {priced && <PricingBar page={page} reader={readings[0]?.key ?? ""} models={models} choice={choice} />}
+        {priced && (
+          <DocumentTotals
+            page={pageEstimate(report, document, page, plan)}
+            document={documentTotals(report, document, plan)}
+          />
+        )}
       </div>
 
       {shown && <FindingBanner highlight={shown} clearHref={documentHref(index, page?.number)} />}
@@ -61,7 +65,7 @@ export function DocumentDetail({ report, document, index, page: startPage = null
           highlight={shown}
           // Room below for the page picker, when there is more than one page.
           reserve={pages > 1}
-          pricing={priced ? { page, text: choice.text, vision: choice.vision } : null}
+          pricing={priced ? { page, text: plan.text, vision: plan.vision } : null}
         />
       ) : (
         <p className="text-muted-foreground">

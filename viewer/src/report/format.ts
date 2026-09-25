@@ -16,7 +16,13 @@ export function formatPercent(fraction: number): string {
 export function formatSeconds(seconds: number): string {
   if (seconds < 1) return `${integer.format(seconds * 1000)} ms`;
   if (seconds < 60) return `${seconds.toFixed(1)} s`;
-  return `${integer.format(seconds / 60)} min`;
+  if (seconds < 3600) return `${integer.format(seconds / 60)} min`;
+  if (seconds < 172_800) {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.round((seconds % 3600) / 60);
+    return minutes ? `${hours} h ${minutes} min` : `${hours} h`;
+  }
+  return `${(seconds / 86_400).toFixed(1)} days`;
 }
 
 /** "one document" or "3 documents". */
