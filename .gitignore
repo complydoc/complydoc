@@ -43,3 +43,6 @@ reports/
 .env
 .env.*
 !.env.example
+
+# The assembled Pages site: the landing page with the documentation under docs/.
+/_site/

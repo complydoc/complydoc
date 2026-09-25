@@ -1,4 +1,7 @@
-# Build the documentation site and publish it to GitHub Pages.
+# Build the site and publish it to GitHub Pages: the landing page at the root and
+# the documentation under docs/. A repository gets one Pages site, so the two
+# share it; src/scripts/assemble_site.py puts them together and leaves a
+# redirect at every address the documentation had when it was the root.
 #
 # Publishing happens from `main` only. Every pull request still builds the site
 # under `--strict`, so a broken link or a reference page that stops generating
@@ -13,12 +16,16 @@ on:
     branches: [main]
     paths:
       - "docs/**"
+      - "landing/**"
+      - "src/scripts/assemble_site.py"
       - "mkdocs.yml"
       - "src/complydoc/**"
       - ".github/workflows/docs.yml"
   pull_request:
     paths:
       - "docs/**"
+      - "landing/**"
+      - "src/scripts/assemble_site.py"
       - "mkdocs.yml"
       - "src/complydoc/**"
       - ".github/workflows/docs.yml"
@@ -40,12 +47,22 @@ jobs:
         with:
           enable-cache: true
       - run: uv sync --group docs
-      - name: build
+      - name: build the documentation
         run: uv run mkdocs build --strict
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: landing/package-lock.json
+      - name: build the landing page
+        working-directory: landing
+        run: npm ci && npm run build
+      - name: assemble the site
+        run: uv run python src/scripts/assemble_site.py --docs site --landing landing/dist --out _site
       - uses: actions/upload-pages-artifact@v4
         if: github.ref == 'refs/heads/main'
         with:
-          path: site
+          path: _site
 
   publish:
     name: publish to Pages

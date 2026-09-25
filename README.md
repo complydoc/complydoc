@@ -8,7 +8,7 @@
 
   <a href="https://pypi.org/project/complydoc/"><img src="https://img.shields.io/pypi/v/complydoc?color=1a7f4b&label=pypi" alt="PyPI"></a>
   <a href="https://github.com/complydoc/complydoc/actions/workflows/checks.yml"><img src="https://github.com/complydoc/complydoc/actions/workflows/checks.yml/badge.svg?branch=main" alt="Tests"></a>
-  <a href="https://complydoc.github.io/complydoc/"><img src="https://img.shields.io/badge/docs-complydoc-1a7f4b" alt="Documentation"></a>
+  <a href="https://complydoc.github.io/complydoc/docs/"><img src="https://img.shields.io/badge/docs-complydoc-1a7f4b" alt="Documentation"></a>
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-1a7f4b" alt="License"></a>
   <br><br>
 
@@ -90,7 +90,7 @@ is also an action that does all three:
     policy: policy.yaml
 ```
 
-See [GitHub Action](https://complydoc.github.io/complydoc/guides/github-action/) for the
+See [GitHub Action](https://complydoc.github.io/complydoc/docs/guides/github-action/) for the
 inputs, permissions and code scanning. `clean` writes safe copies:
 the identifiers masked, the metadata removed, and PDFs rasterised on request.
 
@@ -126,7 +126,7 @@ the command for whatever is missing.
 Names are the part worth understanding before choosing. The multilingual model is the
 better reader; spaCy's small English one misses names in other languages and mistakes
 field labels for companies. Neither is a checksum, so both miss some names:
-[Detection accuracy](https://complydoc.github.io/complydoc/explanation/accuracy/)
+[Detection accuracy](https://complydoc.github.io/complydoc/docs/explanation/accuracy/)
 publishes the measured numbers for each.
 
 Two extras change where your documents go, and nothing else in complydoc leaves the
@@ -196,11 +196,12 @@ finds and what it wrongly flags against a labelled corpus that ships with the pa
 
 ## Resources
 
-- [Documentation](https://complydoc.github.io/complydoc/): guides and design notes
-- [Command line reference](https://complydoc.github.io/complydoc/reference/cli/)
-- [Python API reference](https://complydoc.github.io/complydoc/reference/api/)
+- [Website](https://complydoc.github.io/complydoc/)
+- [Documentation](https://complydoc.github.io/complydoc/docs/): guides and design notes
+- [Command line reference](https://complydoc.github.io/complydoc/docs/reference/cli/)
+- [Python API reference](https://complydoc.github.io/complydoc/docs/reference/api/)
 - [Playground](https://github.com/complydoc/playground): runnable command line and Python examples, with a CI workflow
-- [Report JSON](https://complydoc.github.io/complydoc/reference/report/)
+- [Report JSON](https://complydoc.github.io/complydoc/docs/reference/report/)
 - [Changelog](https://github.com/complydoc/complydoc/blob/main/src/complydoc/CHANGELOG.md)
 - [Contributing](https://github.com/complydoc/complydoc/blob/main/CONTRIBUTING.md)
 
