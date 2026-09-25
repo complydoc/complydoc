@@ -1,6 +1,6 @@
 import { CoinsIcon, FileWarningIcon, ShieldAlertIcon, TimerIcon, type LucideIcon } from "lucide-react";
 import { Section } from "@/components/Section";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 
 interface Issue {
   area: string;
@@ -52,20 +52,23 @@ export function Problem() {
         </>
       }
     >
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {ISSUES.map((issue) => (
-          <Card key={issue.area}>
-            <CardHeader>
-              <CardDescription className="flex items-center gap-2">
+      <dl className="flex max-w-4xl flex-col">
+        {ISSUES.map((issue, i) => (
+          <div key={issue.area}>
+            {i > 0 && <Separator />}
+            <div className="grid gap-2 py-6 md:grid-cols-[12rem_1fr] md:gap-8">
+              <dt className="flex items-center gap-2 self-start text-sm font-medium text-primary">
                 <issue.icon className="size-4" />
                 {issue.area}
-              </CardDescription>
-              <CardTitle className="text-lg">{issue.title}</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">{issue.detail}</CardContent>
-          </Card>
+              </dt>
+              <dd className="flex flex-col gap-1">
+                <span className="text-lg font-medium">{issue.title}</span>
+                <span className="text-muted-foreground">{issue.detail}</span>
+              </dd>
+            </div>
+          </div>
         ))}
-      </div>
+      </dl>
     </Section>
   );
 }
