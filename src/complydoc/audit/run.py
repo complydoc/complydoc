@@ -377,6 +377,31 @@ def _image_tokens(entry: DocumentReport, work: Work) -> dict[int, dict[str, int]
     return counted
 
 
+def _page_seconds(
+    page: Page, kept: str, verification: DocumentVerification | None
+) -> dict[str, float]:
+    """How long each reader took on a page, where it was timed, keyed like its costs.
+
+    A loader is timed over every file it read, not per page, so its pages carry
+    no time of their own here; the loader's total is in the report's loader rows.
+    """
+    seconds = (
+        {e.extractor: round(e.seconds, 4) for e in page.extractions}
+        if page.text_source != "loader"
+        else {}
+    )
+    if page.ocr_seconds is not None:
+        seconds["ocr"] = page.ocr_seconds
+        # A scan's kept reading is OCR's, after the text layer was tried and came up empty.
+        if page.text_source == "ocr" and kept:
+            seconds[kept] = round(page.ocr_seconds + seconds.get(kept, 0.0), 4)
+    if verification is not None:
+        for checked in verification.pages:
+            if checked.number == page.number and checked.seconds is not None:
+                seconds[verification.model] = checked.seconds
+    return seconds
+
+
 def _vision_estimates(entry: DocumentReport, resolution: str) -> dict[int, ReadingCost]:
     """Per page, the cheapest priced vision model's estimated cost, at `resolution`."""
     if entry.cost is None:
@@ -439,6 +464,7 @@ def _page_text(
         },
         kept=kept,
         costs=_reading_costs(page, kept, verification),
+        seconds=_page_seconds(page, kept, verification),
         tokens=_page_tokens(page, kept, tokenizers_of(work.models)),
         image_tokens=image_tokens or {},
         vision_estimate=vision_estimate,

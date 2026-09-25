@@ -130,6 +130,7 @@ def report_shape() -> dict[str, object]:
                 "reader -> usd, basis (local | actual | estimated | unpriced), model, "
                 "input_tokens, output_tokens: what each reading of the page cost"
             ),
+            "extracted_text[].seconds": "reader -> seconds it took on this page, where timed",
             "extracted_text[].tokens": (
                 "reader -> tokenizer -> text tokens in that reading of the page"
             ),
@@ -506,6 +507,9 @@ class PageText:
     """The reader whose text `text` is. Empty where the run could not tell."""
     costs: dict[str, ReadingCost] = field(default_factory=dict)
     """What each reading of this page cost, keyed like `readings`, with the kept one."""
+    seconds: dict[str, float] = field(default_factory=dict)
+    """How long each reader took on this page, keyed like `costs`, measured on
+    the machine that ran it. A reader that was not timed is absent, not zero."""
     tokens: dict[str, dict[str, int]] = field(default_factory=dict)
     """Text tokens in each reading of this page, by reader, then by way of counting.
 
@@ -550,6 +554,8 @@ class PageVerification:
     masked unless the run used `reveal`, cut at 240 characters."""
     cost: ReadingCost | None = None
     error: str | None = None
+    seconds: float | None = None
+    """How long the model took to answer for this page, from the call to its return."""
 
 
 @dataclass(frozen=True, slots=True)

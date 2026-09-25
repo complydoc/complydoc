@@ -35,6 +35,21 @@ versioned separately.
   summary JSON too. Together they price any page, read by any reader, on any model the
   run compared.
 
+- Every reading of a page carries how long its reader took, in `extracted_text[].seconds`:
+  each extractor, OCR, and a `--verify` vision call, measured on the machine that ran
+  the audit. A reader nothing timed is left out rather than written as zero; a loader's
+  time is its total over every file.
+
+- The viewer prices and times the folder under a loading plan chosen in the top bar: the
+  reader (the kept reading, another reader, OCR on every page, vision on every page, or
+  routed page by page) and the text and vision models. The Cost page is now Cost & time,
+  and leads with every way of reading the folder side by side: pages read, cost, time on
+  this machine, and both projected to any number of documents on any number of cores.
+  The Documents page is a tree of folders, each totalling its documents' cost and time;
+  a document shows what the page and the whole document cost and take. A vision model's
+  time is only shown where a real call was timed. The notes on what a run could not
+  check fold away at the foot of the Summary.
+
 - The viewer prices each page on a model you choose: a searchable model picker, adapted
   from Vercel's AI Elements, with each provider's own logo, for text on any model and
   for images on vision models only, remembered in the browser. Each reader's reading is

@@ -405,3 +405,30 @@ def test_every_reading_is_counted_so_a_page_can_be_priced_on_any_model(one_pdf):
     # What pricing one page takes, kept in the summary JSON too.
     assert all(m["input_per_mtok_usd"] is not None for m in models)
     assert any(not m["supports_vision"] for m in models)
+
+
+def test_every_reader_is_timed_on_every_page_it_read(one_pdf):
+    report = cd.full_audit(one_pdf, extracted_text=True, compare_extractors=["pypdf"])
+    page = report.documents[0].extracted_text[0]
+    assert set(page.seconds) >= {"pdfplumber", "pypdf"}
+    assert all(seconds >= 0 for seconds in page.seconds.values())
+
+
+def test_a_scan_is_timed_with_its_ocr(tmp_path):
+    from complydoc.ingest import ocr as ocr_module
+
+    if not ocr_module.available():
+        pytest.skip("no OCR engine installed")
+    shutil.copy(FIXTURES / "scanned_page.pdf", tmp_path / "scanned_page.pdf")
+    report = cd.full_audit(tmp_path, ocr=True, extracted_text=True)
+    page = report.documents[0].extracted_text[0]
+    assert page.source == "ocr"
+    assert page.seconds["ocr"] > 0
+    assert page.seconds[page.kept] >= page.seconds["ocr"]
+
+
+def test_a_vision_call_is_timed(one_pdf):
+    report = cd.full_audit(one_pdf, verify_with=sharper, verify_scope="all", extracted_text=True)
+    checked = report.documents[0].verification.pages[0]
+    assert checked.seconds is not None and checked.seconds >= 0
+    assert "vision:claude-opus-5" in report.documents[0].extracted_text[0].seconds

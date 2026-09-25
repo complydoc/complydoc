@@ -665,6 +665,7 @@ class PdfLoader:
             read = ocr_module.run(page.raster)
             page.ocr_text = read.text
             page.ocr_confidence = read.confidence
+            page.ocr_seconds = ocr_module.last_seconds()
 
     @staticmethod
     def _apply_ocr(document: Document, options: IngestOptions, ocr_module: Any) -> None:
@@ -700,6 +701,7 @@ class PdfLoader:
             read = ocr_module.run(page.raster)
             page.ocr_text = read.text
             page.ocr_confidence = read.confidence
+            page.ocr_seconds = ocr_module.last_seconds()
             if read.text.strip():
                 page.text = read.text
                 page.text_source = "ocr"

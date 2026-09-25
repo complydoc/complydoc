@@ -184,6 +184,8 @@ class Page:
     """
     ocr_confidence: float | None = None
     """The engine's mean confidence in what it read, 0 to 1. None if it did not run."""
+    ocr_seconds: float | None = None
+    """How long OCR took on this page, on the machine that ran it. None if it did not run."""
     raw_chars: str = ""
     """Page characters as stored, before any unicode normalisation.
 

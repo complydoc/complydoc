@@ -25,6 +25,7 @@ __all__ = [
     "add_stats",
     "available",
     "engine_name",
+    "last_seconds",
     "reset_stats",
     "run",
     "select",
@@ -36,6 +37,7 @@ __all__ = [
 # OCR time is measured here so the report can quote the observed rate.
 _pages = 0
 _seconds = 0.0
+_last = 0.0
 _selected = DEFAULT_ENGINE
 
 
@@ -112,10 +114,17 @@ def run(image: Image) -> Recognised:
     if engine is None or not engine.available():
         return Recognised("", None, 0)
 
+    global _last
     started = time.perf_counter()
     try:
         read: Recognised = engine.read(image)
         return read
     finally:
-        _seconds += time.perf_counter() - started
+        _last = time.perf_counter() - started
+        _seconds += _last
         _pages += 1
+
+
+def last_seconds() -> float:
+    """How long the most recent `run` took, for the page it read."""
+    return round(_last, 4)

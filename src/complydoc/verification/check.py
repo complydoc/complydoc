@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import io
 import re
+import time
 from collections import Counter
 from collections.abc import Callable, Sequence
 from concurrent.futures import ThreadPoolExecutor
@@ -255,17 +256,20 @@ def compare(kept: str, vision: str) -> Comparison:
     )
 
 
-def _call(model: VisionModel, page: VisionPage) -> VisionReading | str:
+def _call(model: VisionModel, page: VisionPage) -> tuple[VisionReading | str, float]:
+    """The model's answer for one page, or why there is none, and how long it took."""
+    started = time.perf_counter()
     try:
         result = model(page)
     # The model is caller code; whatever it raises is that page's failure, not the run's.
     except Exception as exc:
-        return f"{type(exc).__name__}: {exc}"[:300]
+        return f"{type(exc).__name__}: {exc}"[:300], time.perf_counter() - started
+    elapsed = time.perf_counter() - started
     if isinstance(result, VisionReading):
-        return result
+        return result, elapsed
     if isinstance(result, str):
-        return VisionReading(text=result)
-    return f"the model returned {type(result).__name__}, not text or a VisionReading"
+        return VisionReading(text=result), elapsed
+    return f"the model returned {type(result).__name__}, not text or a VisionReading", elapsed
 
 
 def _hosts(connections: Sequence[str]) -> list[str]:
@@ -333,7 +337,7 @@ def verify_document(
         if (image := rendered[page.number]) is not None
     ]
 
-    answers: dict[int, VisionReading | str] = {}
+    answers: dict[int, tuple[VisionReading | str, float]] = {}
     connections: list[str] = []
     if requests:
         # Lifted once for the batch, not per call: the guard is process state,
@@ -342,10 +346,10 @@ def verify_document(
             offline.permitted() as seen,
             ThreadPoolExecutor(max_workers=min(_CONCURRENT_CALLS, len(requests))) as pool,
         ):
-            for request, answer in zip(
+            for request, result in zip(
                 requests, pool.map(lambda r: _call(model, r), requests), strict=True
             ):
-                answers[request.number] = answer
+                answers[request.number] = result
         connections = seen
 
     priced = _priced_models(pricing)
@@ -355,9 +359,12 @@ def verify_document(
         if image is None:
             pages.append(PageVerification(page.number, "not_rendered", why))
             continue
-        answer = answers[page.number]
+        answer, took = answers[page.number]
+        seconds = round(took, 3)
         if isinstance(answer, str):
-            pages.append(PageVerification(page.number, "failed", why, error=answer))
+            pages.append(
+                PageVerification(page.number, "failed", why, error=answer, seconds=seconds)
+            )
             continue
 
         cost = reading_cost(answer, name, pricing, image.size, priced)
@@ -365,7 +372,7 @@ def verify_document(
         if len(page.text.strip()) < min_characters and answer.text.strip():
             page.text = answer.text
             page.text_source = "vision"
-            pages.append(PageVerification(page.number, "filled", why, cost=cost))
+            pages.append(PageVerification(page.number, "filled", why, cost=cost, seconds=seconds))
             continue
 
         found = compare(page.text, answer.text)
@@ -383,6 +390,7 @@ def verify_document(
                 coverage=found.coverage,
                 missing="" if agrees else mask(found.missing),
                 cost=cost,
+                seconds=seconds,
             )
         )
 

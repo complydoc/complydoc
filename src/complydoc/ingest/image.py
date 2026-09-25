@@ -79,6 +79,7 @@ class ImageLoader:
             read = ocr_module.run(page.raster)
             page.ocr_text = read.text
             page.ocr_confidence = read.confidence
+            page.ocr_seconds = ocr_module.last_seconds()
             if read.text.strip():
                 page.text = read.text
                 page.text_source = "ocr"
