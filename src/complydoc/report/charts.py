@@ -71,6 +71,13 @@ class ModelComparison:
     documents. None where the provider publishes no batch price; it is never
     inferred from the customary discount."""
     price_source: str = "verified"
+    input_per_mtok_usd: float | None = None
+    """The input price, so one page can be priced on this model as well as the folder."""
+    supports_vision: bool = False
+    vision_formula: str | None = None
+    """The image formula `pages[].image_tokens` is keyed by."""
+    tokenizer: str = ""
+    """The count `pages[].tokens` is keyed by."""
 
     def by_key(self, key: str) -> ArchitectureCost | None:
         return next((a for a in self.architectures if a.key == key), None)
@@ -153,6 +160,10 @@ def build_comparison(report: AuditReport) -> list[ModelComparison]:
                 architectures=architectures,
                 batch_per_1000_usd=(batch_total / batch_served * 1000 if batch_served else None),
                 price_source=report.cost.documents[0].models[index].price_source,
+                input_per_mtok_usd=report.cost.documents[0].models[index].input_per_mtok_usd,
+                supports_vision=report.cost.documents[0].models[index].supports_vision,
+                vision_formula=report.cost.documents[0].models[index].vision_formula,
+                tokenizer=report.cost.documents[0].models[index].tokenizer,
             )
         )
     return comparisons

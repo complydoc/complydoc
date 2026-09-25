@@ -130,6 +130,10 @@ def report_shape() -> dict[str, object]:
                 "reader -> usd, basis (local | actual | estimated | unpriced), model, "
                 "input_tokens, output_tokens: what each reading of the page cost"
             ),
+            "extracted_text[].tokens": (
+                "reader -> tokenizer -> text tokens in that reading of the page"
+            ),
+            "extracted_text[].image_tokens": "vision formula -> image tokens for the page",
             "extracted_text[].vision_estimate": (
                 "what the cheapest priced vision model would cost for this page, estimated"
             ),
@@ -150,8 +154,9 @@ def report_shape() -> dict[str, object]:
         "cost": (
             "null unless cost ran: currency, headline_resolution, resolutions[], volume, "
             "models[] (the folder's cost per model and per path: text_layer, text_ocr, "
-            "vision, each with folder_usd, per_1000_usd and annual_usd), and, full only, "
-            "documents[] (every document against every model)"
+            "vision, each with folder_usd, per_1000_usd and annual_usd; and the model's "
+            "input_per_mtok_usd, supports_vision, vision_formula and tokenizer, to price "
+            "one page), and, full only, documents[] (every document against every model)"
         ),
         "overall": {
             "score": "global readiness 0-100, content and cost path and exposure",
@@ -501,6 +506,15 @@ class PageText:
     """The reader whose text `text` is. Empty where the run could not tell."""
     costs: dict[str, ReadingCost] = field(default_factory=dict)
     """What each reading of this page cost, keyed like `readings`, with the kept one."""
+    tokens: dict[str, dict[str, int]] = field(default_factory=dict)
+    """Text tokens in each reading of this page, by reader, then by way of counting.
+
+    Keyed like `costs`, then by `cost.models[].tokenizer`, so the page can be
+    priced for each reader on any model the run compared.
+    """
+    image_tokens: dict[str, int] = field(default_factory=dict)
+    """Image tokens for this page at the run's headline resolution, by
+    `cost.models[].vision_formula`. Empty where the page's size is not known."""
     vision_estimate: ReadingCost | None = None
     """What sending this page to the cheapest priced vision model would cost.
 

@@ -34,8 +34,10 @@ from complydoc import __version__, offline
 from complydoc.audit.discovery import discover
 from complydoc.audit.sampling import sample_files
 from complydoc.config.loader import check_staleness
-from complydoc.config.schema import CategoryConfig, Config, ModelPricing
+from complydoc.config.schema import CategoryConfig, Config, ModelPricing, TokenizerSpec
 from complydoc.cost.estimator import estimate_document, folder_from_estimates, resolve_models
+from complydoc.cost.tokenizer import count_tokens, tokenizer_key
+from complydoc.cost.vision import vision_tokens
 from complydoc.extraction.routing import plan_routes
 from complydoc.hidden.check import check_content
 from complydoc.hidden.instructions import (
@@ -329,6 +331,52 @@ def _reading_costs(
     return costs
 
 
+def tokenizers_of(models: Sequence[ModelPricing] | None) -> dict[str, TokenizerSpec]:
+    """Each distinct way the priced models count text, by `tokenizer_key`."""
+    return {tokenizer_key(m.tokenizer): m.tokenizer for m in models or ()}
+
+
+def reading_tokens(text: str, tokenizers: dict[str, TokenizerSpec]) -> dict[str, int]:
+    """Text tokens in one reading, once per way of counting."""
+    if not text.strip():
+        return {}
+    return {key: count_tokens(text, spec).tokens for key, spec in tokenizers.items()}
+
+
+def _page_tokens(
+    page: Page, kept: str, tokenizers: dict[str, TokenizerSpec]
+) -> dict[str, dict[str, int]]:
+    """Every reading of a page counted, keyed like its costs, so each can be priced per model."""
+    if not tokenizers:
+        return {}
+    texts = dict(page.readings)
+    if kept:
+        texts[kept] = page.text
+    if page.ocr_text.strip():
+        texts["ocr"] = page.ocr_text
+    counted = {name: reading_tokens(text, tokenizers) for name, text in texts.items()}
+    return {name: tokens for name, tokens in counted.items() if tokens}
+
+
+def _image_tokens(entry: DocumentReport, work: Work) -> dict[int, dict[str, int]]:
+    """Per page, image tokens under each vision formula the priced models use."""
+    if entry.cost is None or not work.models:
+        return {}
+    pricing = work.config.pricing
+    formulas = {
+        name: pricing.vision_formulas[name]
+        for model in work.models
+        if model.supports_vision and (name := model.vision_formula or "") in pricing.vision_formulas
+    }
+    counted: dict[int, dict[str, int]] = {}
+    for facts in entry.cost.pages:
+        size = facts.rendered.get(work.resolution)
+        if size is None or size.width_px <= 0 or size.height_px <= 0:
+            continue
+        counted[facts.number] = {name: vision_tokens(size, f) for name, f in formulas.items()}
+    return counted
+
+
 def _vision_estimates(entry: DocumentReport, resolution: str) -> dict[int, ReadingCost]:
     """Per page, the cheapest priced vision model's estimated cost, at `resolution`."""
     if entry.cost is None:
@@ -355,6 +403,7 @@ def _page_text(
     work: Work,
     verification: DocumentVerification | None = None,
     vision_estimate: ReadingCost | None = None,
+    image_tokens: dict[str, int] | None = None,
 ) -> PageText:
     """A page's text for the report, with its identifiers masked.
 
@@ -390,6 +439,8 @@ def _page_text(
         },
         kept=kept,
         costs=_reading_costs(page, kept, verification),
+        tokens=_page_tokens(page, kept, tokenizers_of(work.models)),
+        image_tokens=image_tokens or {},
         vision_estimate=vision_estimate,
     )
 
@@ -474,8 +525,16 @@ def build_entry(
         )
     if work.extracted_text:
         estimates = _vision_estimates(entry, work.resolution)
+        images = _image_tokens(entry, work)
         entry.extracted_text = [
-            _page_text(page, entry.sensitive, work, entry.verification, estimates.get(page.number))
+            _page_text(
+                page,
+                entry.sensitive,
+                work,
+                entry.verification,
+                estimates.get(page.number),
+                images.get(page.number),
+            )
             for page in document.pages
         ]
 

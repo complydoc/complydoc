@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any
 
 from complydoc.config.schema import ModelPricing, PricingConfig
-from complydoc.cost.tokenizer import TokenCount, count_tokens
+from complydoc.cost.tokenizer import TokenCount, count_tokens, tokenizer_key
 from complydoc.cost.vision import RenderedSize, rendered_size, vision_tokens
 from complydoc.ingest.base import Document
 from complydoc.utils.geometry import coverage_fraction
@@ -82,6 +82,10 @@ class ModelCostEstimate:
     batch_vision_input_usd_by_resolution: dict[str, float] = field(default_factory=dict)
     price_source: str = "verified"
     imported_on: dt.date | None = None
+    tokenizer: str = ""
+    """How this model's text tokens are counted, as `tokenizer_key` names it."""
+    supports_vision: bool = False
+    """Whether pages can be sent to this model as images and priced."""
     vision_tokens_by_page: dict[str, list[int]] = field(default_factory=dict)
     """Image tokens for each page, in page order, per resolution.
 
@@ -276,6 +280,8 @@ def _model_estimate(
         price_source=model.price_source,
         imported_on=model.imported_on,
         vision_tokens_by_page=vision_by_page,
+        tokenizer=tokenizer_key(model.tokenizer),
+        supports_vision=model.supports_vision and formula is not None,
     )
 
 

@@ -28,6 +28,22 @@ versioned separately.
   read of the page would cost, and `cost.models[].vision_tokens_by_page` keeps the
   per-page figures the document totals were summed from.
 
+- Every reading of a page is counted in text tokens, once per way the compared models
+  count them, in `extracted_text[].tokens`, and every page in image tokens per provider
+  formula, in `extracted_text[].image_tokens`. `cost.models[]` now carries each model's
+  input price, whether it takes images, its image formula and its tokenizer, in the
+  summary JSON too. Together they price any page, read by any reader, on any model the
+  run compared.
+
+- The viewer prices each page on a model you choose: a searchable model picker, adapted
+  from Vercel's AI Elements, with each provider's own logo, for text on any model and
+  for images on vision models only, remembered in the browser. Each reader's reading is
+  priced by its own token count. Provider logos and colours run through the Cost page,
+  its chart included. Findings are graded Certain, Very likely, Likely or Possible, and
+  each grade opens on how that finding was validated: the checks it passed, the label
+  beside it, the model's score. The Documents table searches and pages; a reading opens
+  full screen; the document header is the document and its price, without the badges.
+
 - The viewer reads schema 16: each reading's cost in the page comparison's picker and
   badge, what a vision read would cost beside the kept reading, a Vision check section
   and column on the Documents page, and a note on each page the check disputed.

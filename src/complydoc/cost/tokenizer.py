@@ -16,7 +16,7 @@ from typing import Any
 from complydoc.config.schema import TokenizerSpec
 from complydoc.vendor import TIKTOKEN_CACHE_DIR
 
-__all__ = ["TokenCount", "available_encodings", "count_tokens"]
+__all__ = ["TokenCount", "available_encodings", "count_tokens", "tokenizer_key"]
 
 # Must be set before tiktoken is imported anywhere in the process.
 os.environ.setdefault("TIKTOKEN_CACHE_DIR", str(TIKTOKEN_CACHE_DIR))
@@ -53,6 +53,17 @@ def _encoder(name: str) -> Any | None:
 
 def available_encodings() -> list[str]:
     return sorted({p.name for p in TIKTOKEN_CACHE_DIR.glob("*") if p.is_file()})
+
+
+def tokenizer_key(spec: TokenizerSpec) -> str:
+    """A name for the count `spec` produces: two models that count alike share it.
+
+    Used to key token counts carried in a report, so a page is counted once per
+    way of counting rather than once per model.
+    """
+    if spec.fidelity == "exact":
+        return spec.encoding
+    return f"{spec.encoding}x{spec.approximate_ratio:g}"
 
 
 def count_tokens(text: str, spec: TokenizerSpec) -> TokenCount:

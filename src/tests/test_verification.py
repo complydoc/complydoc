@@ -386,3 +386,22 @@ def test_the_command_refuses_an_unknown_scope(one_pdf, tmp_path):
     )
     assert result.exit_code == 2
     assert "--verify-scope must be" in result.output
+
+
+def test_every_reading_is_counted_so_a_page_can_be_priced_on_any_model(one_pdf):
+    from complydoc.report.json_writer import to_dict
+
+    report = cd.full_audit(one_pdf, extracted_text=True, compare_extractors=["pypdf"])
+    page = report.documents[0].extracted_text[0]
+    models = to_dict(report)["cost"]["models"]
+    tokenizers = {m["tokenizer"] for m in models}
+    formulas = {m["vision_formula"] for m in models if m["supports_vision"]}
+
+    # Every reader, once per way of counting the models compared use.
+    assert set(page.tokens) >= {"pdfplumber", "pypdf"}
+    assert set(page.tokens["pdfplumber"]) == tokenizers
+    # And the page as an image, once per formula a vision model uses.
+    assert set(page.image_tokens) == formulas
+    # What pricing one page takes, kept in the summary JSON too.
+    assert all(m["input_per_mtok_usd"] is not None for m in models)
+    assert any(not m["supports_vision"] for m in models)

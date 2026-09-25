@@ -36,9 +36,10 @@ from pathlib import Path
 from typing import Any
 
 from complydoc.audit.discovery import discover
-from complydoc.audit.run import COMPONENTS, vision_setup
+from complydoc.audit.run import COMPONENTS, reading_tokens, tokenizers_of, vision_setup
 from complydoc.config.loader import load_config
-from complydoc.config.schema import Config, ParserPricing
+from complydoc.config.schema import Config, ParserPricing, TokenizerSpec
+from complydoc.cost.estimator import resolve_models
 from complydoc.extraction.facts import FUZZY_THRESHOLD, Fact, as_facts, evaluate_facts
 from complydoc.loaders.cache import LoaderCache
 from complydoc.loaders.inspection import (
@@ -173,6 +174,7 @@ def compare_loaders(
             name: _loader_cost(specs.get(name), network, settings)
             for (name, _value), network in zip(named, networks, strict=True)
         },
+        tokenizers_of(resolve_models(settings.pricing, models) if "cost" in components else None),
     )
     differences = _identifier_differences(inspections, by_path, reveal)
     fact_checks = evaluate_facts(
@@ -295,13 +297,21 @@ def _loader_cost(spec: LoaderSpec | None, network: bool, settings: Config) -> Re
     return ReadingCost(0.0, "local")
 
 
-def _price_readings(entries: list[DocumentReport], costs: dict[str, ReadingCost]) -> None:
-    """Attach each loader's per-page cost to the baseline's pages, where it read them."""
+def _price_readings(
+    entries: list[DocumentReport],
+    costs: dict[str, ReadingCost],
+    tokenizers: dict[str, TokenizerSpec],
+) -> None:
+    """Attach each loader's per-page cost and token counts to the baseline's pages."""
     for entry in entries:
         for page in entry.extracted_text:
             for name, cost in costs.items():
                 if name in page.readings or name == page.kept:
                     page.costs[name] = cost
+                if name in page.readings and name not in page.tokens:
+                    counted = reading_tokens(page.readings[name], tokenizers)
+                    if counted:
+                        page.tokens[name] = counted
 
 
 def _parser_price(spec: LoaderSpec | None, settings: Config) -> ParserPricing | None:
