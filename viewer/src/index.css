@@ -185,13 +185,13 @@
 }
 
 /*
- * The git diff in the viewer's own colours rather than GitHub's: added and
- * lost text in the same success and destructive tones the reading panes mark
- * differences with, on the card and muted surfaces around it. Tokens, so light
- * and dark follow the theme. The doubled class outranks the library's own
- * stylesheet, which loads after this one.
+ * The git diff in the dark theme, in the viewer's own colours rather than
+ * GitHub's: added and lost text in the same success and destructive tones the
+ * reading panes mark differences with, on the card and muted surfaces around
+ * it. The light theme keeps GitHub's, which read well there. The doubled class
+ * outranks the library's own stylesheet, which loads after this one.
  */
-.diff-tailwindcss-wrapper[data-theme] .diff-style-root.diff-style-root {
+.diff-tailwindcss-wrapper[data-theme="dark"] .diff-style-root.diff-style-root {
   --diff-add-content--: var(--success-soft);
   --diff-add-content-highlight--: color-mix(in oklab, var(--success) 30%, var(--success-soft));
   --diff-add-lineNumber--: color-mix(in oklab, var(--success) 18%, var(--success-soft));
