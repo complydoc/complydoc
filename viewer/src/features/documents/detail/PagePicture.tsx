@@ -2,15 +2,11 @@ import { ImageOffIcon } from "lucide-react";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { hasPicture } from "@/report/picture";
 import type { Box, PagePreview } from "@/report/types";
 
 function place(box: Box) {
   return { left: `${box.x * 100}%`, top: `${box.y * 100}%`, width: `${box.w * 100}%`, height: `${box.h * 100}%` };
-}
-
-/** Whether there is anything to draw: a picture, or at least the layout of the text. */
-function hasPicture(preview: PagePreview | undefined): preview is PagePreview {
-  return Boolean(preview && (preview.image_data_uri || preview.text_blocks.length > 0));
 }
 
 /**

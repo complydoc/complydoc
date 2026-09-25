@@ -1,8 +1,8 @@
 import { Fragment, useState } from "react";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
-import { plural } from "@/report/format";
-import { formatPageUsd } from "@/report/format";
+import { formatPageUsd, plural } from "@/report/format";
+import { hasPicture } from "@/report/picture";
 import { imagePrice, textPrice, type PricedModel } from "@/report/pricing";
 import { defaultPair, diffReadings, isVision, type Reading } from "@/report/readings";
 import type { Highlight } from "@/report/highlight";
@@ -70,11 +70,15 @@ export function PageComparison({
 
   const single = readings.length < 2;
   const needle = highlight?.needle ?? null;
-  const page = <PagePane key="page" number={number} name={name} preview={preview} mark={highlight?.box ?? null} />;
+  // A page with nothing to draw is left out, and its readings take the room.
+  const pictured = hasPicture(preview);
+  const page = pictured
+    ? [<PagePane key="page" number={number} name={name} preview={preview} mark={highlight?.box ?? null} />]
+    : [];
 
   const panes = single
     ? [
-        page,
+        ...page,
         <ReadingPane
           key="only"
           label="Reading"
@@ -89,7 +93,7 @@ export function PageComparison({
         />,
       ]
     : [
-        page,
+        ...page,
         <ReadingPane
           key="left"
           label="Left reading"
@@ -118,7 +122,7 @@ export function PageComparison({
 
   // The page takes the larger share: a portrait page fills its pane's width long
   // before its height, so width is what makes it readable. Readings share the rest.
-  const sizes = single ? ["50%", "50%"] : ["42%", "29%", "29%"];
+  const sizes = pictured ? (single ? ["50%", "50%"] : ["42%", "29%", "29%"]) : single ? ["100%"] : ["50%", "50%"];
 
   if (!wide) {
     return <div className="flex flex-col gap-4 [&>[data-slot=card]]:h-[32rem]">{panes}</div>;

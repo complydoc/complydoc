@@ -58,10 +58,12 @@ describe("DocumentDetail", () => {
     expect(screen.getByRole("combobox", { name: "Right reading" })).toHaveTextContent("OCR");
   });
 
-  it("says how to get a page picture when the report has none", () => {
+  it("leaves the page out when there is nothing to draw, and shows only the readings", () => {
     open(sampleReport(), "master-services-agreement.pdf");
-    expect(screen.getByText("No picture of this page")).toBeInTheDocument();
-    expect(screen.getByText("--page-images --detail full")).toBeInTheDocument();
+    expect(screen.queryByText("No picture of this page")).not.toBeInTheDocument();
+    expect(screen.queryByRole("figure")).not.toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Left reading" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Right reading" })).toBeInTheDocument();
   });
 
   it("gives a page read only one way the page and that reading, in two halves", () => {
