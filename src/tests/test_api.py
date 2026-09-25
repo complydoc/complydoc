@@ -87,6 +87,7 @@ def test_the_public_surface_is_exactly_what_was_promised():
         "StripPathMetadata",
         "aiter_audit",
         "iter_audit",
+        "launch_ui",
         "compare_loaders",
         "IdentifierDifference",
         "LoaderComparison",

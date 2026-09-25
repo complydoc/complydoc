@@ -72,4 +72,21 @@ describe("App", () => {
     expect(document.documentElement).toHaveClass("dark");
     expect(screen.getByRole("button", { name: "Switch to the light theme" })).toBeInTheDocument();
   });
+
+  it("opens on the reports complydoc ui found, and explains an empty folder", async () => {
+    const script = document.createElement("script");
+    script.type = "application/json";
+    script.id = "complydoc-local";
+    script.textContent = JSON.stringify({ reports: "api/reports", sources: ["/work/.complydoc"] });
+    document.head.append(script);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(JSON.stringify({ reports: [] }))),
+    );
+    render(<App />);
+    expect(await screen.findByRole("heading", { name: "No reports yet" })).toBeInTheDocument();
+    expect(screen.getByText("/work/.complydoc")).toBeInTheDocument();
+    script.remove();
+    vi.unstubAllGlobals();
+  });
 });

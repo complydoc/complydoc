@@ -320,6 +320,8 @@ def emit(
     console.print(
         f"[bold]Data[/]    [link=file://{json_path}]{json_path}[/link]", no_wrap=True, crop=False
     )
+    viewer = "complydoc ui" if out.resolve() == DEFAULT_OUT.resolve() else f"complydoc ui {out}"
+    console.print(f"[bold]View[/]    {escape(viewer)}", no_wrap=True, crop=False)
     if save_text is not None:
         folder = save_text.expanduser().resolve()
         held = (

@@ -85,6 +85,7 @@ and neither runs as part of an audit. See
 | | |
 | --- | --- |
 | [Audit a folder](guides/audit-a-folder.md) | Running it, and reading the report |
+| [The report viewer](guides/viewer.md) | `complydoc ui`: every report in a folder, in the browser, served from this machine |
 | [Page routing](guides/routing.md) | Which pages need OCR or a vision model, and what the mix costs |
 | [Policy files](guides/policy.md) | Rules in YAML, checked in CI, with Markdown and SARIF output |
 | [GitHub Action](guides/github-action.md) | The policy check on every pull request, with a comment and code scanning |

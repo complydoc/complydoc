@@ -115,8 +115,15 @@ diagrams: ## Re-export the README architecture diagrams to SVG
 
 # ----------------------------------------------------------------- misc ----
 
+.PHONY: viewer-bundle
+viewer-bundle: ## Build the React viewer into the package, for `complydoc ui`
+	npm --prefix viewer ci
+	VITE_SAMPLES=false npm --prefix viewer run build
+	rm -rf src/complydoc/viewer/dist
+	cp -r viewer/dist src/complydoc/viewer/dist
+
 .PHONY: build
-build: ## Build the wheel and sdist
+build: viewer-bundle ## Build the wheel and sdist, with the viewer in them
 	$(UV) build
 
 .PHONY: sbom

@@ -46,3 +46,6 @@ reports/
 
 # The assembled Pages site: the landing page with the documentation under docs/.
 /_site/
+
+# The built viewer, from `make viewer-bundle`. Release builds make it; it is never committed.
+/src/complydoc/viewer/dist/

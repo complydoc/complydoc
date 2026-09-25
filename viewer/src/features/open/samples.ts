@@ -1,11 +1,17 @@
-/** The reports bundled with the viewer, loaded only when opened. */
+/**
+ * The reports bundled with the viewer, loaded only when opened.
+ *
+ * The build the Python package carries leaves them out (`VITE_SAMPLES=false`):
+ * `complydoc ui` opens the user's own reports, and the audit sample alone is
+ * several megabytes of page pictures.
+ */
 export interface Sample {
   id: string;
   label: string;
   load: () => Promise<string>;
 }
 
-export const SAMPLES: readonly Sample[] = [
+export const SAMPLES: readonly Sample[] = import.meta.env.VITE_SAMPLES === "false" ? [] : [
   {
     id: "audit",
     label: "Audit with page images and OCR",

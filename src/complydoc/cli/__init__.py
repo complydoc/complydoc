@@ -14,6 +14,7 @@ Each module registers its commands on `app` when imported:
 - `diff`: `diff`
 - `benchmark`: `benchmark`
 - `clean`: `clean`
+- `ui`: `ui` — the report viewer, served on this machine
 
 `common` holds the app, the consoles, the option types and the output helpers.
 The network guard is armed before any document is opened, on every path.
@@ -25,6 +26,7 @@ from __future__ import annotations
 # Imported for the commands they register, in the order `--help` lists them.
 from complydoc.cli import (
     audits,
+    ui,
     routing,
     loaders,
     check,
@@ -43,4 +45,16 @@ __all__ = ["app"]
 
 # Not decoration: the imports above are for their side effects, and naming them
 # here is what keeps them from being read as unused and removed.
-COMMAND_MODULES = (audits, routing, loaders, check, assist, diff, clean, chunks, info, benchmark)
+COMMAND_MODULES = (
+    audits,
+    ui,
+    routing,
+    loaders,
+    check,
+    assist,
+    diff,
+    clean,
+    chunks,
+    info,
+    benchmark,
+)

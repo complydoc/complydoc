@@ -144,6 +144,7 @@ from complydoc.report.pages import write_chunks_html, write_diff_html
 from complydoc.sensitive.base import Detector, DetectorContext, Finding
 from complydoc.sensitive.registry import register as register_detector
 from complydoc.verification.vision import VisionModel, VisionPage, VisionReading
+from complydoc.viewer import launch_ui
 
 if TYPE_CHECKING:
     from complydoc.config.schema import Config
@@ -225,6 +226,7 @@ __all__ = [
     "inspect_chunks",
     "inspect_documents",
     "iter_audit",
+    "launch_ui",
     "load_config",
     "load_report",
     "mask_text",
