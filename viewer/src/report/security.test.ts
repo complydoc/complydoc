@@ -29,7 +29,7 @@ describe("security", () => {
 
   it("counts findings by how strongly each is backed, strongest first", () => {
     const counts = evidenceCounts(sampleAudit());
-    expect(counts[0]?.label).toBe("checksum passed");
+    expect(counts[0]?.label).toBe("Certain");
     expect(counts.reduce((sum, row) => sum + row.count, 0)).toBe(sampleAudit().aggregate.sensitive_total);
   });
 });

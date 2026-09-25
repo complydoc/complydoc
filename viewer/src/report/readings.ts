@@ -17,6 +17,8 @@ export interface Reading {
   text: string;
   /** The reading the report's findings were built from. */
   kept: boolean;
+  /** Where the report keeps this reading's cost and token counts. */
+  key: string;
   /** What making this reading cost; absent in a report from before costs were kept. */
   cost?: ReadingCost;
 }
@@ -35,19 +37,19 @@ export function pageReadings(page: PageText, kept: string): Reading[] {
   const costs = page.costs ?? {};
   // A page only a vision model could read kept that model's reading.
   const keptId = page.source === "vision" && page.kept ? page.kept : kept;
-  const withCost = (reading: Reading, key: string): Reading => {
-    const cost = costs[key];
+  const withCost = (reading: Reading): Reading => {
+    const cost = costs[reading.key];
     return cost ? { ...reading, cost } : reading;
   };
   const readings: Reading[] = [
-    withCost({ id: keptId, label: scanned ? "OCR" : keptId, text: page.text, kept: true }, page.kept || keptId),
+    withCost({ id: keptId, label: scanned ? "OCR" : keptId, text: page.text, kept: true, key: page.kept || keptId }),
   ];
   for (const [name, text] of Object.entries(page.readings)) {
     if (name === keptId || (scanned && text === page.text)) continue;
-    readings.push(withCost({ id: name, label: name, text, kept: false }, name));
+    readings.push(withCost({ id: name, label: name, text, kept: false, key: name }));
   }
   if (page.ocr_text.trim() && !scanned) {
-    readings.push(withCost({ id: OCR_ID, label: "OCR", text: page.ocr_text, kept: false }, OCR_ID));
+    readings.push(withCost({ id: OCR_ID, label: "OCR", text: page.ocr_text, kept: false, key: OCR_ID }));
   }
   return readings;
 }

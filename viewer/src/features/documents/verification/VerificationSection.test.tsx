@@ -47,4 +47,17 @@ describe("the vision check on the Documents page", () => {
     expect(screen.getByRole("note")).toHaveTextContent("A line only the picture had");
     expect(screen.getAllByText("free · local").length).toBeGreaterThan(0);
   });
+
+  it("prices the page on the models chosen, the vision one from vision models only", async () => {
+    render(
+      <TooltipProvider>
+        <DocumentsPage report={sampleVerified()} open="0" />
+      </TooltipProvider>,
+    );
+    const bar = screen.getByRole("group", { name: "Price this page" });
+    expect(within(bar).getByRole("button", { name: "Text model" })).toBeInTheDocument();
+    expect(within(bar).getByRole("button", { name: "Vision model" })).toBeInTheDocument();
+    expect(within(bar).getByLabelText("This page as an image")).toHaveTextContent(/^\$\d/);
+    expect(screen.getAllByText(/per page on /).length).toBeGreaterThan(0);
+  });
 });

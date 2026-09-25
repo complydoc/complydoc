@@ -1,4 +1,5 @@
 import { Bar, BarChart, CartesianGrid, Cell, LabelList, XAxis, YAxis } from "recharts";
+import { ProviderLogo } from "@/components/ProviderLogo";
 import {
   ChartContainer,
   ChartLegend,
@@ -20,6 +21,14 @@ interface BarListProps<T> {
   colour?: (row: T) => string;
   /** Called with a bar's row when it is clicked, to open what it stands for. */
   onSelect?: (row: T) => void;
+  /** A provider to show the logo of beside each bar's label, in the bar's colour. */
+  logo?: (row: T) => string;
+}
+
+interface TickProps {
+  x?: number | string;
+  y?: number | string;
+  payload?: { value: string; index: number };
 }
 
 const LABEL_WIDTH = 176;
@@ -35,7 +44,25 @@ function shorten(text: string) {
  * shadcn's horizontal bar chart, one bar per row of `data`, each row the
  * same height. With several series the bars stack, and a legend names them.
  */
-export function BarList<T>({ series, data, category, format, colour, onSelect }: BarListProps<T>) {
+export function BarList<T>({ series, data, category, format, colour, onSelect, logo }: BarListProps<T>) {
+  // A label with the provider's logo in front, drawn as HTML inside the chart so the logo is the real mark.
+  const tick = ({ x = 0, y = 0, payload }: TickProps) => {
+    const row = payload ? data[payload.index] : undefined;
+    return (
+      <g transform={`translate(${Number(x)},${Number(y)})`}>
+        <foreignObject x={-LABEL_WIDTH} y={-10} width={LABEL_WIDTH - 6} height={20}>
+          <div className="flex h-5 items-center justify-end gap-1.5 text-xs text-muted-foreground">
+            <span className="truncate">{shorten(payload?.value ?? "")}</span>
+            {row && logo && (
+              <span className="inline-flex" style={{ color: colour?.(row) }}>
+                <ProviderLogo provider={logo(row)} className="size-3.5" />
+              </span>
+            )}
+          </div>
+        </foreignObject>
+      </g>
+    );
+  };
   const keys = Object.keys(series);
   const stacked = keys.length > 1;
   // Every bar gets the same row, so bars are one thickness in any chart; a legend adds a line.
@@ -50,7 +77,7 @@ export function BarList<T>({ series, data, category, format, colour, onSelect }:
           tickLine={false}
           axisLine={false}
           width={LABEL_WIDTH}
-          tickFormatter={shorten}
+          {...(logo ? { tick } : { tickFormatter: shorten })}
           interval={0}
         />
         <XAxis type="number" hide />

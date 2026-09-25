@@ -19,10 +19,20 @@ function open(report: Report, name: string, where: { page?: number; finding?: Fi
 }
 
 describe("DocumentDetail", () => {
-  it("names the document and how far its readers agree", () => {
+  it("names the document, with the models its pages are priced on and nothing else", () => {
     open(sampleAudit(), "master-services-agreement.pdf");
     expect(screen.getByRole("heading", { name: "master-services-agreement.pdf" })).toBeInTheDocument();
-    expect(screen.getByText(/pypdf 34%/)).toHaveTextContent("reordered");
+    const bar = screen.getByRole("group", { name: "Price this page" });
+    expect(within(bar).getByRole("button", { name: "Text model" })).toBeInTheDocument();
+    expect(within(bar).getByLabelText("This page as text")).toHaveTextContent(/^\$\d/);
+    expect(screen.queryByText(/pypdf \d+%/)).not.toBeInTheDocument();
+    expect(screen.queryByText("kept")).not.toBeInTheDocument();
+  });
+
+  it("enlarges a reading to read it in full", async () => {
+    open(sampleAudit(), "master-services-agreement.pdf");
+    await userEvent.click(screen.getByRole("button", { name: "Enlarge pdfplumber" }));
+    expect(await screen.findByRole("dialog", { name: "pdfplumber" })).toBeInTheDocument();
   });
 
   it("shows the page beside two readings, the kept one against the next reader", () => {
@@ -43,7 +53,7 @@ describe("DocumentDetail", () => {
   it("switches a pane to OCR", async () => {
     open(sampleAudit(), "master-services-agreement.pdf");
     await userEvent.click(screen.getByRole("combobox", { name: "Right reading" }));
-    await userEvent.click(await screen.findByRole("option", { name: "OCR" }));
+    await userEvent.click(await screen.findByRole("option", { name: /^OCR/ }));
     expect(screen.getByRole("combobox", { name: "Right reading" })).toHaveTextContent("OCR");
   });
 

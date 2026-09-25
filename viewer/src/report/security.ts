@@ -1,6 +1,6 @@
 /** What the documents carry that should not leave, arranged for the Security page. */
 import { EVIDENCE, SEVERITIES } from "./select";
-import type { Evidence, Report, Severity } from "./types";
+import type { Evidence, Report, SensitiveMatch, Severity } from "./types";
 
 export interface FindingRow {
   id: string;
@@ -14,6 +14,8 @@ export interface FindingRow {
   masked: string;
   severity: Severity;
   evidence: Evidence;
+  /** The identifier as the report has it, for how it was validated. */
+  source: SensitiveMatch;
 }
 
 /** Every identifier found, most severe and best evidenced first. */
@@ -32,6 +34,7 @@ export function findingRows(report: Report): FindingRow[] {
         masked: match.masked,
         severity: match.severity,
         evidence: match.evidence,
+        source: match,
       })),
     )
     .sort(

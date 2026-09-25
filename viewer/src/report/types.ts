@@ -95,6 +95,12 @@ export interface SensitiveMatch {
   masked: string;
   page: number | null;
   evidence: Evidence;
+  /** Checks the value passed, such as "luhn" or "iban_mod97". */
+  validators_passed?: string[];
+  /** A label found beside the value, such as "IBAN". */
+  context_term?: string | null;
+  /** The name model's score, where a model found it, 0 to 1. */
+  confidence?: number | null;
 }
 
 /** A passage that reads as an instruction to a model and is hidden from a person. */
@@ -143,6 +149,10 @@ export interface PageText {
   costs?: Record<string, ReadingCost>;
   /** Schema 16: what the cheapest priced vision model would cost for this page. */
   vision_estimate?: ReadingCost | null;
+  /** Schema 16: text tokens in each reading, by reader, then by `ModelCost.tokenizer`. */
+  tokens?: Record<string, Record<string, number>>;
+  /** Schema 16: image tokens for the page, by `ModelCost.vision_formula`. */
+  image_tokens?: Record<string, number>;
 }
 
 export type VerificationStatus = "agrees" | "disagrees" | "filled" | "failed" | "not_rendered";
@@ -284,6 +294,11 @@ export interface ModelCost {
   /** "verified" by hand, or imported from a third-party table. */
   price_source: string;
   architectures: Architecture[];
+  /** Schema 16: what pricing one page takes. */
+  input_per_mtok_usd?: number | null;
+  supports_vision?: boolean;
+  vision_formula?: string | null;
+  tokenizer?: string;
 }
 
 export interface Cost {

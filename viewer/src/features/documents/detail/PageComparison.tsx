@@ -2,9 +2,11 @@ import { Fragment, useState } from "react";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { plural } from "@/report/format";
+import { formatPageUsd } from "@/report/format";
+import { imagePrice, textPrice, type PricedModel } from "@/report/pricing";
 import { defaultPair, diffReadings, isVision, type Reading } from "@/report/readings";
 import type { Highlight } from "@/report/highlight";
-import type { PagePreview, ReadingCost } from "@/report/types";
+import type { PagePreview, PageText } from "@/report/types";
 import { PagePane } from "./PagePane";
 import { ReadingPane } from "./ReadingPane";
 
@@ -17,8 +19,26 @@ interface PageComparisonProps {
   highlight: Highlight | null;
   /** Leave room below for something else on screen, such as the page picker. */
   reserve?: boolean;
-  /** What the cheapest priced vision model would cost for this page, estimated. */
-  visionEstimate?: ReadingCost | null;
+  /** The page and the models to price each reading of it on. */
+  pricing?: { page: PageText; text: PricedModel | null; vision: PricedModel | null } | null;
+}
+
+/**
+ * What sending one reading on to a model costs for this page. A vision reading
+ * is priced as the page image on the vision model; every other as its own text
+ * on the text model, since each reader leaves a different number of tokens.
+ */
+function priceOf(reading: Reading, pricing: PageComparisonProps["pricing"]) {
+  if (!pricing) return null;
+  const { page, text, vision } = pricing;
+  const [model, price] = isVision(reading)
+    ? [vision, vision ? imagePrice(page, vision) : null]
+    : [text, text ? textPrice(page, reading.key, text) : null];
+  if (!model || !price) return null;
+  return {
+    label: `${formatPageUsd(price.usd)} per page ${isVision(reading) ? "as an image " : ""}on ${model.name}`,
+    title: `${price.tokens.toLocaleString("en-GB")} ${isVision(reading) ? "image" : "text"} tokens at $${model.inputPerMtok} per million input tokens`,
+  };
 }
 
 function pick(readings: Reading[], id: string): Reading {
@@ -38,7 +58,7 @@ export function PageComparison({
   preview,
   highlight,
   reserve = false,
-  visionEstimate = null,
+  pricing = null,
 }: PageComparisonProps) {
   const wide = useMediaQuery("(min-width: 64rem)");
   const [[leftId, rightId], setPair] = useState(() => defaultPair(readings));
@@ -49,9 +69,6 @@ export function PageComparison({
     left.id === right.id ? "same reading" : diff.differences === 0 ? "identical" : plural(diff.differences, "difference");
 
   const single = readings.length < 2;
-  // What a vision read would have cost, beside the kept reading, only where none was made:
-  // once one was, its own price is in the picker.
-  const estimate = readings.some(isVision) ? null : visionEstimate;
   const needle = highlight?.needle ?? null;
   const page = <PagePane key="page" number={number} name={name} preview={preview} mark={highlight?.box ?? null} />;
 
@@ -66,9 +83,9 @@ export function PageComparison({
           onSelect={() => {}}
           parts={[{ text: left.text, changed: false }]}
           side="left"
-          note={left.kept ? "kept" : "only reading"}
+          note={null}
           needle={needle}
-          estimate={left.kept ? estimate : null}
+          price={priceOf(left, pricing)}
         />,
       ]
     : [
@@ -81,9 +98,9 @@ export function PageComparison({
           onSelect={(id) => setPair([id, rightId])}
           parts={diff.left}
           side="left"
-          note={left.kept ? "kept" : shared}
+          note={left.kept ? null : shared}
           needle={needle}
-          estimate={left.kept ? estimate : null}
+          price={priceOf(left, pricing)}
         />,
         <ReadingPane
           key="right"
@@ -95,6 +112,7 @@ export function PageComparison({
           side="right"
           note={shared}
           needle={needle}
+          price={priceOf(right, pricing)}
         />,
       ];
 

@@ -1,7 +1,6 @@
 import { createColumnHelper } from "@tanstack/react-table";
 import { DataTable, type Columns } from "@/components/DataTable";
 import { ToneBadge } from "@/components/ToneBadge";
-import { Button } from "@/components/ui/button";
 import { fileName, formatCount, formatPercent, formatPageUsd, formatScore } from "@/report/format";
 import { agreementTone, bandOf, bandTone, severityTone, visionTone, type DocumentRow } from "@/report/select";
 
@@ -13,11 +12,13 @@ const columns: Columns<DocumentRow> = [
     id: "document",
     header: "Document",
     cell: ({ row, getValue }) => (
-      <Button variant="link" className="h-auto p-0" asChild>
-        <a href={`#documents/${row.original.index}`} title={row.original.path}>
-          {getValue()}
-        </a>
-      </Button>
+      <a
+        href={`#documents/${row.original.index}`}
+        title={row.original.path}
+        className="font-medium underline-offset-4 hover:underline"
+      >
+        {getValue()}
+      </a>
     ),
   }),
   column.accessor("format", { header: "Format", cell: (c) => c.getValue().toUpperCase() }),
@@ -50,6 +51,9 @@ const columns: Columns<DocumentRow> = [
   }),
 ];
 
+/** A screen of documents; a folder of hundreds is paged rather than scrolled. */
+const DOCUMENTS_PER_PAGE = 20;
+
 /** Pages a vision model read again, how many it disagreed about, and what the reads cost. */
 const visionColumn = column.accessor((row) => row.vision?.disagree, {
   id: "vision",
@@ -73,5 +77,15 @@ const visionColumn = column.accessor((row) => row.vision?.disagree, {
 export function DocumentTable({ rows }: { rows: DocumentRow[] }) {
   // Only a run that verified pages has anything to put in the column.
   const shown = rows.some((row) => row.vision) ? [...columns, visionColumn] : columns;
-  return <DataTable caption="Documents" columns={shown} rows={rows} rowKey={(row) => String(row.index)} sortable />;
+  return (
+    <DataTable
+      caption="Documents"
+      columns={shown}
+      rows={rows}
+      rowKey={(row) => String(row.index)}
+      sortable
+      search="Search documents"
+      pageSize={DOCUMENTS_PER_PAGE}
+    />
+  );
 }

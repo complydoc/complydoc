@@ -4,7 +4,7 @@ import { ReportError, parseReport } from "./parse";
 describe("parseReport", () => {
   it("reads a report complydoc wrote", () => {
     const report = parseReport(sampleText);
-    expect(report.run.schema_version).toBe(15);
+    expect(report.run.schema_version).toBe(16);
     expect(report.documents).toHaveLength(6);
     expect(report.loader_comparison?.recommended).toBe("pypdf");
   });

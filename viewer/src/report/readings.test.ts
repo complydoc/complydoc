@@ -34,7 +34,7 @@ describe("pageReadings", () => {
       readings: { "rapidocr-onnxruntime": page.text },
     };
     expect(pageReadings(scan, "pdfplumber")).toEqual([
-      { id: "pdfplumber", label: "OCR", text: page.text, kept: true },
+      { id: "pdfplumber", label: "OCR", text: page.text, kept: true, key: "pdfplumber" },
     ]);
   });
 

@@ -28,12 +28,36 @@ export const BANDS: readonly { key: Band; id: string; label: string; tone: Tone 
 
 export const SEVERITIES: readonly Severity[] = ["high", "medium", "low"];
 
-/** How strongly a finding is backed, strongest first as complydoc orders it, in words a reader knows. */
-export const EVIDENCE: readonly { key: Evidence; label: string }[] = [
-  { key: "confirmed", label: "checksum passed" },
-  { key: "corroborated", label: "label nearby" },
-  { key: "pattern", label: "shape only" },
-  { key: "model", label: "name model" },
+/**
+ * How sure complydoc is of a finding, strongest first, as a grade a reader
+ * knows. How each grade is earned is in `how`, and a finding's own checks in
+ * `validation`.
+ */
+export const EVIDENCE: readonly { key: Evidence; label: string; tone: Tone; how: string }[] = [
+  {
+    key: "confirmed",
+    label: "Certain",
+    tone: "good",
+    how: "The value passed a check a random string almost never passes, such as a checksum or an issuer's number range.",
+  },
+  {
+    key: "corroborated",
+    label: "Very likely",
+    tone: "good",
+    how: "The value has the right shape, and something beside it says what it is, such as a label naming it.",
+  },
+  {
+    key: "pattern",
+    label: "Likely",
+    tone: "neutral",
+    how: "The value has the right shape. Nothing else about it was checked, so a number that looks alike would match too.",
+  },
+  {
+    key: "model",
+    label: "Possible",
+    tone: "warn",
+    how: "A language model judged this to be a name or an organisation. It is a statistical guess, and can be wrong either way.",
+  },
 ];
 
 export function evidenceLabel(evidence: Evidence): string {

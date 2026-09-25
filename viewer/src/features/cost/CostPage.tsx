@@ -120,6 +120,7 @@ export function CostPage({ report }: { report: Report }) {
               category="name"
               format={formatUsd}
               colour={(model) => providerColour(model.provider)}
+              logo={(model) => model.provider}
               onSelect={(model) => setProvider(provider === ALL ? model.provider : ALL)}
             />
           </CardContent>

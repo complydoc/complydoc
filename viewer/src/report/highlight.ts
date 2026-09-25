@@ -4,7 +4,7 @@
  */
 import type { DiffPart } from "./readings";
 import type { FindingRef } from "./route";
-import type { DocumentEntry, Evidence, Severity } from "./types";
+import type { DocumentEntry, Evidence, SensitiveMatch, Severity } from "./types";
 
 export interface Highlight {
   kind: FindingRef["kind"];
@@ -17,6 +17,8 @@ export interface Highlight {
   label: string;
   severity: Severity;
   evidence: Evidence | null;
+  /** The identifier itself, for how it was validated. */
+  match: SensitiveMatch | null;
 }
 
 /** Long enough to be found only where it is; short enough to survive a line break the reader added. */
@@ -34,6 +36,7 @@ export function findingHighlight(document: DocumentEntry, ref: FindingRef): High
       label: match.label,
       severity: match.severity,
       evidence: match.evidence,
+      match,
     };
   }
   const finding = document.content_findings[ref.index];
@@ -46,6 +49,7 @@ export function findingHighlight(document: DocumentEntry, ref: FindingRef): High
     label: "Hidden instruction",
     severity: finding.severity,
     evidence: null,
+    match: null,
   };
 }
 

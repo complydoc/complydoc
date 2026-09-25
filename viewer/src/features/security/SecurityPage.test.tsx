@@ -32,7 +32,7 @@ describe("SecurityPage", () => {
     const rows = within(table).getAllByRole("row").slice(1);
     expect(rows).toHaveLength(report.aggregate.sensitive_total);
     expect(rows[0]).toHaveTextContent("high");
-    expect(rows[0]).toHaveTextContent("checksum passed");
+    expect(rows[0]).toHaveTextContent("Certain");
     const [finding, document] = within(rows[0] as HTMLElement).getAllByRole("link");
     // The identifier opens its page with it marked; the document opens the document.
     expect(finding).toHaveAttribute("href", expect.stringMatching(/^#documents\/\d+\/\d+\/i\d+$/));

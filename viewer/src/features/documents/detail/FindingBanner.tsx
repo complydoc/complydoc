@@ -1,10 +1,10 @@
 import { CrosshairIcon, XIcon } from "lucide-react";
 import { ToneBadge } from "@/components/ToneBadge";
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
+import { EvidenceBadge } from "@/components/EvidenceBadge";
 import { Button } from "@/components/ui/button";
 import type { Highlight } from "@/report/highlight";
-import { evidenceLabel, severityTone } from "@/report/select";
+import { severityTone } from "@/report/select";
 
 interface FindingBannerProps {
   highlight: Highlight;
@@ -21,7 +21,7 @@ export function FindingBanner({ highlight, clearHref }: FindingBannerProps) {
         {highlight.label}
         {highlight.page !== null && <span className="font-normal text-muted-foreground">page {highlight.page}</span>}
         <ToneBadge tone={severityTone(highlight.severity)}>{highlight.severity}</ToneBadge>
-        {highlight.evidence && <Badge variant="outline">{evidenceLabel(highlight.evidence)}</Badge>}
+        {highlight.evidence && <EvidenceBadge evidence={highlight.evidence} match={highlight.match} />}
       </AlertTitle>
       <AlertDescription>
         <code className="font-mono">{highlight.kind === "identifier" ? highlight.needle : `${highlight.needle}…`}</code>

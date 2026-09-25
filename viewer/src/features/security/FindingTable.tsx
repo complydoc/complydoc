@@ -1,12 +1,12 @@
 import { createColumnHelper } from "@tanstack/react-table";
 import { DataTable, type Columns } from "@/components/DataTable";
 import { ToneBadge } from "@/components/ToneBadge";
-import { Badge } from "@/components/ui/badge";
+import { EvidenceBadge } from "@/components/EvidenceBadge";
 import { Button } from "@/components/ui/button";
 import { fileName } from "@/report/format";
 import { documentHref } from "@/report/route";
 import type { FindingRow } from "@/report/security";
-import { EVIDENCE, SEVERITIES, evidenceLabel, severityTone } from "@/report/select";
+import { EVIDENCE, SEVERITIES, severityTone } from "@/report/select";
 
 const column = createColumnHelper<FindingRow>();
 
@@ -39,10 +39,10 @@ const columns: Columns<FindingRow> = [
     cell: (c) => <ToneBadge tone={severityTone(c.getValue())}>{c.getValue()}</ToneBadge>,
   }),
   column.accessor("evidence", {
-    header: "Evidence",
+    header: "Confidence",
     sortingFn: (a, b) =>
       EVIDENCE.findIndex((e) => e.key === a.original.evidence) - EVIDENCE.findIndex((e) => e.key === b.original.evidence),
-    cell: (c) => <Badge variant="outline">{evidenceLabel(c.getValue())}</Badge>,
+    cell: ({ row, getValue }) => <EvidenceBadge evidence={getValue()} match={row.original.source} />,
   }),
 ];
 

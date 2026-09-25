@@ -1,23 +1,15 @@
-import { useState } from "react";
-import { ToneBadge } from "@/components/ToneBadge";
-import { Badge } from "@/components/ui/badge";
-import { fileName, formatPercent, formatPageUsd, formatScore, plural } from "@/report/format";
+import { useMemo, useState } from "react";
+import { useModelChoice } from "@/hooks/useModelChoice";
+import { pricedModels } from "@/report/pricing";
+import { fileName } from "@/report/format";
 import { findingHighlight } from "@/report/highlight";
 import { pageReadings } from "@/report/readings";
 import { documentHref, type FindingRef } from "@/report/route";
-import {
-  agreementTone,
-  bandOf,
-  bandTone,
-  documentScore,
-  documentVision,
-  visionTone,
-  worthCallingReordered,
-} from "@/report/select";
 import type { DocumentEntry, Report } from "@/report/types";
 import { FindingBanner } from "./FindingBanner";
 import { PageComparison } from "./PageComparison";
 import { PagePicker } from "./PagePicker";
+import { PricingBar } from "./PricingBar";
 import { VisionNote } from "./VisionNote";
 
 interface DocumentDetailProps {
@@ -40,32 +32,19 @@ export function DocumentDetail({ report, document, index, page: startPage = null
   );
   const page = document.extracted_text[pageIndex];
   const pages = document.extracted_text.length;
-  const score = documentScore(report, document);
-  const others = document.extractions.slice(1);
   const readings = page ? pageReadings(page, report.run.extractor) : [];
   const shown = highlight && page && (highlight.page === null || highlight.page === page.number) ? highlight : null;
-  const vision = documentVision(document);
+  const models = useMemo(() => pricedModels(report), [report]);
+  const choice = useModelChoice(models);
+  // A report written before pages carried token counts has nothing to price them by.
+  const priced = page && models.length > 0 && page.tokens !== undefined;
   const checked = page ? document.verification?.pages.find((p) => p.number === page.number) : undefined;
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center gap-2">
-        <h2 className="mr-2 font-heading text-lg font-semibold tracking-tight">{fileName(document.relative_path)}</h2>
-        <Badge variant="outline">{document.format.toUpperCase()}</Badge>
-        <Badge variant="outline">{plural(document.page_count, "page")}</Badge>
-        <ToneBadge tone={bandTone(bandOf(score))}>readiness {formatScore(score)}</ToneBadge>
-        {others.map((reading) => (
-          <ToneBadge key={reading.extractor} tone={agreementTone(reading.similarity)}>
-            {reading.extractor} {formatPercent(reading.similarity)}
-            {worthCallingReordered(reading) && " · reordered"}
-          </ToneBadge>
-        ))}
-        {vision && (
-          <ToneBadge tone={visionTone(vision)}>
-            vision {vision.disagree > 0 ? `${vision.disagree} of ${vision.checked} disagree` : `${vision.checked} checked`}
-            {vision.usd !== null && ` · ${formatPageUsd(vision.usd)}`}
-          </ToneBadge>
-        )}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="font-heading text-lg font-semibold tracking-tight">{fileName(document.relative_path)}</h2>
+        {priced && <PricingBar page={page} reader={readings[0]?.key ?? ""} models={models} choice={choice} />}
       </div>
 
       {shown && <FindingBanner highlight={shown} clearHref={documentHref(index, page?.number)} />}
@@ -82,7 +61,7 @@ export function DocumentDetail({ report, document, index, page: startPage = null
           highlight={shown}
           // Room below for the page picker, when there is more than one page.
           reserve={pages > 1}
-          visionEstimate={page.vision_estimate ?? null}
+          pricing={priced ? { page, text: choice.text, vision: choice.vision } : null}
         />
       ) : (
         <p className="text-muted-foreground">
