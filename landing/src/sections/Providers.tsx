@@ -49,7 +49,7 @@ export function Providers() {
   return (
     <section aria-label="Works with" className="border-t bg-muted/30">
       <div className="mx-auto flex max-w-6xl flex-col gap-8 px-6 py-12">
-        <Row label="Loaders" providers={LOADERS} more="pypdf, pdfplumber and more" />
+        <Row label="Loaders" providers={LOADERS} more="and more" />
         <Row label="Model providers" providers={MODELS} more="and more" />
       </div>
     </section>

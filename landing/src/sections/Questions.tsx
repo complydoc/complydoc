@@ -21,7 +21,7 @@ const QUESTIONS: Question[] = [
     value: "vision",
     question: "Should I use vision for this document?",
     answer:
-      "Only for 4 of its 33 pages. The page router checks each page and picks the cheapest route that still extracts it. Page 3 of the annual report has a table with stacked headers, which plain text loses. The invoices were scanned at 150 dpi, below the 200 dpi OCR needs.",
+      "Only for the pages that need it. The page router sends a page to a vision model when its text layer would lose content, such as a table with stacked headers or a scan too coarse for OCR.",
     body: <VisionAnswer />,
     more: { label: "Page routing", href: links.routing },
   },
@@ -29,7 +29,7 @@ const QUESTIONS: Question[] = [
     value: "section",
     question: "Why can't I see section 7 of the document in my RAG results?",
     answer:
-      "Your loader never extracted it as one passage. Page 4 of the contract has two columns, and pdfplumber reads each line across both. The section 7 heading ends up after a section 6 sentence, and clause 7.1 is interleaved with 6.1 and 6.2.",
+      "Your loader may have split it. On two-column pages, some loaders read each line across both columns, so a section ends up mixed into the one beside it.",
     body: <SectionAnswer />,
     more: { label: "Comparing loaders", href: links.compareLoaders },
   },
@@ -37,7 +37,7 @@ const QUESTIONS: Question[] = [
     value: "cost",
     question: "How much would it cost to process this whole folder using Sonnet 5?",
     answer:
-      "$0.036 from the text layer, $0.106 as page images, or $0.048 routed by page. At 20,000 documents a month, that is $1,725 or $4,224 a year. The same token counts price every other model in the table.",
+      "complydoc counts the tokens in the folder and prices them for every model, from the text layer and as page images.",
     body: <CostAnswer />,
     more: { label: "Audit a folder", href: links.docs },
   },
@@ -45,7 +45,7 @@ const QUESTIONS: Question[] = [
     value: "mask",
     question: "Do we have values in the documents that should be masked before ingestion?",
     answer:
-      "Yes. 42 identifiers in 4 of the 6 documents, 11 of them validated by checksum, plus one hidden instruction. complydoc can mask them inside your pipeline or write masked copies of the files.",
+      "complydoc finds personal and financial identifiers and hidden instructions, then masks them in your pipeline or in copies of the files.",
     body: <MaskAnswer />,
     more: { label: "Identifiers it finds", href: links.identifiers },
   },
@@ -58,7 +58,6 @@ export function Questions() {
       id="questions"
       eyebrow="Questions"
       title="Questions it answers before ingestion"
-      lead="Each answer comes from complydoc's report on the sample folder."
     >
       <Tabs ref={ref} defaultValue="vision" orientation="vertical" className="flex-col gap-6 lg:flex-row">
         <TabsList variant="line" className="h-fit w-full shrink-0 items-stretch gap-2 lg:w-96">
