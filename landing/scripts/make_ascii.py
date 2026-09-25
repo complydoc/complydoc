@@ -2,14 +2,12 @@
 
 The mark is rasterised from the same geometry as brand/logo/mark-flat.svg (two
 leaves and a dot, brand/logo/README.md), and each cell's coverage picks a
-character from a ramp. The wordmark is figlet's "standard" font.
+character from a ramp.
 
-    uv run --with pyfiglet python landing/scripts/make_ascii.py > landing/src/ascii.ts
+    python3 landing/scripts/make_ascii.py > landing/src/ascii.ts
 """
 
 import math
-
-import pyfiglet
 
 RAMP = " .:-=+*#%@"
 # A monospace cell is about twice as tall as it is wide at the page's line height.
@@ -62,9 +60,6 @@ def constant(name: str, text: str) -> str:
 
 
 if __name__ == "__main__":
-    figlet = pyfiglet.figlet_format("complydoc", font="standard")
-    wordmark = "\n".join(line.rstrip() for line in figlet.splitlines() if line.strip())
     print("// Written by scripts/make_ascii.py. Run it again rather than editing this file.\n")
     print(constant("MARK", mark(58)))
-    print(constant("MARK_SMALL", mark(26)))
-    print(constant("WORDMARK", wordmark), end="")
+    print(constant("MARK_SMALL", mark(26)), end="")

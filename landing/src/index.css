@@ -202,3 +202,19 @@
   font-variant-ligatures: none;
   user-select: none;
 }
+
+/* Shiki writes both themes as variables; the page's theme picks one. */
+@layer components {
+  .code {
+    @apply font-mono text-[13px] leading-6;
+  }
+  .code pre {
+    background: transparent !important;
+  }
+  .code span {
+    color: var(--shiki-light);
+  }
+  .dark .code span {
+    color: var(--shiki-dark);
+  }
+}

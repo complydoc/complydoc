@@ -1,14 +1,14 @@
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Checks } from "@/sections/Checks";
-import { Finding } from "@/sections/Finding";
 import { Footer } from "@/sections/Footer";
-import { Gate } from "@/sections/Gate";
 import { GetStarted } from "@/sections/GetStarted";
 import { Hero } from "@/sections/Hero";
-import { Loaders } from "@/sections/Loaders";
+import { Integrations } from "@/sections/Integrations";
+import { Models } from "@/sections/Models";
 import { Nav } from "@/sections/Nav";
-import { Offline } from "@/sections/Offline";
-import { Routing } from "@/sections/Routing";
+import { PageRouter } from "@/sections/PageRouter";
+import { Problem } from "@/sections/Problem";
+import { Providers } from "@/sections/Providers";
+import { Questions } from "@/sections/Questions";
 
 export function App() {
   return (
@@ -16,12 +16,12 @@ export function App() {
       <Nav />
       <main>
         <Hero />
-        <Checks />
-        <Finding />
-        <Loaders />
-        <Routing />
-        <Gate />
-        <Offline />
+        <Providers />
+        <Problem />
+        <Questions />
+        <PageRouter />
+        <Integrations />
+        <Models />
         <GetStarted />
       </main>
       <Footer />
