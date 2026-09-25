@@ -7,18 +7,21 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import type { Brand } from "@/lib/logos";
 import { links } from "@/links";
 
-/** The prices complydoc checks by hand (src/complydoc/config/pricing.yaml), with the date each was last checked. */
-const VERIFIED: { model: string; brand: Brand; verified: string }[] = [
-  { model: "Claude Opus 5", brand: "anthropic", verified: "2026-06-24" },
-  { model: "Claude Sonnet 5", brand: "anthropic", verified: "2026-06-24" },
-  { model: "Claude Haiku 4.5", brand: "anthropic", verified: "2026-06-24" },
-  { model: "GPT-5.2", brand: "openai", verified: "2026-09-09" },
-  { model: "GPT-5 Mini", brand: "openai", verified: "2026-09-09" },
-  { model: "Gemini 3.1 Pro Preview", brand: "gemini", verified: "2026-09-09" },
-  { model: "Gemini 3.7 Flash", brand: "gemini", verified: "2026-09-09" },
-  { model: "Kimi K3", brand: "kimi", verified: "2026-09-09" },
-  { model: "GLM-5.3-Flash", brand: "zai", verified: "2026-09-09" },
-  { model: "DeepSeek V4 Flash Vision Exp", brand: "deepseek", verified: "2026-09-09" },
+/**
+ * The newest model from each provider in complydoc's price table
+ * (src/complydoc/config/model_prices.json, imported from models.dev on
+ * 2026-09-25), with its release date. `checked` marks the ones also verified
+ * by hand against the provider's pricing page, in pricing.yaml.
+ */
+const LATEST: { model: string; brand: Brand; released: string; checked?: boolean }[] = [
+  { model: "Claude Opus 5.5", brand: "anthropic", released: "2026-09-22", checked: true },
+  { model: "GPT-6 Sol", brand: "openai", released: "2026-09-22" },
+  { model: "Grok 4.7", brand: "xai", released: "2026-09-21" },
+  { model: "GLM-5.3-FlashX", brand: "zai", released: "2026-09-18" },
+  { model: "DeepSeek V4.1 Flash", brand: "deepseek", released: "2026-09-10" },
+  { model: "Gemini 3.8 Flash", brand: "gemini", released: "2026-09-02" },
+  { model: "Kimi K3", brand: "kimi", released: "2026-07-16", checked: true },
+  { model: "Mistral Medium 3.5", brand: "mistral", released: "2026-04-29" },
 ];
 
 /** From docs/explanation/accuracy.md: ten labelled passages, seven addressed to a model and three decoys. */
@@ -35,15 +38,15 @@ export function Models() {
       id="models"
       eyebrow="Models"
       title="Tested against current models"
-      lead="Cost estimates, routing and the vision check depend on current prices. complydoc's price table is checked against each provider and dated, and a report flags any price more than 90 days old."
+      lead="Cost estimates, routing and the vision check depend on current prices. Each price in complydoc's table is dated, and a report flags any price more than 90 days old."
     >
       <div className="grid gap-6 *:min-w-0 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Prices checked by hand</CardTitle>
+            <CardTitle>The newest model from each provider</CardTitle>
             <CardDescription>
-              Checked against each provider&apos;s pricing page. More than a hundred other models come from
-              litellm&apos;s price table.
+              Prices come from the models.dev table, imported on 2026-09-25. Some are also checked by hand against the
+              provider&apos;s pricing page.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-5">
@@ -51,17 +54,25 @@ export function Models() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Model</TableHead>
-                  <TableHead className="text-right">Last verified</TableHead>
+                  <TableHead>Price</TableHead>
+                  <TableHead className="text-right">Released</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {VERIFIED.map((row) => (
+                {LATEST.map((row) => (
                   <TableRow key={row.model}>
                     <TableCell className="flex items-center gap-2">
                       <BrandLogo brand={row.brand} />
                       {row.model}
                     </TableCell>
-                    <TableCell className="text-right font-mono text-xs text-muted-foreground">{row.verified}</TableCell>
+                    <TableCell>
+                      {row.checked ? (
+                        <Badge variant="success">checked by hand</Badge>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">models.dev</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-xs text-muted-foreground">{row.released}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

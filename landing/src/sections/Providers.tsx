@@ -30,9 +30,9 @@ const MODELS: Provider[] = [
 
 function Row({ label, providers, more }: { label: string; providers: Provider[]; more: string }) {
   return (
-    <div className="grid items-center gap-4 md:grid-cols-[9rem_1fr]">
-      <p className="text-sm text-muted-foreground">{label}</p>
-      <ul className="flex flex-wrap items-center gap-x-7 gap-y-4 text-sm font-medium">
+    <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:gap-0">
+      <p className="shrink-0 text-sm text-muted-foreground xl:w-36">{label}</p>
+      <ul className="flex flex-wrap items-center gap-x-6 gap-y-4 text-sm font-medium lg:flex-nowrap lg:whitespace-nowrap">
         {providers.map((provider) => (
           <li key={provider.name} className="flex items-center gap-2">
             <BrandLogo brand={provider.brand} className="size-5" />

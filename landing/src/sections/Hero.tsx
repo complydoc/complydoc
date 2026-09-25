@@ -12,7 +12,7 @@ const INSTALL = "uv tool install complydoc";
 export function Hero() {
   return (
     <section id="top" aria-labelledby="hero-title" className="overflow-hidden">
-      <div className="mx-auto max-w-6xl px-6 pt-16 md:pt-24">
+      <div className="mx-auto max-w-6xl px-6 pt-16 pb-20 md:pt-24 md:pb-28">
         <div className="grid items-center gap-12 *:min-w-0 lg:grid-cols-[1fr_auto]">
           <div className="flex max-w-2xl flex-col gap-6">
             <AsciiMark art={MARK_SMALL} className="text-[9px] lg:hidden" />

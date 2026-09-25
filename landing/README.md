@@ -50,7 +50,8 @@ file with a new one of the same name to update the tour.
 `src/assets/logos` holds the marks of the loaders and model providers, from
 [@lobehub/icons](https://github.com/lobehub/lobe-icons) (MIT) and Docling's own
 repository (MIT). Each belongs to its company and is shown only to say that
-complydoc works with it.
+complydoc works with it. The "K" in Kimi's mark is drawn in `currentColor`
+rather than white, so it shows on the light theme too.
 
 ## The ASCII mark
 
