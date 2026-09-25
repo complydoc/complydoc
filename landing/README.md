@@ -19,21 +19,20 @@ npm run build    # static files in dist/
 | --- | --- |
 | Hero and tour | What complydoc is, and the viewer: Diff, Pages, Cost & time, Security |
 | Providers | The loaders it reads the output of, and the model providers it prices |
-| The problem | Teams commit to a loader blind; four measured costs of that |
-| What it answers | Four questions, each answered with what complydoc reports |
+| The problem | Loaders get chosen without checking what they extract, on four counts |
+| Questions | Four questions, each with a short answer and one example |
 | The page router | Every sample page, the route it needs and why, and what that saves |
 | Integrations | LangChain, LlamaIndex, Docling, Unstructured, LlamaParse, Azure, pytest, CI |
 | Models | Prices checked against each provider, and Jev from TypeSafe AI for hidden instructions |
 
 ## Where the content comes from
 
-Nothing on the page is invented. The figures and output are from complydoc run
+Nothing on the page is invented. The examples and output are from complydoc run
 on the six sample documents in [`viewer/sample/documents`](../viewer/sample/documents):
 
 | On the page | From |
 | --- | --- |
-| The problem's four figures | `complydoc audit`, `complydoc cost -m claude-sonnet-5 --monthly-volume 20000`, and `cd.compare_loaders` with LangChain's `PyPDFLoader` and `PDFPlumberLoader` |
-| The section 7 answer | pdfplumber's reading of page 4 of `master-services-agreement.pdf`, as the audit fixture holds it |
+| The section 7 example | pdfplumber's reading of page 4 of `master-services-agreement.pdf`, as the audit fixture holds it |
 | The page router and `src/data/routing.ts` | `complydoc routing ./documents`, the `complydoc-routing.json` it writes |
 | The Jev table | [Detection accuracy](../docs/explanation/accuracy.md) |
 | The verified models | `src/complydoc/config/pricing.yaml` |
@@ -70,8 +69,8 @@ for reduced motion see it still.
 Everything is shadcn/ui, in `src/components/ui`, in the viewer's `radix-nova`
 style. Tabs, ScrollArea, AspectRatio and ButtonGroup were taken from shadcn's
 radix sources with the nova classes applied, as `npx shadcn add` does; run it
-to bring them up to date. The terminal is Magic UI's (`@magicui/terminal`, on
-`motion`), with its window dots moved onto the theme's state colours.
+to bring them up to date. Commands and their output are shown as static text,
+in the same frame as the code blocks.
 
 Code is highlighted with Shiki, loaded on demand with only the Python, Bash and
 YAML grammars. Its colours are CSS variables set from complydoc's tokens in

@@ -39,9 +39,6 @@ export function Hero() {
                   <ArrowRightIcon data-icon="inline-end" />
                 </a>
               </Button>
-              <Button size="lg" variant="ghost" asChild>
-                <a href="#questions">What it answers</a>
-              </Button>
             </div>
           </div>
           <AsciiMark art={MARK} className="hidden text-[10px] lg:block xl:text-[11px]" />

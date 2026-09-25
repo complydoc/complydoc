@@ -1,5 +1,5 @@
-import { AnimatedSpan, Terminal, TypingAnimation } from "@/components/ui/terminal";
-import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { SquareTerminalIcon } from "lucide-react";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
 /** A command typed at the prompt, or a line it printed. */
@@ -14,48 +14,34 @@ const TONE = {
 
 interface CommandTerminalProps {
   lines: TerminalLine[];
-  /** The label in the title bar. */
-  title?: string;
   className?: string;
 }
 
-/**
- * Magic UI's terminal with complydoc's commands: each command is typed, then
- * its output appears line by line, once, when it comes on screen. Readers who
- * ask for reduced motion get every line at once.
- */
-export function CommandTerminal({ lines, title = "~/documents", className }: CommandTerminalProps) {
-  const reduced = useMediaQuery("(prefers-reduced-motion: reduce)");
-  const terminalClass = cn("max-w-none font-mono", className);
-
-  const render = (line: TerminalLine, animate: boolean) => {
-    if ("command" in line) {
-      return animate ? (
-        <TypingAnimation duration={22} className="font-mono text-[13px]">{`$ ${line.command}`}</TypingAnimation>
-      ) : (
-        <span className="font-mono text-[13px]">{`$ ${line.command}`}</span>
-      );
-    }
-    const className = cn("font-mono text-[13px] whitespace-pre", line.tone && TONE[line.tone]);
-    const text = line.output || " ";
-    return animate ? <AnimatedSpan className={className}>{text}</AnimatedSpan> : <span className={className}>{text}</span>;
-  };
-
-  if (reduced) {
-    return (
-      <Terminal sequence={false} title={title} className={terminalClass}>
-        {lines.map((line, i) => (
-          <span key={i} className="grid">
-            {render(line, false)}
-          </span>
-        ))}
-      </Terminal>
-    );
-  }
-
+/** Commands and what they printed, in the same frame as the code blocks. */
+export function CommandTerminal({ lines, className }: CommandTerminalProps) {
   return (
-    <Terminal title={title} className={terminalClass}>
-      {lines.map((line) => render(line, true))}
-    </Terminal>
+    <figure className={cn("overflow-hidden rounded-xl border bg-card", className)}>
+      <figcaption className="flex h-10 items-center gap-2 border-b bg-muted/40 px-3 text-xs text-muted-foreground">
+        <SquareTerminalIcon className="size-4" />
+        <span className="font-mono">Terminal</span>
+      </figcaption>
+      <ScrollArea className="w-full">
+        <pre className="code p-4">
+          {lines.map((line, i) =>
+            "command" in line ? (
+              <span key={i} className="block">
+                <span className="text-muted-foreground select-none">$ </span>
+                {line.command}
+              </span>
+            ) : (
+              <span key={i} className={cn("block min-h-6", line.tone && TONE[line.tone])}>
+                {line.output}
+              </span>
+            ),
+          )}
+        </pre>
+        <ScrollBar orientation="horizontal" />
+      </ScrollArea>
+    </figure>
   );
 }
