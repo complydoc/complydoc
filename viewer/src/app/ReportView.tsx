@@ -44,10 +44,11 @@ export function ReportView({ report, name, dark, onToggleTheme, onClose }: Repor
           <header className="sticky top-0 z-10 flex h-12 shrink-0 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem className="hidden md:block">{name}</BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
+            {/* One line that gives way to the plan controls: it truncates rather than wraps under the bar. */}
+            <Breadcrumb className="min-w-0 flex-1">
+              <BreadcrumbList className="flex-nowrap overflow-hidden whitespace-nowrap [&>li]:min-w-0 [&>li]:truncate">
+                <BreadcrumbItem className="hidden xl:block">{name}</BreadcrumbItem>
+                <BreadcrumbSeparator className="hidden xl:block" />
                 <BreadcrumbItem>
                   {open ? (
                     <BreadcrumbLink href={`#${page}`}>{PAGE_INFO[page].label}</BreadcrumbLink>
@@ -65,7 +66,7 @@ export function ReportView({ report, name, dark, onToggleTheme, onClose }: Repor
                 )}
               </BreadcrumbList>
             </Breadcrumb>
-            <div className="ml-auto flex items-center gap-2">
+            <div className="ml-auto flex shrink-0 items-center gap-2">
               <PlanBar />
               <ModeToggle dark={dark} onToggle={onToggleTheme} />
             </div>
