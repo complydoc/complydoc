@@ -1,12 +1,14 @@
-import { ArrowRightIcon } from "lucide-react";
+import { ArrowRightIcon, TerminalIcon } from "lucide-react";
 import { MARK_SMALL } from "@/ascii";
 import { AsciiMark } from "@/components/AsciiMark";
-import { CopyButton } from "@/components/CopyButton";
+import { CodeBlock } from "@/components/CodeBlock";
 import { Button } from "@/components/ui/button";
-import { ButtonGroup, ButtonGroupText } from "@/components/ui/button-group";
 import { links } from "@/links";
 
-const INSTALL = "uv tool install complydoc";
+/** From nothing to the viewer on your own folder: install, audit, open. */
+const STEPS = `uv tool install complydoc
+complydoc audit ./documents
+complydoc ui`;
 
 export function GetStarted() {
   return (
@@ -20,13 +22,17 @@ export function GetStarted() {
           complydoc runs locally. Network access is blocked while documents are read, and each report records that. MIT
           licensed.
         </p>
-        <ButtonGroup>
-          <ButtonGroupText className="font-mono text-sm">
-            <span className="text-muted-foreground select-none">$</span>
-            {INSTALL}
-          </ButtonGroupText>
-          <CopyButton text={INSTALL} label="Copy the install command" variant="outline" size="icon" />
-        </ButtonGroup>
+        <CodeBlock
+          title="Install, audit, open the viewer"
+          icon={<TerminalIcon className="size-3.5" />}
+          lang="bash"
+          code={STEPS}
+          className="w-full text-left"
+        />
+        <p className="text-sm text-muted-foreground">
+          <code className="font-mono">complydoc ui</code> opens every report in the folder in your browser, served from
+          your machine, the way <code className="font-mono">mlflow ui</code> does for runs.
+        </p>
         <div className="flex flex-wrap justify-center gap-2">
           <Button size="lg" asChild>
             <a href={links.docs}>

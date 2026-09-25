@@ -2,7 +2,7 @@
 const DOCS = "https://complydoc.github.io/complydoc/docs";
 const REPO = "https://github.com/complydoc/complydoc";
 
-export const VERSION = "0.5.1";
+export const VERSION = "0.6.0";
 
 export const links = {
   docs: `${DOCS}/`,
@@ -12,6 +12,7 @@ export const links = {
   playground: "https://github.com/complydoc/playground",
   pypi: "https://pypi.org/project/complydoc/",
   viewer: `${REPO}/tree/main/viewer`,
+  viewerGuide: `${DOCS}/guides/viewer/`,
   cli: `${DOCS}/reference/cli/`,
   api: `${DOCS}/reference/api/`,
   reportSchema: `${DOCS}/reference/report/`,

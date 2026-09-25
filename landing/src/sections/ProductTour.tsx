@@ -5,6 +5,7 @@ import pages from "@/assets/screens/pages.webp";
 import security from "@/assets/screens/security.webp";
 import { Screenshot } from "@/components/Screenshot";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { links } from "@/links";
 
 const VIEWS = [
   {
@@ -59,6 +60,13 @@ export function ProductTour({ className }: { className?: string }) {
           <p className="text-center text-sm text-muted-foreground">{view.caption}</p>
         </TabsContent>
       ))}
+      <p className="text-center text-sm">
+        Every view opens on your own reports with{" "}
+        <a href={links.viewerGuide} className="font-mono underline underline-offset-4">
+          complydoc ui
+        </a>
+        , served from your machine.
+      </p>
     </Tabs>
   );
 }
