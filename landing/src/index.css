@@ -1,0 +1,204 @@
+/* The complydoc theme, the same as the viewer's (viewer/src/index.css). viewer/BRAND.md explains each colour
+   and when to use it. Components use these tokens, never raw colours. */
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+/* Bundled, not fetched, as in the viewer. */
+@import "@fontsource-variable/geist";
+@import "@fontsource-variable/geist-mono";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-sans);
+  --font-mono: "Geist Mono Variable", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* complydoc's states, beyond shadcn's set */
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-destructive-soft: var(--destructive-soft);
+  --color-faint: var(--faint);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  --radius: 0.625rem;
+
+  --background: #fbfbfa; /* Paper */
+  --foreground: #111111; /* Ink */
+  --card: #ffffff;
+  --card-foreground: #111111;
+  --popover: #ffffff;
+  --popover-foreground: #111111;
+  --primary: #1a7f4b; /* complydoc green */
+  --primary-foreground: #ffffff;
+  --secondary: #f1f1ef;
+  --secondary-foreground: #333333;
+  --muted: #f1f1ef;
+  --muted-foreground: #666666;
+  --accent: #f1f1ef;
+  --accent-foreground: #111111;
+  --destructive: #a4402f; /* Attention */
+  --border: #e8e8e6;
+  --input: #d8d8d4;
+  --ring: #1a7f4b;
+
+  --success: #1a7f4b;
+  --success-soft: #e3f2ea;
+  --warning: #b0740f;
+  --warning-soft: #f7ecd8;
+  --destructive-soft: #f6e5e1;
+  --faint: #999999;
+
+  --chart-1: #1a7f4b;
+  --chart-2: #8b939c;
+  --chart-3: #b0740f;
+  --chart-4: #a4402f;
+  --chart-5: #2a78d6;
+
+  --sidebar: #f4f4f2;
+  --sidebar-foreground: #333333;
+  --sidebar-primary: #1a7f4b;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e9e9e6;
+  --sidebar-accent-foreground: #111111;
+  --sidebar-border: #e8e8e6;
+  --sidebar-ring: #1a7f4b;
+
+  /* One colour per model provider, told apart at a glance, never meaning good or bad. */
+  --provider-1: #c96442;
+  --provider-2: #2a78d6;
+  --provider-3: #7c5cc4;
+  --provider-4: #c98a00;
+  --provider-5: #0f8a8a;
+  --provider-6: #cc4b87;
+  --provider-7: #5b6b7f;
+  --provider-8: #8a6d3b;
+}
+
+/* Dark is black: the page and the sidebar are one black surface, with no seam
+   between them, and cards sit a step above it. */
+.dark {
+  --background: #000000;
+  --foreground: #e9e9e7;
+  --card: #0d0e0f;
+  --card-foreground: #e9e9e7;
+  --popover: #0d0e0f;
+  --popover-foreground: #e9e9e7;
+  --primary: #4cc38a;
+  --primary-foreground: #000000;
+  --secondary: #18191b;
+  --secondary-foreground: #c9c9c6;
+  --muted: #18191b;
+  --muted-foreground: #9aa0a6;
+  --accent: #18191b;
+  --accent-foreground: #e9e9e7;
+  --destructive: #e08a72;
+  --border: #222427;
+  --input: #2e3135;
+  --ring: #4cc38a;
+
+  --success: #4cc38a;
+  --success-soft: #1e3a2a;
+  --warning: #d9a441;
+  --warning-soft: #3a2f1b;
+  --destructive-soft: #3a2622;
+  --faint: #71767b;
+
+  --chart-1: #4cc38a;
+  --chart-2: #7d858d;
+  --chart-3: #d9a441;
+  --chart-4: #e08a72;
+  --chart-5: #3987e5;
+
+  --sidebar: #000000;
+  --sidebar-foreground: #c9c9c6;
+  --sidebar-primary: #4cc38a;
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent: #18191b;
+  --sidebar-accent-foreground: #e9e9e7;
+  --sidebar-border: #222427;
+  --sidebar-ring: #4cc38a;
+
+  --provider-1: #e0876a;
+  --provider-2: #3987e5;
+  --provider-3: #a38be6;
+  --provider-4: #e0b040;
+  --provider-5: #3cc2c2;
+  --provider-6: #e27aa9;
+  --provider-7: #9aa6b5;
+  --provider-8: #c4a574;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans antialiased;
+  }
+  body {
+    @apply bg-background text-foreground tabular-nums;
+  }
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  ::selection {
+    @apply bg-primary/20;
+  }
+}
+
+/* Character art: one cell per character, lines set close so the mark keeps its shape. */
+@utility ascii {
+  font-family: var(--font-mono);
+  line-height: 1.05;
+  letter-spacing: 0;
+  white-space: pre;
+  font-variant-ligatures: none;
+  user-select: none;
+}

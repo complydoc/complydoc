@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <title>complydoc: check documents before they reach an LLM</title>
+    <meta
+      name="description"
+      content="complydoc checks documents and document loader output before they reach an LLM: token cost, extraction readiness, personal and financial identifiers, and hidden instructions. Offline, open source."
+    />
+    <!-- Set the theme before the first paint, so a dark reader never sees a white flash. -->
+    <script>
+      try {
+        const t = localStorage.getItem("complydoc-theme");
+        const dark = t === "dark" || (t !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.classList.toggle("dark", dark);
+      } catch {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
