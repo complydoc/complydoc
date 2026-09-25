@@ -9,7 +9,6 @@ import {
   rankedLoaders,
   returnedBySomeOnly,
   severityTone,
-  summaryCaveats,
 } from "./select";
 
 describe("select", () => {
@@ -66,12 +65,6 @@ describe("select", () => {
       { kind: "Metadata key", name: "file_path", loaders: ["pdfplumber"] },
       { kind: "Metadata key", name: "page_label", loaders: ["pypdf"] },
     ]);
-  });
-
-  it("groups the summary's caveats by area and leaves the reader ones out", () => {
-    const caveats = summaryCaveats(sampleReport());
-    expect(caveats.map((c) => c.area)).toEqual(["Hidden content", "Pages that could not be read"]);
-    expect(caveats[1]?.statements).toHaveLength(1);
   });
 
   it("says how far the readers of each document agree, and whether one reordered it", () => {

@@ -73,11 +73,6 @@ export function pricedOn(report: Report, path: CostPath, unit: CostUnit = "per_1
     .sort((a, b) => a.usd - b.usd || a.name.localeCompare(b.name));
 }
 
-/** The cheapest model on a path, or null when none could be priced. */
-export function cheapest(report: Report, path: CostPath): PricedModel | null {
-  return pricedOn(report, path)[0] ?? null;
-}
-
 export interface CostRow {
   id: string;
   name: string;

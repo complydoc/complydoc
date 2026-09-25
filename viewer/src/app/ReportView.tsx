@@ -11,7 +11,7 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/s
 import { CostPage } from "@/features/cost/CostPage";
 import { DocumentsPage } from "@/features/documents/DocumentsPage";
 import { SecurityPage } from "@/features/security/SecurityPage";
-import { SummaryPage } from "@/features/summary/SummaryPage";
+import { HomePage } from "@/features/home/HomePage";
 import { useHashRoute } from "@/hooks/useHashRoute";
 import { ModeToggle } from "@/components/ModeToggle";
 import { PlanBar } from "@/components/PlanBar";
@@ -145,7 +145,7 @@ export function ReportView({
             </div>
           </header>
           <main className={cn("mx-auto w-full p-4 md:p-6", page === "documents" ? "max-w-none" : "max-w-7xl")}>
-            {page === "summary" && <SummaryPage report={report} previous={previous?.report ?? null} />}
+            {page === "home" && <HomePage report={report} previous={previous?.report ?? null} />}
             {page === "security" && <SecurityPage report={report} />}
             {page === "cost" && <CostPage report={report} />}
             {page === "documents" && <DocumentsPage report={report} open={detail} />}

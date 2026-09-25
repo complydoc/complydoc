@@ -1,5 +1,5 @@
 import { sampleAudit, sampleReport } from "@/test/sample";
-import { byProvider, cheapest, costRows, pricedOn, providerColour, providerName, providersOf } from "./cost";
+import { byProvider, costRows, pricedOn, providerColour, providerName, providersOf } from "./cost";
 
 describe("cost", () => {
   it("lists the priced models on a path, cheapest first", () => {
@@ -10,12 +10,12 @@ describe("cost", () => {
 
   it("finds images dearer than text", () => {
     const report = sampleAudit();
-    expect(cheapest(report, "vision")?.usd).toBeGreaterThan(cheapest(report, "text_ocr")?.usd ?? Infinity);
+    expect(pricedOn(report, "vision")[0]?.usd).toBeGreaterThan(pricedOn(report, "text_ocr")[0]?.usd ?? Infinity);
   });
 
   it("has no price for a path no document can take", () => {
     // The loader comparison read no pictures, so nothing was priced as images.
-    expect(cheapest(sampleReport(), "vision")).toBeNull();
+    expect(pricedOn(sampleReport(), "vision")).toEqual([]);
     expect(costRows(sampleReport()).every((row) => row.vision === null)).toBe(true);
   });
 

@@ -5,11 +5,12 @@ import { sampleAudit } from "@/test/sample";
 import { CostPage } from "./CostPage";
 
 describe("CostPage", () => {
-  it("leads with the cheapest each way and how much dearer images are", () => {
+  it("leads with the ways to read the folder, without cards of cheapest prices", () => {
     renderPage(<CostPage report={sampleAudit()} />);
-    const figures = screen.getByRole("region", { name: "Per 1,000 documents" });
-    expect(within(figures).getByText("Cheapest as text").nextElementSibling).toHaveTextContent("$");
-    expect(within(figures).getByText("Images cost").nextElementSibling).toHaveTextContent("×");
+    const sections = screen.getAllByRole("region").map((region) => region.getAttribute("aria-label"));
+    expect(sections[0]).toBe("Ways to read this folder");
+    expect(sections).not.toContain("Per 1,000 documents");
+    expect(sections).not.toContain("Measure more of it");
   });
 
   it("switches the chart between ways of sending the documents", async () => {

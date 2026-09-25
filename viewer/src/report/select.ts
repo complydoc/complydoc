@@ -16,9 +16,6 @@ import type {
   VerificationStatus,
 } from "./types";
 
-/** Limitation areas about loaders and readers. They are told on the Documents page. */
-const READER_AREAS = new Set(["Loaders", "Extraction"]);
-
 export const BANDS: readonly { key: Band; id: string; label: string; tone: Tone }[] = [
   { key: "ready", id: "ready", label: "Ready", tone: "good" },
   { key: "workable", id: "workable", label: "Workable", tone: "neutral" },
@@ -185,7 +182,7 @@ export function documentScore(report: Report, document: DocumentEntry): number |
 }
 
 /** Below this, two readings of a page tell different stories; complydoc uses the same line. */
-const SIMILAR_ENOUGH = 0.95;
+export const SIMILAR_ENOUGH = 0.95;
 
 /** Whether a reader moved the words around in a way worth saying: only where the readings differ. */
 export function worthCallingReordered(reading: { similarity: number; reordered: boolean }): boolean {
@@ -251,19 +248,4 @@ export function returnedBySomeOnly(comparison: LoaderComparison): OnlySome[] {
     loaders,
   }));
   return [...documents, ...keys];
-}
-
-export interface Caveat {
-  area: string;
-  statements: string[];
-}
-
-/** The important limitations for the summary, one entry per area, reader caveats left out. */
-export function summaryCaveats(report: Report): Caveat[] {
-  const byArea = new Map<string, string[]>();
-  for (const limitation of report.limitations) {
-    if (limitation.severity !== "important" || READER_AREAS.has(limitation.area)) continue;
-    byArea.set(limitation.area, [...(byArea.get(limitation.area) ?? []), limitation.statement]);
-  }
-  return [...byArea].map(([area, statements]) => ({ area, statements }));
 }

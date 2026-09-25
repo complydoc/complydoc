@@ -3,19 +3,16 @@ import { useState } from "react";
 import { BarList } from "@/components/BarList";
 import { ProviderBadge } from "@/components/ProviderBadge";
 import { Section, SectionStack } from "@/components/Section";
-import { Stat, StatGrid } from "@/components/Stat";
 import { Card, CardAction, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import type { ChartConfig } from "@/components/ui/chart";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { PATHS, UNITS, byProvider, cheapest, costRows, pricedOn, providerColour, providerName, providersOf, type CostUnit } from "@/report/cost";
+import { PATHS, UNITS, byProvider, costRows, pricedOn, providerColour, providerName, providersOf, type CostUnit } from "@/report/cost";
 import { formatUsd } from "@/report/format";
 import type { CostPath, Report } from "@/report/types";
 import { CostTable } from "./CostTable";
 import { PlanComparison } from "./PlanComparison";
-import { NextSteps } from "@/components/NextSteps";
-import { nextSteps } from "@/report/next";
 
 const ALL = "all";
 
@@ -40,8 +37,6 @@ export function CostPage({ report }: { report: Report }) {
     );
   }
 
-  const text = cheapest(report, "text_ocr");
-  const images = cheapest(report, "vision");
   const models = byProvider(report, path, unit, provider === ALL ? null : provider);
   const providers = providersOf(pricedOn(report, path, unit));
   const series = {
@@ -52,23 +47,6 @@ export function CostPage({ report }: { report: Report }) {
     <SectionStack>
       <Section title="Ways to read this folder">
         <PlanComparison report={report} />
-      </Section>
-
-      <Section title="Measure more of it">
-        <NextSteps steps={nextSteps(report).filter((step) => step.timing)} />
-      </Section>
-
-      <Section title="Per 1,000 documents">
-        <StatGrid>
-          <Stat label="Cheapest as text" value={formatUsd(text?.usd ?? null)} note={text?.name ?? "no model priced"} />
-          <Stat label="Cheapest as images" value={formatUsd(images?.usd ?? null)} note={images?.name ?? "no pictures to price"} />
-          <Stat
-            label="Images cost"
-            value={text && images ? `${Math.round(images.usd / text.usd)}×` : "–"}
-            note="what text costs, cheapest each way"
-          />
-          <Stat label="Models priced" value={report.cost?.models.length ?? 0} note={report.cost?.currency ?? ""} />
-        </StatGrid>
       </Section>
 
       <Section title="By provider">

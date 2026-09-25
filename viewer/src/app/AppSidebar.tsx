@@ -27,7 +27,7 @@ interface AppSidebarProps {
 /** The navigation: which folder is open, and its pages. */
 export function AppSidebar({ report, page, switcher }: AppSidebarProps) {
   const counts: Record<Page, number | undefined> = {
-    summary: undefined,
+    home: undefined,
     security: report?.aggregate.sensitive_total,
     cost: report?.cost?.models.length,
     documents: report?.documents.length,
