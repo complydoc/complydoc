@@ -330,3 +330,28 @@ def test_a_folder_of_the_new_formats_is_audited(tmp_path):
     }
     assert by_name["a.txt"].sensitive.total == 1
     cd.write_html(report, tmp_path / "out" / "report.html")
+
+
+def test_each_format_names_the_reader_that_read_it(tmp_path, config):
+    """A spreadsheet is read by openpyxl, not by the PDF extractor the run chose."""
+    import shutil
+
+    from complydoc.audit.run import run_audit
+    from tests.helpers import FIXTURES
+
+    folder = tmp_path / "mixed"
+    folder.mkdir()
+    for name in ("sample.xlsx", "sample.docx", "native_text.pdf"):
+        shutil.copy(FIXTURES / name, folder / name)
+    report = run_audit(folder, config, ("readiness",), extracted_text=True, ocr=False)
+    kept = {d.relative_path: d.extracted_text[0].kept for d in report.documents}
+    assert kept == {
+        "sample.xlsx": "openpyxl",
+        "sample.docx": "python-docx",
+        "native_text.pdf": report.run.extractor,
+    }
+    for document in report.documents:
+        page = document.extracted_text[0]
+        assert page.kept in page.tokens or not page.tokens, (
+            "tokens are kept under the reader's name"
+        )

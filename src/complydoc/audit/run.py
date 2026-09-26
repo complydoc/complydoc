@@ -62,6 +62,7 @@ from complydoc.ingest import ocr as ocr_module
 from complydoc.ingest.base import (
     TIMED_OUT,
     Document,
+    DocumentFormat,
     IngestOptions,
     LoaderError,
     Page,
@@ -337,14 +338,35 @@ _LOCAL = ReadingCost(0.0, "local")
 """A reader that ran on this machine: machine time, and no bill."""
 
 
-def _kept_by(page: Page, work: Work, verification: DocumentVerification | None) -> str:
+NATIVE_READERS: dict[DocumentFormat, str] = {
+    DocumentFormat.DOCX: "python-docx",
+    DocumentFormat.XLSX: "openpyxl",
+    DocumentFormat.PPTX: "complydoc-pptx",
+    DocumentFormat.HTML: "lxml",
+    DocumentFormat.MARKDOWN: "complydoc-text",
+    DocumentFormat.TEXT: "complydoc-text",
+    DocumentFormat.EMAIL: "email",
+}
+"""The reader of each format's own text, other than a PDF's.
+
+A PDF's text layer is read by the extractor the run chose, and a loader's by the
+loader. Every other format is read by the one library complydoc has for it, and
+naming the PDF extractor there claimed pdfplumber had read a spreadsheet.
+"""
+
+
+def _kept_by(
+    page: Page, work: Work, verification: DocumentVerification | None, fmt: DocumentFormat
+) -> str:
     """The reader whose text a page kept."""
     if page.text_source == "vision" and verification is not None:
         return verification.model
     if page.text_source == "ocr":
         return ocr_module.engine_name()
-    if page.text_source in ("native", "loader"):
+    if page.text_source == "loader":
         return work.options.extractor
+    if page.text_source == "native":
+        return NATIVE_READERS.get(fmt, work.options.extractor)
     return ""
 
 
@@ -462,6 +484,7 @@ def _page_text(
     verification: DocumentVerification | None = None,
     vision_estimate: ReadingCost | None = None,
     image_tokens: dict[str, int] | None = None,
+    fmt: DocumentFormat = DocumentFormat.PDF,
 ) -> PageText:
     """A page's text for the report, with its identifiers masked.
 
@@ -483,7 +506,7 @@ def _page_text(
         return _mask(text, work, located)
 
     text = masked(page.text, matches)
-    kept = _kept_by(page, work, verification)
+    kept = _kept_by(page, work, verification, fmt)
     # On a revealing run, the same readings with every value covered too, so a
     # viewer can open masked and show the values only when asked.
     masked_text = masked_ocr = masked_readings = None
@@ -631,6 +654,7 @@ def build_entry(
                 entry.verification,
                 estimates.get(page.number),
                 images.get(page.number),
+                document.format,
             )
             for page in document.pages
         ]
