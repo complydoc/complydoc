@@ -29,6 +29,21 @@ describe("collections", () => {
     expect(change.sensitive).toEqual({ before: 10, after: newer.aggregate.sensitive_total });
   });
 
+  it("compares only what both runs measured", () => {
+    const full = sampleAudit();
+    const costOnly = sampleAudit();
+    costOnly.run.components_run = ["cost"];
+    costOnly.aggregate.sensitive_total = 0;
+    costOnly.aggregate.content_findings_total = 0;
+    const change = changeBetween(costOnly, full);
+    // A run that did not look for identifiers found none; that is not a drop to nought.
+    expect(change.sensitive).toBeNull();
+    expect(change.hidden).toBeNull();
+    // Scored from other parts, the two readiness figures are of different things.
+    expect(change.readiness).toBeNull();
+    expect(changeBetween(full, sampleAudit()).readiness).not.toBeNull();
+  });
+
   it("puts a loader comparison under the folder its documents share, not its loader's name", () => {
     const collections = collectionsOf([run("audit", sampleAudit(), "2026-09-01"), run("loaders", sampleReport(), "2026-09-02")]);
     // Both samples read viewer/sample/documents, so they are two runs of one folder.

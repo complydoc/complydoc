@@ -2,6 +2,7 @@
  * What the Home page points an engineer at: the findings that matter most, and
  * the documents worth opening first, each with the reason it is there.
  */
+import { measured } from "./measured";
 import { findingRows, type FindingRow } from "./security";
 import { SIMILAR_ENOUGH, bandOf, documentRows, documentVision, type Tone } from "./select";
 import type { Report } from "./types";
@@ -46,7 +47,8 @@ export function attentionDocuments(report: Report, limit = 6): AttentionRow[] {
       reasons.push({ label: row.reordered ? "readers scramble the order" : "readers disagree", tone: "warn" });
       weight += 4;
     }
-    const band = bandOf(row.score);
+    // A run that did not measure readiness gives no score to worry about, not a score of nought.
+    const band = measured(report, "readiness") && row.score !== null ? bandOf(row.score) : null;
     if (band === "needs work" || band === "not ready") {
       reasons.push({ label: `readiness ${Math.round(row.score ?? 0)}`, tone: band === "not ready" ? "bad" : "warn" });
       weight += 2;

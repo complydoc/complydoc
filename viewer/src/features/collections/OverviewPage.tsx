@@ -4,6 +4,7 @@ import { DataTable, type Columns } from "@/components/DataTable";
 import { Section, SectionStack } from "@/components/Section";
 import { Stat, StatGrid } from "@/components/Stat";
 import { ToneBadge } from "@/components/ToneBadge";
+import { measured } from "@/report/measured";
 import { changeBetween, runLabel, type Collection } from "@/report/collections";
 import { formatCount, formatPageUsd, formatScore, formatSeconds, plural } from "@/report/format";
 import { EMPTY, combine, reportTotals, type Totals } from "@/report/plan";
@@ -16,12 +17,13 @@ interface Row {
   path: string;
   runs: number;
   lastRun: string;
+  /** Null where the run did not measure it: shown as not measured, never as nought. */
   readiness: number | null;
-  /** Change since the run before, where there is one. */
+  /** Change since the run before, where the two can be compared. */
   readinessChange: number | null;
-  sensitive: number;
+  sensitive: number | null;
   sensitiveChange: number | null;
-  hidden: number;
+  hidden: number | null;
   totals: Totals;
 }
 
@@ -31,7 +33,8 @@ function rowsOf(collections: Collection[]): Row[] {
     if (!latest) return [];
     const report = latest.report;
     const change = previous ? changeBetween(report, previous.report) : null;
-    const before = change?.readiness.before;
+    const before = change?.readiness?.before;
+    const scanned = measured(report, "sensitive");
     return [
       {
         id: collection.id,
@@ -39,18 +42,27 @@ function rowsOf(collections: Collection[]): Row[] {
         path: collection.id,
         runs: collection.runs.length,
         lastRun: runLabel(report),
-        readiness: report.overall.score,
+        readiness: measured(report, "readiness") ? report.overall.score : null,
         readinessChange:
-          change && before !== null && before !== undefined && report.overall.score !== null
+          before !== null && before !== undefined && report.overall.score !== null
             ? report.overall.score - before
             : null,
-        sensitive: report.aggregate.sensitive_total,
-        sensitiveChange: change ? change.sensitive.after - change.sensitive.before : null,
-        hidden: report.aggregate.content_findings_total,
+        sensitive: scanned ? report.aggregate.sensitive_total : null,
+        sensitiveChange: change?.sensitive ? change.sensitive.after - change.sensitive.before : null,
+        hidden: scanned ? report.aggregate.content_findings_total : null,
         totals: reportTotals(report, planFor(report)),
       },
     ];
   });
+}
+
+/** A figure the folder's last run did not measure. */
+function NotMeasured() {
+  return (
+    <span className="text-xs text-muted-foreground" title="The last run did not measure this">
+      not measured
+    </span>
+  );
 }
 
 /** A change since the last run, coloured by whether it is better: more readiness is, more findings are not. */
@@ -101,23 +113,38 @@ function columnsFor(onOpen: (id: string) => void): Columns<Row> {
       header: "Readiness",
       cell: ({ row }) => (
         <span>
-          <ToneBadge tone={bandTone(bandOf(row.original.readiness))}>{formatScore(row.original.readiness)}</ToneBadge>
-          <Change value={row.original.readinessChange} better="up" />
+          {row.original.readiness === null ? (
+            <NotMeasured />
+          ) : (
+            <>
+              <ToneBadge tone={bandTone(bandOf(row.original.readiness))}>{formatScore(row.original.readiness)}</ToneBadge>
+              <Change value={row.original.readinessChange} better="up" />
+            </>
+          )}
         </span>
       ),
       ...numeric,
     }),
-    column.accessor("sensitive", {
+    column.accessor((row) => row.sensitive ?? undefined, {
+      id: "sensitive",
       header: "Sensitive",
-      cell: ({ row, getValue }) => (
-        <span className="tabular-nums">
-          {formatCount(getValue())}
-          <Change value={row.original.sensitiveChange} better="down" />
-        </span>
-      ),
+      cell: ({ row }) =>
+        row.original.sensitive === null ? (
+          <NotMeasured />
+        ) : (
+          <span className="tabular-nums">
+            {formatCount(row.original.sensitive)}
+            <Change value={row.original.sensitiveChange} better="down" />
+          </span>
+        ),
       ...numeric,
     }),
-    column.accessor("hidden", { header: "Hidden", cell: (c) => formatCount(c.getValue()), ...numeric }),
+    column.accessor((row) => row.hidden ?? undefined, {
+      id: "hidden",
+      header: "Hidden",
+      cell: ({ row }) => (row.original.hidden === null ? <NotMeasured /> : formatCount(row.original.hidden)),
+      ...numeric,
+    }),
     column.accessor((row) => row.totals.usd ?? undefined, {
       id: "cost",
       header: "Cost",
@@ -144,7 +171,8 @@ function columnsFor(onOpen: (id: string) => void): Columns<Row> {
 export function OverviewPage({ collections, onOpen }: { collections: Collection[]; onOpen: (id: string) => void }) {
   const rows = rowsOf(collections);
   const all = rows.reduce((sum, row) => combine(sum, row.totals), EMPTY);
-  const sensitive = rows.reduce((sum, row) => sum + row.sensitive, 0);
+  const sensitive = rows.reduce((sum, row) => sum + (row.sensitive ?? 0), 0);
+  const unscanned = rows.filter((row) => row.sensitive === null).length;
 
   return (
     <SectionStack>
@@ -152,7 +180,11 @@ export function OverviewPage({ collections, onOpen }: { collections: Collection[
         <StatGrid>
           <Stat label="Folders" value={formatCount(rows.length)} note={plural(all.documents, "document")} />
           <Stat label="Pages" value={formatCount(all.pages)} />
-          <Stat label="Sensitive items" value={formatCount(sensitive)} />
+          <Stat
+            label="Sensitive items"
+            value={formatCount(sensitive)}
+            {...(unscanned > 0 && { note: `${plural(unscanned, "folder")} not scanned` })}
+          />
           <Stat label="Cost to read" value={formatPageUsd(all.usd)} note="under the plan chosen for each" />
           <Stat
             label="Time to read"

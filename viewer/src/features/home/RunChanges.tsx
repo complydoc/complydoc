@@ -4,7 +4,26 @@ import { changeBetween, runLabel } from "@/report/collections";
 import { fileName, formatCount, formatScore, plural } from "@/report/format";
 import type { Report } from "@/report/types";
 
-function Figure({ label, before, after, better }: { label: string; before: number | null; after: number | null; better: "up" | "down" }) {
+function Figure({
+  label,
+  change,
+  better,
+}: {
+  label: string;
+  change: { before: number | null; after: number | null } | null;
+  better: "up" | "down";
+}) {
+  if (change === null) {
+    return (
+      <div className="flex flex-col gap-0.5">
+        <span className="text-xs text-muted-foreground">{label}</span>
+        <span className="text-sm text-muted-foreground" title="One of the two runs did not measure this the same way">
+          Not comparable
+        </span>
+      </div>
+    );
+  }
+  const { before, after } = change;
   const moved = before !== null && after !== null ? after - before : null;
   const good = moved !== null && (better === "up" ? moved > 0 : moved < 0);
   return (
@@ -47,9 +66,9 @@ export function RunChanges({ report, previous }: { report: Report; previous: Rep
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <div className="grid grid-cols-3 gap-4">
-          <Figure label="Readiness" before={change.readiness.before} after={change.readiness.after} better="up" />
-          <Figure label="Sensitive items" before={change.sensitive.before} after={change.sensitive.after} better="down" />
-          <Figure label="Hidden passages" before={change.hidden.before} after={change.hidden.after} better="down" />
+          <Figure label="Readiness" change={change.readiness} better="up" />
+          <Figure label="Sensitive items" change={change.sensitive} better="down" />
+          <Figure label="Hidden passages" change={change.hidden} better="down" />
         </div>
         {(change.added.length > 0 || change.removed.length > 0) && (
           <ul className="flex flex-col gap-1 text-sm">

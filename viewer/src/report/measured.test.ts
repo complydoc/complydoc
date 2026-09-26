@@ -1,5 +1,6 @@
 import { sampleAudit, sampleReport } from "@/test/sample";
 import { commandFor, measured } from "./measured";
+import { attentionDocuments } from "./home";
 
 describe("measured", () => {
   it("reads the components from the run, and takes an older report to have run them all", () => {
@@ -31,5 +32,14 @@ describe("commandFor", () => {
     expect(commandFor(report, "cost")).toBe("complydoc cost '/work/vendor contracts'");
     report.run.target = "/work/o'neil";
     expect(commandFor(report, "readiness")).toBe("complydoc readiness '/work/o'\\''neil'");
+  });
+});
+
+describe("what a run did not measure", () => {
+  it("is never a reason to look at a document", () => {
+    const report = sampleAudit();
+    report.run.components_run = ["cost"];
+    const reasons = attentionDocuments(report).flatMap((row) => row.reasons.map((r) => r.label));
+    expect(reasons.some((label) => label.startsWith("readiness"))).toBe(false);
   });
 });

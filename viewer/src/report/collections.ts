@@ -5,6 +5,7 @@
  * covers. Reports of the same folder are its runs, newest first, so the
  * viewer can say what changed between one run and the one before.
  */
+import { measured } from "./measured";
 import { fileName } from "./format";
 import type { Report } from "./types";
 
@@ -66,9 +67,14 @@ export function collectionsOf(loaded: Loaded[]): Collection[] {
 }
 
 export interface RunChange {
-  readiness: { before: number | null; after: number | null };
-  sensitive: { before: number; after: number };
-  hidden: { before: number; after: number };
+  /**
+   * Each figure before and after, or null where the two runs cannot be compared:
+   * one did not measure it, or, for readiness, the two were scored from different
+   * parts. A figure a run did not measure is not zero, and a drop to it is not news.
+   */
+  readiness: { before: number | null; after: number | null } | null;
+  sensitive: { before: number; after: number } | null;
+  hidden: { before: number; after: number } | null;
   /** Documents in the newer run that the older did not have, and the other way round. */
   added: string[];
   removed: string[];
@@ -79,10 +85,19 @@ export function changeBetween(newer: Report, older: Report): RunChange {
   const paths = (report: Report) => new Set(report.documents.map((d) => d.relative_path));
   const now = paths(newer);
   const then = paths(older);
+  const scanned = measured(newer, "sensitive") && measured(older, "sensitive");
+  // Readiness is scored from the parts a run measured, so two runs of different parts give
+  // scores of different things.
+  const parts = (report: Report) => [...(report.run.components_run ?? [])].sort().join(",");
+  const sameScoring = parts(newer) === parts(older) && measured(newer, "readiness");
   return {
-    readiness: { before: older.overall.score, after: newer.overall.score },
-    sensitive: { before: older.aggregate.sensitive_total, after: newer.aggregate.sensitive_total },
-    hidden: { before: older.aggregate.content_findings_total, after: newer.aggregate.content_findings_total },
+    readiness: sameScoring ? { before: older.overall.score, after: newer.overall.score } : null,
+    sensitive: scanned
+      ? { before: older.aggregate.sensitive_total, after: newer.aggregate.sensitive_total }
+      : null,
+    hidden: scanned
+      ? { before: older.aggregate.content_findings_total, after: newer.aggregate.content_findings_total }
+      : null,
     added: [...now].filter((p) => !then.has(p)).sort(),
     removed: [...then].filter((p) => !now.has(p)).sort(),
   };
