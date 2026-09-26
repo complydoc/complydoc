@@ -14,10 +14,16 @@ from complydoc.config.loader import StalenessWarning
 from complydoc.config.schema import Config
 from complydoc.ingest.base import TIMED_OUT, SkipRecord
 from complydoc.readiness.base import SignalStatus
-from complydoc.report.models import DocumentReport, IgnoreSummary, Limitation, RunMetadata
+from complydoc.report.models import (
+    ConceptSummary,
+    DocumentReport,
+    IgnoreSummary,
+    Limitation,
+    RunMetadata,
+)
 from complydoc.utils.text import count, plural
 
-__all__ = ["build_limitations", "ignore_limitations"]
+__all__ = ["build_limitations", "concept_limitations", "ignore_limitations"]
 
 
 def _sampling(run: RunMetadata) -> list[Limitation]:
@@ -859,6 +865,52 @@ def ignore_limitations(summary: IgnoreSummary | None, ignored: int) -> list[Limi
                     f"entry may belong to another folder."
                 ),
                 affected=[rule.what or rule.finding for rule in summary.unused],
+            )
+        )
+    return notes
+
+
+def concept_limitations(summary: ConceptSummary | None) -> list[Limitation]:
+    """What a run could not say about your concepts.
+
+    A concept meant for a judgement model on a run that asked none was found by
+    its pattern alone, or, without one, not looked for at all; and a question
+    the judge failed says nothing either way.
+    """
+    if summary is None:
+        return []
+    notes: list[Limitation] = []
+    waiting = [c for c in summary.concepts if c.judge]
+    if waiting and summary.judge is None:
+        unfound = [c.label for c in waiting if not c.pattern]
+        notes.append(
+            Limitation(
+                area="Concepts no model judged",
+                statement=(
+                    f"{count(len(waiting), 'concept')} {plural(len(waiting), 'is', 'are')} meant "
+                    f"to be judged by a model, and this run asked none, so "
+                    + (
+                        f"{', '.join(unfound)}, with no pattern, "
+                        f"{plural(len(unfound), 'was', 'were')} not looked for at all. "
+                        if unfound
+                        else "they were found by their patterns alone. "
+                    )
+                    + "Run with --judge-concepts jev to ask one, which sends page text to TypeSafe."
+                ),
+                affected=[c.label for c in waiting],
+                severity="important" if unfound else "info",
+            )
+        )
+    if summary.unjudged:
+        notes.append(
+            Limitation(
+                area="Concept questions that failed",
+                statement=(
+                    f"{count(summary.unjudged, 'question')} to the {summary.judge} judge failed. "
+                    f"A failed question says nothing either way, so a concept on those pages "
+                    f"may be missing rather than absent."
+                ),
+                severity="important",
             )
         )
     return notes

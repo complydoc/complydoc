@@ -61,6 +61,15 @@ values as well as a masked copy of every page. The viewer opens it masked, and
 the eye button shows the values until you mask them again. On any other report,
 the button is disabled.
 
+## Settings
+
+Under `complydoc ui`, the Settings page lists the findings the ignore file sets
+aside, where each reason and end date can be changed and each entry removed. It
+also lists [your own concepts](custom-concepts.md), which it can add, edit and
+remove. Both are files beside the documents a report audited, which the command
+line reads too, and changes apply from the next run. A report opened any other
+way shows what its run used, read only.
+
 ## From Python
 
 `launch_ui` does the same from a script or a notebook, and returns while the

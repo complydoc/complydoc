@@ -11,11 +11,13 @@ What the server does, and does not do:
   elsewhere cannot use DNS rebinding to read the reports through it.
 - It serves the viewer's own files and the reports it found, nothing else. A
   report is asked for by an id the server gave it, never by a path.
-- It writes one file: the ignore file of a folder a report audited, when the
-  viewer's own page asks it to set a finding aside. A write must come from that
-  page — same origin, JSON body — so another site open in the browser cannot
-  make one. It writes `.complydoc-ignore.yaml` in the audited folder, or the
-  ignore file the run read if it is still a valid one, never any other file.
+- It writes two files, both beside the documents a report audited: the ignore
+  file, when the viewer's own page sets a finding aside, and the concepts file,
+  when it edits your own things to look for. A write must come from that page —
+  same origin, JSON body — so another site open in the browser cannot make one.
+  It writes `.complydoc-ignore.yaml` and `.complydoc-concepts.yaml` in the
+  audited folder, or the file the run read if it is still a valid one, never any
+  other file.
 - It makes no outbound connection. The viewer it serves makes none either.
 
 Reports are found again on every request for the list, so a report written
@@ -42,6 +44,7 @@ __all__ = [
     "FoundReport",
     "ViewerNotBuiltError",
     "ViewerServer",
+    "concepts_file_for",
     "find_reports",
     "ignore_file_for",
     "launch_ui",
@@ -60,6 +63,13 @@ DIST = Path(__file__).parent / "dist"
 API = "api"
 
 CONFIG_ELEMENT = "complydoc-local"
+
+_KEPT = ("ignores", "concepts")
+"""The files beside the documents that the viewer may read and change."""
+
+_IGNORE_FIELDS = ("finding", "reason", "what", "paths", "until")
+_CONCEPT_FIELDS = ("id", "label", "description", "pattern", "severity", "judge")
+"""What the viewer may set; who made a change, and when, is the server's to say."""
 """The id of the script element that tells the viewer where to find the reports."""
 
 
@@ -176,31 +186,46 @@ def find_reports(*sources: str | Path) -> list[FoundReport]:
     return sorted(found.values(), key=lambda report: report.modified, reverse=True)
 
 
-def ignore_file_for(report_path: Path) -> Path | None:
-    """The ignore file a finding in this report is set aside in, or None.
+def _file_for(report_path: Path, kind: str) -> Path | None:
+    """The file of this `kind` (`ignores` or `concepts`) that a report's folder keeps, or None.
 
-    The one the run read, when it is still there and still an ignore file, else
-    `.complydoc-ignore.yaml` at the top of the folder the report audited. None
-    when that folder is not on this machine.
+    The one the run read, when it is still there and still valid, else the file
+    of that kind at the top of the folder the report audited. None when that
+    folder is not on this machine.
     """
+    from complydoc.concepts import CONCEPTS_FILENAME, ConceptError, load_concepts
     from complydoc.ignores import IGNORE_FILENAME, IgnoreError, load_ignores
 
+    filename, load, error = {
+        "ignores": (IGNORE_FILENAME, load_ignores, IgnoreError),
+        "concepts": (CONCEPTS_FILENAME, load_concepts, ConceptError),
+    }[kind]
     try:
         data = json.loads(report_path.read_text(encoding="utf-8"))
     except (OSError, UnicodeDecodeError, ValueError):
         return None
-    read = (data.get("ignores") or {}).get("file") if isinstance(data, dict) else None
+    read = (data.get(kind) or {}).get("file") if isinstance(data, dict) else None
     if isinstance(read, str) and read.endswith((".yaml", ".yml")) and Path(read).is_file():
         try:
-            load_ignores(Path(read))
+            load(Path(read))
             return Path(read)
-        except IgnoreError:
+        except error:
             pass
     target = Path(str((data.get("run") or {}).get("target") or ""))
     if not target.is_absolute():
         return None
     folder = target if target.is_dir() else target.parent
-    return folder / IGNORE_FILENAME if folder.is_dir() else None
+    return folder / filename if folder.is_dir() else None
+
+
+def ignore_file_for(report_path: Path) -> Path | None:
+    """The ignore file a finding in this report is set aside in, or None."""
+    return _file_for(report_path, "ignores")
+
+
+def concepts_file_for(report_path: Path) -> Path | None:
+    """The concepts file the folder this report audited keeps, or None."""
+    return _file_for(report_path, "concepts")
 
 
 def _index_html(dist: Path, sources: list[str]) -> bytes:
@@ -264,68 +289,69 @@ class _Handler(BaseHTTPRequestHandler):
     def _json(self, status: HTTPStatus, data: Any) -> None:
         self._send(status, json.dumps(data).encode("utf-8"), "application/json")
 
-    def _ignores_of(self, path: str) -> tuple[FoundReport, Path] | None:
-        """The report a `/api/reports/{id}/ignores` path names, and its ignore file."""
-        wanted = path.removeprefix(f"/{API}/reports/").split("/")[0]
-        report = next((r for r in find_reports(*self.server.sources) if r.id == wanted), None)
-        if report is None:
+    def _kept_file(self, path: str) -> tuple[str, Path] | None:
+        """What a `/api/reports/{id}/ignores` or `/concepts` path names: the kind, and its file."""
+        wanted, _, kind = path.removeprefix(f"/{API}/reports/").partition("/")
+        if kind not in _KEPT:
             return None
-        file = ignore_file_for(report.path)
-        return None if file is None else (report, file)
+        report = next((r for r in find_reports(*self.server.sources) if r.id == wanted), None)
+        file = _file_for(report.path, kind) if report is not None else None
+        return None if file is None else (kind, file)
 
-    def _ignores(self, file: Path) -> None:
+    def _listing(self, kind: str, file: Path) -> None:
+        from complydoc.concepts import load_concepts
         from complydoc.ignores import load_ignores
 
-        entries = [entry.model_dump(mode="json") for entry in load_ignores(file).ignores]
-        self._json(HTTPStatus.OK, {"file": str(file), "ignores": entries})
+        if kind == "ignores":
+            entries = [entry.model_dump(mode="json") for entry in load_ignores(file).ignores]
+        else:
+            entries = [c.model_dump(mode="json") for c in load_concepts(file).concepts]
+        self._json(HTTPStatus.OK, {"file": str(file), kind: entries})
 
-    def _write_ignore(self) -> None:
-        from complydoc.ignores import (
-            IgnoreEntry,
-            IgnoreError,
-            add_ignore,
-            remove_ignore,
-            who,
-        )
+    def _write(self) -> None:
+        """Change the ignore file or the concepts file, for the viewer's own page only."""
+        from complydoc.concepts import Concept, ConceptError, remove_concept, save_concept
+        from complydoc.ignores import IgnoreEntry, IgnoreError, add_ignore, remove_ignore, who
 
         if not self._local_host() or not self._same_origin():
-            self._error(HTTPStatus.FORBIDDEN, "only the viewer's own page can change an ignore")
+            self._error(HTTPStatus.FORBIDDEN, "only the viewer's own page can change these files")
             return
-        path = unquote(urlsplit(self.path).path)
-        found = self._ignores_of(path) if path.endswith("/ignores") else None
+        found = self._kept_file(unquote(urlsplit(self.path).path))
         if found is None:
             self._error(HTTPStatus.NOT_FOUND, "no such report, or its folder is gone")
             return
-        _report, file = found
+        kind, file = found
         try:
             length = min(int(self.headers.get("Content-Length") or 0), 64_000)
             body = json.loads(self.rfile.read(length) or b"{}")
             if not isinstance(body, dict):
                 raise ValueError("expected an object")
-            if self.command == "DELETE":
+            given = {key: value for key, value in body.items() if value not in (None, "")}
+            if kind == "ignores" and self.command == "DELETE":
                 remove_ignore(file, str(body.get("finding", "")))
-            else:
+            elif kind == "ignores":
                 add_ignore(
                     file,
                     IgnoreEntry.model_validate(
-                        {
-                            key: body[key]
-                            for key in ("finding", "reason", "what", "paths", "until")
-                            if body.get(key) not in (None, "")
-                        }
+                        {key: given[key] for key in _IGNORE_FIELDS if key in given}
                         | {"by": who(), "added": dt.date.today()}
                     ),
                 )
-        except (IgnoreError, ValueError, OSError) as exc:
+            elif self.command == "DELETE":
+                remove_concept(file, str(body.get("id", "")))
+            else:
+                concept = {key: given[key] for key in _CONCEPT_FIELDS if key in given}
+                save_concept(file, Concept.model_validate(concept))
+        except (IgnoreError, ConceptError, ValueError, OSError) as exc:
             self._error(HTTPStatus.BAD_REQUEST, str(exc))
             return
-        self._ignores(file)
+        self._listing(kind, file)
 
     def do_POST(self) -> None:
-        self._write_ignore()
+        self._write()
 
     def do_DELETE(self) -> None:
-        self._write_ignore()
+        self._write()
 
     def do_GET(self) -> None:
         if not self._local_host():
@@ -343,13 +369,13 @@ class _Handler(BaseHTTPRequestHandler):
             reports = [report.to_dict() for report in find_reports(*server.sources)]
             body = json.dumps({"reports": reports, "sources": server.source_names}).encode("utf-8")
             self._send(HTTPStatus.OK, body, "application/json")
-        elif path.startswith(f"/{API}/reports/") and path.endswith("/ignores"):
-            found = self._ignores_of(path)
+        elif path.startswith(f"/{API}/reports/") and path.endswith(tuple(f"/{k}" for k in _KEPT)):
+            found = self._kept_file(path)
             if found is None:
                 self._error(HTTPStatus.NOT_FOUND, "no such report, or its folder is gone")
                 return
             try:
-                self._ignores(found[1])
+                self._listing(*found)
             except ValueError as exc:
                 self._error(HTTPStatus.CONFLICT, str(exc))
         elif path.startswith(f"/{API}/reports/"):

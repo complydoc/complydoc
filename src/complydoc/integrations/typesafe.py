@@ -38,7 +38,7 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:  # pragma: no cover - type-checking imports only
     from collections.abc import Callable
 
-__all__ = ["JEV_KEY_VARIABLES", "connections_made", "jev_classifier"]
+__all__ = ["JEV_KEY_VARIABLES", "connections_made", "jev_classifier", "jev_concept_judge"]
 
 JEV_KEY_VARIABLES = ("JEV_KEY", "TYPESAFE_API_KEY")
 """Environment variables read for the key, in order.
@@ -154,3 +154,75 @@ def jev_classifier(
         return float(response.nouls[_QUESTION].noul)
 
     return classify
+
+
+def jev_concept_judge(
+    *,
+    allow_network: bool = False,
+    api_key: str | None = None,
+    model: str | None = None,
+    timeout: float = 20.0,
+    max_characters: int = 6_000,
+) -> Callable[[str, str, str], float]:
+    """A judge of your own concepts, backed by Jev: does this page contain the thing described?
+
+    Returns a callable taking a concept's label, its description and a page's
+    text, and returning the probability, from 0 to 1, that the page contains it.
+    The concept's own words are the question, so a concept no pattern can pin
+    down can still be found. As with `jev_classifier`, `allow_network` has to be
+    `True`, the page is capped at `max_characters`, every connection is recorded
+    for the report, and a call that fails raises rather than scoring nothing.
+    """
+    if not allow_network:
+        raise ValueError(
+            "jev_concept_judge sends page text to api.typesafe.ai, which no other "
+            "part of complydoc does. Pass allow_network=True to accept that."
+        )
+
+    from complydoc.utils.install import extra_hint
+
+    try:
+        from typesafe_sdk import Noul, NoulCriteria, TypeSafeClient
+    except ImportError as exc:  # pragma: no cover - depends on the extra
+        raise ImportError(
+            f"the Jev concept judge needs the optional extra: {extra_hint('typesafe')}"
+        ) from exc
+
+    client = TypeSafeClient(api_key=_api_key(api_key), model=model, timeout=timeout)
+    questions: dict[tuple[str, str], Any] = {}
+
+    def question(label: str, description: str) -> Any:
+        key = (label, description)
+        if key not in questions:
+            questions[key] = Noul(
+                instructions=(
+                    "The state holds one page of a business document. Does the page contain "
+                    f"{label}? {description}"
+                ),
+                criteria=NoulCriteria(
+                    true=f"The page contains {label}, as described: {description}",
+                    false=(
+                        f"The page does not contain {label}, or only mentions that kind of "
+                        "thing in general without an instance of it."
+                    ),
+                ),
+            )
+        return questions[key]
+
+    def judge(label: str, description: str, page: str) -> float:
+        from complydoc import offline
+
+        text = page.strip()[:max_characters]
+        if not text:
+            return 0.0
+        with offline.permitted() as seen:
+            response: Any = client.system_one(
+                state={"page": text},
+                questions={"concept": question(label, description)},
+            )
+        for connection in seen:
+            if connection not in _connections:
+                _connections.append(connection)
+        return float(response.nouls["concept"].noul)
+
+    return judge

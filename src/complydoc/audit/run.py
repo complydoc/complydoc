@@ -21,7 +21,7 @@ import platform
 import re
 import sys
 import time
-from collections import deque
+from collections import Counter, deque
 from collections.abc import Callable, Iterator, Sequence
 from concurrent.futures import Future, ProcessPoolExecutor
 from concurrent.futures.process import BrokenProcessPool
@@ -33,6 +33,18 @@ from typing import Any
 from complydoc import __version__, offline
 from complydoc.audit.discovery import discover
 from complydoc.audit.sampling import sample_files
+from complydoc.concepts import (
+    Concept,
+    ConceptFile,
+    ConceptJudge,
+    find_concepts_file,
+    judge_pages,
+    load_concepts,
+    register_concept_judge,
+    registered_concept_judge,
+    resolve_concept_judge,
+    with_concepts,
+)
 from complydoc.config.loader import check_staleness
 from complydoc.config.schema import CategoryConfig, Config, ModelPricing, TokenizerSpec
 from complydoc.cost.estimator import estimate_document, folder_from_estimates, resolve_models
@@ -58,10 +70,17 @@ from complydoc.ingest.base import (
 from complydoc.ingest.extractors.registry import DEFAULT_EXTRACTOR
 from complydoc.ingest.registry import load_document
 from complydoc.readiness.analyser import analyse
-from complydoc.report.limitations import build_limitations, ignore_limitations
+from complydoc.report.limitations import (
+    build_limitations,
+    concept_limitations,
+    ignore_limitations,
+)
 from complydoc.report.models import (
     SCHEMA_VERSION,
     AuditReport,
+    ConceptFinding,
+    ConceptRule,
+    ConceptSummary,
     DocumentReport,
     DocumentTiming,
     DocumentVerification,
@@ -206,6 +225,13 @@ class Work:
     verify_scope: str = "flagged"
     resolution: str = "medium"
     """The headline vision resolution: what a page is rendered at and priced at."""
+    concepts: tuple[Concept, ...] = ()
+    """Your own concepts, for those a judgement model is to be asked about."""
+    concept_judge: str | None = None
+    """The judge each worker resolves, as for `classifier`, or None for one
+    registered in this process, or for a run that asks none."""
+    judging: bool = False
+    """Put the concepts marked `judge` to the registered concept judge."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -514,6 +540,28 @@ def _verify(document: Document, entry: DocumentReport, work: Work) -> DocumentVe
     )
 
 
+def _judge_concepts(entry: DocumentReport, document: Document, work: Work) -> None:
+    """Ask the registered judge which pages hold the concepts marked `judge`."""
+    judge = registered_concept_judge()
+    if not work.judging or judge is None or not any(c.judge for c in work.concepts):
+        return
+    found = {(m.category, m.page) for m in entry.sensitive.matches} if entry.sensitive else set()
+    hits, failures = judge_pages(
+        [(page.number, page.text) for page in document.pages], work.concepts, judge, found
+    )
+    entry.concept_findings = [
+        ConceptFinding(
+            page=page,
+            concept=concept.id,
+            label=concept.label,
+            severity=concept.severity,
+            score=score,
+        )
+        for concept, page, score in hits
+    ]
+    entry.concepts_unjudged = failures
+
+
 def build_entry(
     document: Document, work: Work, read_seconds: float, relative_path: str
 ) -> DocumentReport:
@@ -562,6 +610,7 @@ def build_entry(
         entry.content_findings = check.findings
         entry.visibility_checked = check.visibility_checked
         entry.visibility_note = check.note
+        _judge_concepts(entry, document, work)
     scan_seconds = time.perf_counter() - scan_started
 
     if work.previews:
@@ -710,6 +759,8 @@ def _worker_init(work: Work) -> None:
         register_instruction_classifier(resolve_classifier(work.classifier))
     if work.verify_spec is not None:
         register_vision_model(resolve_vision(work.verify_spec))
+    if work.concept_judge is not None:
+        register_concept_judge(resolve_concept_judge(work.concept_judge))
     _WORKER_WORK = work
 
 
@@ -885,6 +936,9 @@ def plan_audit(
     verify_spec: str | None = None,
     verify_scope: str = "flagged",
     resolution: str = "medium",
+    concepts: tuple[Concept, ...] = (),
+    concept_judge: str | None = None,
+    judging: bool = False,
 ) -> AuditPlan:
     """Discover the files and settle how each will be read, before opening any."""
     requested = [c for c in COMPONENTS if c in set(components)]
@@ -926,6 +980,9 @@ def plan_audit(
         ),
         today=dt.date.today(),
         classifier=classifier_spec,
+        concepts=concepts,
+        concept_judge=concept_judge,
+        judging=judging,
         verifying=verify,
         verify_spec=verify_spec,
         verify_scope=verify_scope,
@@ -989,11 +1046,18 @@ def run_audit(
     verify_scope: str = "flagged",
     progress: Callable[[int, int, Path], None] | None = None,
     ignore_file: Path | None = None,
+    concepts_file: Path | None = None,
+    judge_concepts: str | ConceptJudge | None = None,
 ) -> AuditReport:
     """Audit `target` and assemble the report.
 
     `ignore_file` names findings to set aside (see `complydoc.ignores`). Without
     it, `.complydoc-ignore.yaml` at the top of `target` is read when it exists.
+    `concepts_file` names your own things to look for (see `complydoc.concepts`),
+    read the same way from `.complydoc-concepts.yaml` without it.
+    `judge_concepts` puts the concepts marked `judge` to a judgement model, page
+    by page: `jev`, which each worker builds and which sends page text to
+    TypeSafe, or a judge of your own, which keeps the run in this process.
 
     `verify_with` reads pages again with a vision model: a `vision:module:function`
     spec, which crosses into worker processes, or a model object, which keeps the
@@ -1004,6 +1068,22 @@ def run_audit(
     # Read before any document is, so a broken file stops the run at once.
     ignore_path = ignore_file or find_ignore_file(target)
     ignores = (ignore_path, load_ignores(ignore_path)) if ignore_path is not None else None
+    concepts_path = concepts_file or find_concepts_file(target)
+    concepts = (concepts_path, load_concepts(concepts_path)) if concepts_path is not None else None
+    if concepts is not None:
+        config = with_concepts(config, concepts[1])
+    # Resolved before any document is read, so a missing key stops the run at once.
+    judge_spec = judge_concepts if isinstance(judge_concepts, str) else None
+    judging = judge_concepts is not None
+    if judging:
+        register_concept_judge(
+            resolve_concept_judge(judge_concepts)
+            if isinstance(judge_concepts, str)
+            else judge_concepts
+        )
+        if judge_spec is None:
+            # A judge of the caller's is a function here, which cannot cross into a worker.
+            jobs, timeout = 1, None
     # A caller can run several audits in one process, and last run's calls are
     # not this run's.
     _CLASSIFIER_TOTALS[:] = (0, 0)
@@ -1040,6 +1120,9 @@ def run_audit(
         verify_spec=verify_spec,
         verify_scope=verify_scope,
         resolution=resolution,
+        concepts=tuple(concepts[1].concepts) if concepts is not None else (),
+        concept_judge=judge_spec,
+        judging=judging,
     )
     files, skipped, work, jobs = plan.files, plan.skipped, plan.work, plan.jobs
     requested, found, chosen_extractor = plan.requested, plan.found, plan.extractor
@@ -1061,6 +1144,8 @@ def run_audit(
         if verify_with is not None:
             # Registered for this run only, so a later one is not surprised by it.
             register_vision_model(None)
+        if judging:
+            register_concept_judge(None)
 
     finished_at = dt.datetime.now().astimezone()
     run = RunMetadata(
@@ -1112,6 +1197,10 @@ def run_audit(
         resolution=resolution,
         monthly_volume=monthly_volume,
         ignores=ignores,
+        concepts=concepts,
+        judge_name=(
+            None if not judging else judge_spec or getattr(judge_concepts, "__name__", "your own")
+        ),
     )
 
 
@@ -1125,6 +1214,8 @@ def assemble_report(
     resolution: str = "medium",
     monthly_volume: int | None = None,
     ignores: tuple[Path, IgnoreFile] | None = None,
+    concepts: tuple[Path, ConceptFile] | None = None,
+    judge_name: str | None = None,
 ) -> AuditReport:
     """The report around a finished set of entries: totals, limitations, scores.
 
@@ -1157,6 +1248,9 @@ def assemble_report(
         staleness_warnings=[w.message for w in staleness],
         config_masking=config.sensitive.masking,
         ignores=ignore_summary,
+        concepts=(
+            summarise_concepts(documents, concepts, judge_name) if concepts is not None else None
+        ),
     )
     if "readiness" in requested and config.readiness.scoring.enabled:
         report.signal_weights = {
@@ -1165,6 +1259,7 @@ def assemble_report(
             if settings.enabled
         }
     report.limitations = build_limitations(run, documents, skipped, staleness, config)
+    report.limitations += concept_limitations(report.concepts)
     report.limitations += ignore_limitations(
         ignore_summary, report.aggregate.ignored_total if report.aggregate else 0
     )
@@ -1176,6 +1271,40 @@ def assemble_report(
     report.quick_wins = quick_wins(report)
     report.routing = summarise_routes(report, config.pricing)
     return report
+
+
+def summarise_concepts(
+    documents: list[DocumentReport], concepts: tuple[Path, ConceptFile], judge: str | None = None
+) -> ConceptSummary:
+    """Each concept the run looked for, how often its pattern matched, ignored ones
+    included, and on how many pages a judge said it was."""
+    found: Counter[str] = Counter()
+    judged: Counter[str] = Counter(f.concept for d in documents for f in d.concept_findings)
+    for document in documents:
+        for match in document.sensitive.matches if document.sensitive else []:
+            found[match.category] += 1
+        for ignored in document.ignored:
+            if ignored.identifier is not None:
+                found[ignored.identifier.category] += 1
+    path, file = concepts
+    return ConceptSummary(
+        file=str(path),
+        judge=judge,
+        unjudged=sum(d.concepts_unjudged for d in documents),
+        concepts=[
+            ConceptRule(
+                id=c.id,
+                label=c.label,
+                description=c.description,
+                pattern=c.pattern,
+                severity=c.severity,
+                judge=c.judge,
+                found=found[c.category],
+                judged=judged[c.id],
+            )
+            for c in file.concepts
+        ],
+    )
 
 
 def vision_setup(

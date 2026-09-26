@@ -12,6 +12,7 @@ from typer.testing import CliRunner
 
 from complydoc import offline
 from complydoc.cli import app
+from complydoc.concepts import CONCEPTS_FILENAME, Concept
 from complydoc.viewer import ViewerNotBuiltError, find_reports, launch_ui
 
 runner = CliRunner()
@@ -293,5 +294,45 @@ def test_a_report_whose_folder_is_not_here_cannot_be_changed(reports: Path, dist
         report = viewer.reports()[0]
         status, _headers, _body = get(viewer.port, f"/api/reports/{report.id}/ignores")
         assert status == 404
+    finally:
+        viewer.stop()
+
+
+def test_the_viewer_can_edit_the_concepts_beside_the_documents(tmp_path: Path, dist: Path):
+    concept = Concept(
+        id="tariff_engine_id",
+        label="Tariff engine ID",
+        description="An identifier from our insurance tariff engine.",
+        pattern=r"TE-\d{4}-\d{5}",
+    ).model_dump()
+    audited = tmp_path / "policies"
+    audited.mkdir()
+    reports = tmp_path / ".complydoc"
+    write_report(reports / "complydoc.json", target=str(audited), schema=17)
+    viewer = launch_ui(reports, port=0, open_browser=False, dist=dist)
+    try:
+        (report,) = viewer.reports()
+        url = f"/api/reports/{report.id}/concepts"
+        origin = f"http://127.0.0.1:{viewer.port}"
+        status, body = send(viewer.port, "POST", url, concept, origin, "application/json")
+        assert status == 200, body
+        assert json.loads(body)["concepts"][0]["id"] == "tariff_engine_id"
+        assert (audited / CONCEPTS_FILENAME).is_file()
+
+        broken = concept | {"pattern": "TE-("}
+        status, body = send(viewer.port, "POST", url, broken, origin, "application/json")
+        assert status == 400
+        assert b"regular expression" in body
+
+        status, body = send(
+            viewer.port, "DELETE", url, {"id": "tariff_engine_id"}, origin, "application/json"
+        )
+        assert status == 200
+        assert json.loads(body)["concepts"] == []
+
+        status, _ = send(
+            viewer.port, "POST", url, concept, "http://evil.example", "application/json"
+        )
+        assert status == 403
     finally:
         viewer.stop()

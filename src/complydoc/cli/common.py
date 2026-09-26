@@ -94,6 +94,22 @@ IgnoreFileOpt = Annotated[
         ".complydoc-ignore.yaml at the top of the folder is read when there is one.",
     ),
 ]
+ConceptsOpt = Annotated[
+    Path | None,
+    typer.Option(
+        "--concepts",
+        help="Your own things to look for, each described in words. Without it, "
+        ".complydoc-concepts.yaml at the top of the folder is read when there is one.",
+    ),
+]
+JudgeConceptsOpt = Annotated[
+    str | None,
+    typer.Option(
+        "--judge-concepts",
+        help="Also ask a judgement model, page by page, about your concepts marked "
+        "judge: true. 'jev' sends page text to TypeSafe; the report says so.",
+    ),
+]
 ConfigOpt = Annotated[
     Path | None, typer.Option("--config-dir", help="Override the config directory.")
 ]

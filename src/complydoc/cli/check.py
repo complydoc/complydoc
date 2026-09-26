@@ -17,10 +17,12 @@ from complydoc.cli.common import (
     DEFAULT_OUT,
     ClassifierOpt,
     ClassifierThresholdOpt,
+    ConceptsOpt,
     ConfigOpt,
     ExtractorOpt,
     IgnoreFileOpt,
     JobsOpt,
+    JudgeConceptsOpt,
     NameOpt,
     OcrOpt,
     OutDirOpt,
@@ -36,6 +38,7 @@ from complydoc.cli.common import (
     link,
     load_config_or_exit,
 )
+from complydoc.concepts import ConceptError
 from complydoc.config.loader import ConfigError
 from complydoc.cost.estimator import UnknownModelError
 from complydoc.ignores import IgnoreError, apply_ignores, load_ignores
@@ -133,6 +136,8 @@ def check(
     classifier: ClassifierOpt = None,
     classifier_threshold: ClassifierThresholdOpt = None,
     ignore_file: IgnoreFileOpt = None,
+    concepts_file: ConceptsOpt = None,
+    judge_concepts: JudgeConceptsOpt = None,
 ) -> None:
     """Check documents against a policy file, and exit non-zero when they fail it.
 
@@ -205,7 +210,12 @@ def check(
                     timeout=timeout or None,
                     classifier_spec=classifier,
                     ignore_file=ignore_file,
+                    concepts_file=concepts_file,
+                    judge_concepts=judge_concepts,
                 )
+        except ConceptError as exc:
+            errors.print(f"[bold red]Cannot read the concepts file[/] — {escape(str(exc))}")
+            raise typer.Exit(code=2) from exc
         except IgnoreError as exc:
             errors.print(f"[bold red]Cannot read the ignore file[/] — {escape(str(exc))}")
             raise typer.Exit(code=2) from exc

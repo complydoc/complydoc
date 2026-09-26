@@ -110,6 +110,7 @@ nav:
       - Baselines and tests: guides/baselines-and-tests.md
       - Policy files: guides/policy.md
       - Ignoring findings: guides/ignore-findings.md
+      - Your own concepts: guides/custom-concepts.md
       - GitHub Action: guides/github-action.md
       - Drafting quick wins: guides/assist.md
       - Safe copies: guides/clean.md

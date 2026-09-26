@@ -36,6 +36,9 @@ __all__ = [
     "SCHEMA_VERSION",
     "Aggregate",
     "AuditReport",
+    "ConceptFinding",
+    "ConceptRule",
+    "ConceptSummary",
     "ContentFinding",
     "DocumentReport",
     "DocumentTiming",
@@ -80,6 +83,7 @@ def report_shape() -> dict[str, object]:
             "routing",
             "verification",
             "ignores",
+            "concepts",
             "limitations",
             "staleness_warnings",
             "signal_weights",
@@ -159,6 +163,10 @@ def report_shape() -> dict[str, object]:
                 "instruction (confirmed | pattern | model | none), severity, excerpt, "
                 "hidden_reasons[], instruction_reasons[], score, in_loader_output, fingerprint"
             ),
+            "concept_findings[]": (
+                "with --judge-concepts only: page, concept, label, severity, score — a page "
+                "a judgement model said holds one of your concepts"
+            ),
             "ignored[]": (
                 "findings an ignore file set aside, left out of every count and rule: "
                 "fingerprint, kind (identifier | content), reason, by, until, and the "
@@ -203,6 +211,11 @@ def report_shape() -> dict[str, object]:
             "null unless --verify: model, scope, min_coverage, pages_total, pages_checked, "
             "pages_agree, pages_disagree, pages_filled, pages_failed, pages_unreadable, "
             "usd, usd_basis, headline"
+        ),
+        "concepts": (
+            "null unless a concepts file was read: file, concepts[] (id, label, "
+            "description, pattern, severity, judge, found); a concept with a pattern "
+            "is found as the identifier category concept_<id>"
         ),
         "ignores": (
             "null unless an ignore file was read: file, rules[] (finding, reason, by, "
@@ -667,6 +680,52 @@ class ExtractorReading:
         return self.characters == 0
 
 
+@dataclass(frozen=True, slots=True)
+class ConceptFinding:
+    """A page a judgement model says holds one of your concepts.
+
+    A whole page rather than a place on it: the model says whether, not where.
+    Reported at the `model` tier, the weakest of the four.
+    """
+
+    page: int
+    concept: str
+    """The concept's id."""
+    label: str
+    severity: str
+    score: float
+    """The model's probability that the page holds it, 0 to 1."""
+
+
+@dataclass(slots=True)
+class ConceptRule:
+    """One custom concept a run looked for, and how often it was found."""
+
+    id: str
+    label: str
+    description: str
+    pattern: str | None = None
+    severity: str = "medium"
+    judge: bool = False
+    """Whether it is also put to a judgement model, on runs that allow one."""
+    found: int = 0
+    """Times its pattern matched on this run, ignored ones included."""
+    judged: int = 0
+    """Pages a judgement model said hold it, on a run that asked one."""
+
+
+@dataclass(slots=True)
+class ConceptSummary:
+    """The concepts file a run read, and each of its concepts."""
+
+    file: str
+    concepts: list[ConceptRule] = field(default_factory=list)
+    judge: str | None = None
+    """The judgement model concepts were put to, or None when the run asked none."""
+    unjudged: int = 0
+    """Questions to the judge that failed, and so said nothing either way."""
+
+
 @dataclass(slots=True)
 class IgnoredFinding:
     """A finding an ignore file set aside, with the reason it gave.
@@ -746,6 +805,10 @@ class DocumentReport:
     """Identifiers in the metadata a loader returned. Empty for files read directly."""
     content_findings: list[ContentFinding] = field(default_factory=list)
     """Hidden passages and instruction-like text. See `complydoc.hidden`."""
+    concept_findings: list[ConceptFinding] = field(default_factory=list)
+    """Pages a judgement model said hold one of your concepts, on a run that asked one."""
+    concepts_unjudged: int = 0
+    """Questions about this document's pages the judge failed to answer."""
     verification: DocumentVerification | None = None
     """Pages read again by a vision model. None unless the run used `--verify`."""
     visibility_checked: bool | None = None
@@ -888,6 +951,8 @@ class AuditReport:
     """How many pages an independent vision read agreed with. None unless `--verify`."""
     ignores: IgnoreSummary | None = None
     """The ignore file this run read, and what each entry set aside. None without one."""
+    concepts: ConceptSummary | None = None
+    """The custom concepts this run looked for. None without a concepts file."""
 
     def to_pandas(self, table: str = "documents") -> Any:
         """One table of this report as a pandas DataFrame.

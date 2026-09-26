@@ -298,6 +298,16 @@ class AuditOptions(TypedDict, total=False):
     verify_scope: Literal["flagged", "all"]
     """`flagged`, the default: the pages routing sent to vision, the pages with no
     usable reading, and the pages two readers disagreed about. `all`: every page."""
+    ignore_file: str | os.PathLike[str] | None
+    """Findings to set aside, each with a reason. Without it, `.complydoc-ignore.yaml`
+    at the top of the folder is read when there is one."""
+    concepts_file: str | os.PathLike[str] | None
+    """Your own things to look for. Without it, `.complydoc-concepts.yaml` at the
+    top of the folder is read when there is one."""
+    judge_concepts: str | Callable[[str, str, str], float] | None
+    """Put the concepts marked `judge` to a judgement model, page by page: `"jev"`,
+    which sends page text to TypeSafe, or a function of your own taking a label, a
+    description and a page's text and returning a probability. None by default."""
 
 
 def _audit(
@@ -335,7 +345,14 @@ def _audit(
             verify_with=options.get("verify_with"),
             verify_scope=options.get("verify_scope", "flagged"),
             progress=options.get("progress"),
+            ignore_file=_path(options.get("ignore_file")),
+            concepts_file=_path(options.get("concepts_file")),
+            judge_concepts=options.get("judge_concepts"),
         )
+
+
+def _path(value: str | os.PathLike[str] | None) -> Path | None:
+    return None if value is None else Path(value).expanduser()
 
 
 def full_audit(target: str | os.PathLike[str], **options: Unpack[AuditOptions]) -> AuditReport:

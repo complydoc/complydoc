@@ -32,12 +32,14 @@ from complydoc.cli.common import (
     ClassifierThresholdOpt,
     CompareEnginesOpt,
     CompareExtractorsOpt,
+    ConceptsOpt,
     ConfigOpt,
     DetailOpt,
     ExtractedTextOpt,
     ExtractorOpt,
     IgnoreFileOpt,
     JobsOpt,
+    JudgeConceptsOpt,
     ModelOpt,
     NameOpt,
     OcrCompareOpt,
@@ -64,6 +66,7 @@ from complydoc.cli.common import (
     print_report_json,
     route_output,
 )
+from complydoc.concepts import ConceptError
 from complydoc.cost.estimator import UnknownModelError
 from complydoc.ignores import IgnoreError
 from complydoc.report.json_writer import Detail
@@ -308,6 +311,8 @@ def run(
     verify: str | None = None,
     verify_scope: str = "flagged",
     ignore_file: Path | None = None,
+    concepts_file: Path | None = None,
+    judge_concepts: str | None = None,
 ) -> None:
     """Audit `target` and write the reports: what every audit command does."""
     offline.arm()
@@ -336,6 +341,12 @@ def run(
             f"[bold yellow]--verify {escape(verify)} is your own code.[/] It is given an "
             f"image of {which} and sends it wherever it calls; the report names every host "
             f"it reached."
+        )
+
+    if judge_concepts is not None:
+        errors.print(
+            f"[bold yellow]--judge-concepts {escape(judge_concepts)} sends page text off this "
+            f"machine[/] for each concept marked judge: true. The report names where it went."
         )
 
     if reveal:
@@ -384,7 +395,12 @@ def run(
                     verify_scope=verify_scope,
                     progress=progress,
                     ignore_file=ignore_file,
+                    concepts_file=concepts_file,
+                    judge_concepts=judge_concepts,
                 )
+    except ConceptError as exc:
+        errors.print(f"[bold red]Cannot read the concepts file[/] — {escape(str(exc))}")
+        raise typer.Exit(code=2) from exc
     except IgnoreError as exc:
         errors.print(f"[bold red]Cannot read the ignore file[/] — {escape(str(exc))}")
         raise typer.Exit(code=2) from exc
@@ -449,6 +465,8 @@ def audit(
     verify: VerifyOpt = None,
     verify_scope: VerifyScopeOpt = "flagged",
     ignore_file: IgnoreFileOpt = None,
+    concepts_file: ConceptsOpt = None,
+    judge_concepts: JudgeConceptsOpt = None,
 ) -> None:
     """Run every check: cost, readiness, identifiers and hidden content."""
     run(
@@ -483,6 +501,8 @@ def audit(
         verify=verify,
         verify_scope=verify_scope,
         ignore_file=ignore_file,
+        concepts_file=concepts_file,
+        judge_concepts=judge_concepts,
     )
 
 

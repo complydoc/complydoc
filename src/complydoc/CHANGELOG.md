@@ -12,6 +12,22 @@ load.
 
 ### Added
 
+- Your own concepts. `.complydoc-concepts.yaml` at the top of an audited folder, or the
+  file `--concepts` names, describes things only you know to look for, such as a
+  policy reference, each with a label, a description, a pattern and a severity. Each
+  is found like any identifier: masked, fingerprinted, counted, held to the policy and
+  open to an ignore. The report's `concepts` section says how often each was found.
+  A concept marked `judge: true` can also be found where no pattern can:
+  `--judge-concepts jev` asks Jev of each page whether it holds the concept, in the
+  concept's own words, and reports the pages it names under `concept_findings`. That
+  sends page text to TypeSafe, and the report names where it went. A run without it
+  says which concepts went unjudged.
+
+- A Settings page in the viewer. Under `complydoc ui` it manages the ignored findings
+  (reasons, end dates, removal) and your concepts (add, edit, remove, and try a pattern
+  on some text first), writing the files beside the documents. Changes apply from the
+  next run. Opened any other way, it shows what the run used, read only.
+
 - Ignoring findings. `complydoc ignore <fingerprint> --reason …` records a finding that is
   not a problem in `.complydoc-ignore.yaml`, with who decided, an optional end date and
   optional path globs. An audit reads that file at the top of the folder, or the one
