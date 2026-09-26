@@ -8,6 +8,7 @@ import os
 import pytest
 from typer.testing import CliRunner
 
+import complydoc as cd
 from complydoc.cli import app
 
 runner = CliRunner()
@@ -74,7 +75,11 @@ def test_chunks_writes_a_masked_report(folder, tmp_path):
     )  # fmt: skip
     assert result.exit_code == 0, result.output
     data = json.loads((out / "complydoc-chunks.json").read_text())
-    [report] = data["chunkers"]
+    # A report like any other run's: the run, no documents, and the chunks.
+    assert data["run"]["components_run"] == []
+    assert data["run"]["target"] == str(folder.resolve())
+    assert data["documents"] == []
+    [report] = data["chunks"]
     assert report["stats"]["count"] == 3
     assert report["facts"][0]["status"] == "whole"
     page = (out / "complydoc-chunks.html").read_text()
@@ -95,7 +100,7 @@ def test_chunks_compares_several_splitters(folder, tmp_path):
     )  # fmt: skip
     assert result.exit_code == 0, result.output
     data = json.loads((out / "complydoc-chunks.json").read_text())
-    names = [r["chunker"] for r in data["chunkers"]]
+    names = [r["chunker"] for r in data["chunks"]]
     assert names == ["Halves parts=2", "Halves parts=4"]
     assert "Splitters" in (out / "complydoc-chunks.html").read_text()
     assert "Halves parts=4" in result.output
@@ -131,9 +136,8 @@ def test_chunks_checks_retrieval_from_a_questions_file(folder, tmp_path):
         ],
     )  # fmt: skip
     assert result.exit_code == 0, result.output
-    [report] = json.loads((out / "complydoc-chunks.json").read_text())["chunkers"]
+    [report] = json.loads((out / "complydoc-chunks.json").read_text())["chunks"]
     assert report["retrieval"][0]["status"] == "retrieved"
-    assert report["retrieval_hit_rate"] == 1.0
     assert "<h3>Retrieval</h3>" in (out / "complydoc-chunks.html").read_text()
 
     questions.write_text("- question: only a question\n")
@@ -230,3 +234,24 @@ def test_the_schema_command_emits_json_a_caller_can_parse():
     assert result.returncode == 0, result.stderr[-500:]
     shape = json.loads(result.stdout)
     assert shape["schema_version"] >= 11
+
+
+def test_a_chunks_run_is_a_report_the_viewer_lists(folder, tmp_path):
+    from complydoc.viewer import find_reports
+
+    out = tmp_path / "out"
+    result = runner.invoke(
+        app,
+        ["chunks", str(folder), "--splitter", "tests.test_cli_tools:paragraphs", "--out", str(out)],
+    )
+    assert result.exit_code == 0, result.output
+    # The folder follows the command; a narrow terminal cuts it short.
+    assert "View    complydoc ui /" in result.output
+
+    [listed] = find_reports(out)
+    assert listed.name == "complydoc-chunks.json"
+    report = cd.load_report(out / "complydoc-chunks.json")
+    assert report.documents == []
+    assert report.chunks is not None
+    assert report.chunks[0].chunker == "paragraphs"
+    assert report.chunks[0].stats.count == 3

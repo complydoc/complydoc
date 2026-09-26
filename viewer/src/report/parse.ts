@@ -36,5 +36,12 @@ export function parseReport(text: string): Report {
   if (!Array.isArray(data.documents)) {
     throw new ReportError("This report has no document list.");
   }
-  return { loader_comparison: null, cost: null, verification: null, ...data } as unknown as Report;
+  const report = { loader_comparison: null, cost: null, verification: null, ...data } as unknown as Report;
+  // A run that did not scan for identifiers leaves these null; the pages read them as none found,
+  // and say from `run.components_run` that the scan was not part of the run.
+  for (const document of report.documents as unknown as Record<string, unknown>[]) {
+    document.sensitive ??= { matches: [] };
+    document.content_findings ??= [];
+  }
+  return report;
 }

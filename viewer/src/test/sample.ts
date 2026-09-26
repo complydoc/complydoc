@@ -92,3 +92,25 @@ export function sampleVerified(): Report {
 export function sampleShare(): Report {
   return parseReport(shareRaw);
 }
+
+/**
+ * The full audit as a run of only these components would write it: the others
+ * are not in `components_run`, and a run that did not scan leaves each
+ * document's findings null.
+ */
+export function sampleRunOf(components: string[]): Report {
+  const data = JSON.parse(auditRaw) as {
+    run: { components_run?: string[] };
+    documents: Record<string, unknown>[];
+    cost: unknown;
+  };
+  data.run.components_run = components;
+  if (!components.includes("sensitive")) {
+    for (const document of data.documents) {
+      document.sensitive = null;
+      document.content_findings = null;
+    }
+  }
+  if (!components.includes("cost")) data.cost = null;
+  return parseReport(JSON.stringify(data));
+}

@@ -8,7 +8,10 @@ import type { ConceptFinding, ConceptSummary, IgnoreSummary, IgnoredFinding } fr
  * addition to the report never breaks it.
  */
 
+import type { ChunkRun } from "./chunkTypes";
 import type { LoaderComparison } from "./loaderTypes";
+
+export type { ChunkRun, InspectedChunk, QuestionResult } from "./chunkTypes";
 
 export type {
   FactCheck,
@@ -37,6 +40,8 @@ export interface Report {
   cost: Cost | null;
   /** Schema 16: pages read again by a vision model. Null or absent without --verify. */
   verification?: VerificationSummary | null;
+  /** Schema 17: each text splitter a `complydoc chunks` run inspected. Null or absent otherwise. */
+  chunks?: ChunkRun[] | null;
   /** Schema 17: the ignore file the run read, and what each entry did. Null or absent without one. */
   ignores?: IgnoreSummary | null;
   /** Schema 17: the custom concepts the run looked for. Null or absent without a concepts file. */
@@ -52,6 +57,8 @@ export interface RunMetadata {
   tool_version: string;
   report_detail: "summary" | "full";
   target: string;
+  /** What the run measured, of `cost`, `readiness` and `sensitive`. Empty for a chunks run. */
+  components_run?: string[];
   started_at: string;
   duration_seconds: number;
   offline_guard: string;

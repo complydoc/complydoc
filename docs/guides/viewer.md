@@ -35,6 +35,22 @@ The same report as the HTML file an audit writes, drawn differently: a Home page
 every finding linked to where it sits, and the cost of each model under a
 loading plan.
 
+Every run opens on the same pages, whichever command wrote it:
+
+| Page | Holds | Written by |
+| --- | --- | --- |
+| Home | The headline figures, the findings and documents to look at first | every run |
+| Security | Identifiers and hidden instructions, per document and page | `audit`, `sensitive` |
+| Cost & time | Each model's price for the folder, and reading time | `audit`, `cost` |
+| Documents | Each document's pages, text and readings | every run that reads documents |
+| Loaders | Loaders side by side, per file type | `compare-loaders` |
+| Chunks | How each text splitter cut the text | `chunks` |
+
+A page the run did not produce says so, what it would hold, and the command that
+fills it for the same folder, with a button to copy it. Home does the same card
+by card, so a `complydoc cost` run shows its prices and says the identifier scan
+was not part of it.
+
 A document read more than one way opens as a diff of two readers' text: the kept
 reading against another library, OCR or a vision model. A document read one way
 shows each page's text. Each page's first line says what it costs to read.

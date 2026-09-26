@@ -27,8 +27,17 @@ describe("CostPage", () => {
     expect(within(table).getAllByRole("row")).toHaveLength((report.cost?.models.length ?? 0) + 1);
   });
 
-  it("says so when the report has no cost", () => {
+  it("says a run that did not price the documents did not, and names the command for this folder", () => {
+    const report = sampleAudit();
+    report.run.components_run = ["sensitive"];
+    report.run.target = "/work/vendor contracts";
+    renderPage(<CostPage report={{ ...report, cost: null }} />);
+    expect(screen.getByText("No pricing in this run")).toBeInTheDocument();
+    expect(screen.getByText("complydoc cost '/work/vendor contracts'")).toBeInTheDocument();
+  });
+
+  it("tells a priced run with nothing to price apart from one that priced nothing", () => {
     renderPage(<CostPage report={{ ...sampleAudit(), cost: null }} />);
-    expect(screen.getByText("No cost in this report")).toBeInTheDocument();
+    expect(screen.getByText("Nothing in this run could be priced")).toBeInTheDocument();
   });
 });

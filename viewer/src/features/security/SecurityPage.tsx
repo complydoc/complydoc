@@ -1,9 +1,11 @@
 import { BarList } from "@/components/BarList";
+import { NotInRun } from "@/components/NotInRun";
 import { Section, SectionStack } from "@/components/Section";
 import { Stat, StatGrid } from "@/components/Stat";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { ChartConfig } from "@/components/ui/chart";
 import { fileName, formatCount, humanise } from "@/report/format";
+import { measured } from "@/report/measured";
 import { documentHref } from "@/report/route";
 import { evidenceCounts, findingRows, hiddenInstructions, ignoredRows, severityByDocument } from "@/report/security";
 import { SEVERITIES, categoriesByCount } from "@/report/select";
@@ -24,6 +26,7 @@ const BY_SEVERITY = {
 
 /** What the documents carry that should not leave: how much, what, where, and every finding. */
 export function SecurityPage({ report }: { report: Report }) {
+  if (!measured(report, "sensitive")) return <NotInRun report={report} content="sensitive" />;
   const { aggregate } = report;
   const hidden = hiddenInstructions(report);
   const byDocument = severityByDocument(report).map((row) => ({
