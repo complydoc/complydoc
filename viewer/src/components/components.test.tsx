@@ -5,6 +5,7 @@ import { DataTable, type Columns } from "./DataTable";
 import { ReadinessChart } from "./ReadinessChart";
 import { Section, SectionStack } from "./Section";
 import { Stat } from "./Stat";
+import { EvidenceIcon, SeverityIcon } from "./LevelIcons";
 import { ModeToggle } from "./ModeToggle";
 import { TooltipProvider } from "./ui/tooltip";
 import { ToneBadge } from "./ToneBadge";
@@ -115,5 +116,23 @@ describe("ModeToggle", () => {
     );
     await userEvent.click(screen.getByRole("button", { name: "Switch to the dark theme" }));
     expect(onToggle).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("level icons", () => {
+  it("fill as the severity rises, and say which it is", () => {
+    const { container } = render(<SeverityIcon severity="medium" />);
+    const bars = [...container.querySelectorAll("rect")];
+    expect(bars.filter((bar) => bar.getAttribute("class") === "fill-foreground")).toHaveLength(2);
+    expect(screen.getByTitle("Medium severity")).toHaveTextContent("Medium severity");
+  });
+
+  it("fill a ring with the confidence, and break it when only a model thinks so", () => {
+    const { container, rerender } = render(<EvidenceIcon evidence="confirmed" />);
+    expect(screen.getByTitle("Certain")).toBeInTheDocument();
+    expect(container.querySelector("circle")?.getAttribute("class")).toBe("fill-foreground");
+    rerender(<EvidenceIcon evidence="model" />);
+    expect(container.querySelector("circle")?.getAttribute("stroke-dasharray")).toBeTruthy();
+    expect(container.querySelector("path")).toBeNull();
   });
 });

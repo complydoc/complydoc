@@ -1,11 +1,23 @@
+import { EvidenceIcon } from "@/components/LevelIcons";
 import { ToneBadge } from "@/components/ToneBadge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { EVIDENCE } from "@/report/select";
 import type { Evidence, SensitiveMatch } from "@/report/types";
 import { validationSteps } from "@/report/validation";
 
-/** How sure complydoc is of a finding, opening on how it was validated. */
-export function EvidenceBadge({ evidence, match }: { evidence: Evidence; match?: SensitiveMatch | null }) {
+/**
+ * How sure complydoc is of a finding, opening on how it was validated. With
+ * `icon`, a ring that fills with the confidence instead of a coloured badge.
+ */
+export function EvidenceBadge({
+  evidence,
+  match,
+  icon = false,
+}: {
+  evidence: Evidence;
+  match?: SensitiveMatch | null;
+  icon?: boolean;
+}) {
   const grade = EVIDENCE.find((e) => e.key === evidence);
   if (!grade) return null;
   return (
@@ -14,7 +26,7 @@ export function EvidenceBadge({ evidence, match }: { evidence: Evidence; match?:
         className="rounded-full focus-visible:outline-2 focus-visible:outline-ring"
         aria-label={`${grade.label}: how this was validated`}
       >
-        <ToneBadge tone={grade.tone}>{grade.label}</ToneBadge>
+        {icon ? <EvidenceIcon evidence={evidence} /> : <ToneBadge tone={grade.tone}>{grade.label}</ToneBadge>}
       </PopoverTrigger>
       <PopoverContent className="w-80 text-sm">
         <p className="font-medium">How this was validated</p>

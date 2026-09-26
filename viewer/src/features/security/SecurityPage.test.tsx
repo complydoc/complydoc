@@ -32,8 +32,9 @@ describe("SecurityPage", () => {
     const rows = within(table).getAllByRole("row").slice(1);
     // A page of rows at a time.
     expect(rows).toHaveLength(25);
-    expect(rows[0]).toHaveTextContent("high");
-    expect(rows[0]).toHaveTextContent("Certain");
+    // Severity and confidence are icons, each with its word for a screen reader.
+    expect(within(rows[0] as HTMLElement).getByTitle("High severity")).toHaveTextContent("High severity");
+    expect(within(rows[0] as HTMLElement).getByTitle("Certain")).toHaveTextContent("Certain");
     const [finding, document] = within(rows[0] as HTMLElement).getAllByRole("link");
     // The identifier opens its page with it marked; the document opens the document.
     expect(finding).toHaveAttribute("href", expect.stringMatching(/^#documents\/\d+\/\d+\/i\d+$/));

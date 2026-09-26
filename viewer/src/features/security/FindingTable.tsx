@@ -1,14 +1,14 @@
 import { createColumnHelper } from "@tanstack/react-table";
 import { useState } from "react";
 import { DataTable, type Columns } from "@/components/DataTable";
-import { ToneBadge } from "@/components/ToneBadge";
 import { EvidenceBadge } from "@/components/EvidenceBadge";
+import { SeverityIcon } from "@/components/LevelIcons";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { fileName, humanise } from "@/report/format";
 import { documentHref } from "@/report/route";
 import type { FindingRow } from "@/report/security";
-import { EVIDENCE, SEVERITIES, severityTone } from "@/report/select";
+import { EVIDENCE, SEVERITIES } from "@/report/select";
 import type { Severity } from "@/report/types";
 import { IgnoreButton } from "./IgnoreButton";
 
@@ -62,13 +62,13 @@ const columns: Columns<FindingRow> = [
   column.accessor("severity", {
     header: "Severity",
     sortingFn: (a, b) => SEVERITIES.indexOf(a.original.severity) - SEVERITIES.indexOf(b.original.severity),
-    cell: (c) => <ToneBadge tone={severityTone(c.getValue())}>{c.getValue()}</ToneBadge>,
+    cell: (c) => <SeverityIcon severity={c.getValue()} />,
   }),
   column.accessor("evidence", {
     header: "Confidence",
     sortingFn: (a, b) =>
       EVIDENCE.findIndex((e) => e.key === a.original.evidence) - EVIDENCE.findIndex((e) => e.key === b.original.evidence),
-    cell: ({ row, getValue }) => <EvidenceBadge evidence={getValue()} match={row.original.source} />,
+    cell: ({ row, getValue }) => <EvidenceBadge evidence={getValue()} match={row.original.source} icon />,
   }),
   column.display({
     id: "ignore",
@@ -110,6 +110,7 @@ export function FindingTable({ rows }: { rows: FindingRow[] }) {
           <ToggleGroupItem value="all">All {rows.length}</ToggleGroupItem>
           {SEVERITIES.map((s) => (
             <ToggleGroupItem key={s} value={s} disabled={count(s) === 0}>
+              <SeverityIcon severity={s} />
               {humanise(s)} {count(s)}
             </ToggleGroupItem>
           ))}
