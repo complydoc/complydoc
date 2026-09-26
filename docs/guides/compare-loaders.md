@@ -8,6 +8,9 @@ documents returned and the network connections attempted.
 --8<-- "examples/compare_langchain_loaders.py"
 ```
 
+Moving off `langchain-community`? [Replacing a langchain-community loader](replace-langchain-community.md)
+says where each loader went and what to compare before switching.
+
 ## Input
 
 `loaders` is either a mapping of names to loaders, or a sequence of loaders
@@ -22,8 +25,9 @@ At least two are required. Every loader runs with the same `config`,
 ## Loader tags
 
 Each loader is tagged with the framework and library it comes from, read from its
-module and class: `PyPDFLoader` from `langchain_community` is tagged `LangChain` and
-`pypdf`, and a LlamaIndex reader is tagged `LlamaIndex`. Parser presets declare their
+module and class: `PyMuPDF4LLMLoader` from `langchain_pymupdf4llm` is tagged `LangChain`
+and `PyMuPDF4LLM`, `PyPDFLoader` from `langchain_community` `LangChain` and `pypdf`, and a
+LlamaIndex reader `LlamaIndex`. Parser presets declare their
 tags, and hosted presets are also tagged `hosted`. Loaders from other modules get no
 tags. The tags are in `LoaderSummary.tags` and `LoaderRun.tags`, in the `tags` column of
 `report.to_pandas("loaders")`, and beside each loader's name in the HTML report.
@@ -146,10 +150,10 @@ Results are in `report.loader_comparison.facts`, each loader's count in
 
 | Preset | Library | Hosted | Price entry |
 | --- | --- | --- | --- |
-| `parsers.docling(export="markdown")` | `langchain-docling` | no | `docling` |
+| `parsers.docling(export="markdown")` | `langchain-docling[local]` | no | `docling` |
 | `parsers.unstructured(api=False)` | `langchain-unstructured` | when `api=True` | `unstructured_api` |
 | `parsers.llamaparse(tier="cost_effective")` | `llama-parse` | yes | `llamaparse_<tier>` |
-| `parsers.azure_document_intelligence(endpoint=..., api_key=...)` | `langchain-community` | yes | `azure_read`, `azure_layout` |
+| `parsers.azure_document_intelligence(endpoint=..., api_key=...)` | `azure-ai-documentintelligence` | yes | `azure_read`, `azure_layout` |
 
 The libraries are not dependencies; a preset reports what to install when its
 library is missing. A hosted preset raises unless `allow_network=True`.
@@ -186,10 +190,10 @@ the same JSON and HTML report as `complydoc audit`:
 
 ```yaml title="loaders.yaml"
 loaders:
-  pypdf: langchain_community.document_loaders:PyPDFLoader
-  pdfplumber:
-    loader: langchain_community.document_loaders:PDFPlumberLoader
-    options: {extract_images: false}
+  pymupdf4llm: langchain_pymupdf4llm:PyMuPDF4LLMLoader
+  one-per-file:
+    loader: langchain_pymupdf4llm:PyMuPDF4LLMLoader
+    options: {mode: single}
   docling:
     preset: docling
     options: {export: markdown}

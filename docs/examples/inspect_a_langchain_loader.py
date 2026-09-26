@@ -1,10 +1,12 @@
 """Inspect what a LangChain loader extracted from a document."""
 
-from langchain_community.document_loaders import PyPDFLoader
+# requires: langchain_pymupdf4llm
+
+from langchain_pymupdf4llm import PyMuPDF4LLMLoader
 
 import complydoc as cd
 
-report = cd.inspect_documents(PyPDFLoader("src/complydoc/sample/employee-record.pdf"))
+report = cd.inspect_documents(PyMuPDF4LLMLoader("src/complydoc/sample/employee-record.pdf"))
 
 loader = report.loader
 print(f"{loader.name}: {loader.documents_returned} document(s) in {loader.seconds}s")

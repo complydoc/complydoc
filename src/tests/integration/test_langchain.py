@@ -1,4 +1,8 @@
-"""Real LangChain loaders through `inspect_documents`.
+"""Real `langchain-community` loaders through `inspect_documents`.
+
+`langchain-community` is archived; these loaders stay tested because the
+migration guide compares them with their standalone replacements, which
+`test_langchain_standalone.py` covers.
 
 Skipped unless the `integrations` dependency group is installed. The expected
 values were measured on the sample documents that ship with complydoc, and are

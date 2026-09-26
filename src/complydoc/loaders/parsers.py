@@ -4,7 +4,7 @@
 
     report = cd.compare_loaders(
         {
-            "pypdf": PyPDFLoader,
+            "pymupdf4llm": PyMuPDF4LLMLoader,
             "docling": cd.parsers.docling(),
             "llamaparse": cd.parsers.llamaparse(tier="cost_effective"),
         },
@@ -91,7 +91,9 @@ def docling(export: Literal["markdown", "chunks"] = "markdown", **options: Any) 
     """
 
     def factory(path: str) -> _WithSource:
-        loader_module = _require("langchain_docling.loader", "langchain-docling")
+        # The `local` extra is what converts on this machine; without it the
+        # package can only reach a Docling service.
+        loader_module = _require("langchain_docling.loader", '"langchain-docling[local]"')
         export_type = (
             loader_module.ExportType.MARKDOWN
             if export == "markdown"
@@ -184,24 +186,53 @@ def azure_document_intelligence(
     mode: Literal["markdown", "page", "single"] = "markdown",
     **options: Any,
 ) -> LoaderSpec:
-    """Azure AI Document Intelligence, hosted, through `langchain-community`."""
+    """Azure AI Document Intelligence, hosted, through Azure's own SDK.
+
+    `mode="markdown"` returns one Markdown document per file, `"single"` one plain
+    text document, and `"page"` one document per page, numbered from 1 as
+    `page_number`. `options` are passed to `begin_analyze_document`, such as
+    `features`.
+
+    This went through `langchain-community`'s loader until LangChain archived that
+    package in June 2026. It calls the SDK that loader wrapped, with the same
+    request, so the text is the same.
+    """
+    if mode not in ("markdown", "page", "single"):
+        raise ValueError("mode must be one of markdown, page, single")
 
     def factory(path: str) -> _WithSource:
-        module = _require("langchain_community.document_loaders", "langchain-community")
-        loader = module.AzureAIDocumentIntelligenceLoader(
-            api_endpoint=endpoint,
-            api_key=api_key,
-            file_path=path,
-            api_model=model,
-            mode=mode,
-            **options,
+        sdk = _require("azure.ai.documentintelligence", "azure-ai-documentintelligence")
+        credentials = _require("azure.core.credentials", "azure-ai-documentintelligence")
+        client = sdk.DocumentIntelligenceClient(
+            endpoint=endpoint, credential=credentials.AzureKeyCredential(api_key)
         )
-        return _WithSource(loader.load, path)
+
+        def load() -> list[dict[str, Any]]:
+            with open(path, "rb") as file:
+                poller = client.begin_analyze_document(
+                    model,
+                    body=file,
+                    content_type="application/octet-stream",
+                    output_content_format="markdown" if mode == "markdown" else "text",
+                    **options,
+                )
+                result = poller.result()
+            if mode == "page":
+                return [
+                    {
+                        "page_content": " ".join(line.content for line in page.lines or []),
+                        "metadata": {"source": path, "page_number": page.page_number},
+                    }
+                    for page in result.pages or []
+                ]
+            return [{"page_content": result.content or "", "metadata": {"source": path}}]
+
+        return _WithSource(load, path)
 
     return LoaderSpec(
         name=f"azure-{model}",
         factory=factory,
-        tags=("LangChain", "Azure Document Intelligence"),
+        tags=("Azure Document Intelligence",),
         network=True,
         price_key=_AZURE_PRICES.get(model),
         # prebuilt-read and prebuilt-layout; Office and HTML files are read as text only.

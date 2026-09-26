@@ -73,7 +73,11 @@ Issues = "https://github.com/complydoc/complydoc/issues"
 [dependency-groups]
 # Loaders from other frameworks, for the tests that run them for real. Kept out
 # of `dev` because it is fifty-odd packages the tool itself never imports.
+# LangChain's loaders now come as standalone packages; `langchain-community` was
+# archived in June 2026 and stays here only so the migration guide can compare its
+# PyPDFLoader with a replacement.
 integrations = [
+    "langchain-pymupdf4llm>=1.28",
     "langchain-community>=0.3",
     "docx2txt>=0.8",
     "llama-index-core>=0.12",

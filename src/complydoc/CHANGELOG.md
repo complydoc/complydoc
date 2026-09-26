@@ -10,6 +10,9 @@ separately.
 The report JSON moves to schema 17, which only adds fields; reports of schema 16 still
 load.
 
+LangChain sunset `langchain-community` on 22 May 2026 and archived it on 19 June. Nothing
+in complydoc needs it any more.
+
 ### Added
 
 - Comparing loaders over several file types. In `compare_loaders(..., paths=...)` each
@@ -36,6 +39,13 @@ load.
   `complydoc ui`, the Security page can ignore a finding and stop ignoring it, writing
   the audited folder's ignore file. It accepts that write only from its own page.
 
+- A guide, "Replacing a langchain-community loader", with where each loader went, a
+  runnable comparison of `PyPDFLoader` and `PyMuPDF4LLMLoader`, and what changes on a
+  two-column contract.
+
+- Loaders from `langchain-pymupdf4llm` and `langchain-opendataloader-pdf` are tagged with
+  their library, as `langchain-community`'s were.
+
 ### Changed
 
 - In a loader comparison, a document the first loader did not return, because it failed
@@ -56,6 +66,17 @@ load.
   high-severity findings, and the documents to look at first with why. The quick wins,
   the numbers grid, the suggested commands, the notes on what a run could not check and
   the Cost page's cards of cheapest prices are gone.
+
+- `cd.parsers.azure_document_intelligence()` calls Azure's SDK,
+  `azure-ai-documentintelligence`, in place of `langchain-community`'s loader, with the
+  same request. Its tags are `Azure Document Intelligence` without `LangChain`. In
+  `mode="page"` Azure's page numbers, which start at 1, are reported as `page_number`;
+  they were under `page`, which counts from 0.
+
+- `cd.parsers.docling()` names `langchain-docling[local]` when Docling is missing, the
+  extra that converts on this machine.
+
+- The examples, the README and the landing page use `PyMuPDF4LLMLoader`.
 
 ## [0.6.0] — 2026-09-25
 

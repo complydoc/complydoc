@@ -1,10 +1,11 @@
 """Where a loader's code comes from, shown as tags beside its name in reports.
 
 Tags come from the loader's module and, for loaders known to wrap a library, from
-its class name: `langchain_community`'s `PyPDFLoader` is tagged `LangChain` and
+its class name: `langchain_pymupdf4llm`'s `PyMuPDF4LLMLoader` is tagged `LangChain`
+and `PyMuPDF4LLM`, and `langchain_community`'s `PyPDFLoader`, `LangChain` and
 `pypdf`. Parser presets declare their own tags, and a preset that sends documents
-to a hosted service is also tagged `hosted`. A loader from any other module gets no
-tags.
+to a hosted service is also tagged `hosted`. A loader from any other module gets
+no tags.
 """
 
 from __future__ import annotations
@@ -28,6 +29,10 @@ _FRAMEWORKS: tuple[tuple[str, tuple[str, ...]], ...] = (
 )
 
 _LIBRARIES = {
+    # LangChain's standalone integration packages.
+    "PyMuPDF4LLMLoader": "PyMuPDF4LLM",
+    "OpenDataLoaderPDFLoader": "OpenDataLoader PDF",
+    # `langchain-community`, archived in June 2026 and still in wide use.
     "PyPDFLoader": "pypdf",
     "PyPDFDirectoryLoader": "pypdf",
     "PDFPlumberLoader": "pdfplumber",

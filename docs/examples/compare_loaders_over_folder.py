@@ -1,11 +1,18 @@
-"""Compare two LangChain loaders over a folder, with facts the documents should contain."""
+"""Compare two settings of one LangChain loader over a folder, with expected facts."""
 
-from langchain_community.document_loaders import PDFPlumberLoader, PyPDFLoader
+# requires: langchain_pymupdf4llm
+
+import functools
+
+from langchain_pymupdf4llm import PyMuPDF4LLMLoader
 
 import complydoc as cd
 
 report = cd.compare_loaders(
-    {"pypdf": PyPDFLoader, "pdfplumber": PDFPlumberLoader},
+    {
+        "layout": PyMuPDF4LLMLoader,
+        "no-layout": functools.partial(PyMuPDF4LLMLoader, use_layout=False),
+    },
     paths=[
         "src/complydoc/sample/employee-record.pdf",
         "src/complydoc/sample/vendor-assessment.pdf",
@@ -20,7 +27,7 @@ report = cd.compare_loaders(
 
 for row in report.loader_comparison.loaders:
     print(
-        f"{row.name:<11} documents {row.documents}  failed {len(row.failures)}  "
+        f"{row.name:<10} documents {row.documents}  failed {len(row.failures)}  "
         f"facts found {row.facts_found}"
     )
 
