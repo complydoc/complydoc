@@ -90,6 +90,11 @@ in complydoc needs it any more.
   on pages of mixed line lengths is quicker than padded batches. Findings are
   unchanged apart from those the better OCR spacing adds.
 
+- `--jobs 0`, the default, gives a folder a worker for every three documents, up
+  to half the cores; it was one for every twelve, up to all of them. Workers
+  are cheap to start now that they share the name model: six documents read in
+  6.4s rather than 8.8s, and 96 in 13.8s rather than 14.8s.
+
 - The viewer's top bar chooses how pages are read, not which reader is kept:
   Loader, Loader + OCR on scans, OCR on every page, Vision on every page, or the
   complydoc router, which reads each page the cheapest way that reads it well and is

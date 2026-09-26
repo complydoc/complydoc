@@ -81,19 +81,25 @@ def test_jobs_resolve_to_something_usable():
     assert resolve_jobs(-4, 10) == 1
 
 
-def test_a_small_folder_is_left_in_one_process():
-    """Spreading fifteen documents over eleven cores was slower than not.
+def test_a_folder_gets_a_worker_for_every_few_documents(monkeypatch):
+    """A worker no longer loads the name model, so it is cheap to start.
 
-    Each worker loads its own OCR engine, so below a dozen documents a worker
-    costs more to start than the documents it would go on to read.
+    Six documents read in 6.4s with two workers against 8.8s with one.
     """
+    monkeypatch.setattr("os.cpu_count", lambda: 11)
     assert resolve_jobs(0, 1) == 1
-    assert resolve_jobs(0, 15) == 1
+    assert resolve_jobs(0, 3) == 1
+    assert resolve_jobs(0, 6) == 2
+    assert resolve_jobs(0, 10) == 4
 
 
-def test_a_large_folder_uses_the_machine():
-    assert resolve_jobs(0, 120) > 1
-    assert resolve_jobs(0, 1200) >= resolve_jobs(0, 120)
+def test_a_large_folder_uses_half_the_machine(monkeypatch):
+    """More workers wait on the one name model and on each other's OCR."""
+    monkeypatch.setattr("os.cpu_count", lambda: 11)
+    assert resolve_jobs(0, 120) == 5
+    assert resolve_jobs(0, 1200) == 5
+    monkeypatch.setattr("os.cpu_count", lambda: 1)
+    assert resolve_jobs(0, 120) == 1
 
 
 def test_asking_for_workers_overrides_the_judgement():

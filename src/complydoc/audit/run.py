@@ -962,20 +962,28 @@ def _outcomes(
             yield recovered
 
 
-_MIN_DOCUMENTS_PER_WORKER = 12
-"""Below this, a worker costs more to start than the documents it would read.
+_DOCUMENTS_PER_WORKER = 3
+"""A worker for every this many documents, up to `_max_workers()`.
 
-Each one loads its own OCR engine, so a handful of documents spread over every
-core spends its time on start-up. Measured on a folder of a hundred documents:
-one process 13.6s, four 11.4s, eight 10.1s, and a folder of fifteen is quicker
-in one process than in eleven.
+A worker no longer loads the name model, so starting one costs little: on six
+documents two workers took 6.4s against 8.8s for one, and on three they cost
+nothing.
 """
+
+
+def _max_workers() -> int:
+    """Half the cores. Past that, the workers wait on the one name model and on each other's OCR.
+
+    Measured on 96 mixed documents on eleven cores: two workers 16.1s, five 13.8s,
+    eight 14.8s, eleven 15.6s. With `--ocr-compare` on 24, four took 44s and eight 62s.
+    """
+    return max(1, (os.cpu_count() or 1) // 2)
 
 
 def resolve_jobs(jobs: int, files: int) -> int:
     """How many processes to use. 0 decides from the size of the folder."""
     if jobs == 0:
-        jobs = min(os.cpu_count() or 1, files // _MIN_DOCUMENTS_PER_WORKER)
+        jobs = min(_max_workers(), -(-files // _DOCUMENTS_PER_WORKER))
     return max(1, min(jobs, max(1, files)))
 
 
