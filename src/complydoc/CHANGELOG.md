@@ -31,12 +31,13 @@ load.
 ### Changed
 
 - The viewer's document page is simpler. A document read more than one way shows a
-  diff of two readers; one read one way shows its pages as read. Findings are marked in
-  the text itself, coloured by severity, with ignored ones struck through. Clicking one
-  says what it is and lets you tick it off as not a problem, which under `complydoc ui`
-  is saved to the ignore file. Arrows step through the findings in order. Each page's
-  first line says what it costs to read. The page picture sits beside the text and can
-  be put away to give the text the whole width. The separate Pages and Diff views, the
+  diff of two readers; one read one way shows its pages as read. Findings are underlined
+  in the text itself, coloured by severity, and a rail at the text's edge shows where
+  each sits in the whole document. Resting the pointer on one says what it is and lets
+  you tick it off as not a problem, which under `complydoc ui` is saved to the ignore
+  file; ignored findings leave the text. Arrows step through the findings in order. Each page's
+  first line says what it costs to read. The page picture sits to the left of the text,
+  as tall as it, and can be put away to give the text the whole width. The separate Pages and Diff views, the
   reading panes and the per-reader costs are gone. An eye button shows the values in a
   report written with `--reveal`, which opens masked.
 

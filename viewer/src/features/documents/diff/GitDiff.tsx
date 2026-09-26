@@ -10,7 +10,8 @@ import "@git-diff-view/react/styles/diff-view-pure.css";
 import { FoldVerticalIcon, UnfoldVerticalIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { useInlineMarks, type InlineMark } from "@/hooks/useInlineMarks";
+import { FindingRail } from "@/features/documents/detail/FindingRail";
+import { useInlineMarks, type InlineFindings, type InlineMark, type MarkTick } from "@/hooks/useInlineMarks";
 import { useIsDark } from "@/hooks/useIsDark";
 
 export interface GitDiffProps {
@@ -24,13 +25,7 @@ export interface GitDiffProps {
   /** Called with the page whose lines are at the top of the view, as it scrolls. */
   onVisiblePage?: (page: number) => void;
   /** Findings to mark where they sit in the text. */
-  marks?: InlineMark[];
-  /** The finding to draw out from the rest. */
-  active?: string | null;
-  /** A finding to scroll to; a new object each time. */
-  focus?: { key: string } | null;
-  /** A marked finding was clicked: its key, and where it is on screen. */
-  onPick?: (key: string, rect: DOMRect) => void;
+  inline?: InlineFindings;
 }
 
 const NO_MARKS: InlineMark[] = [];
@@ -82,10 +77,7 @@ export default function GitDiff({
   split,
   jump,
   onVisiblePage,
-  marks = NO_MARKS,
-  active = null,
-  focus = null,
-  onPick,
+  inline,
 }: GitDiffProps) {
   const scroller = useRef<HTMLDivElement>(null);
   const frame = useRef(0);
@@ -133,11 +125,13 @@ export default function GitDiff({
   }, [jump, scrollTo]);
 
   // Every finding marked where it sits in the text; one folded away is unfolded to.
-  useInlineMarks(scroller, marks, {
-    active,
-    focus,
-    ...(onPick && { onPick }),
+  const [ticks, setTicks] = useState<MarkTick[]>([]);
+  useInlineMarks(scroller, inline?.marks ?? NO_MARKS, {
+    active: inline?.active ?? null,
+    focus: inline?.focus ?? null,
+    ...(inline && { onPick: inline.onPick, onHover: inline.onHover, onLeave: inline.onLeave }),
     onMissing: () => setUnfolded(true),
+    onLaid: setTicks,
   });
 
   const onScroll = () => {
@@ -180,19 +174,22 @@ export default function GitDiff({
           </>
         )}
       </div>
-      <div ref={scroller} onScroll={onScroll} data-testid="diff-scroller" className="min-h-0 flex-1 overflow-y-auto">
-        {same ? (
-          <SameText text={newText} />
-        ) : (
-          <DiffView
-            diffFile={file}
-            diffViewMode={mode === "split" ? DiffModeEnum.Split : DiffModeEnum.Unified}
-            diffViewTheme={dark ? "dark" : "light"}
-            diffViewWrap
-            diffViewHighlight={false}
-            diffViewFontSize={13}
-          />
-        )}
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        <div ref={scroller} onScroll={onScroll} data-testid="diff-scroller" className="min-h-0 flex-1 overflow-y-auto">
+          {same ? (
+            <SameText text={newText} />
+          ) : (
+            <DiffView
+              diffFile={file}
+              diffViewMode={mode === "split" ? DiffModeEnum.Split : DiffModeEnum.Unified}
+              diffViewTheme={dark ? "dark" : "light"}
+              diffViewWrap
+              diffViewHighlight={false}
+              diffViewFontSize={13}
+            />
+          )}
+        </div>
+        {inline && <FindingRail ticks={ticks} active={inline.active} onPick={inline.onRail} label={inline.label} />}
       </div>
     </div>
   );

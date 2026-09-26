@@ -111,9 +111,44 @@ describe("DocumentDetail", () => {
       expect(["high", "medium", "low"].flatMap((tone) => marked(registry, tone)).length).toBeGreaterThan(0),
     );
     for (const value of marked(registry, "high"))
-      expect(onPage.some((m) => m.severity === "high" && m.masked.replace(/\s/g, "") === value.replace(/\s/g, ""))).toBe(
-        true,
-      );
+      expect(
+        onPage.some((m) => m.severity === "high" && m.masked.replace(/\s/g, "") === value.replace(/\s/g, "")),
+      ).toBe(true);
+    stopRecording();
+  });
+
+  it("opens a finding's card when the pointer rests on it, and closes it when it leaves", async () => {
+    const registry = recordHighlights();
+    open(fingerprinted(), "supplier-invoices-scanned.pdf");
+    await vi.waitFor(() =>
+      expect(marked(registry, "high").length + marked(registry, "medium").length).toBeGreaterThan(0),
+    );
+    const range = required(
+      [...(registry.get("complydoc-high")?.ranges ?? []), ...(registry.get("complydoc-medium")?.ranges ?? [])][0],
+    );
+    // jsdom lays nothing out: the caret and the text's box are given.
+    Range.prototype.getClientRects = () => [new DOMRect(0, 0, 100, 20)] as unknown as DOMRectList;
+    Object.assign(document, {
+      caretPositionFromPoint: () => ({ offsetNode: range.startContainer, offset: range.startOffset }),
+    });
+    const text = screen.getByTestId("page-reading");
+    text.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: 10, clientY: 10 }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(await screen.findByRole("dialog")).toHaveTextContent(/Not a problem: ignore it/);
+    text.dispatchEvent(new MouseEvent("mouseleave"));
+    await vi.waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    Reflect.deleteProperty(document, "caretPositionFromPoint");
+    Reflect.deleteProperty(Range.prototype, "getClientRects");
+    stopRecording();
+  });
+
+  it("puts a tick on the rail for each finding, which goes to it", async () => {
+    recordHighlights();
+    open(sampleAudit(), "supplier-invoices-scanned.pdf");
+    const rail = await screen.findByRole("group", { name: "Where the findings are" });
+    const [tick] = within(rail).getAllByRole("button");
+    await userEvent.click(required(tick));
+    expect(within(screen.getByRole("group", { name: "Findings" })).getByText(/Finding \d+ of \d+/)).toBeInTheDocument();
     stopRecording();
   });
 

@@ -88,17 +88,33 @@ interface Options {
   onPick?: (key: string, rect: DOMRect) => void;
   /** The focused mark is not in the text, as when the diff has folded it away. */
   onMissing?: () => void;
+  /** The pointer has rested on a mark: its key, and where it is on screen. */
+  onHover?: (key: string, rect: DOMRect) => void;
+  /** The pointer has left the mark it rested on. */
+  onLeave?: () => void;
+  /** Where each mark sits down the whole text, from 0 at the top to 1 at the bottom. */
+  onLaid?: (ticks: MarkTick[]) => void;
 }
+
+export interface MarkTick {
+  key: string;
+  tone: MarkTone;
+  /** How far down the text the mark sits, 0 to 1. */
+  at: number;
+}
+
+/** How long the pointer rests on a mark before it opens: long enough that passing over text opens nothing. */
+const HOVER_DELAY = 250;
 
 export function useInlineMarks(
   container: RefObject<HTMLElement | null>,
   marks: InlineMark[],
-  { active, focus, onPick, onMissing }: Options,
+  { active, focus, onPick, onMissing, onHover, onLeave, onLaid }: Options,
 ) {
   const placed = useRef(new Map<string, Range[]>());
-  const callbacks = useRef({ onPick, onMissing });
+  const callbacks = useRef({ onPick, onMissing, onHover, onLeave, onLaid });
   useEffect(() => {
-    callbacks.current = { onPick, onMissing };
+    callbacks.current = { onPick, onMissing, onHover, onLeave, onLaid };
   });
 
   // Lay every mark, and again whenever the text is redrawn.
@@ -117,6 +133,17 @@ export function useInlineMarks(
       }
       for (const tone of TONES) CSS.highlights.set(highlightName(tone), new Highlight(...(byTone.get(tone) ?? [])));
       CSS.highlights.set(ACTIVE, new Highlight(...(active ? (placed.current.get(active) ?? []) : [])));
+      // Where each mark sits down the whole text, for a rail beside it.
+      const top = element.getBoundingClientRect().top - element.scrollTop;
+      const height = Math.max(element.scrollHeight, 1);
+      const ticks: MarkTick[] = [];
+      for (const mark of marks)
+        for (const range of placed.current.get(mark.key) ?? []) {
+          const at = (range.getBoundingClientRect().top - top) / height;
+          if (!ticks.some((t) => t.key === mark.key && Math.abs(t.at - at) < 0.005))
+            ticks.push({ key: mark.key, tone: mark.tone, at: Math.min(1, Math.max(0, at)) });
+        }
+      callbacks.current.onLaid?.(ticks);
     };
     lay();
     const observer = new MutationObserver(() => {
@@ -153,15 +180,21 @@ export function useInlineMarks(
     return () => window.clearTimeout(timer);
   }, [container, focus]);
 
-  // A click on a mark opens it; the pointer says which text can be clicked.
+  // Resting the pointer on a mark opens it, and so does a click, for touch and keys.
   useEffect(() => {
     const element = container.current;
     if (!element) return;
     const hit = (event: MouseEvent) => {
       const caret = caretAt(event.clientX, event.clientY);
       if (!caret) return null;
+      const within = (range: Range) =>
+        [...range.getClientRects()].some(
+          (r) =>
+            event.clientX >= r.left && event.clientX <= r.right && event.clientY >= r.top && event.clientY <= r.bottom,
+        );
       for (const [key, ranges] of placed.current) {
-        const range = ranges.find((r) => r.isPointInRange(caret.node, caret.offset));
+        // The caret snaps to the nearest letter, so the pointer is checked against the text's own boxes.
+        const range = ranges.find((r) => r.isPointInRange(caret.node, caret.offset) && within(r));
         if (range) return { key, range };
       }
       return null;
@@ -170,19 +203,48 @@ export function useInlineMarks(
       const found = hit(event);
       if (found) callbacks.current.onPick?.(found.key, found.range.getBoundingClientRect());
     };
-    let frame = 0;
+    let resting: string | null = null;
+    let timer = 0;
     const move = (event: MouseEvent) => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => {
-        element.style.cursor = hit(event) ? "pointer" : "";
-      });
+      const found = hit(event);
+      element.style.cursor = found ? "pointer" : "";
+      if (found?.key === resting) return;
+      window.clearTimeout(timer);
+      if (resting !== null) callbacks.current.onLeave?.();
+      resting = found?.key ?? null;
+      if (found)
+        timer = window.setTimeout(
+          () => callbacks.current.onHover?.(found.key, found.range.getBoundingClientRect()),
+          HOVER_DELAY,
+        );
+    };
+    const leave = () => {
+      window.clearTimeout(timer);
+      if (resting !== null) callbacks.current.onLeave?.();
+      resting = null;
     };
     element.addEventListener("click", click);
     element.addEventListener("mousemove", move);
+    element.addEventListener("mouseleave", leave);
     return () => {
       element.removeEventListener("click", click);
       element.removeEventListener("mousemove", move);
-      cancelAnimationFrame(frame);
+      element.removeEventListener("mouseleave", leave);
+      window.clearTimeout(timer);
     };
   }, [container]);
+}
+
+/** Everything a view of text needs to mark findings in it, handed down as one. */
+export interface InlineFindings {
+  marks: InlineMark[];
+  active: string | null;
+  focus: { key: string } | null;
+  onPick: (key: string, rect: DOMRect) => void;
+  onHover: (key: string, rect: DOMRect) => void;
+  onLeave: () => void;
+  /** A tick on the rail was chosen. */
+  onRail: (key: string) => void;
+  /** What a mark is, in words, for the rail's ticks. */
+  label: (key: string) => string;
 }

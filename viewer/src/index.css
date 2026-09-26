@@ -214,14 +214,15 @@
   font-family: var(--font-mono);
 }
 
-/* Findings marked where they sit in the text, by severity (see useInlineMarks). They
-   are CSS highlights, so the diff library's own elements are left alone. Ignored ones
-   are struck through; the one in hand is drawn out from the rest. */
+/* Findings underlined where they sit in the text, by severity (see useInlineMarks). An
+   underline leaves the diff's own red and green readable, where a fill fought them.
+   They are CSS highlights, so the diff library's own elements are left alone. The one
+   in hand is drawn out from the rest. */
 ::highlight(complydoc-high) {
-  background-color: color-mix(in oklab, var(--destructive) 32%, transparent);
+  text-decoration: underline 2px var(--destructive);
 }
 ::highlight(complydoc-medium) {
-  background-color: color-mix(in oklab, var(--warning) 30%, transparent);
+  text-decoration: underline 2px var(--warning);
 }
 ::highlight(complydoc-low) {
   text-decoration: underline dotted var(--muted-foreground);

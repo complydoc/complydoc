@@ -39,15 +39,17 @@ A document read more than one way opens as a diff of two readers' text: the kept
 reading against another library, OCR or a vision model. A document read one way
 shows each page's text. Each page's first line says what it costs to read.
 
-What was found is marked in the text itself: high severity in red, medium in
-amber, low underlined, and ignored findings struck through. Click a mark to see
-what it is and how sure complydoc is, and tick it off as not a problem. Under
-`complydoc ui` the tick is saved to the audited folder's ignore file; otherwise
-it lasts while the page is open. The arrows beside the file name step through
-the findings in order.
+What was found is underlined in the text itself: red for high severity, amber
+for medium, dotted for low. A rail at the text's edge has a tick where each
+finding sits in the whole document; click one to go there. Rest the pointer on
+an underlined value to see what it is and how sure complydoc is, and tick it off
+as not a problem. Under `complydoc ui` the tick is saved to the audited folder's
+ignore file; otherwise it lasts while the page is open. Ignored findings leave
+the text, and the Security page lists them. The arrows beside the file name step
+through the findings in order.
 
-Beside the text is the page's picture, when the report has one. Put it away to
-give the text the whole width.
+To the left of the text is the page's picture, when the report has one. Put it
+away to give the text the whole width.
 
 Page pictures need a report written with them:
 

@@ -1,7 +1,7 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useState, type ReactNode } from "react";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { InlineMark } from "@/hooks/useInlineMarks";
+import type { InlineFindings } from "@/hooks/useInlineMarks";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { defaultSides, readersOf, sideName, sideText, type Side } from "@/report/documentDiff";
 import type { Report } from "@/report/types";
@@ -48,13 +48,9 @@ interface DocumentDiffProps {
   /** Show the values, where the report holds them. */
   unmasked?: boolean;
   /** Findings to mark where they sit in the text. */
-  marks?: InlineMark[];
-  /** The finding to draw out from the rest. */
-  active?: string | null;
-  /** A finding to scroll to; a new object each time. */
-  focus?: { key: string } | null;
-  /** A marked finding was clicked. */
-  onPick?: (key: string, rect: DOMRect) => void;
+  inline?: InlineFindings;
+  /** More controls at the end of the readers' row, right above the text, such as the eye. */
+  toolbar?: ReactNode;
   /** A few words after each page's `# Page N` line, such as what the page costs. */
   notes?: Record<number, string>;
 }
@@ -70,10 +66,8 @@ export function DocumentDiff({
   jump = null,
   onVisiblePage,
   unmasked = false,
-  marks,
-  active = null,
-  focus = null,
-  onPick,
+  inline,
+  toolbar,
   notes = {},
 }: DocumentDiffProps) {
   const [[base, compare], setSides] = useState<[Side, Side]>(() => defaultSides(report, index));
@@ -98,6 +92,7 @@ export function DocumentDiff({
           reader={compare.reader}
           onChange={(reader) => setSides([base, { ...compare, reader }])}
         />
+        {toolbar && <span className="ml-auto">{toolbar}</span>}
       </div>
 
       <Suspense fallback={<Skeleton className="min-h-0 w-full flex-1 rounded-xl" />}>
@@ -108,10 +103,7 @@ export function DocumentDiff({
           newText={sideText(report, compare, "sentences", unmasked, notes)}
           split={split}
           jump={jump}
-          {...(marks && { marks })}
-          active={active}
-          focus={focus}
-          {...(onPick && { onPick })}
+          {...(inline && { inline })}
           {...(onVisiblePage && { onVisiblePage })}
         />
       </Suspense>

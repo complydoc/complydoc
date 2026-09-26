@@ -11,6 +11,9 @@ interface FindingPopoverProps {
   /** Where the finding's text is on screen, to open beside. */
   rect: DOMRect | null;
   onClose: () => void;
+  /** The pointer came onto the card, or left it: a card opened by hovering stays while it is used. */
+  onPointerEnter?: () => void;
+  onPointerLeave?: () => void;
 }
 
 /**
@@ -18,7 +21,7 @@ interface FindingPopoverProps {
  * tick it off as not a problem. Under `complydoc ui` the tick is saved to the
  * ignore file; otherwise it lasts while the page is open.
  */
-export function FindingPopover({ finding, rect, onClose }: FindingPopoverProps) {
+export function FindingPopover({ finding, rect, onClose, onPointerEnter, onPointerLeave }: FindingPopoverProps) {
   const { editable, ignore, unignore } = useIgnores();
   const isIgnored = useIsIgnored();
   const open = finding !== null && rect !== null;
@@ -29,7 +32,13 @@ export function FindingPopover({ finding, rect, onClose }: FindingPopoverProps) 
     <Popover open={open} onOpenChange={(next) => !next && onClose()}>
       <PopoverAnchor virtualRef={anchor} />
       {finding && (
-        <PopoverContent align="start" className="w-80" onOpenAutoFocus={(event) => event.preventDefault()}>
+        <PopoverContent
+          align="start"
+          className="w-80"
+          onOpenAutoFocus={(event) => event.preventDefault()}
+          {...(onPointerEnter && { onPointerEnter })}
+          {...(onPointerLeave && { onPointerLeave })}
+        >
           <div className="flex flex-col gap-3 text-sm">
             <div className="flex flex-col gap-1">
               <span className="font-medium">{finding.label}</span>
@@ -53,7 +62,11 @@ export function FindingPopover({ finding, rect, onClose }: FindingPopoverProps) 
                 onCheckedChange={(checked) => {
                   if (!finding.fingerprint) return;
                   void (checked
-                    ? ignore({ finding: finding.fingerprint, reason: TICKED, what: `${finding.label} ${finding.value}` })
+                    ? ignore({
+                        finding: finding.fingerprint,
+                        reason: TICKED,
+                        what: `${finding.label} ${finding.value}`,
+                      })
                     : unignore(finding.fingerprint));
                 }}
               />
