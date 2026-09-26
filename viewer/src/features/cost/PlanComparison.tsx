@@ -6,7 +6,8 @@ import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, Tabl
 import { usePlan } from "@/hooks/usePlan";
 import { cn } from "@/lib/utils";
 import { formatCount, formatPageUsd, formatSeconds } from "@/report/format";
-import { reportTotals, type Plan, type ReaderChoice, type Totals } from "@/report/plan";
+import { Badge } from "@/components/ui/badge";
+import { reportTotals, type Method, type Plan, type Totals } from "@/report/plan";
 import type { Report } from "@/report/types";
 
 /** A whole number from a box, within reason, or the fallback while it is being typed. */
@@ -26,13 +27,62 @@ function projected(totals: Totals, documents: number, cores: number) {
 }
 
 /** Which of the plan's models a way of reading sends pages to. */
-function modelsFor(reader: ReaderChoice, plan: Plan): string {
+function modelsFor(method: Method, plan: Plan): string {
   const text = plan.text?.name ?? "no priced model";
   const vision = plan.vision?.name ?? "no vision model";
-  if (reader === "vision") return vision;
+  if (method === "vision") return vision;
   // One model for both is named once.
-  if (reader === "routed") return text === vision ? text : `${text}, ${vision} for images`;
+  if (method === "router") return text === vision ? text : `${text}, ${vision} for images`;
   return text;
+}
+
+interface Way {
+  key: string;
+  label: string;
+  description: string;
+  recommended: boolean;
+  plan: Plan;
+}
+
+/**
+ * Each method under the loaders chosen, and the method that reads files' own text
+ * with each other loader the run compared, so loaders can be weighed on the same
+ * table.
+ */
+function waysToRead(
+  options: ReturnType<typeof usePlan>["options"],
+  choices: ReturnType<typeof usePlan>["loaderChoices"],
+  plan: Plan,
+): Way[] {
+  const ways: Way[] = options.map((option) => ({
+    key: option.id,
+    label: option.label,
+    description: option.description,
+    recommended: Boolean(option.recommended),
+    plan: { ...plan, method: option.id },
+  }));
+  const withText = options.find((o) => o.id === "loader_ocr") ?? options.find((o) => o.id === "loader");
+  if (!withText) return ways;
+  for (const choice of choices) {
+    const current = plan.loaders[choice.format] ?? choice.readers[0];
+    for (const reader of choice.readers.filter((r) => r !== current)) {
+      ways.push({
+        key: `${withText.id}:${choice.format}:${reader}`,
+        label: `${withText.label}, with ${reader} for ${choice.label}`,
+        description: `As above, with ${reader} reading the ${choice.label} files' own text.`,
+        recommended: false,
+        plan: { ...plan, method: withText.id, loaders: { ...plan.loaders, [choice.format]: reader } },
+      });
+    }
+  }
+  return ways;
+}
+
+function samePlan(a: Plan, b: Plan): boolean {
+  return (
+    a.method === b.method &&
+    JSON.stringify(Object.entries(a.loaders).sort()) === JSON.stringify(Object.entries(b.loaders).sort())
+  );
 }
 
 /**
@@ -41,7 +91,12 @@ function modelsFor(reader: ReaderChoice, plan: Plan): string {
  * the machine that ran the audit and projected to a folder of any size.
  */
 export function PlanComparison({ report }: { report: Report }) {
-  const { plan, options, chooseReader } = usePlan();
+  const { plan, options, loaderChoices, chooseMethod, chooseLoader } = usePlan();
+  const ways = waysToRead(options, loaderChoices, plan);
+  const choose = (way: Way) => {
+    chooseMethod(way.plan.method);
+    for (const [format, reader] of Object.entries(way.plan.loaders)) chooseLoader(format, reader);
+  };
   const [volume, setVolume] = useState("10000");
   const [cores, setCores] = useState(String(Math.max(1, navigator.hardwareConcurrency || 8)));
   const documents = wholeNumber(volume, 10_000, 100_000_000);
@@ -84,34 +139,37 @@ export function PlanComparison({ report }: { report: Report }) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {options.map((option) => {
-              const totals = reportTotals(report, { ...plan, reader: option.id });
+            {ways.map((way) => {
+              const totals = reportTotals(report, way.plan);
               const scaled = projected(totals, documents, workers);
-              const chosen = option.id === plan.reader;
+              const chosen = samePlan(way.plan, plan);
               const untimed = totals.untimed > 0 ? ` (${formatCount(totals.untimed)} pages not timed)` : "";
               return (
                 <TableRow
-                  key={option.id}
+                  key={way.key}
                   data-state={chosen ? "selected" : undefined}
-                  onClick={() => chooseReader(option.id)}
+                  onClick={() => choose(way)}
                   className="cursor-pointer"
                 >
                   <TableCell className="pl-4">
                     <span className="flex items-center gap-2 font-medium">
                       <CheckIcon className={cn("size-4 text-primary", !chosen && "invisible")} />
-                      {option.label}
+                      {way.label}
+                      {way.recommended && <Badge variant="secondary">Recommended</Badge>}
                     </span>
                     <span className="block pl-6 text-xs whitespace-normal text-muted-foreground">
-                      {option.description}
+                      {way.description}
                     </span>
                   </TableCell>
-                  <TableCell className={cn("text-right tabular-nums", totals.pagesRead < totals.pages && "text-warning")}>
+                  <TableCell
+                    className={cn("text-right tabular-nums", totals.pagesRead < totals.pages && "text-warning")}
+                  >
                     {formatCount(totals.pagesRead)} of {formatCount(totals.pages)}
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
                     {formatPageUsd(totals.usd)}
                     <span className="block text-xs whitespace-normal text-muted-foreground">
-                      on {modelsFor(option.id, plan)}
+                      on {modelsFor(way.plan.method, plan)}
                     </span>
                   </TableCell>
                   <TableCell className="text-right tabular-nums" title={untimed || undefined}>
@@ -132,10 +190,10 @@ export function PlanComparison({ report }: { report: Report }) {
         </Table>
       </Card>
       <p className="text-xs text-pretty text-muted-foreground">
-        Time is how long reading took on the machine that ran the audit, not how long a model takes to answer. A
-        vision model&apos;s time is only shown where a --verify run timed real calls; &ldquo;+&rdquo; means some pages
-        were not timed, and &ldquo;~&rdquo; a loader&apos;s total spread over its pages. Choose a row to price the rest
-        of the report that way.
+        Time is how long reading took on the machine that ran the audit, not how long a model takes to answer. A vision
+        model&apos;s time is only shown where a --verify run timed real calls; &ldquo;+&rdquo; means some pages were not
+        timed, and &ldquo;~&rdquo; a loader&apos;s total spread over its pages. Choose a row to price the rest of the
+        report that way.
       </p>
     </div>
   );

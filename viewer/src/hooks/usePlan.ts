@@ -1,6 +1,6 @@
 import { createContext, useContext } from "react";
 import type { ModelChoice } from "@/hooks/useModelChoice";
-import type { Plan, PlanOption, ReaderChoice } from "@/report/plan";
+import type { LoaderChoice, Method, Plan, PlanOption } from "@/report/plan";
 import type { PricedModel } from "@/report/pricing";
 
 export interface PlanState {
@@ -8,7 +8,10 @@ export interface PlanState {
   options: PlanOption[];
   models: PricedModel[];
   choice: ModelChoice;
-  chooseReader: (id: ReaderChoice) => void;
+  /** The file types a loader can be chosen for. */
+  loaderChoices: LoaderChoice[];
+  chooseMethod: (id: Method) => void;
+  chooseLoader: (format: string, reader: string) => void;
 }
 
 export const PlanContext = createContext<PlanState | null>(null);

@@ -12,19 +12,51 @@ import { imagePrice, textPrice, type PricedModel } from "./pricing";
 import type { DocumentEntry, PageText, Report } from "./types";
 
 /** How the pages are read. */
-export type ReaderChoice = "kept" | "ocr" | "vision" | "routed" | `reader:${string}`;
+export type Method = "loader" | "loader_ocr" | "ocr" | "vision" | "router";
 
 export interface PlanOption {
-  id: ReaderChoice;
+  id: Method;
   label: string;
   /** What choosing it means, in a line. */
   description: string;
+  /** The way complydoc would read these documents. */
+  recommended?: boolean;
 }
 
 export interface Plan {
-  reader: ReaderChoice;
+  method: Method;
+  /**
+   * The loader chosen for each file type the run read more than one way, by
+   * format: `{ pdf: "pypdf" }`. A type not named here is read by the loader the
+   * run kept for it, and every type but a PDF has only its own.
+   */
+  loaders: Record<string, string>;
   text: PricedModel | null;
   vision: PricedModel | null;
+}
+
+/** A file type the run read with more than one loader, and those loaders, the kept one first. */
+export interface LoaderChoice {
+  format: string;
+  label: string;
+  readers: string[];
+}
+
+const FORMAT_LABELS: Record<string, string> = {
+  pdf: "PDF",
+  docx: "Word",
+  xlsx: "Excel",
+  pptx: "PowerPoint",
+  html: "HTML",
+  markdown: "Markdown",
+  text: "Text",
+  email: "Email",
+  image: "Images",
+  other: "Other files",
+};
+
+export function formatLabel(format: string): string {
+  return FORMAT_LABELS[format] ?? format;
 }
 
 /** The kept reading's reader, as the run named it. */
@@ -32,55 +64,92 @@ function keptName(report: Report): string {
   return report.run.extractor;
 }
 
-function hasScans(report: Report): boolean {
-  return report.documents.some((d) => d.extracted_text.some((p) => p.source === "ocr"));
+/** A page read from its own text: a text layer, a document's own text, or a loader's. */
+function ownText(page: PageText): boolean {
+  return page.source === "native" || page.source === "loader";
 }
 
-/** Every other reader the run compared, by the name its readings are kept under. */
-function otherReaders(report: Report): string[] {
-  const kept = keptName(report);
-  const names = new Set<string>();
+function hasScans(report: Report): boolean {
+  return report.documents.some((d) => d.extracted_text.some((p) => !ownText(p)));
+}
+
+/** Each file type's loaders, the kept one first, from the pages each read. */
+export function readersByFormat(report: Report): Map<string, string[]> {
+  const found = new Map<string, string[]>();
   for (const document of report.documents) {
+    const readers = found.get(document.format) ?? [];
     for (const page of document.extracted_text) {
-      for (const name of Object.keys(page.readings)) {
-        if (name !== kept && !name.startsWith("vision:") && page.source !== "ocr") names.add(name);
+      if (!ownText(page)) continue;
+      for (const name of [page.kept || keptName(report), ...Object.keys(page.readings)]) {
+        if (name && !name.startsWith("vision:") && !readers.includes(name)) readers.push(name);
       }
     }
+    found.set(document.format, readers);
   }
-  return [...names];
+  return found;
 }
 
-/** The ways this report's pages can be read, the one the run kept first. */
-export function planOptions(report: Report): PlanOption[] {
-  const kept = keptName(report);
+/** The file types a loader can be chosen for: those the run read more than one way. */
+export function loaderChoices(report: Report): LoaderChoice[] {
+  return [...readersByFormat(report)]
+    .filter(([, readers]) => readers.length > 1)
+    .map(([format, readers]) => ({ format, label: formatLabel(format), readers }));
+}
+
+/** Each type's loader in words: "pdfplumber for PDF, python-docx for Word". */
+function loaderSummary(report: Report, loaders: Record<string, string>): string {
+  return [...readersByFormat(report)]
+    .filter(([, readers]) => readers.length > 0)
+    .map(([format, readers]) => `${loaders[format] ?? readers[0]} for ${formatLabel(format)}`)
+    .join(", ");
+}
+
+/** The ways this report's pages can be read, with the loaders chosen in `loaders`. */
+export function planOptions(report: Report, loaders: Record<string, string> = {}): PlanOption[] {
+  const which = loaderSummary(report, loaders);
+  const scans = hasScans(report);
   const options: PlanOption[] = [
     {
-      id: "kept",
-      label: hasScans(report) ? `${kept} + OCR on scans` : kept,
-      description: "What the audit kept: the text layer, and OCR where a page had none.",
+      id: "loader",
+      label: "Loader",
+      description: `Each file's own text, as its loader reads it${which ? `: ${which}` : ""}.${
+        scans ? " Scanned pages stay unread." : ""
+      }`,
     },
-    ...otherReaders(report).map((name) => ({
-      id: `reader:${name}` as const,
-      label: name,
-      description: `Every page as ${name} read it.`,
-    })),
   ];
+  if (scans) {
+    options.push({
+      id: "loader_ocr",
+      label: "Loader + OCR on scans",
+      description: "Each file's own text, and OCR where a page has none, as the audit read them.",
+    });
+  }
   if (report.run.ocr_compare_used) {
-    options.push({ id: "ocr", label: "OCR on every page", description: "Every page recognised from its picture." });
+    options.push({
+      id: "ocr",
+      label: "OCR on every page",
+      description: "Every page recognised from its picture. A file with no page picture, such as a spreadsheet, is read by its loader.",
+    });
   }
   options.push({
     id: "vision",
     label: "Vision on every page",
-    description: "Every page sent to the vision model as an image.",
+    description: "Every page sent to the vision model as an image. A file with no page picture is read by its loader.",
   });
   if (report.documents.some((d) => d.routing?.pages.length)) {
     options.push({
-      id: "routed",
-      label: "Routed page by page",
-      description: "Each page the cheapest way that reads it: text layer, OCR, or vision.",
+      id: "router",
+      label: "complydoc router",
+      description: "Each page read the cheapest way that reads it well: its loader, OCR, or a vision model.",
+      recommended: true,
     });
   }
   return options;
+}
+
+/** The way to read a report when nothing was chosen: the router where the run routed pages. */
+export function defaultMethod(options: PlanOption[]): Method {
+  return (options.find((o) => o.recommended) ?? options.find((o) => o.id === "loader_ocr") ?? options[0])?.id ?? "loader";
 }
 
 export interface PageEstimate {
@@ -123,23 +192,54 @@ function asImage(document: DocumentEntry, page: PageText, model: PricedModel | n
   };
 }
 
+/** A page nothing reads under the plan: nothing is sent, and no time is spent reading it. */
+const UNREAD: PageEstimate = { usd: 0, seconds: 0, timed: "measured", read: false };
+
+/** Which loader's reading of a page the plan uses, or null for a page with no text of its own. */
+function loaderReading(report: Report, document: DocumentEntry, page: PageText, plan: Plan): string | null {
+  if (!ownText(page)) return null;
+  const kept = page.kept || keptName(report);
+  const chosen = plan.loaders[document.format];
+  if (chosen && chosen !== kept) {
+    const text = page.readings[chosen];
+    // A loader that returned nothing for the page leaves it unread; one that was not
+    // asked about this page leaves it to the loader the run kept.
+    if (text !== undefined) return text.trim() ? chosen : null;
+  }
+  return kept;
+}
+
+/** The OCR reading of a page, or null where OCR did not read it. */
+function ocrReading(page: PageText): string | null {
+  if (page.source === "ocr") return page.kept || "ocr";
+  return page.tokens?.ocr ? "ocr" : null;
+}
+
+function hasImage(page: PageText): boolean {
+  return Boolean(page.image_tokens && Object.keys(page.image_tokens).length > 0);
+}
+
 /** One page under a plan: what sending it costs, and how long reading it took. */
 export function pageEstimate(report: Report, document: DocumentEntry, page: PageText, plan: Plan): PageEstimate {
-  const kept = page.kept || keptName(report);
-  switch (plan.reader) {
-    case "kept":
-      return asText(report, page, kept, plan.text);
+  const loader = loaderReading(report, document, page, plan);
+  const ocr = ocrReading(page);
+  const text = (reader: string | null) => (reader ? asText(report, page, reader, plan.text) : UNREAD);
+  const image = () => asImage(document, page, plan.vision);
+  switch (plan.method) {
+    case "loader":
+      return text(loader);
+    case "loader_ocr":
+      return text(loader ?? ocr);
     case "ocr":
-      return asText(report, page, page.source === "ocr" ? kept : "ocr", plan.text);
+      // A file with no page picture, such as a spreadsheet, has nothing to recognise: its loader reads it.
+      return text(ocr ?? loader);
     case "vision":
-      return asImage(document, page, plan.vision);
-    case "routed": {
+      return hasImage(page) ? image() : text(loader ?? ocr);
+    case "router": {
       const route = document.routing?.pages.find((p) => p.number === page.number)?.route ?? "text";
-      if (route === "vision") return asImage(document, page, plan.vision);
-      return asText(report, page, kept, plan.text);
+      if (route === "vision" && hasImage(page)) return image();
+      return text(route === "ocr" ? (ocr ?? loader) : (loader ?? ocr));
     }
-    default:
-      return asText(report, page, plan.reader.slice("reader:".length), plan.text);
   }
 }
 

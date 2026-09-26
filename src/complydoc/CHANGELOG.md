@@ -79,6 +79,14 @@ in complydoc needs it any more.
 
 ### Changed
 
+- The viewer's top bar chooses how pages are read, not which reader is kept:
+  Loader, Loader + OCR on scans, OCR on every page, Vision on every page, or the
+  complydoc router, which reads each page the cheapest way that reads it well and is
+  recommended where the run routed pages. The loader is chosen per file type where
+  the run read one more than one way. A file with no page picture, such as a
+  spreadsheet, is read by its loader under OCR and vision instead of going unpriced.
+  Cost & time compares every method, and each other loader, on one table.
+
 - `complydoc chunks` writes its JSON as a report like any other run's: the `run`
   record, no documents, and each splitter's chunk report under a new `chunks` field.
   `complydoc ui` lists it with the folder's audits, and `cd.load_report` reads it. It

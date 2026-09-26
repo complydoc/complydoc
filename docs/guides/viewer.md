@@ -46,6 +46,26 @@ Every run opens on the same pages, whichever command wrote it:
 | Loaders | Loaders side by side, per file type | `compare-loaders` |
 | Chunks | How each text splitter cut the text | `chunks` |
 
+### How pages are read
+
+The top bar sets how every cost and time in the report is worked out:
+
+| Method | Reads each page |
+| --- | --- |
+| Loader | From the file's own text. Scanned pages stay unread |
+| Loader + OCR on scans | From the file's own text, and by OCR where a page has none |
+| OCR on every page | By OCR from its picture (shown when the run compared OCR) |
+| Vision on every page | As an image sent to the vision model |
+| complydoc router | The cheapest way that reads it well, page by page (recommended, shown when the run routed pages) |
+
+A file with no page picture, such as a spreadsheet, a Word file or an email, has
+nothing to recognise or show a vision model, so OCR and vision read it with its
+loader. Each file type has its own loader: pypdf or pdfplumber for PDF,
+python-docx for Word, openpyxl for Excel, and so on. Where a run read a file type
+more than one way, a picker beside the method chooses which loader's text is priced,
+and Cost & time adds a row for each other loader so they can be weighed side by side.
+The choice is kept in the browser.
+
 A page the run did not produce says so, what it would hold, and the command that
 fills it for the same folder, with a button to copy it. Home does the same card
 by card, so a `complydoc cost` run shows its prices and says the identifier scan

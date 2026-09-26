@@ -10,7 +10,7 @@ function withPaths(report: Report, paths: string[]): Report {
 
 const report = sampleAudit();
 const models = pricedModels(report);
-const plan: Plan = { reader: "kept", text: required(models[0]), vision: required(models.find((m) => m.vision)) };
+const plan: Plan = { method: "loader_ocr", loaders: {}, text: required(models[0]), vision: required(models.find((m) => m.vision)) };
 
 describe("documentTree", () => {
   const paths = ["contracts/2025/a.pdf", "contracts/2025/b.pdf", "contracts/2024/c.pdf", "invoices/d.pdf", "e.pdf", "f.pdf"];
@@ -40,14 +40,14 @@ describe("documentTree", () => {
 describe("plans", () => {
   it("reads every page with OCR or vision, and some pages with the text layer alone", () => {
     const kept = reportTotals(report, plan);
-    const vision = reportTotals(report, { ...plan, reader: "vision" });
+    const vision = reportTotals(report, { ...plan, method: "vision" });
     expect(kept.pagesRead).toBe(kept.pages);
     expect(vision.usd).toBeGreaterThan(kept.usd ?? 0);
   });
 
   it("times what was measured, and leaves a vision read untimed until a real call was", () => {
     const kept = reportTotals(report, plan);
-    const vision = reportTotals(report, { ...plan, reader: "vision" });
+    const vision = reportTotals(report, { ...plan, method: "vision" });
     expect(kept.seconds).toBeGreaterThan(0);
     expect(vision.seconds).toBeNull();
     expect(vision.untimed).toBe(vision.pages);

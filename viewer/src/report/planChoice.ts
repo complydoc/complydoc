@@ -5,12 +5,15 @@
  * report open: the overview prices each folder on the model and reader chosen,
  * wherever that report lists them.
  */
-import { planOptions, type Plan, type ReaderChoice } from "./plan";
+import { defaultMethod, planOptions, readersByFormat, type Method, type Plan } from "./plan";
 import { pricedModels, type PricedModel } from "./pricing";
 import type { Report } from "./types";
 
 export const PLAN_KEYS = {
-  reader: "complydoc-plan-reader",
+  /** How pages are read. A new key: the old one held reader names this no longer takes. */
+  method: "complydoc-plan-method",
+  /** The loader chosen per file type, as JSON: `{"pdf": "pypdf"}`. */
+  loaders: "complydoc-plan-loaders",
   text: "complydoc-model-text",
   vision: "complydoc-model-vision",
   /** The provider of the chosen model, for a report that did not price that model itself. */
@@ -38,15 +41,43 @@ export function storedChoice(key: string): string | null {
   }
 }
 
+/** The loaders remembered, by file type; nothing where the stored value does not read. */
+export function storedLoaders(stored: string | null): Record<string, unknown> {
+  try {
+    const parsed: unknown = stored ? JSON.parse(stored) : {};
+    return parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : {};
+  } catch {
+    return {};
+  }
+}
+
+/** The remembered loaders, as far as this report read each type with them. */
+export function loadersFor(report: Report, stored: string | null): Record<string, string> {
+  const chosen = storedLoaders(stored);
+  const readers = readersByFormat(report);
+  return Object.fromEntries(
+    Object.entries(chosen).filter(
+      (entry): entry is [string, string] => typeof entry[1] === "string" && Boolean(readers.get(entry[0])?.includes(entry[1])),
+    ),
+  );
+}
+
+/** The remembered method, where this report can be read that way; else the one to recommend. */
+export function methodFor(report: Report, stored: string | null, loaders: Record<string, string> = {}): Method {
+  const options = planOptions(report, loaders);
+  return options.find((o) => o.id === stored)?.id ?? defaultMethod(options);
+}
+
 /** The remembered plan, applied to one report: its own models, the chosen ones where it has them. */
 export function planFor(report: Report): Plan {
   const models = pricedModels(report);
   const visionModels = models.filter((m) => m.vision);
-  const reader = storedChoice(PLAN_KEYS.reader);
+  const loaders = loadersFor(report, storedChoice(PLAN_KEYS.loaders));
   const textId = storedChoice(PLAN_KEYS.text);
   const visionId = storedChoice(PLAN_KEYS.vision);
   return {
-    reader: (planOptions(report).find((o) => o.id === reader)?.id ?? "kept") as ReaderChoice,
+    method: methodFor(report, storedChoice(PLAN_KEYS.method), loaders),
+    loaders,
     text: preferred(models, textId, storedChoice(PLAN_KEYS.textProvider)),
     vision: preferred(visionModels, visionId, storedChoice(PLAN_KEYS.visionProvider)),
   };
