@@ -30,7 +30,8 @@ function modelsFor(reader: ReaderChoice, plan: Plan): string {
   const text = plan.text?.name ?? "no priced model";
   const vision = plan.vision?.name ?? "no vision model";
   if (reader === "vision") return vision;
-  if (reader === "routed") return `${text}, ${vision} for images`;
+  // One model for both is named once.
+  if (reader === "routed") return text === vision ? text : `${text}, ${vision} for images`;
   return text;
 }
 

@@ -1,12 +1,15 @@
 import { createColumnHelper } from "@tanstack/react-table";
+import { useState } from "react";
 import { DataTable, type Columns } from "@/components/DataTable";
 import { ToneBadge } from "@/components/ToneBadge";
 import { EvidenceBadge } from "@/components/EvidenceBadge";
 import { Button } from "@/components/ui/button";
-import { fileName } from "@/report/format";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { fileName, humanise } from "@/report/format";
 import { documentHref } from "@/report/route";
 import type { FindingRow } from "@/report/security";
 import { EVIDENCE, SEVERITIES, severityTone } from "@/report/select";
+import type { Severity } from "@/report/types";
 import { IgnoreButton } from "./IgnoreButton";
 
 const column = createColumnHelper<FindingRow>();
@@ -23,7 +26,19 @@ const columns: Columns<FindingRow> = [
       </Button>
     ),
   }),
-  column.accessor("masked", { header: "Value", cell: (c) => <code className="font-mono text-xs">{c.getValue()}</code> }),
+  column.accessor("masked", {
+    header: "Value",
+    cell: ({ row, getValue }) => (
+      <span className="flex items-center gap-2">
+        <code className="font-mono text-xs">{getValue()}</code>
+        {row.original.count > 1 && (
+          <span className="text-xs text-muted-foreground tabular-nums" title={`Found ${row.original.count} times`}>
+            ×{row.original.count}
+          </span>
+        )}
+      </span>
+    ),
+  }),
   column.accessor((row) => fileName(row.path), {
     id: "document",
     header: "Document",
@@ -33,7 +48,17 @@ const columns: Columns<FindingRow> = [
       </a>
     ),
   }),
-  column.accessor("page", { header: "Page", cell: (c) => c.getValue() ?? "–", meta: { numeric: true } }),
+  column.accessor("page", {
+    header: "Page",
+    // Every page the value is on; a long list is cut, and says how many more.
+    cell: ({ row }) => {
+      const { pages } = row.original;
+      if (pages.length === 0) return "–";
+      const shown = pages.slice(0, 3).join(", ");
+      return pages.length > 3 ? `${shown} +${pages.length - 3}` : shown;
+    },
+    meta: { numeric: true },
+  }),
   column.accessor("severity", {
     header: "Severity",
     sortingFn: (a, b) => SEVERITIES.indexOf(a.original.severity) - SEVERITIES.indexOf(b.original.severity),
@@ -56,7 +81,40 @@ const columns: Columns<FindingRow> = [
   }),
 ];
 
-/** Every identifier found: what it is, its masked value, where it is and how sure complydoc is. */
+/**
+ * Every identifier found: what it is, its masked value, where it is and how sure
+ * complydoc is. Searchable, filtered by severity, and a page of rows at a time.
+ */
 export function FindingTable({ rows }: { rows: FindingRow[] }) {
-  return <DataTable caption="Every finding" columns={columns} rows={rows} rowKey={(row) => row.id} sortable />;
+  const [severity, setSeverity] = useState<Severity | "all">("all");
+  const shown = severity === "all" ? rows : rows.filter((row) => row.severity === severity);
+  const count = (s: Severity) => rows.filter((row) => row.severity === s).length;
+  return (
+    <DataTable
+      caption="Every finding"
+      columns={columns}
+      rows={shown}
+      rowKey={(row) => row.id}
+      sortable
+      search="Search findings or documents"
+      pageSize={25}
+      toolbar={
+        <ToggleGroup
+          type="single"
+          variant="outline"
+          size="sm"
+          value={severity}
+          aria-label="Severity"
+          onValueChange={(value) => value && setSeverity(value as Severity | "all")}
+        >
+          <ToggleGroupItem value="all">All {rows.length}</ToggleGroupItem>
+          {SEVERITIES.map((s) => (
+            <ToggleGroupItem key={s} value={s} disabled={count(s) === 0}>
+              {humanise(s)} {count(s)}
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
+      }
+    />
+  );
 }

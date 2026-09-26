@@ -14,6 +14,8 @@ describe("ReadinessChart", () => {
     render(
       <ReadinessChart
         score="93"
+        value={93}
+        tone="good"
         caption="ready"
         bands={[
           { id: "ready", label: "Ready", count: 8, tone: "good" },

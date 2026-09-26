@@ -19,7 +19,7 @@ import {
   ChevronRightIcon,
   SearchIcon,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -51,6 +51,8 @@ interface DataTableProps<T> {
   pageSize?: number;
   /** A row's own rows, for a tree such as folders of documents. They open expanded. */
   subRows?: (row: T) => T[] | undefined;
+  /** More controls on the search box's row, at its end, such as a filter. */
+  toolbar?: ReactNode;
 }
 
 const SORT_ICON = {
@@ -73,6 +75,7 @@ export function DataTable<T>({
   search,
   pageSize,
   subRows,
+  toolbar,
 }: DataTableProps<T>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [query, setQuery] = useState("");
@@ -110,17 +113,22 @@ export function DataTable<T>({
 
   return (
     <div className="flex flex-col gap-3">
-      {search !== undefined && (
-        <div className="relative max-w-sm">
-          <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder={search}
-            aria-label={search}
-            className="pl-8"
-          />
+      {(search !== undefined || toolbar) && (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          {search !== undefined && (
+            <div className="relative w-full max-w-sm">
+              <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder={search}
+                aria-label={search}
+                className="pl-8"
+              />
+            </div>
+          )}
+          {toolbar}
         </div>
       )}
       <Card className="py-0">

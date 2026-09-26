@@ -4,10 +4,22 @@ import { evidenceCounts, findingRows, hiddenInstructions, severityByDocument } f
 describe("security", () => {
   it("lists every identifier, most severe and best evidenced first", () => {
     const rows = findingRows(sampleAudit());
-    expect(rows).toHaveLength(sampleAudit().aggregate.sensitive_total);
+    // A value found several times in one document is one row, counting each time.
+    expect(rows.reduce((total, row) => total + row.count, 0)).toBe(sampleAudit().aggregate.sensitive_total);
+    expect(rows.length).toBeLessThan(sampleAudit().aggregate.sensitive_total);
     expect(rows[0]).toMatchObject({ severity: "high", evidence: "confirmed" });
     expect(rows.at(-1)?.severity).toBe("low");
     expect(new Set(rows.map((r) => r.id)).size).toBe(rows.length);
+  });
+
+  it("makes a value repeated in one document one row, with every page it is on", () => {
+    const repeated = findingRows(sampleAudit()).find((row) => row.count > 1);
+    expect(repeated).toBeDefined();
+    expect(repeated?.pages.length).toBeGreaterThan(0);
+    const same = sampleAudit().documents[repeated?.document ?? 0]?.sensitive.matches.filter(
+      (m) => m.label === repeated?.label && m.masked === repeated?.masked,
+    );
+    expect(same).toHaveLength(repeated?.count ?? 0);
   });
 
   it("keeps values masked", () => {

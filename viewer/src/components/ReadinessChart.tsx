@@ -22,19 +22,30 @@ const SIZE = 192;
 
 interface ReadinessChartProps {
   score: string;
+  /** The score as a number from 0 to 100, which the ring fills to; null when not scored. */
+  value: number | null;
+  /** The tone of the band the score falls in, which colours the ring. */
+  tone: Tone;
   caption: string;
   bands: BandSlice[];
 }
 
 /**
- * shadcn's donut chart: documents by readiness band, clockwise from twelve
- * o'clock, the folder's score in the middle and the bands as badges beneath.
+ * A ring filled as far as the folder's score, clockwise from twelve o'clock,
+ * the score in the middle, and the documents in each band as badges beneath.
+ * The ring is the score, not the mix of bands: a ring a third full around a
+ * score of 74 read as a third of something.
  */
-export function ReadinessChart({ score, caption, bands }: ReadinessChartProps) {
-  const config = Object.fromEntries(
-    bands.map((band) => [band.id, { label: band.label, color: TONE_COLOUR[band.tone] }]),
-  ) satisfies ChartConfig;
-  const data = bands.map((band) => ({ band: band.id, count: band.count, fill: `var(--color-${band.id})` }));
+export function ReadinessChart({ score, value, tone, caption, bands }: ReadinessChartProps) {
+  const config = {
+    score: { label: "Score", color: TONE_COLOUR[tone] },
+    rest: { label: "To 100", color: "var(--muted)" },
+  } satisfies ChartConfig;
+  const filled = Math.max(0, Math.min(100, value ?? 0));
+  const data = [
+    { part: "score", count: filled, fill: "var(--color-score)" },
+    { part: "rest", count: 100 - filled, fill: "var(--color-rest)" },
+  ];
   const summary = bands.map((band) => `${band.count} ${band.label.toLowerCase()}`).join(", ");
 
   return (
@@ -44,14 +55,14 @@ export function ReadinessChart({ score, caption, bands }: ReadinessChartProps) {
           <Pie
             data={data}
             dataKey="count"
-            nameKey="band"
+            nameKey="part"
             cx="50%"
             cy="50%"
             innerRadius="78%"
             outerRadius="100%"
             startAngle={90}
             endAngle={-270}
-            strokeWidth={2}
+            strokeWidth={0}
             isAnimationActive={false}
           >
             <Label

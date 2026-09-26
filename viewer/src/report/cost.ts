@@ -80,15 +80,17 @@ export interface CostRow {
   vision: number | null;
 }
 
-/** One row per model, with what each path costs per thousand documents. */
+/** One row per model, with what each path costs per thousand documents; cheapest first, unpriced last. */
 export function costRows(report: Report): CostRow[] {
-  return (report.cost?.models ?? []).map((model) => ({
-    id: model.model_id,
-    name: model.display_name,
-    provider: model.provider,
-    text: perThousand(model, "text_ocr"),
-    vision: perThousand(model, "vision"),
-  }));
+  return (report.cost?.models ?? [])
+    .map((model) => ({
+      id: model.model_id,
+      name: model.display_name,
+      provider: model.provider,
+      text: perThousand(model, "text_ocr"),
+      vision: perThousand(model, "vision"),
+    }))
+    .sort((a, b) => (a.text ?? Infinity) - (b.text ?? Infinity) || a.name.localeCompare(b.name));
 }
 
 /**

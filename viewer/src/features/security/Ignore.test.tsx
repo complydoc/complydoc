@@ -68,9 +68,12 @@ describe("ignored findings", () => {
 
   it("a finding ignored since the run says it applies from the next one", () => {
     const report = withIgnored();
-    const next = report.documents.flatMap((d) => d.sensitive.matches)[0]?.fingerprint ?? "";
+    // Every finding ignored since the run, so the ones on the table's first page show it.
+    const entries = report.documents
+      .flatMap((d) => d.sensitive.matches)
+      .map((m) => ({ finding: m.fingerprint ?? "", reason: "Later." }));
     render(
-      <IgnoreContext.Provider value={editable({ entries: [{ finding: next, reason: "Later." }] })}>
+      <IgnoreContext.Provider value={editable({ entries })}>
         <SecurityPage report={report} />
       </IgnoreContext.Provider>,
     );

@@ -30,7 +30,8 @@ describe("SecurityPage", () => {
     render(<SecurityPage report={report} />);
     const table = screen.getByRole("table", { name: "Every finding" });
     const rows = within(table).getAllByRole("row").slice(1);
-    expect(rows).toHaveLength(report.aggregate.sensitive_total);
+    // A page of rows at a time.
+    expect(rows).toHaveLength(25);
     expect(rows[0]).toHaveTextContent("high");
     expect(rows[0]).toHaveTextContent("Certain");
     const [finding, document] = within(rows[0] as HTMLElement).getAllByRole("link");

@@ -16,27 +16,58 @@ export interface FindingRow {
   evidence: Evidence;
   /** The identifier as the report has it, for how it was validated. */
   source: SensitiveMatch;
+  /** How many times this value was found in this document. */
+  count: number;
+  /** Every page it was found on, in order. */
+  pages: number[];
 }
 
-/** Every identifier found, most severe and best evidenced first. */
+/** What makes two findings in one document the same value: its fingerprint, or its kind and masked form. */
+function sameValue(match: SensitiveMatch): string {
+  return match.fingerprint || `${match.category}\u0000${match.masked}`;
+}
+
+/**
+ * Every identifier found, most severe and best evidenced first. A value found
+ * several times in one document is one row, with how often and on which pages:
+ * an address in every page's footer is one thing to look at, not ten.
+ */
 export function findingRows(report: Report): FindingRow[] {
   const rank = (severity: Severity) => SEVERITIES.indexOf(severity);
   const strength = (evidence: Evidence) => EVIDENCE.findIndex((e) => e.key === evidence);
   return report.documents
-    .flatMap((document, index) =>
-      document.sensitive.matches.map((match, position) => ({
-        id: `${index}-${position}`,
-        match: position,
-        document: index,
-        path: document.relative_path,
-        page: match.page,
-        label: match.label,
-        masked: match.masked,
-        severity: match.severity,
-        evidence: match.evidence,
-        source: match,
-      })),
-    )
+    .flatMap((document, index) => {
+      const rows = new Map<string, FindingRow>();
+      document.sensitive.matches.forEach((match, position) => {
+        const key = sameValue(match);
+        const seen = rows.get(key);
+        if (seen) {
+          seen.count += 1;
+          if (match.page !== null && !seen.pages.includes(match.page)) seen.pages.push(match.page);
+          // The strongest evidence found for the value stands for it.
+          if (strength(match.evidence) < strength(seen.evidence)) {
+            seen.evidence = match.evidence;
+            seen.source = match;
+          }
+          return;
+        }
+        rows.set(key, {
+          id: `${index}-${position}`,
+          match: position,
+          document: index,
+          path: document.relative_path,
+          page: match.page,
+          label: match.label,
+          masked: match.masked,
+          severity: match.severity,
+          evidence: match.evidence,
+          source: match,
+          count: 1,
+          pages: match.page === null ? [] : [match.page],
+        });
+      });
+      return [...rows.values()];
+    })
     .sort(
       (a, b) =>
         rank(a.severity) - rank(b.severity) ||

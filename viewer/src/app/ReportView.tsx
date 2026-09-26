@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -61,6 +62,10 @@ export function ReportView({
   onToggleTheme,
 }: ReportViewProps) {
   const [{ page, detail }] = useHashRoute(PAGES);
+  // Each page, and each document, opens at its top, not where the last one was left.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [page, detail]);
   const { run, previous } = selected(collections, selection);
   const switcher = (
     <CollectionSwitcher

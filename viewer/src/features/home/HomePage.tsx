@@ -112,10 +112,14 @@ export function HomePage({ report, previous = null }: { report: Report; previous
                       className="min-w-0 flex-1 hover:underline"
                     >
                       <span className="font-medium">{row.label}</span>{" "}
-                      <code className="font-mono text-xs text-muted-foreground">{row.masked}</code>
+                      {row.values > 1 ? (
+                        <span className="text-xs text-muted-foreground">{row.values} values</span>
+                      ) : (
+                        <code className="font-mono text-xs text-muted-foreground">{row.masked}</code>
+                      )}
                       <span className="block truncate text-xs text-muted-foreground">
                         {fileName(row.path)}
-                        {row.page !== null && `, page ${row.page}`}
+                        {row.pages.length > 0 && `, ${row.pages.length > 1 ? "pages" : "page"} ${row.pages.join(", ")}`}
                       </span>
                     </a>
                     <EvidenceBadge evidence={row.evidence} match={row.source} />

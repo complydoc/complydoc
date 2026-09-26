@@ -64,20 +64,45 @@ export function attentionDocuments(report: Report, limit = 6): AttentionRow[] {
     .slice(0, limit);
 }
 
+/** One kind of identifier in one document: its strongest value, and how many values and pages it spans. */
+export interface TopFinding extends FindingRow {
+  /** Different values of this kind in the document. */
+  values: number;
+}
+
 export interface TopFindings {
-  /** The strongest findings, high severity and best evidenced first. */
-  rows: FindingRow[];
+  /** The strongest findings, high severity and best evidenced first, one per kind and document. */
+  rows: TopFinding[];
+  /** High-severity identifiers found, every occurrence counted. */
   high: number;
-  /** High severity and proved by a check, such as a checksum. */
+  /** Of those, the ones proved by a check, such as a checksum. */
   confirmedHigh: number;
 }
 
-/** The findings to look at first: high severity only, the surest first. */
+/**
+ * The findings to look at first: high severity only, the surest first. Five
+ * National Insurance numbers in one handbook are one line to look at, saying
+ * five, not five lines.
+ */
 export function topFindings(report: Report, limit = 6): TopFindings {
   const high = findingRows(report).filter((row) => row.severity === "high");
+  const groups = new Map<string, TopFinding>();
+  for (const row of high) {
+    const key = `${row.document}\u0000${row.label}`;
+    const seen = groups.get(key);
+    if (!seen) {
+      groups.set(key, { ...row, pages: [...row.pages], values: 1 });
+      continue;
+    }
+    seen.values += 1;
+    seen.count += row.count;
+    for (const page of row.pages) if (!seen.pages.includes(page)) seen.pages.push(page);
+    seen.pages.sort((a, b) => a - b);
+  }
+  const occurrences = (rows: FindingRow[]) => rows.reduce((total, row) => total + row.count, 0);
   return {
-    rows: high.slice(0, limit),
-    high: high.length,
-    confirmedHigh: high.filter((row) => row.evidence === "confirmed").length,
+    rows: [...groups.values()].slice(0, limit),
+    high: occurrences(high),
+    confirmedHigh: occurrences(high.filter((row) => row.evidence === "confirmed")),
   };
 }

@@ -31,13 +31,18 @@ interface TickProps {
   payload?: { value: string; index: number };
 }
 
-const LABEL_WIDTH = 176;
+const LABEL_WIDTH = 200;
 /** Rows are this tall, so a chart of any length reads the same. */
 const BAR_ROW = 26;
 
 // Short enough for one line in the label column; the tooltip names the bar in full.
+/** A label that fits its column on one line, cut at the last whole word that fits. */
 function shorten(text: string) {
-  return text.length > 20 ? `${text.slice(0, 19)}…` : text;
+  const fits = 26;
+  if (text.length <= fits) return text;
+  const cut = text.slice(0, fits - 1);
+  const space = cut.lastIndexOf(" ");
+  return `${space > fits / 2 ? cut.slice(0, space) : cut}…`;
 }
 
 /**
