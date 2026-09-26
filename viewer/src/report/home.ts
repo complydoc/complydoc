@@ -68,6 +68,10 @@ export function attentionDocuments(report: Report, limit = 6): AttentionRow[] {
 export interface TopFinding extends FindingRow {
   /** Different values of this kind in the document. */
   values: number;
+  /** Times any of them was found. */
+  count: number;
+  /** Every page they are on, in order. */
+  pages: number[];
 }
 
 export interface TopFindings {
@@ -87,22 +91,26 @@ export interface TopFindings {
 export function topFindings(report: Report, limit = 6): TopFindings {
   const high = findingRows(report).filter((row) => row.severity === "high");
   const groups = new Map<string, TopFinding>();
+  const values = new Map<string, Set<string>>();
   for (const row of high) {
     const key = `${row.document}\u0000${row.label}`;
     const seen = groups.get(key);
+    const pages = row.page === null ? [] : [row.page];
+    const kind = values.get(key) ?? new Set<string>();
+    kind.add(row.source.fingerprint || row.masked);
+    values.set(key, kind);
     if (!seen) {
-      groups.set(key, { ...row, pages: [...row.pages], values: 1 });
+      groups.set(key, { ...row, pages, count: 1, values: 1 });
       continue;
     }
-    seen.values += 1;
-    seen.count += row.count;
-    for (const page of row.pages) if (!seen.pages.includes(page)) seen.pages.push(page);
+    seen.values = kind.size;
+    seen.count += 1;
+    for (const page of pages) if (!seen.pages.includes(page)) seen.pages.push(page);
     seen.pages.sort((a, b) => a - b);
   }
-  const occurrences = (rows: FindingRow[]) => rows.reduce((total, row) => total + row.count, 0);
   return {
     rows: [...groups.values()].slice(0, limit),
-    high: occurrences(high),
-    confirmedHigh: occurrences(high.filter((row) => row.evidence === "confirmed")),
+    high: high.length,
+    confirmedHigh: high.filter((row) => row.evidence === "confirmed").length,
   };
 }

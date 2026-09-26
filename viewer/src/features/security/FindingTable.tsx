@@ -14,7 +14,15 @@ import { IgnoreButton } from "./IgnoreButton";
 
 const column = createColumnHelper<FindingRow>();
 
+// As Linear lays out a list: the severity as an icon leading the row, the text columns
+// taking the room, and the figures, confidence and action as narrow columns at the end.
 const columns: Columns<FindingRow> = [
+  column.accessor("severity", {
+    header: () => <span className="sr-only">Severity</span>,
+    sortingFn: (a, b) => SEVERITIES.indexOf(a.original.severity) - SEVERITIES.indexOf(b.original.severity),
+    cell: (c) => <SeverityIcon severity={c.getValue()} />,
+    meta: { narrow: true },
+  }),
   column.accessor("label", {
     header: "Identifier",
     // Opens the document on the finding's page with the finding marked.
@@ -28,16 +36,7 @@ const columns: Columns<FindingRow> = [
   }),
   column.accessor("masked", {
     header: "Value",
-    cell: ({ row, getValue }) => (
-      <span className="flex items-center gap-2">
-        <code className="font-mono text-xs">{getValue()}</code>
-        {row.original.count > 1 && (
-          <span className="text-xs text-muted-foreground tabular-nums" title={`Found ${row.original.count} times`}>
-            ×{row.original.count}
-          </span>
-        )}
-      </span>
-    ),
+    cell: (c) => <code className="font-mono text-xs">{c.getValue()}</code>,
   }),
   column.accessor((row) => fileName(row.path), {
     id: "document",
@@ -50,25 +49,19 @@ const columns: Columns<FindingRow> = [
   }),
   column.accessor("page", {
     header: "Page",
-    // Every page the value is on; a long list is cut, and says how many more.
-    cell: ({ row }) => {
-      const { pages } = row.original;
-      if (pages.length === 0) return "–";
-      const shown = pages.slice(0, 3).join(", ");
-      return pages.length > 3 ? `${shown} +${pages.length - 3}` : shown;
-    },
-    meta: { numeric: true },
-  }),
-  column.accessor("severity", {
-    header: "Severity",
-    sortingFn: (a, b) => SEVERITIES.indexOf(a.original.severity) - SEVERITIES.indexOf(b.original.severity),
-    cell: (c) => <SeverityIcon severity={c.getValue()} />,
+    cell: (c) => c.getValue() ?? "–",
+    meta: { numeric: true, narrow: true },
   }),
   column.accessor("evidence", {
     header: "Confidence",
     sortingFn: (a, b) =>
       EVIDENCE.findIndex((e) => e.key === a.original.evidence) - EVIDENCE.findIndex((e) => e.key === b.original.evidence),
-    cell: ({ row, getValue }) => <EvidenceBadge evidence={getValue()} match={row.original.source} icon />,
+    cell: ({ row, getValue }) => (
+      <div className="flex justify-center">
+        <EvidenceBadge evidence={getValue()} match={row.original.source} icon />
+      </div>
+    ),
+    meta: { narrow: true },
   }),
   column.display({
     id: "ignore",
@@ -78,6 +71,7 @@ const columns: Columns<FindingRow> = [
         <IgnoreButton fingerprint={row.original.source.fingerprint} what={`${row.original.label} ${row.original.masked}`} />
       </div>
     ),
+    meta: { narrow: true },
   }),
 ];
 

@@ -74,7 +74,7 @@ export function FindingPopover({ finding, rect, onClose, onPointerEnter, onPoint
                 Not a problem: ignore it
                 <span className="block text-xs text-muted-foreground">
                   {editable
-                    ? "Saved to the ignore file; it leaves every count from the next run."
+                    ? "This will be ignored for current and future runs."
                     : "Kept while this page is open. Open the report with complydoc ui to save it."}
                 </span>
               </span>

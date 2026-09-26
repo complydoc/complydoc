@@ -31,6 +31,8 @@ declare module "@tanstack/react-table" {
   interface ColumnMeta<TData extends RowData, TValue> {
     /** Figures are right-aligned so their digits line up. */
     numeric?: boolean;
+    /** A column no wider than its content, such as an icon, so the text columns take the room. */
+    narrow?: boolean;
   }
 }
 
@@ -139,10 +141,14 @@ export function DataTable<T>({
               <TableRow key={group.id}>
                 {group.headers.map((header) => {
                   const numeric = header.column.columnDef.meta?.numeric;
+                  const narrow = header.column.columnDef.meta?.narrow;
                   const label = flexRender(header.column.columnDef.header, header.getContext());
                   const Icon = SORT_ICON[header.column.getIsSorted() || "none"];
                   return (
-                    <TableHead key={header.id} className={cn("first:pl-4 last:pr-4", numeric && "text-right")}>
+                    <TableHead
+                      key={header.id}
+                      className={cn("first:pl-4 last:pr-4", numeric && "text-right", narrow && "w-px whitespace-nowrap")}
+                    >
                       {header.column.getCanSort() ? (
                         <Button
                           variant="ghost"
@@ -168,7 +174,11 @@ export function DataTable<T>({
                 {row.getVisibleCells().map((cell) => (
                   <TableCell
                     key={cell.id}
-                    className={cn("first:pl-4 last:pr-4", cell.column.columnDef.meta?.numeric && "text-right")}
+                    className={cn(
+                      "first:pl-4 last:pr-4",
+                      cell.column.columnDef.meta?.numeric && "text-right",
+                      cell.column.columnDef.meta?.narrow && "w-px whitespace-nowrap",
+                    )}
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>

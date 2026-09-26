@@ -42,11 +42,10 @@ load.
   reading panes and the per-reader costs are gone. An eye button shows the values in a
   report written with `--reveal`, which opens masked.
 
-- Elsewhere in the viewer: the findings table folds a value repeated in one document
-  into one row, with how often and on which pages, and has a search box, a severity
-  filter and pages of 25. It shows severity and confidence as icons, as Linear shows
-  priority and status: signal bars filled by severity, and a ring filled by how sure
-  complydoc is, each with its word in a tooltip. Home's "Needs attention" gives one line per kind of
+- Elsewhere in the viewer: the findings table has a search box, a severity filter and
+  pages of 25. It shows severity and confidence as icons, as Linear shows priority and
+  status: signal bars filled by severity, leading each row, and a ring filled by how
+  sure complydoc is, each with its word in a tooltip. Home's "Needs attention" gives one line per kind of
   identifier in a document. The readiness ring now fills to the score. Each page opens
   at its top. Chart labels are cut at a whole word. The cost table lists the cheapest
   model first.
