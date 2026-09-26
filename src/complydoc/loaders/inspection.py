@@ -62,13 +62,12 @@ from complydoc.cost.estimator import resolve_models
 from complydoc.ingest import ocr as ocr_module
 from complydoc.ingest.base import (
     Document,
-    DocumentFormat,
     ExtractionSummary,
     IngestOptions,
     Page,
     sha256_of,
 )
-from complydoc.loaders.formats import SUFFIX_FORMATS
+from complydoc.loaders.formats import format_of
 from complydoc.loaders.origin import loader_tags
 from complydoc.report.models import (
     SCHEMA_VERSION,
@@ -96,8 +95,6 @@ __all__ = [
 
 SOURCE_KEYS = ("source", "file_path", "filename", "file_name")
 """Metadata keys loaders use to name the file a document came from, in order."""
-
-_FORMATS = SUFFIX_FORMATS
 
 ABSOLUTE_PATH = re.compile(r"^(?:/[^/\s]+){2,}|^[A-Za-z]:[\\/]|^~[/\\]")
 
@@ -520,7 +517,7 @@ def _documents_from(
         document = Document(
             path=path,
             sha256=_digest(path, members),
-            format=_FORMATS.get(path.suffix.lower(), DocumentFormat.OTHER),
+            format=format_of(path),
         )
         document.page_count_known = numbered
         for number in sorted(pages):

@@ -16,6 +16,18 @@ CLAUSE = "Payment is due within thirty days of the invoice date."
 SUPPLIER = "The supplier list names four approved vendors in Lisbon."
 
 
+def test_the_formats_come_from_complydocs_own_readers():
+    """One table of extensions, the readers', so a second one cannot drift from it."""
+    from complydoc.ingest.registry import suffix_formats, supported_extensions
+    from complydoc.loaders.formats import _KNOWN
+
+    assert set(suffix_formats()) == set(supported_extensions())
+    readable = {document_format.value for document_format in suffix_formats().values()}
+    for loader, formats in _KNOWN.items():
+        assert set(formats) <= readable, f"{loader} names a format complydoc does not read"
+    assert extensions(["email", "image"]) == (".eml", ".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp")
+
+
 class Document:
     def __init__(self, page_content: str, metadata: dict | None = None) -> None:
         self.page_content = page_content

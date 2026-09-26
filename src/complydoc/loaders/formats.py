@@ -22,34 +22,15 @@ from pathlib import Path
 from typing import Any
 
 from complydoc.ingest.base import DocumentFormat
+from complydoc.ingest.registry import suffix_formats
 
 __all__ = [
     "FORMAT_LABELS",
     "extensions",
     "format_of",
     "loader_formats",
+    "suffix_formats",
 ]
-
-SUFFIX_FORMATS: dict[str, DocumentFormat] = {
-    ".pdf": DocumentFormat.PDF,
-    ".docx": DocumentFormat.DOCX,
-    ".xlsx": DocumentFormat.XLSX,
-    ".xlsm": DocumentFormat.XLSX,
-    ".pptx": DocumentFormat.PPTX,
-    ".html": DocumentFormat.HTML,
-    ".htm": DocumentFormat.HTML,
-    ".md": DocumentFormat.MARKDOWN,
-    ".markdown": DocumentFormat.MARKDOWN,
-    ".txt": DocumentFormat.TEXT,
-    ".eml": DocumentFormat.EMAIL,
-    ".png": DocumentFormat.IMAGE,
-    ".jpg": DocumentFormat.IMAGE,
-    ".jpeg": DocumentFormat.IMAGE,
-    ".tif": DocumentFormat.IMAGE,
-    ".tiff": DocumentFormat.IMAGE,
-    ".bmp": DocumentFormat.IMAGE,
-}
-"""File extensions by the format complydoc reports them under."""
 
 FORMAT_LABELS: dict[str, str] = {
     DocumentFormat.PDF: "PDF",
@@ -64,42 +45,36 @@ FORMAT_LABELS: dict[str, str] = {
     DocumentFormat.OTHER: "Other",
 }
 
-PDF = (".pdf",)
-WORD = (".docx",)
-EXCEL = (".xlsx", ".xlsm")
-POWERPOINT = (".pptx",)
-HTML = (".html", ".htm")
-MARKDOWN = (".md", ".markdown")
-IMAGES = (".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp")
-
 _KNOWN: dict[str, tuple[str, ...]] = {
     # LangChain
-    "PyPDFLoader": PDF,
-    "PDFPlumberLoader": PDF,
-    "PyPDFium2Loader": PDF,
-    "PyMuPDFLoader": PDF,
-    "PDFMinerLoader": PDF,
-    "OpenDataLoaderPDFLoader": PDF,
-    "Docx2txtLoader": WORD,
-    "UnstructuredPDFLoader": PDF,
-    "UnstructuredWordDocumentLoader": WORD,
-    "UnstructuredExcelLoader": EXCEL,
-    "UnstructuredPowerPointLoader": POWERPOINT,
-    "UnstructuredHTMLLoader": HTML,
-    "BSHTMLLoader": HTML,
-    "UnstructuredMarkdownLoader": MARKDOWN,
-    "UnstructuredEmailLoader": (".eml",),
-    "UnstructuredImageLoader": IMAGES,
-    "TextLoader": (".txt", *MARKDOWN),
+    "PyPDFLoader": ("pdf",),
+    "PDFPlumberLoader": ("pdf",),
+    "PyPDFium2Loader": ("pdf",),
+    "PyMuPDFLoader": ("pdf",),
+    "PDFMinerLoader": ("pdf",),
+    "OpenDataLoaderPDFLoader": ("pdf",),
+    "Docx2txtLoader": ("docx",),
+    "UnstructuredPDFLoader": ("pdf",),
+    "UnstructuredWordDocumentLoader": ("docx",),
+    "UnstructuredExcelLoader": ("xlsx",),
+    "UnstructuredPowerPointLoader": ("pptx",),
+    "UnstructuredHTMLLoader": ("html",),
+    "BSHTMLLoader": ("html",),
+    "UnstructuredMarkdownLoader": ("markdown",),
+    "UnstructuredEmailLoader": ("email",),
+    "UnstructuredImageLoader": ("image",),
+    "TextLoader": ("text", "markdown"),
     # LlamaIndex
-    "PDFReader": PDF,
-    "DocxReader": WORD,
-    "PptxReader": POWERPOINT,
-    "HTMLTagReader": HTML,
-    "MarkdownReader": MARKDOWN,
-    "ImageReader": IMAGES,
+    "PDFReader": ("pdf",),
+    "DocxReader": ("docx",),
+    "PptxReader": ("pptx",),
+    "HTMLTagReader": ("html",),
+    "MarkdownReader": ("markdown",),
+    "ImageReader": ("image",),
 }
-"""Loader classes that read one kind of file, by class name."""
+"""Loader classes that read one kind of file, by class name, and the formats they read.
+
+Formats rather than extensions, which come from complydoc's own readers."""
 
 
 def extensions(values: Iterable[str]) -> tuple[str, ...]:
@@ -111,7 +86,7 @@ def extensions(values: Iterable[str]) -> tuple[str, ...]:
     if isinstance(values, str):
         values = [values]
     by_format: dict[str, list[str]] = {}
-    for suffix, document_format in SUFFIX_FORMATS.items():
+    for suffix, document_format in suffix_formats().items():
         by_format.setdefault(document_format.value, []).append(suffix)
     found: list[str] = []
     for value in values:
@@ -128,7 +103,7 @@ def extensions(values: Iterable[str]) -> tuple[str, ...]:
 
 def format_of(path: str | Path) -> DocumentFormat:
     """The format a file is reported under, from its extension."""
-    return SUFFIX_FORMATS.get(Path(path).suffix.lower(), DocumentFormat.OTHER)
+    return suffix_formats().get(Path(path).suffix.lower(), DocumentFormat.OTHER)
 
 
 def loader_formats(source: Any) -> tuple[str, ...] | None:
@@ -141,4 +116,5 @@ def loader_formats(source: Any) -> tuple[str, ...] | None:
 
     if isinstance(source, LoaderSpec):
         return extensions(source.formats) if source.formats is not None else None
-    return _KNOWN.get(getattr(owner(source), "__name__", ""))
+    known = _KNOWN.get(getattr(owner(source), "__name__", ""))
+    return extensions(known) if known is not None else None

@@ -11,9 +11,15 @@ import pkgutil
 from pathlib import Path
 from typing import Final
 
-from complydoc.ingest.base import Document, IngestOptions, Loader, LoaderError
+from complydoc.ingest.base import Document, DocumentFormat, IngestOptions, Loader, LoaderError
 
-__all__ = ["load_document", "loader_for", "register", "supported_extensions"]
+__all__ = [
+    "load_document",
+    "loader_for",
+    "register",
+    "suffix_formats",
+    "supported_extensions",
+]
 
 _LOADERS: Final[dict[str, Loader]] = {}
 _discovered = False
@@ -41,6 +47,15 @@ def _discover() -> None:
 def supported_extensions() -> tuple[str, ...]:
     _discover()
     return tuple(sorted(_LOADERS))
+
+
+def suffix_formats() -> dict[str, DocumentFormat]:
+    """Each extension complydoc reads, and the format it reports the file under.
+
+    Taken from the readers themselves, so a table elsewhere cannot fall out of step.
+    """
+    _discover()
+    return {extension: loader.format for extension, loader in _LOADERS.items()}
 
 
 def loader_for(path: Path) -> Loader | None:
