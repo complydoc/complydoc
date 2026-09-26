@@ -1,4 +1,4 @@
-import { screen, within } from "@testing-library/react";
+import { cleanup, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { IgnoreProvider } from "@/components/IgnoreProvider";
 import { renderPage } from "@/test/render";
@@ -52,11 +52,13 @@ function fingerprinted(): Report {
 }
 
 describe("DocumentDetail", () => {
-  it("diffs a document read more than one way, and names its pages and cost in one line", async () => {
+  it("diffs a document read more than one way, with what the page and the document cost", async () => {
     open(sampleAudit(), "master-services-agreement.pdf");
     expect(screen.getByRole("heading", { name: "master-services-agreement.pdf" })).toBeInTheDocument();
-    expect(screen.getByText(/Page 1 of 8/)).toBeInTheDocument();
-    expect(screen.getByText(/\$[\d.]+ to read/)).toBeInTheDocument();
+    const totals = screen.getByRole("group", { name: "Cost and time" });
+    expect(totals).toHaveTextContent(/This page\s*\$\d/);
+    expect(totals).toHaveTextContent(/Document\s*\$\d/);
+    expect(screen.getByRole("navigation", { name: "pagination" })).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Base reader" })).toHaveTextContent("pdfplumber");
     expect(screen.getByRole("combobox", { name: "Compare reader" })).toHaveTextContent("pypdf");
     expect(await screen.findByLabelText("Lines changed", {}, { timeout: 5000 })).toBeInTheDocument();
@@ -72,8 +74,8 @@ describe("DocumentDetail", () => {
   it("moves through the pages of a document read one way", async () => {
     open(sampleAudit(), "supplier-invoices-scanned.pdf");
     const first = screen.getByTestId("page-reading").textContent;
-    await userEvent.click(screen.getByRole("button", { name: "Next page" }));
-    expect(screen.getByText(/Page 2 of/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("link", { name: "Go to next page" }));
+    expect(screen.getByRole("link", { name: "2" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByTestId("page-reading").textContent).not.toBe(first);
   });
 
@@ -105,7 +107,7 @@ describe("DocumentDetail", () => {
     const index = entry.sensitive.matches.findIndex((m) => m.category === "iban");
     const match = required(entry.sensitive.matches[index]);
     open(report, "master-services-agreement.pdf", { finding: { kind: "identifier", index } });
-    expect(screen.getByText(new RegExp(`Page ${match.page} of`))).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: String(match.page) })).toHaveAttribute("aria-current", "page");
     const item = within(checklist())
       .getAllByRole("listitem")
       .find((li) => li.className.includes("ring"));
@@ -122,5 +124,33 @@ describe("DocumentDetail", () => {
     expect(screen.getByTestId("page-reading")).not.toHaveTextContent("REVEALED-VALUE");
     await userEvent.click(screen.getByRole("button", { name: "Show the values" }));
     expect(screen.getByTestId("page-reading")).toHaveTextContent("REVEALED-VALUE");
+  });
+
+  it("marks the finding a link opened in the diff's own text", async () => {
+    // jsdom has no CSS highlights; a stand-in records what would be marked.
+    const registry = new Map<string, { ranges: Range[] }>();
+    vi.stubGlobal("CSS", { highlights: registry });
+    vi.stubGlobal(
+      "Highlight",
+      class {
+        ranges: Range[];
+        constructor(...ranges: Range[]) {
+          this.ranges = ranges;
+        }
+      },
+    );
+    const report = sampleAudit();
+    const entry = required(report.documents.find((d) => d.relative_path === "master-services-agreement.pdf"));
+    const index = entry.sensitive.matches.findIndex((m) => m.category === "iban");
+    const match = required(entry.sensitive.matches[index]);
+    open(report, "master-services-agreement.pdf", { finding: { kind: "identifier", index } });
+    await vi.waitFor(() => expect(registry.get("complydoc-finding")?.ranges.length).toBeGreaterThan(0), {
+      timeout: 5000,
+    });
+    const marked = required(registry.get("complydoc-finding")?.ranges[0]).toString();
+    expect(marked.replace(/\s+/g, "")).toBe(match.masked.replace(/\s+/g, ""));
+    // Unmounted first, so the diff takes its mark away while the stand-in is still there.
+    cleanup();
+    vi.unstubAllGlobals();
   });
 });

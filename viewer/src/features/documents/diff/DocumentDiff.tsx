@@ -46,6 +46,8 @@ interface DocumentDiffProps {
   onVisiblePage?: (page: number) => void;
   /** Show the values, where the report holds them. */
   unmasked?: boolean;
+  /** Text to mark and scroll to: the finding a link opened. */
+  mark?: string | null;
 }
 
 /**
@@ -53,7 +55,14 @@ interface DocumentDiffProps {
  * diff: the text layer against another library, OCR or a vision model. One
  * sentence per line, so only the sentences whose words differ show as changed.
  */
-export function DocumentDiff({ report, index, jump = null, onVisiblePage, unmasked = false }: DocumentDiffProps) {
+export function DocumentDiff({
+  report,
+  index,
+  jump = null,
+  onVisiblePage,
+  unmasked = false,
+  mark = null,
+}: DocumentDiffProps) {
   const [[base, compare], setSides] = useState<[Side, Side]>(() => defaultSides(report, index));
   // Side by side where there is room for two columns of text.
   const split = useMediaQuery("(min-width: 80rem)");
@@ -86,6 +95,7 @@ export function DocumentDiff({ report, index, jump = null, onVisiblePage, unmask
           newText={sideText(report, compare, "sentences", unmasked)}
           split={split}
           jump={jump}
+          mark={mark}
           {...(onVisiblePage && { onVisiblePage })}
         />
       </Suspense>

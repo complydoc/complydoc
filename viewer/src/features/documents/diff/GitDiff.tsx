@@ -22,6 +22,48 @@ export interface GitDiffProps {
   jump?: { page: number } | null;
   /** Called with the page whose lines are at the top of the view, as it scrolls. */
   onVisiblePage?: (page: number) => void;
+  /** Text to mark wherever it is drawn, and scroll to: a finding opened from a link. */
+  mark?: string | null;
+}
+
+/** The name the marked finding is styled by, in index.css. */
+const HIGHLIGHT = "complydoc-finding";
+
+/**
+ * Where `needle` sits in the text drawn inside `container`, spacing aside, as
+ * ranges over its text nodes. The diff splits a line into several nodes where
+ * words changed, so the text is searched whole and each match mapped back.
+ */
+function textRanges(container: HTMLElement, needle: string): Range[] {
+  const words = needle.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return [];
+  const nodes: { node: Text; start: number }[] = [];
+  let text = "";
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    nodes.push({ node: node as Text, start: text.length });
+    text += node.textContent ?? "";
+  }
+  const at = (offset: number) => {
+    let found = nodes[0];
+    for (const entry of nodes) {
+      if (entry.start > offset) break;
+      found = entry;
+    }
+    return found ? { node: found.node, offset: offset - found.start } : null;
+  };
+  const pattern = new RegExp(words.map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("\\s*"), "g");
+  const ranges: Range[] = [];
+  for (const match of text.matchAll(pattern)) {
+    const start = at(match.index);
+    const end = at(match.index + match[0].length);
+    if (!start || !end) continue;
+    const range = document.createRange();
+    range.setStart(start.node, start.offset);
+    range.setEnd(end.node, end.offset);
+    ranges.push(range);
+  }
+  return ranges;
 }
 
 const MARKER = /^# Page (\d+)$/;
@@ -62,7 +104,16 @@ function SameText({ text }: { text: string }) {
   );
 }
 
-export default function GitDiff({ oldName, oldText, newName, newText, split, jump, onVisiblePage }: GitDiffProps) {
+export default function GitDiff({
+  oldName,
+  oldText,
+  newName,
+  newText,
+  split,
+  jump,
+  onVisiblePage,
+  mark = null,
+}: GitDiffProps) {
   const scroller = useRef<HTMLDivElement>(null);
   const frame = useRef(0);
   const dark = useIsDark();
@@ -107,6 +158,44 @@ export default function GitDiff({ oldName, oldText, newName, newText, split, jum
   useEffect(() => {
     if (jump) scrollTo(jump.page);
   }, [jump, scrollTo]);
+
+  // The finding a link opened, marked where it is drawn. The mark is a CSS
+  // highlight over text ranges, so the diff's own elements are never touched, and
+  // it is laid again whenever the diff redraws, as it does on unfolding.
+  const markedOnce = useRef<string | null>(null);
+  useEffect(() => {
+    const container = scroller.current;
+    if (!mark || !container || typeof CSS === "undefined" || !("highlights" in CSS)) return;
+    let attempts = 0;
+    let timer = 0;
+    const lay = () => {
+      const ranges = textRanges(container, mark);
+      CSS.highlights.set(HIGHLIGHT, new Highlight(...ranges));
+      const first = ranges[0];
+      if (first && markedOnce.current !== mark) {
+        markedOnce.current = mark;
+        const top = first.getBoundingClientRect().top - container.getBoundingClientRect().top;
+        container.scrollTo({ top: container.scrollTop + top - container.clientHeight / 3 });
+      }
+      // Not drawn yet, or folded away: look again, and unfold once it has had time to draw.
+      if (!first && attempts < 20) {
+        attempts += 1;
+        if (attempts === 4) setUnfolded(true);
+        timer = window.setTimeout(lay, 80);
+      }
+    };
+    lay();
+    const observer = new MutationObserver(() => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(lay, 50);
+    });
+    observer.observe(container, { childList: true, subtree: true });
+    return () => {
+      observer.disconnect();
+      window.clearTimeout(timer);
+      CSS.highlights.delete(HIGHLIGHT);
+    };
+  }, [mark, file, mode]);
 
   const onScroll = () => {
     if (!onVisiblePage) return;

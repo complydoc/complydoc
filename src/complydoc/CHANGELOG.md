@@ -34,9 +34,11 @@ load.
   diff of two readers; one read one way shows its pages as read, with findings marked.
   Beside it are the page's picture, when the report has one, and the page's findings,
   each with a box to tick it off as ignored. A ticked finding is crossed out, and under
-  `complydoc ui` it is saved to the ignore file. The separate Pages and Diff views,
-  the reading panes and the per-reader costs are gone. An eye button shows the values
-  in a report written with `--reveal`, which opens masked.
+  `complydoc ui` it is saved to the ignore file. A finding opened from the Security page
+  is marked in the diff's text and scrolled to. The header says what the page and the
+  whole document cost. The separate Pages and Diff views, the reading panes and the
+  per-reader costs are gone. An eye button shows the values in a report written with
+  `--reveal`, which opens masked.
 
 - One kind of price. Every model is priced from the vendored table, from models.dev and
   litellm, which a workflow refreshes each week by pull request, and a report says once

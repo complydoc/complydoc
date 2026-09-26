@@ -1,19 +1,21 @@
-import { ChevronLeftIcon, ChevronRightIcon, EyeIcon, EyeOffIcon } from "lucide-react";
+import { EyeIcon, EyeOffIcon } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DocumentDiff } from "@/features/documents/diff/DocumentDiff";
 import { usePlan } from "@/hooks/usePlan";
 import { KEPT, canReveal, pageText, readersOf } from "@/report/documentDiff";
-import { fileName, formatPageUsd } from "@/report/format";
+import { fileName } from "@/report/format";
 import { findingHighlight } from "@/report/highlight";
 import { pageFindings } from "@/report/pageFindings";
 import { hasPicture } from "@/report/picture";
-import { documentTotals } from "@/report/plan";
+import { documentTotals, pageEstimate } from "@/report/plan";
 import type { FindingRef } from "@/report/route";
 import type { DocumentEntry, Report } from "@/report/types";
 import { useIsIgnored } from "@/hooks/useIgnores";
+import { DocumentTotals } from "./DocumentTotals";
 import { FindingChecklist } from "./FindingChecklist";
+import { PagePicker } from "./PagePicker";
 import { PagePane } from "./PagePane";
 import { PageReading } from "./PageReading";
 import { VisionNote } from "./VisionNote";
@@ -62,44 +64,6 @@ function EyeToggle({ available, on, onChange }: { available: boolean; on: boolea
   );
 }
 
-function Pager({
-  number,
-  index,
-  count,
-  onPick,
-}: {
-  number: number;
-  index: number;
-  count: number;
-  onPick: (i: number) => void;
-}) {
-  return (
-    <span className="flex items-center gap-1 text-sm text-muted-foreground">
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        aria-label="Previous page"
-        disabled={index === 0}
-        onClick={() => onPick(index - 1)}
-      >
-        <ChevronLeftIcon />
-      </Button>
-      <span className="tabular-nums">
-        Page {number} of {count}
-      </span>
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        aria-label="Next page"
-        disabled={index === count - 1}
-        onClick={() => onPick(index + 1)}
-      >
-        <ChevronRightIcon />
-      </Button>
-    </span>
-  );
-}
-
 /**
  * One document. Read more than one way, a diff of two readings; read one way,
  * its pages as read. Beside it, the page's picture when the report has one, and
@@ -121,7 +85,10 @@ export function DocumentDetail({
     );
   const [pageIndex, setPageIndex] = useState(() => (opening === null ? 0 : pageAt(opening)));
   // A page the diff should scroll to. A new object each time, so asking again still scrolls.
-  const [jump, setJump] = useState<{ page: number } | null>(() => (opening !== null ? { page: opening } : null));
+  // A finding a link opened is scrolled to by its mark instead.
+  const [jump, setJump] = useState<{ page: number } | null>(() =>
+    opening !== null && !finding ? { page: opening } : null,
+  );
   const revealable = canReveal(document);
   const [eye, setEye] = useState(false);
   const unmasked = eye && revealable;
@@ -152,7 +119,12 @@ export function DocumentDetail({
     (document.previews ?? []).some(hasPicture) ||
     document.sensitive.matches.length + document.content_findings.length + (document.ignored?.length ?? 0) > 0;
   const priced = models.length > 0 && pages.some((p) => p.tokens !== undefined);
-  const totals = priced ? documentTotals(report, document, plan) : null;
+  // The finding a link opened, as it reads in the text on screen.
+  const mark = highlight
+    ? highlight.kind === "identifier" && unmasked
+      ? (highlight.match?.revealed ?? highlight.needle)
+      : highlight.needle
+    : null;
 
   const pick = (next: number) => {
     setPageIndex(next);
@@ -166,25 +138,26 @@ export function DocumentDetail({
         <h2 className="min-w-0 truncate font-heading text-lg font-semibold tracking-tight">
           {fileName(document.relative_path)}
         </h2>
-        {pages.length > 1 && <Pager number={page.number} index={pageIndex} count={pages.length} onPick={pick} />}
-        <span className="ml-auto flex items-center gap-3">
-          {totals && totals.usd !== null && (
-            <span className="text-sm text-muted-foreground" title="The whole document, under the plan chosen above">
-              {formatPageUsd(totals.usd)} to read
-            </span>
+        <span className="ml-auto flex items-center gap-4">
+          {priced && (
+            <DocumentTotals
+              page={pageEstimate(report, document, page, plan)}
+              document={documentTotals(report, document, plan)}
+            />
           )}
           <EyeToggle available={revealable} on={unmasked} onChange={setEye} />
         </span>
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col gap-6 lg:flex-row">
-        <div className="flex h-[70svh] min-h-0 min-w-0 flex-1 flex-col lg:h-auto">
+        <div className="flex h-[70svh] min-h-0 min-w-0 flex-1 flex-col gap-3 lg:h-auto">
           {compared ? (
             <DocumentDiff
               report={report}
               index={index}
               jump={jump}
               unmasked={unmasked}
+              mark={mark}
               onVisiblePage={(number) => setPageIndex(pageAt(number))}
             />
           ) : (
@@ -195,12 +168,16 @@ export function DocumentDetail({
               active={active}
             />
           )}
+          <div className="flex shrink-0 justify-center">
+            <PagePicker count={pages.length} current={pageIndex} onPick={pick} />
+          </div>
         </div>
 
         {column && (
-          <aside aria-label="Page" className="flex min-h-0 shrink-0 flex-col gap-4 overflow-y-auto lg:w-80">
+          // As tall as the text beside it: the page takes what the findings below it leave.
+          <aside aria-label="Page" className="flex min-h-0 shrink-0 flex-col gap-4 lg:w-80 xl:w-96">
             {pictured && (
-              <div className="h-96 shrink-0">
+              <div className="h-96 min-h-64 shrink-0 lg:h-auto lg:flex-1">
                 <PagePane
                   number={page.number}
                   name={fileName(document.relative_path)}
@@ -212,7 +189,9 @@ export function DocumentDetail({
             {checked && checked.status !== "agrees" && (
               <VisionNote page={checked} model={document.verification?.model ?? ""} />
             )}
-            <FindingChecklist findings={found} active={active} />
+            <div className="shrink-0 overflow-y-auto lg:max-h-[45%]">
+              <FindingChecklist findings={found} active={active} />
+            </div>
           </aside>
         )}
       </div>

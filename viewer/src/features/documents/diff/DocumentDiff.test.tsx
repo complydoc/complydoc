@@ -38,7 +38,7 @@ describe("the diff view", () => {
     renderPage(<DocumentsPage report={report} open={String(index)} />);
     const scroller = await screen.findByTestId("diff-scroller", {}, { timeout: 5000 });
     const scrolled = vi.spyOn(scroller, "scrollTo");
-    await userEvent.click(screen.getByRole("button", { name: "Next page" }));
+    await userEvent.click(screen.getByRole("link", { name: "Go to next page" }));
     await vi.waitFor(() => expect(scrolled).toHaveBeenCalled());
   });
 });

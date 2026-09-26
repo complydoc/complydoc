@@ -213,3 +213,10 @@
   color: var(--foreground);
   font-family: var(--font-mono);
 }
+
+/* A finding opened from a link, marked in the diff's text. Drawn as a CSS highlight
+   (see GitDiff), so the library's own elements are left alone. */
+::highlight(complydoc-finding) {
+  background-color: color-mix(in oklab, var(--warning) 55%, transparent);
+  color: var(--foreground);
+}

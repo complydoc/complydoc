@@ -33,6 +33,8 @@ beforeEach(() => {
   Element.prototype.releasePointerCapture ??= () => {};
   Element.prototype.scrollIntoView ??= () => {};
   Element.prototype.scrollTo ??= () => {};
+  // A finding's mark in the diff is placed by the rectangle of its text range.
+  Range.prototype.getBoundingClientRect ??= () => new DOMRect();
   window.ResizeObserver ??= class {
     observe() {}
     unobserve() {}
