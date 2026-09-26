@@ -55,6 +55,7 @@ __all__ = [
     "link",
     "load_config_or_exit",
     "print_report_json",
+    "print_written",
     "route_output",
 ]
 
@@ -316,6 +317,14 @@ def link(label: str, path: Path) -> None:
     )
 
 
+def print_written(html_path: Path, json_path: Path, out: Path) -> None:
+    """Where a run's report and data went, and the command that opens them in the viewer."""
+    link("Report", html_path)
+    link("Data", json_path)
+    viewer = "complydoc ui" if out.resolve() == DEFAULT_OUT.resolve() else f"complydoc ui {out}"
+    console.print(f"[bold]View[/]    {escape(viewer)}", no_wrap=True, crop=False)
+
+
 def emit(
     report: AuditReport,
     config: Config,
@@ -338,14 +347,7 @@ def emit(
     if quiet:
         return
     console.print()
-    console.print(
-        f"[bold]Report[/]  [link=file://{html_path}]{html_path}[/link]", no_wrap=True, crop=False
-    )
-    console.print(
-        f"[bold]Data[/]    [link=file://{json_path}]{json_path}[/link]", no_wrap=True, crop=False
-    )
-    viewer = "complydoc ui" if out.resolve() == DEFAULT_OUT.resolve() else f"complydoc ui {out}"
-    console.print(f"[bold]View[/]    {escape(viewer)}", no_wrap=True, crop=False)
+    print_written(html_path, json_path, out)
     if save_text is not None:
         folder = save_text.expanduser().resolve()
         held = (

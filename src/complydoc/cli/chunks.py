@@ -31,8 +31,8 @@ from complydoc.cli.common import (
     app,
     console,
     errors,
-    link,
     load_config_or_exit,
+    print_written,
 )
 from complydoc.cost.estimator import UnknownModelError
 from complydoc.utils.imports import load_object
@@ -243,7 +243,4 @@ def chunks(
         table.add_row(*cells)
     console.print(table)
     console.print()
-    link("Report", html_path)
-    link("Data", json_path)
-    viewer = "complydoc ui" if out.resolve() == DEFAULT_OUT.resolve() else f"complydoc ui {out}"
-    console.print(f"[bold]View[/]    {escape(viewer)}", no_wrap=True, crop=False)
+    print_written(html_path, json_path, out)

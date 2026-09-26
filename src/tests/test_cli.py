@@ -422,6 +422,9 @@ def test_a_category_nothing_was_looked_for_is_named_in_the_summary(tmp_path, mon
                 "sensitive",
                 "src/complydoc/sample",
                 "--no-ocr",
+                # The models are removed in this process only; a worker would still have them.
+                "--jobs",
+                "1",
                 "--out",
                 str(tmp_path),
                 "--name",
