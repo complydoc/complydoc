@@ -51,15 +51,3 @@ export function findingHighlight(document: DocumentEntry, ref: FindingRef): High
     match: null,
   };
 }
-
-function escape(text: string) {
-  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-/** Where a needle sits in a text, spacing aside, as [start, end) ranges. */
-export function findAll(text: string, needle: string): [number, number][] {
-  const words = needle.trim().split(/\s+/).filter(Boolean);
-  if (words.length === 0) return [];
-  const pattern = new RegExp(words.map(escape).join("\\s+"), "g");
-  return [...text.matchAll(pattern)].map((m) => [m.index, m.index + m[0].length]);
-}

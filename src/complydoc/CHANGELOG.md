@@ -31,14 +31,21 @@ load.
 ### Changed
 
 - The viewer's document page is simpler. A document read more than one way shows a
-  diff of two readers; one read one way shows its pages as read, with findings marked.
-  Beside it are the page's picture, when the report has one, and the page's findings,
-  each with a box to tick it off as ignored. A ticked finding is crossed out, and under
-  `complydoc ui` it is saved to the ignore file. A finding opened from the Security page
-  is marked in the diff's text and scrolled to. Each page's first line says what the
-  page costs and takes to read, and the whole document's figure sits beside its name. The separate Pages and Diff views, the reading panes and the
-  per-reader costs are gone. An eye button shows the values in a report written with
-  `--reveal`, which opens masked.
+  diff of two readers; one read one way shows its pages as read. Findings are marked in
+  the text itself, coloured by severity, with ignored ones struck through. Clicking one
+  says what it is and lets you tick it off as not a problem, which under `complydoc ui`
+  is saved to the ignore file. Arrows step through the findings in order. Each page's
+  first line says what it costs to read. The page picture sits beside the text and can
+  be put away to give the text the whole width. The separate Pages and Diff views, the
+  reading panes and the per-reader costs are gone. An eye button shows the values in a
+  report written with `--reveal`, which opens masked.
+
+- Elsewhere in the viewer: the findings table folds a value repeated in one document
+  into one row, with how often and on which pages, and has a search box, a severity
+  filter and pages of 25. Home's "Needs attention" gives one line per kind of
+  identifier in a document. The readiness ring now fills to the score. Each page opens
+  at its top. Chart labels are cut at a whole word. The cost table lists the cheapest
+  model first.
 
 - One kind of price. Every model is priced from the vendored table, from models.dev and
   litellm, which a workflow refreshes each week by pull request, and a report says once

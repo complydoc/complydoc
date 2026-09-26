@@ -33,6 +33,8 @@ beforeEach(() => {
   Element.prototype.releasePointerCapture ??= () => {};
   Element.prototype.scrollIntoView ??= () => {};
   Element.prototype.scrollTo ??= () => {};
+  // Opening a page scrolls the window to its top; jsdom has no window to scroll.
+  window.scrollTo = () => {};
   // A finding's mark in the diff is placed by the rectangle of its text range.
   Range.prototype.getBoundingClientRect ??= () => new DOMRect();
   window.ResizeObserver ??= class {

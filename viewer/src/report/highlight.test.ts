@@ -1,12 +1,7 @@
 import { required, sampleAudit } from "@/test/sample";
-import { findAll, findingHighlight } from "./highlight";
+import { findingHighlight } from "./highlight";
 
 describe("highlight", () => {
-  it("finds a value across spacing the reader changed", () => {
-    expect(findAll("IBAN: •••• ••54\n32 end", "•••• ••54 32")).toEqual([[6, 18]]);
-    expect(findAll("nothing here", "••54")).toEqual([]);
-  });
-
   it("points an identifier at its page, value and box", () => {
     const document = required(sampleAudit().documents.find((d) => d.relative_path === "master-services-agreement.pdf"));
     const found = findingHighlight(document, { kind: "identifier", index: 0 });

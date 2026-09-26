@@ -1,19 +1,27 @@
-import { ChevronDownIcon, EyeIcon, EyeOffIcon } from "lucide-react";
-import { useState } from "react";
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  EyeIcon,
+  EyeOffIcon,
+  PanelRightCloseIcon,
+  PanelRightOpenIcon,
+} from "lucide-react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DocumentDiff } from "@/features/documents/diff/DocumentDiff";
+import { useIsIgnored } from "@/hooks/useIgnores";
+import type { InlineMark } from "@/hooks/useInlineMarks";
 import { usePlan } from "@/hooks/usePlan";
 import { KEPT, canReveal, pageText, readersOf } from "@/report/documentDiff";
 import { fileName, formatPageUsd, formatSeconds } from "@/report/format";
 import { findingHighlight } from "@/report/highlight";
-import { pageFindings } from "@/report/pageFindings";
+import { documentFindings, findingFor } from "@/report/pageFindings";
 import { hasPicture } from "@/report/picture";
 import { documentTotals, pageEstimate } from "@/report/plan";
 import type { FindingRef } from "@/report/route";
 import type { DocumentEntry, Report } from "@/report/types";
-import { useIsIgnored } from "@/hooks/useIgnores";
-import { FindingChecklist } from "./FindingChecklist";
+import { FindingPopover } from "./FindingPopover";
 import { PagePicker } from "./PagePicker";
 import { PagePane } from "./PagePane";
 import { PageReading } from "./PageReading";
@@ -65,7 +73,7 @@ function EyeToggle({ available, on, onChange }: { available: boolean; on: boolea
 
 const COLLAPSED_KEY = "complydoc.page-collapsed";
 
-/** Whether the page's picture is folded away, remembered in this browser across documents. */
+/** Whether the page's picture is put away, remembered in this browser across documents. */
 function usePageCollapsed(): [boolean, (collapsed: boolean) => void] {
   const [collapsed, set] = useState(() => {
     try {
@@ -85,10 +93,35 @@ function usePageCollapsed(): [boolean, (collapsed: boolean) => void] {
   return [collapsed, update];
 }
 
+/** A way through the findings in order, like the results of a search. */
+function FindingStepper({ at, count, onStep }: { at: number; count: number; onStep: (next: number) => void }) {
+  if (count === 0) return <span className="text-sm text-muted-foreground">Nothing found</span>;
+  return (
+    <span className="flex items-center text-sm text-muted-foreground" role="group" aria-label="Findings">
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        aria-label="Previous finding"
+        onClick={() => onStep(at <= 0 ? count - 1 : at - 1)}
+      >
+        <ChevronLeftIcon />
+      </Button>
+      <span className="tabular-nums">
+        {at < 0 ? `${count} ${count === 1 ? "finding" : "findings"}` : `Finding ${at + 1} of ${count}`}
+      </span>
+      <Button variant="ghost" size="icon-sm" aria-label="Next finding" onClick={() => onStep((at + 1) % count)}>
+        <ChevronRightIcon />
+      </Button>
+    </span>
+  );
+}
+
 /**
  * One document. Read more than one way, a diff of two readings; read one way,
- * its pages as read. Beside it, the page's picture when the report has one, and
- * what was found on the page, each finding with a box to tick it off.
+ * its pages as read. What was found is marked in the text itself: click a mark
+ * for what it is and to ignore it, or step through the marks in order. Beside
+ * the text, the page's picture when the report has one, which can be put away
+ * to give the text the whole width.
  */
 export function DocumentDetail({
   report,
@@ -99,25 +132,37 @@ export function DocumentDetail({
 }: DocumentDetailProps) {
   const highlight = finding ? findingHighlight(document, finding) : null;
   const opening = highlight?.page ?? startPage;
+  const pages = document.extracted_text;
   const pageAt = (number: number) =>
     Math.max(
       0,
-      document.extracted_text.findIndex((p) => p.number === number),
+      pages.findIndex((p) => p.number === number),
     );
   const [pageIndex, setPageIndex] = useState(() => (opening === null ? 0 : pageAt(opening)));
   // A page the diff should scroll to. A new object each time, so asking again still scrolls.
-  // A finding a link opened is scrolled to by its mark instead.
   const [jump, setJump] = useState<{ page: number } | null>(() =>
     opening !== null && !finding ? { page: opening } : null,
   );
   const revealable = canReveal(document);
   const [eye, setEye] = useState(false);
-  const [collapsed, setCollapsed] = usePageCollapsed();
   const unmasked = eye && revealable;
+  const [collapsed, setCollapsed] = usePageCollapsed();
   const isIgnored = useIsIgnored();
   const { plan, models } = usePlan();
 
-  const pages = document.extracted_text;
+  const findings = useMemo(() => documentFindings(document, unmasked), [document, unmasked]);
+  const linked = finding ? findingFor(findings, document, finding) : undefined;
+  const [active, setActive] = useState<string | null>(() => linked?.key ?? null);
+  const [focus, setFocus] = useState<{ key: string } | null>(() => (linked ? { key: linked.key } : null));
+  const [picked, setPicked] = useState<{ key: string; rect: DOMRect } | null>(null);
+  const marks = useMemo<InlineMark[]>(
+    () => findings.map((f) => ({ key: f.key, needle: f.needle, tone: isIgnored(f) ? "ignored" : f.severity })),
+    [findings, isIgnored],
+  );
+  // The findings to step through: those still open, in page order.
+  const open = findings.filter((f) => !isIgnored(f));
+  const at = open.findIndex((f) => f.key === active);
+
   const page = pages[pageIndex];
   if (!page) {
     return (
@@ -131,23 +176,13 @@ export function DocumentDetail({
   }
 
   const compared = readersOf(report, document).length > 1;
-  const found = pageFindings(document, page.number, unmasked);
-  const active = finding ? `${finding.kind}-${finding.index}` : null;
   const preview = document.previews?.find((p) => p.number === page.number);
-  const pictured = hasPicture(preview);
-  const checked = document.verification?.pages.find((p) => p.number === page.number);
-  // The column is kept for every page once any page needs it, so the text does not jump sideways.
   const pictures = (document.previews ?? []).some(hasPicture);
-  const column =
-    pictures ||
-    document.sensitive.matches.length + document.content_findings.length + (document.ignored?.length ?? 0) > 0;
+  const verified = document.verification !== null && document.verification !== undefined;
+  const checked = document.verification?.pages.find((p) => p.number === page.number);
+  const side = pictures || verified;
+  const showSide = side && !collapsed;
   const priced = models.length > 0 && pages.some((p) => p.tokens !== undefined);
-  // The finding a link opened, as it reads in the text on screen.
-  const mark = highlight
-    ? highlight.kind === "identifier" && unmasked
-      ? (highlight.match?.revealed ?? highlight.needle)
-      : highlight.needle
-    : null;
 
   // What each page costs and takes to read under the plan, written on its first line.
   const notes: Record<number, string> = {};
@@ -167,12 +202,25 @@ export function DocumentDetail({
     const target = pages[next];
     if (target) setJump({ page: target.number });
   };
+  const step = (next: number) => {
+    const target = open[next];
+    if (!target) return;
+    setActive(target.key);
+    setFocus({ key: target.key });
+    setPicked(null);
+    // Read one way, the text is one page at a time: turn to the finding's page.
+    if (!compared && target.page !== null) setPageIndex(pageAt(target.page));
+  };
+  const onPick = (key: string, rect: DOMRect) => {
+    setActive(key);
+    setPicked({ key, rect });
+  };
 
   return (
     // Two columns from the top, so the page's picture has the full height beside the text.
     <div className="flex flex-col gap-6 lg:h-[calc(100svh-6rem)] lg:flex-row">
-      <div className="flex h-[80svh] min-h-0 min-w-0 flex-1 flex-col gap-3 lg:h-auto">
-        <div className="flex shrink-0 flex-wrap items-baseline gap-x-3 gap-y-1">
+      <div className="flex h-[80svh] min-h-0 min-w-0 flex-col gap-3 lg:h-auto lg:flex-1">
+        <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1">
           <h2 className="min-w-0 truncate font-heading text-lg font-semibold tracking-tight">
             {fileName(document.relative_path)}
           </h2>
@@ -185,8 +233,20 @@ export function DocumentDetail({
               {totals.seconds !== null && totals.untimed === 0 && ` · ${formatSeconds(totals.seconds)}`}
             </span>
           )}
-          <span className="ml-auto self-center">
+          <span className="ml-auto flex items-center gap-1">
+            <FindingStepper at={at} count={open.length} onStep={step} />
             <EyeToggle available={revealable} on={unmasked} onChange={setEye} />
+            {side && (
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label={showSide ? "Hide the page" : "Show the page"}
+                title={showSide ? "Hide the page" : "Show the page"}
+                onClick={() => setCollapsed(showSide)}
+              >
+                {showSide ? <PanelRightCloseIcon /> : <PanelRightOpenIcon />}
+              </Button>
+            )}
           </span>
         </div>
         {compared ? (
@@ -195,8 +255,11 @@ export function DocumentDetail({
             index={index}
             jump={jump}
             unmasked={unmasked}
-            mark={mark}
             notes={notes}
+            marks={marks}
+            active={active}
+            focus={focus}
+            onPick={onPick}
             onVisiblePage={(number) => setPageIndex(pageAt(number))}
           />
         ) : (
@@ -204,8 +267,10 @@ export function DocumentDetail({
             key={page.number}
             heading={notes[page.number] ? `# Page ${page.number} · ${notes[page.number]}` : `# Page ${page.number}`}
             text={pageText(page, KEPT, unmasked)}
-            findings={found.filter((f) => !isIgnored(f))}
+            marks={marks}
             active={active}
+            focus={focus}
+            onPick={onPick}
           />
         )}
         <div className="flex shrink-0 justify-center">
@@ -213,47 +278,43 @@ export function DocumentDetail({
         </div>
       </div>
 
-      {column && (
-        // Every part in a fixed place, whatever the page holds, so nothing moves when the page
-        // changes: the picture takes a set share of the height, and what was found the rest.
+      {showSide && (
+        // The page takes the column's full height; a vision check, when there was one, has a
+        // fixed place beneath it, so nothing moves when the page changes.
         <aside aria-label="Page" className="flex min-h-0 shrink-0 flex-col gap-4 lg:w-80 xl:w-[28rem]">
-          {pictures &&
-            (collapsed ? (
-              <Button
-                variant="outline"
-                size="sm"
-                className="shrink-0 justify-between"
-                onClick={() => setCollapsed(false)}
-                aria-label="Show the page"
-              >
-                Page {page.number}
-                <ChevronDownIcon />
-              </Button>
-            ) : (
-              <div className="h-96 shrink-0 lg:h-[58%]">
-                {pictured ? (
-                  <PagePane
-                    number={page.number}
-                    name={fileName(document.relative_path)}
-                    preview={preview}
-                    mark={highlight && highlight.page === page.number ? highlight.box : null}
-                    onCollapse={() => setCollapsed(true)}
-                  />
-                ) : (
-                  <div className="flex h-full items-center justify-center rounded-xl border border-dashed text-sm text-muted-foreground">
-                    No picture of page {page.number}
-                  </div>
-                )}
-              </div>
-            ))}
-          <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
-            {checked && checked.status !== "agrees" && (
-              <VisionNote page={checked} model={document.verification?.model ?? ""} />
-            )}
-            <FindingChecklist findings={found} active={active} />
-          </div>
+          {pictures && (
+            <div className="h-96 min-h-0 shrink-0 lg:h-auto lg:flex-1">
+              {hasPicture(preview) ? (
+                <PagePane
+                  number={page.number}
+                  name={fileName(document.relative_path)}
+                  preview={preview}
+                  mark={highlight && highlight.page === page.number ? highlight.box : null}
+                />
+              ) : (
+                <div className="flex h-full items-center justify-center rounded-xl border border-dashed text-sm text-muted-foreground">
+                  No picture of page {page.number}
+                </div>
+              )}
+            </div>
+          )}
+          {verified && (
+            <div className="shrink-0">
+              {checked ? (
+                <VisionNote page={checked} model={document.verification?.model ?? ""} />
+              ) : (
+                <p className="text-sm text-muted-foreground">The vision check did not read this page.</p>
+              )}
+            </div>
+          )}
         </aside>
       )}
+
+      <FindingPopover
+        finding={findings.find((f) => f.key === picked?.key) ?? null}
+        rect={picked?.rect ?? null}
+        onClose={() => setPicked(null)}
+      />
     </div>
   );
 }

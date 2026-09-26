@@ -214,9 +214,23 @@
   font-family: var(--font-mono);
 }
 
-/* A finding opened from a link, marked in the diff's text. Drawn as a CSS highlight
-   (see GitDiff), so the library's own elements are left alone. */
-::highlight(complydoc-finding) {
-  background-color: color-mix(in oklab, var(--warning) 55%, transparent);
+/* Findings marked where they sit in the text, by severity (see useInlineMarks). They
+   are CSS highlights, so the diff library's own elements are left alone. Ignored ones
+   are struck through; the one in hand is drawn out from the rest. */
+::highlight(complydoc-high) {
+  background-color: color-mix(in oklab, var(--destructive) 32%, transparent);
+}
+::highlight(complydoc-medium) {
+  background-color: color-mix(in oklab, var(--warning) 30%, transparent);
+}
+::highlight(complydoc-low) {
+  text-decoration: underline dotted var(--muted-foreground);
+}
+::highlight(complydoc-ignored) {
+  color: var(--muted-foreground);
+  text-decoration: line-through;
+}
+::highlight(complydoc-active) {
+  background-color: color-mix(in oklab, var(--primary) 45%, transparent);
   color: var(--foreground);
 }

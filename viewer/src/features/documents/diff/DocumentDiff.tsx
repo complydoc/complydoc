@@ -1,6 +1,7 @@
 import { lazy, Suspense, useState } from "react";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { InlineMark } from "@/hooks/useInlineMarks";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { defaultSides, readersOf, sideName, sideText, type Side } from "@/report/documentDiff";
 import type { Report } from "@/report/types";
@@ -46,8 +47,14 @@ interface DocumentDiffProps {
   onVisiblePage?: (page: number) => void;
   /** Show the values, where the report holds them. */
   unmasked?: boolean;
-  /** Text to mark and scroll to: the finding a link opened. */
-  mark?: string | null;
+  /** Findings to mark where they sit in the text. */
+  marks?: InlineMark[];
+  /** The finding to draw out from the rest. */
+  active?: string | null;
+  /** A finding to scroll to; a new object each time. */
+  focus?: { key: string } | null;
+  /** A marked finding was clicked. */
+  onPick?: (key: string, rect: DOMRect) => void;
   /** A few words after each page's `# Page N` line, such as what the page costs. */
   notes?: Record<number, string>;
 }
@@ -63,7 +70,10 @@ export function DocumentDiff({
   jump = null,
   onVisiblePage,
   unmasked = false,
-  mark = null,
+  marks,
+  active = null,
+  focus = null,
+  onPick,
   notes = {},
 }: DocumentDiffProps) {
   const [[base, compare], setSides] = useState<[Side, Side]>(() => defaultSides(report, index));
@@ -98,7 +108,10 @@ export function DocumentDiff({
           newText={sideText(report, compare, "sentences", unmasked, notes)}
           split={split}
           jump={jump}
-          mark={mark}
+          {...(marks && { marks })}
+          active={active}
+          focus={focus}
+          {...(onPick && { onPick })}
           {...(onVisiblePage && { onVisiblePage })}
         />
       </Suspense>
