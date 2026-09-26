@@ -195,8 +195,8 @@ finds and what it wrongly flags against a labelled corpus that ships with the pa
 - **Configurable**: prices, signal weights and detection patterns are YAML files, and name
   detection can use your own spaCy models, per language, or any other model as a detector.
 - **One report**: a JSON file with a versioned schema, opened in the viewer with
-  `complydoc ui`, safe to share: identifiers are masked throughout and pages are
-  drawn as wireframes. `--page-images` adds a picture of each page instead, and says
+  `complydoc ui`, safe to share: identifiers are masked throughout, and pages carry
+  no picture unless asked. `--page-images` adds a picture of each page, and says
   that it shows them.
 
 ## Resources

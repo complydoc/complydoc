@@ -18,7 +18,8 @@ The report is meant to be shared, so it carries no identifier in the clear:
 - **Page text** is kept, so a reading can be checked against the page, with every
   identifier that was found replaced by its masked form. `--no-extracted-text`
   leaves the text out altogether.
-- **Pages** are drawn as wireframes: where the text, images and findings sit,
+- **Pages** carry no picture unless one is asked for. With `--detail full` the
+  viewer draws each as a wireframe: where the text, images and findings sit,
   without the content.
 
 Masking is only as complete as detection: a name the model did not recognise is
@@ -79,7 +80,7 @@ complydoc audit ~/contracts --compare-extractor pypdf
 ```
 
 Findings come from the first reader only. The others are measured and reported;
-the page viewer shows each reader's text with the differences marked.
+the viewer's document view shows each reader's text with the differences marked.
 
 Readings are compared by word order. On a two-column page
 pdfplumber walks the text layer in file order, crossing both columns, and

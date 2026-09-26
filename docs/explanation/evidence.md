@@ -18,7 +18,7 @@ passed.
 
 ## Effects
 
-The security table sorts on it within a severity, so checksum-backed findings
+The viewer's findings table sorts on it within a severity, so checksum-backed findings
 precede model detections of the same severity.
 
 In [extracted text](../guides/extract-masked-text.md), `chunk.masked_confirmed`

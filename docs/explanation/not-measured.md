@@ -33,5 +33,6 @@ distinction instead.
 
 Each run generates a list of limitations from its own execution — components
 that did not run, categories that could not be scanned, prices without a
-verification date, sampling — and prints them on the report's first page with a
-severity.
+verification date, sampling — and records each with a severity. The viewer puts
+the important ones on its Home page, before the findings, and folds the rest
+beneath.
