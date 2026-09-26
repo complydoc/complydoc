@@ -10,6 +10,9 @@ separately.
 The report JSON moves to schema 17, which only adds fields; reports of schema 16 still
 load.
 
+LangChain sunset `langchain-community` on 22 May 2026 and archived it on 19 June. Nothing
+in complydoc needs it any more.
+
 ### Added
 
 - Your own concepts. `.complydoc-concepts.yaml` at the top of an audited folder, or the
@@ -31,6 +34,18 @@ load.
   preferred models are kept in the browser. A report that did not price the preferred
   model uses its cheapest from the same provider rather than its first.
 
+- Comparing loaders over several file types. In `compare_loaders(..., paths=...)` each
+  loader is given only the file types it is meant for: `formats={"name": [...]}` says so,
+  as extensions or format names, parser presets declare theirs, and loaders known to read
+  one type, such as `PyPDFLoader` or `Docx2txtLoader`, are recognised by name. A file not
+  given to a loader is listed in its row's `skipped`, not counted as a failure.
+  `loader_comparison.formats` repeats the comparison for each file type, with each
+  loader's documents, failures, load time, facts found and mean similarity, and a
+  recommendation per type; the folder's recommendation names one loader only when it is
+  the choice for every type. A comparison file takes `formats` per loader. The command
+  line, the HTML report and `complydoc ui` show a table by file type, and
+  `to_pandas("loader_formats")` has its rows.
+
 - Ignoring findings. `complydoc ignore <fingerprint> --reason …` records a finding that is
   not a problem in `.complydoc-ignore.yaml`, with who decided, an optional end date and
   optional path globs. An audit reads that file at the top of the folder, or the one
@@ -46,6 +61,13 @@ load.
 - With `--reveal`, each page's text in the report also carries a masked copy
   (`masked_text`, `masked_ocr_text`, `masked_readings`). The viewer opens the report
   masked and shows the values when you ask.
+
+- A guide, "Replacing a langchain-community loader", with where each loader went, a
+  runnable comparison of `PyPDFLoader` and `PyMuPDF4LLMLoader`, and what changes on a
+  two-column contract.
+
+- Loaders from `langchain-pymupdf4llm` and `langchain-opendataloader-pdf` are tagged with
+  their library, as `langchain-community`'s were.
 
 ### Changed
 
@@ -69,6 +91,13 @@ load.
   at its top. Chart labels are cut at a whole word. The cost table lists the cheapest
   model first.
 
+- In a loader comparison, a document the first loader did not return, because it failed
+  on the file or was not given its type, is now in the report, measured against the
+  next loader that returned it; `loader_comparison.baselines` lists these. Facts,
+  metadata keys and documents returned by some loaders only are compared between the
+  loaders given each file type, so a Word loader is not counted as missing a PDF's
+  sentence. Each loader's reading of a file carries its load time in `seconds`.
+
 - One kind of price. Every model is priced from the vendored table, from models.dev and
   litellm, which a workflow refreshes each week by pull request, and a report says once
   how old the prices are (`cost.prices_as_of`). `pricing.yaml` no longer carries prices
@@ -80,6 +109,20 @@ load.
   high-severity findings, and the documents to look at first with why. The quick wins,
   the numbers grid, the suggested commands, the notes on what a run could not check and
   the Cost page's cards of cheapest prices are gone.
+
+- `cd.parsers.azure_document_intelligence()` calls Azure's SDK,
+  `azure-ai-documentintelligence`, in place of `langchain-community`'s loader, with the
+  same request. Its tags are `Azure Document Intelligence` without `LangChain`. In
+  `mode="page"` Azure's page numbers, which start at 1, are reported as `page_number`;
+  they were under `page`, which counts from 0.
+
+- `cd.parsers.docling()` names `langchain-docling[local]` when Docling is missing, the
+  extra that converts on this machine.
+
+- The examples, the README and the landing page use `PyMuPDF4LLMLoader`.
+
+- The landing page's Questions ask which loader to use for the PDFs and which for the
+  Word files, answered with the comparison by file type.
 
 ## [0.6.0] — 2026-09-25
 

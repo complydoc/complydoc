@@ -27,7 +27,9 @@ export function FactList({ facts, loaders }: FactListProps) {
         <div key={check.fact} className="flex flex-col gap-3">
           <p className="font-medium">“{check.fact}”</p>
           <ItemGroup aria-label={`Loaders on “${check.fact}”`}>
-            {loaders.map((loader) => {
+            {loaders
+              .filter((loader) => loader in check.found)
+              .map((loader) => {
               const match = matchOf(check.found[loader] ?? null);
               const nearest = check.nearest[loader];
               return (

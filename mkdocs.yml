@@ -105,6 +105,7 @@ nav:
       - Extracting masked text: guides/extract-masked-text.md
       - Inspecting a loader: guides/inspect-a-loader.md
       - Comparing loaders: guides/compare-loaders.md
+      - Replacing a langchain-community loader: guides/replace-langchain-community.md
       - Inspecting chunks: guides/inspect-chunks.md
       - Report tables: guides/report-tables.md
       - Baselines and tests: guides/baselines-and-tests.md

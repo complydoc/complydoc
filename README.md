@@ -54,12 +54,12 @@ cd.write_html(report, "report.html")
 Output from a LangChain or LlamaIndex loader, or several loaders over a folder:
 
 ```python
-from langchain_community.document_loaders import PDFPlumberLoader, PyPDFLoader
+from langchain_pymupdf4llm import PyMuPDF4LLMLoader
 
-report = cd.inspect_documents(PyPDFLoader("contract.pdf"))
+report = cd.inspect_documents(PyMuPDF4LLMLoader("contract.pdf"))
 
 report = cd.compare_loaders(
-    {"pypdf": PyPDFLoader, "pdfplumber": PDFPlumberLoader, "docling": cd.parsers.docling()},
+    {"pymupdf4llm": PyMuPDF4LLMLoader, "docling": cd.parsers.docling()},
     paths="./contracts",
     facts=["Payment is due within thirty days"],
 )
@@ -67,7 +67,9 @@ report.to_pandas("loaders")
 ```
 
 Any loader with a `load` method, or any callable, works the same way. Reports tag each loader
-with the framework and library it came from.
+with the framework and library it came from. Moving off `langchain-community`, which LangChain
+archived in June 2026? [Replacing a langchain-community loader](https://complydoc.github.io/complydoc/docs/guides/replace-langchain-community/)
+compares a retired loader with its replacement.
 
 The same from the command line, for CI:
 

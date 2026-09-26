@@ -1,18 +1,23 @@
 """A loader comparison described in a YAML file, for `complydoc compare-loaders`.
 
     loaders:
-      pypdf: langchain_community.document_loaders:PyPDFLoader
-      plumber:
-        loader: langchain_community.document_loaders:PDFPlumberLoader
-        options: {extract_images: false}
+      pymupdf4llm: langchain_pymupdf4llm:PyMuPDF4LLMLoader
+      pages:
+        loader: langchain_pymupdf4llm:PyMuPDF4LLMLoader
+        options: {mode: single}
       docling:
         preset: docling
+      word:
+        loader: langchain_community.document_loaders:Docx2txtLoader
+        formats: [docx]
     paths: ./contracts
     facts:
       - Payment is due within thirty days
 
 A loader is a `module:attribute` reference to a class or function called with each
 file path, plus keyword `options`, or a preset from `complydoc.loaders.parsers`.
+`formats` limits the files a loader is given, as extensions or format names; see
+`complydoc.loaders.formats`.
 Relative `paths` and `cache_dir` are resolved from the file's directory.
 """
 
@@ -40,6 +45,7 @@ __all__ = [
     "LoaderEntry",
     "build_loaders",
     "compare_from_file",
+    "loader_file_types",
     "read_comparison_file",
 ]
 
@@ -54,6 +60,8 @@ class LoaderEntry(BaseModel):
     preset: str | None = None
     """A preset name from `complydoc.loaders.parsers`."""
     options: dict[str, Any] = Field(default_factory=dict)
+    formats: list[str] | None = None
+    """The file types the loader is given, such as `[.pdf]` or `[docx, xlsx]`."""
 
     @model_validator(mode="after")
     def _one_source(self) -> LoaderEntry:
@@ -101,6 +109,15 @@ def read_comparison_file(path: str | os.PathLike[str]) -> ComparisonFile:
         raise ConfigError(f"{source} is invalid:\n{exc}") from exc
 
 
+def loader_file_types(spec: ComparisonFile) -> dict[str, list[str]]:
+    """The file types each loader that names them is given."""
+    return {
+        name: value.formats
+        for name, value in spec.loaders.items()
+        if isinstance(value, LoaderEntry) and value.formats is not None
+    }
+
+
 def build_loaders(spec: ComparisonFile) -> dict[str, Any]:
     """Loader factories and presets by name, imported."""
     built: dict[str, Any] = {}
@@ -143,4 +160,5 @@ def compare_from_file(
         cache_dir=resolve(spec.cache_dir) if spec.cache_dir else None,
         verify_with=verify_with,
         verify_scope=verify_scope,
+        formats=loader_file_types(spec) or None,
     )

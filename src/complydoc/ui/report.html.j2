@@ -553,7 +553,7 @@ name and directory layout it came from.</p>
       <td class="n">{{ "{:,}".format(l.characters) }}</td>
       <td class="n">{{ duration(l.seconds) }}</td>
       <td class="n">{{ "—" if l.readiness_score is none else l.readiness_score }}</td>
-      {% if lc.facts %}<td class="n">{{ l.facts_found }} of {{ lc.facts | length }}</td>{% endif %}
+      {% if lc.facts %}{% set ns = namespace(checked=0) %}{% for f in lc.facts %}{% if l.name in f.found %}{% set ns.checked = ns.checked + 1 %}{% endif %}{% endfor %}<td class="n">{% if ns.checked %}{{ l.facts_found }} of {{ ns.checked }}{% else %}—{% endif %}</td>{% endif %}
       {% if lc_failures %}<td class="n">{{ l.failures | length }}</td>{% endif %}
       {% if lc_network %}<td>{% if l.network_allowed %}<span class="attn">allowed</span>, {{ l.network_attempts | length }} made{% elif l.network_attempts %}<span class="attn">{{ l.network_attempts | length }} refused</span>{% else %}none{% endif %}</td>{% endif %}
       {% if lc_costs %}<td class="n">{{ "—" if l.parser_usd is none else "$%.2f" | format(l.parser_usd) }}</td>{% endif %}
@@ -561,6 +561,26 @@ name and directory layout it came from.</p>
   {% endfor %}
   </tbody>
 </table></div>
+
+{% if lc.formats | length > 1 %}
+<h3>By file type</h3>
+<div class="scroll"><table>
+  <thead><tr><th>Type</th><th class="n">Files</th>{% for l in lc.loaders %}<th class="mono">{{ l.name }}</th>{% endfor %}<th>Use</th></tr></thead>
+  <tbody>
+  {% for t in lc.formats %}{% set given = {} %}{% for row in t.loaders %}{% set _ = given.update({row.name: row}) %}{% endfor %}
+    <tr>
+      <td>{{ t.label }}</td>
+      <td class="n">{{ t.documents }}</td>
+      {% for l in lc.loaders %}{% set row = given.get(l.name) %}
+      <td>{% if row is none %}<span class="why">skipped</span>{% elif row.failures %}<span class="attn">failed on {{ row.failures | length }}</span>{% else %}{{ row.documents }} read{% if row.similarity is not none and row.similarity < 1 %}, {{ "%.0f" | format(row.similarity * 100) }}% alike{% endif %}{% endif %}</td>
+      {% endfor %}
+      <td>{% if t.recommended %}<strong class="mono">{{ t.recommended }}</strong>{% elif t.loaders | length == 1 %}<span class="mono">{{ t.loaders[0].name }}</span> <span class="why">only one</span>{% else %}<span class="why">{{ t.verdict }}</span>{% endif %}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% if lc.baselines %}<p class="note">{{ lc.baselines | length }} {{ "document was" if lc.baselines | length == 1 else "documents were" }} measured against the first loader that returned {{ "it" if lc.baselines | length == 1 else "them" }}, since {{ lc.baseline }} did not.</p>{% endif %}
+{% endif %}
 
 {% if lc.facts %}
 <h3>Expected facts</h3>
@@ -570,7 +590,7 @@ name and directory layout it came from.</p>
   {% for f in lc.facts %}
     <tr><td>{{ f.fact }}{% if f.document %} <span class="ltag">{{ f.document }}</span>{% endif %}</td>
     {% for l in lc.loaders %}{% set kind = f.found.get(l.name) %}
-      <td>{% if kind == "exact" %}found{% elif kind == "fuzzy" %}close, {{ "%.2f" | format(f.scores[l.name]) }}{% else %}<span class="attn">missing</span>{% endif %}{% if kind and f.pages.get(l.name) %} on p{{ f.pages[l.name] }}{% endif %}{% if kind != "exact" and f.nearest and f.nearest.get(l.name) %}<span class="near">&ldquo;{{ f.nearest[l.name] }}&rdquo;</span>{% endif %}</td>
+      <td>{% if l.name not in f.found %}<span class="why">not given this type</span>{% elif kind == "exact" %}found{% elif kind == "fuzzy" %}close, {{ "%.2f" | format(f.scores[l.name]) }}{% else %}<span class="attn">missing</span>{% endif %}{% if kind and f.pages.get(l.name) %} on p{{ f.pages[l.name] }}{% endif %}{% if kind != "exact" and f.nearest and f.nearest.get(l.name) %}<span class="near">&ldquo;{{ f.nearest[l.name] }}&rdquo;</span>{% endif %}</td>
     {% endfor %}</tr>
   {% endfor %}
   </tbody>

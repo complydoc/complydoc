@@ -8,6 +8,17 @@ import type { ConceptFinding, ConceptSummary, IgnoreSummary, IgnoredFinding } fr
  * addition to the report never breaks it.
  */
 
+import type { LoaderComparison } from "./loaderTypes";
+
+export type {
+  FactCheck,
+  FormatComparison,
+  FormatLoaderRow,
+  IdentifierDifference,
+  LoaderComparison,
+  LoaderRow,
+} from "./loaderTypes";
+
 export type Band = "ready" | "workable" | "needs work" | "not ready";
 export type Severity = "high" | "medium" | "low";
 export type LimitationSeverity = "info" | "important";
@@ -269,47 +280,6 @@ export interface PageRoute {
   number: number;
   route: "text" | "ocr" | "vision";
   reason: string;
-}
-
-export interface LoaderRow {
-  name: string;
-  documents: number;
-  pages: number;
-  characters: number;
-  /** How long the loader took over every file, or null for documents passed in already loaded. */
-  seconds: number | null;
-  readiness_score: number | null;
-  facts_found: number;
-  identifiers_in_text: number;
-  error: string | null;
-}
-
-export interface FactCheck {
-  fact: string;
-  found: Record<string, FactMatch>;
-  scores: Record<string, number>;
-  nearest: Record<string, string | null>;
-  documents: Record<string, string | null>;
-}
-
-export interface IdentifierDifference {
-  category: string;
-  value: string;
-  location: "text" | "metadata";
-  found_by: string[];
-  missed_by: string[];
-}
-
-export interface LoaderComparison {
-  baseline: string;
-  loaders: LoaderRow[];
-  recommended: string | null;
-  verdict: string;
-  ranked: string[];
-  facts: FactCheck[];
-  identifier_differences: IdentifierDifference[];
-  documents: Record<string, string[]>;
-  metadata_keys: Record<string, string[]>;
 }
 
 export type CostPath = "text_layer" | "text_ocr" | "vision";

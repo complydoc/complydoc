@@ -8,6 +8,9 @@ documents returned and the network connections attempted.
 --8<-- "examples/compare_langchain_loaders.py"
 ```
 
+Moving off `langchain-community`? [Replacing a langchain-community loader](replace-langchain-community.md)
+says where each loader went and what to compare before switching.
+
 ## Input
 
 `loaders` is either a mapping of names to loaders, or a sequence of loaders
@@ -22,8 +25,9 @@ At least two are required. Every loader runs with the same `config`,
 ## Loader tags
 
 Each loader is tagged with the framework and library it comes from, read from its
-module and class: `PyPDFLoader` from `langchain_community` is tagged `LangChain` and
-`pypdf`, and a LlamaIndex reader is tagged `LlamaIndex`. Parser presets declare their
+module and class: `PyMuPDF4LLMLoader` from `langchain_pymupdf4llm` is tagged `LangChain`
+and `PyMuPDF4LLM`, `PyPDFLoader` from `langchain_community` `LangChain` and `pypdf`, and a
+LlamaIndex reader `LlamaIndex`. Parser presets declare their
 tags, and hosted presets are also tagged `hosted`. Loaders from other modules get no
 tags. The tags are in `LoaderSummary.tags` and `LoaderRun.tags`, in the `tags` column of
 `report.to_pandas("loaders")`, and beside each loader's name in the HTML report.
@@ -33,6 +37,11 @@ tags. The tags are in `LoaderSummary.tags` and `LoaderRun.tags`, in the `tags` c
 The first loader is the baseline. The report's findings, readiness score,
 global score, cost estimate and quick wins are built from its output;
 `report.loader` is its run. The other loaders are measured against it.
+
+A document the first loader did not return, because it failed on the file or was
+not given its type, is measured against the next loader that returned it, and the
+report is built from that loader's reading of it. These documents are listed in
+`loader_comparison.baselines`.
 
 ## Text
 
@@ -79,6 +88,46 @@ loader class, and runs once per file:
 of files. A file a loader raises on is recorded in its row's `failures` and the
 report lists it as a limitation; the other files are still loaded.
 
+## Several file types
+
+A folder of PDFs, Word files and spreadsheets is usually read by a different
+loader for each. Each loader is given only the file types it is meant for, and the
+comparison is repeated for each type:
+
+```python title="compare_loaders_across_file_types.py"
+--8<-- "examples/compare_loaders_across_file_types.py"
+```
+
+A loader's file types come from, in order:
+
+1. `formats={"name": [...]}` passed to `compare_loaders`, as extensions (`.pdf`)
+   or format names (`pdf`, `docx`, `xlsx`, `pptx`, `html`, `markdown`, `text`,
+   `email`, `image`);
+2. a parser preset's own list: `docling` and `azure_document_intelligence` know
+   theirs, `unstructured` and `llamaparse` take every file;
+3. the class name, for loaders known to read one type: `PyPDFLoader`,
+   `PDFPlumberLoader`, `PyMuPDFLoader`, `Docx2txtLoader`,
+   `UnstructuredExcelLoader`, LlamaIndex's `PDFReader` and others.
+
+Any other loader, such as `PyMuPDF4LLMLoader`, which opens Office files too, is
+given every file. A file not given to a loader is listed in its row's `skipped`,
+and is not a failure.
+
+`loader_comparison.formats` has one entry per file type:
+
+| Field | Contents |
+| --- | --- |
+| `label`, `documents` | The type, and how many files of it the run had |
+| `loaders` | A row per loader given the type: documents read, pages, characters, load time, failures, facts found, and `similarity`, the mean of its documents' similarity to their baseline |
+| `skipped_by` | Loaders not meant for the type |
+| `recommended`, `verdict` | The choice among the loaders given the type, decided as for the whole run |
+
+A fact is checked only by the loaders given its document's type, so a Word
+loader is not counted as missing a sentence from a PDF. Metadata keys and
+documents "returned by some loaders only" are likewise compared between loaders
+of the same type. `report.to_pandas("loader_formats")` has a row per type and
+loader.
+
 ## Expected facts
 
 `facts` are passages the documents should contain, as strings or
@@ -101,10 +150,10 @@ Results are in `report.loader_comparison.facts`, each loader's count in
 
 | Preset | Library | Hosted | Price entry |
 | --- | --- | --- | --- |
-| `parsers.docling(export="markdown")` | `langchain-docling` | no | `docling` |
+| `parsers.docling(export="markdown")` | `langchain-docling[local]` | no | `docling` |
 | `parsers.unstructured(api=False)` | `langchain-unstructured` | when `api=True` | `unstructured_api` |
 | `parsers.llamaparse(tier="cost_effective")` | `llama-parse` | yes | `llamaparse_<tier>` |
-| `parsers.azure_document_intelligence(endpoint=..., api_key=...)` | `langchain-community` | yes | `azure_read`, `azure_layout` |
+| `parsers.azure_document_intelligence(endpoint=..., api_key=...)` | `azure-ai-documentintelligence` | yes | `azure_read`, `azure_layout` |
 
 The libraries are not dependencies; a preset reports what to install when its
 library is missing. A hosted preset raises unless `allow_network=True`.
@@ -141,10 +190,10 @@ the same JSON and HTML report as `complydoc audit`:
 
 ```yaml title="loaders.yaml"
 loaders:
-  pypdf: langchain_community.document_loaders:PyPDFLoader
-  pdfplumber:
-    loader: langchain_community.document_loaders:PDFPlumberLoader
-    options: {extract_images: false}
+  pymupdf4llm: langchain_pymupdf4llm:PyMuPDF4LLMLoader
+  one-per-file:
+    loader: langchain_pymupdf4llm:PyMuPDF4LLMLoader
+    options: {mode: single}
   docling:
     preset: docling
     options: {export: markdown}
@@ -155,7 +204,7 @@ facts:
 
 | Key | Default | Contents |
 | --- | --- | --- |
-| `loaders` | required | Two or more names mapped to `module:attribute`, or to `loader` or `preset` with keyword `options` |
+| `loaders` | required | Two or more names mapped to `module:attribute`, or to `loader` or `preset` with keyword `options` and `formats` |
 | `paths` | required | A folder, a file or a list, relative to the YAML file |
 | `facts` | none | Passages each loader's text should contain |
 | `fact_threshold` | 0.9 | Fuzzy match threshold |
@@ -165,7 +214,9 @@ facts:
 | `models` | all priced | Models to price |
 
 The first loader is the baseline. A `loader` is called with each file path and its
-`options`; a `preset` is one of the parser presets above. An invalid file, or a
+`options`; a `preset` is one of the parser presets above. `formats`, such as
+`[docx]`, limits the files a loader is given. With several file types, the output
+adds a table of each type and what each loader did with it. An invalid file, or a
 loader that cannot be imported, exits with status 2.
 
 ## Which one to use
@@ -192,3 +243,12 @@ and the comparison can say which reading holds it.
 A two-column page is the usual cause: one library walks the columns and another
 reads straight across, and both return the same words. `facts` is what settles
 it, which is why it is worth filling in.
+
+With several file types, each type is decided among the loaders given it. One
+loader is recommended for the folder only when it is the choice for every type;
+otherwise the verdict names one for each:
+
+```
+No recommendation — Each file type is decided on its own. Use pypdf for PDF,
+docx2txt for Word. None of the loaders is meant for Excel files.
+```

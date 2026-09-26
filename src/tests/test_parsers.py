@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import sys
+import types
 
 import pytest
 
 import complydoc as cd
 from complydoc.loaders import parsers
+from complydoc.loaders.origin import loader_tags
 from complydoc.report.tables import table_rows
 
 CLAUSE = "Payment is due within thirty days of the invoice date."
@@ -120,3 +122,80 @@ def test_presets_declare_network_and_price():
 def test_documents_without_a_source_get_the_file_path():
     loaded = parsers._WithSource(lambda: [Document("text")], "/tmp/x.pdf").load()
     assert loaded[0].metadata == {"source": "/tmp/x.pdf"}
+
+
+class _FakeAzure:
+    """Azure's Document Intelligence SDK, as far as the preset uses it."""
+
+    def __init__(self) -> None:
+        self.requests: list[dict[str, object]] = []
+        line = types.SimpleNamespace
+        self.result = types.SimpleNamespace(
+            content="# Agreement\n\nPayment is due within thirty days.",
+            pages=[
+                types.SimpleNamespace(page_number=1, lines=[line(content="Agreement")]),
+                types.SimpleNamespace(
+                    page_number=2,
+                    lines=[line(content="Payment is due"), line(content="within thirty days.")],
+                ),
+            ],
+        )
+        fake = self
+
+        class Client:
+            def __init__(self, endpoint: str, credential: object) -> None:
+                fake.requests.append({"endpoint": endpoint, "credential": credential})
+
+            def begin_analyze_document(self, model: str, **kwargs: object) -> object:
+                fake.requests.append({"model": model, **kwargs})
+                return types.SimpleNamespace(result=lambda: fake.result)
+
+        self.sdk = types.SimpleNamespace(DocumentIntelligenceClient=Client)
+        self.credentials = types.SimpleNamespace(AzureKeyCredential=lambda key: ("key", key))
+
+
+@pytest.mark.parametrize(
+    ("mode", "format_", "texts", "pages"),
+    [
+        ("markdown", "markdown", ["# Agreement\n\nPayment is due within thirty days."], [None]),
+        ("single", "text", ["# Agreement\n\nPayment is due within thirty days."], [None]),
+        ("page", "text", ["Agreement", "Payment is due within thirty days."], [1, 2]),
+    ],
+)
+def test_azure_calls_its_sdk_and_numbers_pages_from_one(
+    monkeypatch, tmp_path, mode, format_, texts, pages
+):
+    fake = _FakeAzure()
+    monkeypatch.setitem(sys.modules, "azure.ai.documentintelligence", fake.sdk)
+    monkeypatch.setitem(sys.modules, "azure.core.credentials", fake.credentials)
+    pdf = tmp_path / "contract.pdf"
+    pdf.write_bytes(b"%PDF-1.4")
+
+    preset = parsers.azure_document_intelligence(
+        endpoint="https://example.cognitiveservices.azure.com", api_key="k", mode=mode
+    )
+    documents = preset.factory(str(pdf)).load()
+
+    assert fake.requests[0] == {
+        "endpoint": "https://example.cognitiveservices.azure.com",
+        "credential": ("key", "k"),
+    }
+    request = fake.requests[1]
+    assert request["model"] == "prebuilt-layout"
+    assert request["output_content_format"] == format_
+    assert [d["page_content"] for d in documents] == texts
+    assert [d["metadata"].get("page_number") for d in documents] == pages
+    assert all(d["metadata"]["source"] == str(pdf) for d in documents)
+    assert loader_tags(preset) == ["Azure Document Intelligence", "hosted"]
+
+
+def test_azure_names_its_sdk_when_it_is_missing(monkeypatch):
+    monkeypatch.setitem(sys.modules, "azure.ai.documentintelligence", None)
+    preset = parsers.azure_document_intelligence(endpoint="https://x", api_key="k")
+    with pytest.raises(ImportError, match="azure-ai-documentintelligence"):
+        preset.factory("contract.pdf")
+
+
+def test_azure_refuses_an_unknown_mode():
+    with pytest.raises(ValueError, match="mode"):
+        parsers.azure_document_intelligence(endpoint="https://x", api_key="k", mode="html")  # type: ignore[arg-type]

@@ -172,6 +172,30 @@ def _loaders(report: AuditReport) -> Iterator[Row]:
         }
 
 
+def _file_types(report: AuditReport) -> Iterator[Row]:
+    comparison = report.loader_comparison
+    if comparison is None:
+        return
+    for by_type in comparison.formats:
+        given = {row.name: row for row in by_type.loaders}
+        for loader in comparison.loaders:
+            row = given.get(loader.name)
+            yield {
+                "format": by_type.format,
+                "files": by_type.documents,
+                "loader": loader.name,
+                "given": row is not None,
+                "documents": row.documents if row else 0,
+                "pages": row.pages if row else 0,
+                "characters": row.characters if row else 0,
+                "seconds": row.seconds if row else None,
+                "similarity": row.similarity if row else None,
+                "failed_files": len(row.failures) if row else 0,
+                "facts_found": row.facts_found if row else None,
+                "recommended": by_type.recommended == loader.name,
+            }
+
+
 def _differences(report: AuditReport) -> Iterator[Row]:
     comparison = report.loader_comparison
     if comparison is None:
@@ -217,6 +241,7 @@ _BUILDERS: dict[str, Callable[[AuditReport], Iterator[Row]]] = {
     "limitations": _limitations,
     "quick_wins": _quick_wins,
     "loaders": _loaders,
+    "loader_formats": _file_types,
     "differences": _differences,
     "facts": _facts,
 }
@@ -251,6 +276,10 @@ COLUMNS: dict[str, tuple[str, ...]] = {
         "identifiers_in_metadata", "readiness_score", "global_score", "failed_files",
         "cached_files",
         "facts_found", "parser_usd",
+    ),
+    "loader_formats": (
+        "format", "files", "loader", "given", "documents", "pages", "characters", "seconds",
+        "similarity", "failed_files", "facts_found", "recommended",
     ),
     "differences": (
         "document", "category", "severity", "evidence", "location", "keys", "value",

@@ -95,6 +95,7 @@ and neither runs as part of an audit. See
 | [Extracting masked text](guides/extract-masked-text.md) | Masked text, token counts, warnings |
 | [Inspecting a loader](guides/inspect-a-loader.md) | LangChain and LlamaIndex output, metadata, network attempts |
 | [Comparing loaders](guides/compare-loaders.md) | Several loaders on the same files |
+| [Replacing a langchain-community loader](guides/replace-langchain-community.md) | Where each loader went, and what to compare before switching |
 | [Inspecting chunks](guides/inspect-chunks.md) | Splitter output: sizes, cut sentences and tables, facts |
 | [Report tables](guides/report-tables.md) | Jupyter display and pandas tables |
 | [Baselines and tests](guides/baselines-and-tests.md) | Reading reports back, diffs and assertions |

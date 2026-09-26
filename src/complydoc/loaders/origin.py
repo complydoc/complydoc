@@ -1,10 +1,11 @@
 """Where a loader's code comes from, shown as tags beside its name in reports.
 
 Tags come from the loader's module and, for loaders known to wrap a library, from
-its class name: `langchain_community`'s `PyPDFLoader` is tagged `LangChain` and
+its class name: `langchain_pymupdf4llm`'s `PyMuPDF4LLMLoader` is tagged `LangChain`
+and `PyMuPDF4LLM`, and `langchain_community`'s `PyPDFLoader`, `LangChain` and
 `pypdf`. Parser presets declare their own tags, and a preset that sends documents
-to a hosted service is also tagged `hosted`. A loader from any other module gets no
-tags.
+to a hosted service is also tagged `hosted`. A loader from any other module gets
+no tags.
 """
 
 from __future__ import annotations
@@ -13,7 +14,7 @@ import functools
 import inspect
 from typing import Any
 
-__all__ = ["loader_tags"]
+__all__ = ["loader_tags", "owner"]
 
 _FRAMEWORKS: tuple[tuple[str, tuple[str, ...]], ...] = (
     # Ordered: the more specific module prefix first.
@@ -28,6 +29,10 @@ _FRAMEWORKS: tuple[tuple[str, tuple[str, ...]], ...] = (
 )
 
 _LIBRARIES = {
+    # LangChain's standalone integration packages.
+    "PyMuPDF4LLMLoader": "PyMuPDF4LLM",
+    "OpenDataLoaderPDFLoader": "OpenDataLoader PDF",
+    # `langchain-community`, archived in June 2026 and still in wide use.
     "PyPDFLoader": "pypdf",
     "PyPDFDirectoryLoader": "pypdf",
     "PDFPlumberLoader": "pdfplumber",
@@ -47,7 +52,7 @@ _LIBRARIES = {
 """Loader classes that wrap one library, by class name."""
 
 
-def _owner(source: Any) -> Any:
+def owner(source: Any) -> Any:
     """The class or function whose module says where `source` comes from."""
     while isinstance(source, functools.partial):
         source = source.func
@@ -71,8 +76,8 @@ def loader_tags(source: Any) -> list[str]:
     if isinstance(source, FolderSource):
         return list(source.tags) if source.tags else loader_tags(source.factory)
 
-    owner = _owner(source)
-    module = getattr(owner, "__module__", None) or ""
+    cls = owner(source)
+    module = getattr(cls, "__module__", None) or ""
     tags: list[str] = []
     for prefix, names in _FRAMEWORKS:
         if module == prefix or module.startswith((f"{prefix}.", f"{prefix}_")):
@@ -80,7 +85,7 @@ def loader_tags(source: Any) -> list[str]:
             break
     if not tags:
         return []
-    library = _LIBRARIES.get(getattr(owner, "__name__", ""))
+    library = _LIBRARIES.get(getattr(cls, "__name__", ""))
     if library and library not in tags:
         tags.append(library)
     return tags
