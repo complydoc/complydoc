@@ -15,7 +15,7 @@ import pytest
 
 from complydoc.audit.run import COMPONENTS, run_audit
 from complydoc.report.html_writer import page_rows, render_html
-from tests.helpers import FIXTURES
+from tests.helpers import FIXTURES, requires_ocr
 
 MULTIPAGE = "mixed_page_sizes.pdf"
 """Three pages, each a different size — the fixture for traversal."""
@@ -70,6 +70,7 @@ def test_one_page_is_shown_and_the_rest_are_hidden(html):
     assert all("hidden" in panel for panel in panels)
 
 
+@requires_ocr
 def test_a_page_read_by_ocr_offers_no_comparison(html):
     """Its text layer IS the OCR output, so a switch would compare a thing to itself."""
     block = document_section(html).split("<h3>scanned_page.pdf</h3>")[1].split("<h3>")[0]
@@ -77,6 +78,7 @@ def test_a_page_read_by_ocr_offers_no_comparison(html):
     assert "what OCR read from this page" in block
 
 
+@requires_ocr
 def test_ocr_compare_offers_both_readings(config):
     """With --ocr-compare both readings can be switched between."""
     # --ocr-compare implies --extracted-text on the command line; a library

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from complydoc.readiness.analyser import analyse
 from complydoc.readiness.base import SignalStatus
+from tests.helpers import requires_ocr
 
 
 def signal_for(loader, config, name):
@@ -11,6 +12,7 @@ def signal_for(loader, config, name):
     return next(s for s in analyse(document, config.readiness).signals if s.id == "ocr_confidence")
 
 
+@requires_ocr
 def test_a_scanned_page_reports_the_engines_confidence(loader, config):
     signal = signal_for(loader, config, "scanned_page.pdf")
     assert signal.status is SignalStatus.MEASURED
@@ -24,12 +26,14 @@ def test_confidence_is_not_invented_where_ocr_did_not_run(loader, config):
     assert "did not run" in (signal.reason or "")
 
 
+@requires_ocr
 def test_the_worst_page_is_the_one_reported(loader, config):
     signal = signal_for(loader, config, "scanned_page.pdf")
     per_page = signal.detail["per_page"].values()
     assert signal.value == min(per_page)
 
 
+@requires_ocr
 def test_confidence_is_carried_on_the_page(loader):
     document = loader("scanned_page.pdf", ocr=True)
     page = document.pages[0]

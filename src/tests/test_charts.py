@@ -8,7 +8,7 @@ import pytest
 
 from complydoc.audit.run import run_audit
 from complydoc.report.charts import SERIES, build_comparison, grouped_bars_svg
-from tests.helpers import FIXTURES
+from tests.helpers import FIXTURES, requires_ocr
 
 
 @pytest.fixture(scope="module")
@@ -49,6 +49,7 @@ def test_a_text_only_model_has_no_vision_cost_rather_than_zero(comparisons):
         assert comparison.by_key("text_ocr").folder_usd is not None
 
 
+@requires_ocr
 def test_ocr_reaches_more_documents_than_the_text_layer_alone(comparisons):
     """OCR reaches documents the text layer alone cannot."""
     for comparison in comparisons:
