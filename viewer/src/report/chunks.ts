@@ -1,16 +1,16 @@
 import type { ChunkRun } from "./chunkTypes";
+import { humanise } from "./format";
 import type { Tone } from "./select";
 
-/** Each flag a chunk can carry, and what sets it. In the order the report lists them. */
-export const FLAGS: { key: string; meaning: string }[] = [
-  { key: "tiny", meaning: "fewer tokens than the minimum" },
-  { key: "oversized", meaning: "more tokens than the maximum" },
-  { key: "split_sentence", meaning: "ends mid-sentence and the next chunk continues it" },
-  { key: "split_table", meaning: "ends inside a table that the next chunk continues" },
-  { key: "heading_at_end", meaning: "ends on a heading, separated from its section" },
-  { key: "duplicate", meaning: "repeats an earlier chunk" },
-  { key: "path_metadata", meaning: "metadata holds an absolute file path" },
-];
+/**
+ * Each flag a chunk can carry, and what sets it, in the order the report lists them.
+ * The report words them; one written before it did gives each flag's name in words.
+ */
+export function flagsOf(run: ChunkRun): { key: string; meaning: string }[] {
+  const meanings = run.flag_meanings ?? {};
+  const keys = [...new Set([...Object.keys(meanings), ...Object.keys(run.flag_counts)])];
+  return keys.map((key) => ({ key, meaning: meanings[key] ?? humanise(key).toLowerCase() }));
+}
 
 export function flaggedChunks(run: ChunkRun): number {
   return run.chunks.filter((chunk) => chunk.flags.length > 0).length;

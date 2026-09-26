@@ -47,6 +47,8 @@ export interface ChunkRun {
   token_encoding: string;
   token_fidelity: string;
   flag_counts: Record<string, number>;
+  /** What sets each flag, as complydoc words it. Absent from the first chunks reports. */
+  flag_meanings?: Record<string, string>;
   repeated_identifiers: Record<string, number>;
   facts: FactLocation[];
   retrieval: QuestionResult[];

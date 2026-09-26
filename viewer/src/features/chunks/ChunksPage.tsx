@@ -15,8 +15,8 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Card } from "@/components/ui/card";
 import {
   FACT_TONE,
-  FLAGS,
   RETRIEVAL_TONE,
+  flagsOf,
   flaggedChunks,
   meanReciprocalRank,
   retrievalHitRate,
@@ -70,7 +70,7 @@ function SplitterDetail({ run }: { run: ChunkRun }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {FLAGS.map(({ key, meaning }) => (
+              {flagsOf(run).map(({ key, meaning }) => (
                 <TableRow key={key}>
                   <TableCell className="font-mono text-xs">{key}</TableCell>
                   <TableCell className="text-muted-foreground">

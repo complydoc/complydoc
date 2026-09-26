@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from complydoc import __version__
-from complydoc.extraction.chunks import FLAGS, ChunkComparison, ChunkReport
+from complydoc.extraction.chunks import FLAG_MEANINGS, FLAGS, ChunkComparison, ChunkReport
 from complydoc.report.assets import FAVICON_URI, LOGO_SVG, template_environment
 from complydoc.report.compare import ReportDiff
 from complydoc.utils.files import write_text
@@ -30,17 +30,6 @@ __all__ = [
     "write_diff_html",
     "write_diff_json",
 ]
-
-_FLAG_MEANING = {
-    "tiny": "fewer tokens than the minimum",
-    "oversized": "more tokens than the maximum",
-    "split_sentence": "ends mid-sentence and the next chunk continues it",
-    "split_table": "ends inside a table that the next chunk continues",
-    "heading_at_end": "ends on a heading, separated from its section",
-    "duplicate": "repeats an earlier chunk",
-    "path_metadata": "metadata holds an absolute file path",
-}
-
 
 def _common(title: str) -> dict[str, Any]:
     return {
@@ -67,7 +56,7 @@ def render_chunks_html(result: ChunkReport | ChunkComparison, *, source: str = "
             reports=reports,
             comparison=result if isinstance(result, ChunkComparison) else None,
             flags=FLAGS,
-            flag_meaning=_FLAG_MEANING,
+            flag_meaning=FLAG_MEANINGS,
             source=source,
             **_common(f"complydoc chunks — {source or ', '.join(r.chunker for r in reports)}"),
         )

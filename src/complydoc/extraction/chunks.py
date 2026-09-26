@@ -47,6 +47,7 @@ from complydoc.utils.frames import to_frame
 
 __all__ = [
     "FLAGS",
+    "FLAG_MEANINGS",
     "ChunkComparison",
     "ChunkReport",
     "ChunkStats",
@@ -56,15 +57,18 @@ __all__ = [
     "inspect_chunks",
 ]
 
-FLAGS = (
-    "tiny",
-    "oversized",
-    "split_sentence",
-    "split_table",
-    "heading_at_end",
-    "duplicate",
-    "path_metadata",
-)
+FLAG_MEANINGS: dict[str, str] = {
+    "tiny": "fewer tokens than the minimum",
+    "oversized": "more tokens than the maximum",
+    "split_sentence": "ends mid-sentence and the next chunk continues it",
+    "split_table": "ends inside a table that the next chunk continues",
+    "heading_at_end": "ends on a heading, separated from its section",
+    "duplicate": "repeats an earlier chunk",
+    "path_metadata": "metadata holds an absolute file path",
+}
+"""Each flag a chunk can carry, and what sets it, worded to follow "a chunk that"."""
+
+FLAGS = tuple(FLAG_MEANINGS)
 """Flags a chunk can carry."""
 
 _SENTENCE_END = re.compile(r"[.!?:;)\]\"'»”…]\s*$")
@@ -117,6 +121,8 @@ class ChunkReport:
     token_encoding: str
     token_fidelity: str
     flag_counts: dict[str, int] = field(default_factory=dict)
+    flag_meanings: dict[str, str] = field(default_factory=lambda: dict(FLAG_MEANINGS))
+    """What sets each flag, so a reader of the report words them as complydoc does."""
     repeated_identifiers: dict[str, int] = field(default_factory=dict)
     """Identifiers found in more than one chunk, with the number of chunks."""
     facts: list[FactLocation] = field(default_factory=list)
