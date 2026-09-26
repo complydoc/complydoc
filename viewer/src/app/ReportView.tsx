@@ -13,6 +13,7 @@ import { CostPage } from "@/features/cost/CostPage";
 import { DocumentsPage } from "@/features/documents/DocumentsPage";
 import { SecurityPage } from "@/features/security/SecurityPage";
 import { HomePage } from "@/features/home/HomePage";
+import { SettingsPage } from "@/features/settings/SettingsPage";
 import { useHashRoute } from "@/hooks/useHashRoute";
 import { ModeToggle } from "@/components/ModeToggle";
 import { PlanBar } from "@/components/PlanBar";
@@ -156,6 +157,7 @@ export function ReportView({
               {page === "security" && <SecurityPage report={report} />}
               {page === "cost" && <CostPage report={report} />}
               {page === "documents" && <DocumentsPage report={report} open={detail} />}
+              {page === "settings" && <SettingsPage report={report} {...(run.source ? { source: run.source } : {})} />}
             </IgnoreProvider>
           </main>
         </SidebarInset>

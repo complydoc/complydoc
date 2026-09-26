@@ -3,18 +3,18 @@ import { Logo } from "@/components/Logo";
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar";
 import type { Report } from "@/report/types";
-import { PAGES, PAGE_INFO, type Page } from "./pages";
+import { PAGE_INFO, REPORT_PAGES, type Page } from "./pages";
 
 interface AppSidebarProps {
   /** The run on screen; null on the overview of every folder. */
@@ -26,12 +26,7 @@ interface AppSidebarProps {
 
 /** The navigation: which folder is open, and its pages. */
 export function AppSidebar({ report, page, switcher }: AppSidebarProps) {
-  const counts: Record<Page, number | undefined> = {
-    home: undefined,
-    security: report?.aggregate.sensitive_total,
-    cost: report?.cost?.models.length,
-    documents: report?.documents.length,
-  };
+  const Settings = PAGE_INFO.settings.icon;
 
   return (
     <Sidebar collapsible="icon">
@@ -50,7 +45,7 @@ export function AppSidebar({ report, page, switcher }: AppSidebarProps) {
             <SidebarGroupLabel>Report</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {PAGES.map((id) => {
+                {REPORT_PAGES.map((id) => {
                   const { label, icon: Icon } = PAGE_INFO[id];
                   return (
                     <SidebarMenuItem key={id}>
@@ -60,7 +55,6 @@ export function AppSidebar({ report, page, switcher }: AppSidebarProps) {
                           <span>{label}</span>
                         </a>
                       </SidebarMenuButton>
-                      {counts[id] !== undefined && <SidebarMenuBadge>{counts[id]}</SidebarMenuBadge>}
                     </SidebarMenuItem>
                   );
                 })}
@@ -68,6 +62,20 @@ export function AppSidebar({ report, page, switcher }: AppSidebarProps) {
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
+      )}
+      {report && (
+        <SidebarFooter>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild isActive={page === "settings"} tooltip={PAGE_INFO.settings.label}>
+                <a href="#settings" aria-current={page === "settings" ? "page" : undefined}>
+                  <Settings />
+                  <span>{PAGE_INFO.settings.label}</span>
+                </a>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarFooter>
       )}
       <SidebarRail />
     </Sidebar>

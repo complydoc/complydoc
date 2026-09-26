@@ -7,6 +7,8 @@ export interface IgnoreRequest {
   reason: string;
   until?: string;
   what?: string;
+  /** Globs of the documents it applies to; every document when absent. */
+  paths?: string[];
 }
 
 export interface IgnoreState {

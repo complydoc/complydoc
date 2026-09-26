@@ -41,3 +41,24 @@ describe("SecurityPage", () => {
     expect(document).toHaveAttribute("href", expect.stringMatching(/^#documents\/\d+$/));
   });
 });
+
+describe("concepts a model found", () => {
+  it("are listed apart, each opening its page", () => {
+    const report = sampleAudit();
+    const document = report.documents[0];
+    if (!document) throw new Error("the sample has no document");
+    document.concept_findings = [
+      { page: 2, concept: "renewal_quote", label: "Renewal quote", severity: "high", score: 0.91 },
+    ];
+    render(<SecurityPage report={report} />);
+    const list = screen.getByRole("list", { name: "Found by a model" });
+    expect(list).toHaveTextContent("Renewal quote");
+    expect(list).toHaveTextContent("91%");
+    expect(within(list).getByRole("link")).toHaveAttribute("href", "#documents/0/2");
+  });
+
+  it("are left out of a run that asked no model", () => {
+    render(<SecurityPage report={sampleAudit()} />);
+    expect(screen.queryByRole("list", { name: "Found by a model" })).not.toBeInTheDocument();
+  });
+});

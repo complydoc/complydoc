@@ -1,3 +1,5 @@
+import type { ConceptFinding, ConceptSummary, IgnoreSummary, IgnoredFinding } from "./setupTypes";
+
 /**
  * The parts of complydoc's report JSON the viewer reads.
  *
@@ -26,37 +28,8 @@ export interface Report {
   verification?: VerificationSummary | null;
   /** Schema 17: the ignore file the run read, and what each entry did. Null or absent without one. */
   ignores?: IgnoreSummary | null;
-}
-
-/** One entry of an ignore file: a finding set aside, and why. */
-export interface IgnoreRule {
-  finding: string;
-  reason: string;
-  by?: string | null;
-  until?: string | null;
-  paths?: string[];
-  what?: string | null;
-  added?: string | null;
-  /** On the run: findings it set aside. */
-  matched?: number;
-  /** On the run: past its end date, so it set nothing aside. */
-  expired?: boolean;
-}
-
-export interface IgnoreSummary {
-  file: string;
-  rules: IgnoreRule[];
-}
-
-/** A finding an ignore file set aside: out of every count, kept with its reason. */
-export interface IgnoredFinding {
-  fingerprint: string;
-  kind: "identifier" | "content";
-  reason: string;
-  by: string | null;
-  until: string | null;
-  identifier: SensitiveMatch | null;
-  content: ContentFinding | null;
+  /** Schema 17: the custom concepts the run looked for. Null or absent without a concepts file. */
+  concepts?: ConceptSummary | null;
 }
 
 export interface RunMetadata {
@@ -280,6 +253,8 @@ export interface DocumentEntry {
   content_findings: ContentFinding[];
   /** Schema 17: findings an ignore file set aside. Not in `sensitive.matches` or `content_findings`. */
   ignored?: IgnoredFinding[];
+  /** Schema 17, with --judge-concepts only: pages a judgement model said hold one of your concepts. */
+  concept_findings?: ConceptFinding[];
   extractions: Extraction[];
   extracted_text: PageText[];
   /** Left out of a summary report. */
@@ -367,3 +342,13 @@ export interface Cost {
   /** Schema 16: the date of the oldest price used, as ISO. */
   prices_as_of?: string | null;
 }
+
+export type {
+  IgnoreRule,
+  IgnoreSummary,
+  IgnoredFinding,
+  Concept,
+  ConceptRule,
+  ConceptSummary,
+  ConceptFinding,
+} from "./setupTypes";

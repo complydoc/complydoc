@@ -11,6 +11,8 @@ import type { Report } from "@/report/types";
 import { FindingTable } from "./FindingTable";
 import { HiddenInstructions } from "./HiddenInstructions";
 import { IgnoredFindings } from "./IgnoredFindings";
+import { JudgedConcepts } from "./JudgedConcepts";
+import { judgedRows } from "@/report/judged";
 
 const BY_KIND = { count: { label: "Found", color: "var(--chart-5)" } } satisfies ChartConfig;
 const BY_EVIDENCE = { count: { label: "Found", color: "var(--primary)" } } satisfies ChartConfig;
@@ -31,6 +33,7 @@ export function SecurityPage({ report }: { report: Report }) {
   }));
   const kinds = categoriesByCount(report);
   const ignored = ignoredRows(report);
+  const judged = judgedRows(report);
 
   return (
     <SectionStack>
@@ -87,6 +90,12 @@ export function SecurityPage({ report }: { report: Report }) {
       {hidden.length > 0 && (
         <Section title="Hidden instructions">
           <HiddenInstructions found={hidden} />
+        </Section>
+      )}
+
+      {judged.length > 0 && (
+        <Section title="Found by a model" aside="Your concepts, on pages a judgement model read">
+          <JudgedConcepts rows={judged} judge={report.concepts?.judge ?? null} />
         </Section>
       )}
 

@@ -7,8 +7,18 @@ other way, it reads the file in the browser and makes no network request.
 ```bash
 npm install
 npm run dev      # http://localhost:5173, then "Open the sample"
+npm run dev:ui   # the same, on the reports a running `complydoc ui` serves
 npm run check    # lint, types and tests
 npm run build    # static files in dist/, which open from disk too
+```
+
+`npm run dev` opens reports from files, read only. To work on real reports with
+saving (ignored findings, your concepts), start `complydoc ui` and point the dev
+server at it; `dev:ui` expects port 8500, and `COMPLYDOC_UI` names another:
+
+```bash
+uv run complydoc ui ~/reports --no-browser        # http://127.0.0.1:8500
+COMPLYDOC_UI=http://127.0.0.1:8518 npm run dev:ui
 ```
 
 ## Stack
