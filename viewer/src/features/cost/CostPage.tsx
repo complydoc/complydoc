@@ -11,6 +11,8 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { PATHS, UNITS, byProvider, costRows, pricedOn, providerColour, providerName, providersOf, type CostUnit } from "@/report/cost";
 import { formatDate, formatUsd } from "@/report/format";
 import type { CostPath, Report } from "@/report/types";
+import { NotInRun } from "@/components/NotInRun";
+import { measured } from "@/report/measured";
 import { CostTable } from "./CostTable";
 import { PlanComparison } from "./PlanComparison";
 
@@ -23,6 +25,7 @@ export function CostPage({ report }: { report: Report }) {
   const [unit, setUnit] = useState<CostUnit>("per_1000");
   const [provider, setProvider] = useState<string>(ALL);
 
+  if (!measured(report, "cost")) return <NotInRun report={report} content="cost" />;
   if (paths.length === 0) {
     return (
       <Empty>
@@ -30,8 +33,8 @@ export function CostPage({ report }: { report: Report }) {
           <EmptyMedia variant="icon">
             <CoinsIcon />
           </EmptyMedia>
-          <EmptyTitle>No cost in this report</EmptyTitle>
-          <EmptyDescription>Run the audit with cost among its checks to price the folder.</EmptyDescription>
+          <EmptyTitle>Nothing in this run could be priced</EmptyTitle>
+          <EmptyDescription>No document had text or pages to count, so no model has a price for them.</EmptyDescription>
         </EmptyHeader>
       </Empty>
     );

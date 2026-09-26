@@ -101,6 +101,11 @@ The command writes `complydoc-chunks.json` and `complydoc-chunks.html` to `--out
 document text. `cd.write_chunks_html(report, path)` writes the same page from
 Python, for a `ChunkReport` or a `ChunkComparison`.
 
+The JSON is a report like an audit's, with the same `run` record, no per-document
+entries, and each splitter's `ChunkReport` under `chunks`. `complydoc ui` lists it
+with the folder's other runs and opens it on the Chunks page; `cd.load_report`
+reads it back.
+
 `--questions questions.yaml` runs the retrieval check, and `--top-k` sets `top_k`:
 
 ```yaml title="questions.yaml"

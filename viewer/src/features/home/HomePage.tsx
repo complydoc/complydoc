@@ -2,6 +2,8 @@ import { ArrowRightIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { BarList } from "@/components/BarList";
 import { EvidenceBadge } from "@/components/EvidenceBadge";
+import { NotInRun } from "@/components/NotInRun";
+import { SplitterTable } from "@/features/chunks/SplitterTable";
 import { Section, SectionStack } from "@/components/Section";
 import { ToneBadge } from "@/components/ToneBadge";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +11,7 @@ import type { ChartConfig } from "@/components/ui/chart";
 import { usePlan } from "@/hooks/usePlan";
 import { fileName, formatCount, formatPageUsd, formatSeconds, plural } from "@/report/format";
 import { attentionDocuments, topFindings } from "@/report/home";
+import { measured } from "@/report/measured";
 import { documentTotals, reportTotals } from "@/report/plan";
 import { documentHref } from "@/report/route";
 import type { Report } from "@/report/types";
@@ -56,6 +59,10 @@ export function HomePage({ report, previous = null }: { report: Report; previous
   const findings = topFindings(report);
   const documents = attentionDocuments(report);
   const hidden = report.aggregate.content_findings_total;
+  const scanned = measured(report, "sensitive");
+  const priced = measured(report, "cost");
+  const hasDocuments = measured(report, "documents");
+  const NOT_IN_RUN = "not in this run";
   const byCost = report.documents
     .map((document) => ({ name: fileName(document.relative_path), usd: documentTotals(report, document, plan).usd ?? 0 }))
     .filter((row) => row.usd > 0)
@@ -68,26 +75,30 @@ export function HomePage({ report, previous = null }: { report: Report; previous
         <LinkStat
           href="#documents"
           label="Documents"
-          value={formatCount(totals.documents || report.documents.length)}
-          note={plural(report.aggregate.pages_total, "page")}
+          value={hasDocuments ? formatCount(totals.documents || report.documents.length) : "—"}
+          note={hasDocuments ? plural(report.aggregate.pages_total, "page") : NOT_IN_RUN}
         />
         <LinkStat
           href="#security"
           label="High-severity identifiers"
-          value={formatCount(findings.high)}
-          note={`${formatCount(findings.confirmedHigh)} proved by a check`}
+          value={scanned ? formatCount(findings.high) : "—"}
+          note={scanned ? `${formatCount(findings.confirmedHigh)} proved by a check` : NOT_IN_RUN}
         />
         <LinkStat
           href="#security"
           label="Hidden instructions"
-          value={formatCount(hidden)}
-          note={hidden ? "passages written for a model, not a reader" : "none found"}
+          value={scanned ? formatCount(hidden) : "—"}
+          note={!scanned ? NOT_IN_RUN : hidden ? "passages written for a model, not a reader" : "none found"}
         />
         <LinkStat
           href="#cost"
           label="To read it all"
-          value={formatPageUsd(totals.usd)}
-          note={[plan.text?.name, totals.seconds !== null ? formatSeconds(totals.seconds) : null].filter(Boolean).join(" · ")}
+          value={priced ? formatPageUsd(totals.usd) : "—"}
+          note={
+            priced
+              ? [plan.text?.name, totals.seconds !== null ? formatSeconds(totals.seconds) : null].filter(Boolean).join(" · ")
+              : NOT_IN_RUN
+          }
         />
       </div>
 
@@ -101,7 +112,9 @@ export function HomePage({ report, previous = null }: { report: Report; previous
             </CardAction>
           </CardHeader>
           <CardContent>
-            {findings.rows.length === 0 ? (
+            {!scanned ? (
+              <NotInRun report={report} content="sensitive" size="section" />
+            ) : findings.rows.length === 0 ? (
               <p className="text-sm text-muted-foreground">No high-severity identifier was found.</p>
             ) : (
               <ul className="flex flex-col divide-y">
@@ -139,7 +152,9 @@ export function HomePage({ report, previous = null }: { report: Report; previous
             </CardAction>
           </CardHeader>
           <CardContent>
-            {documents.length === 0 ? (
+            {!hasDocuments ? (
+              <NotInRun report={report} content="documents" size="section" />
+            ) : documents.length === 0 ? (
               <p className="text-sm text-muted-foreground">Nothing stands out in these documents.</p>
             ) : (
               <ul className="flex flex-col divide-y">
@@ -163,6 +178,12 @@ export function HomePage({ report, previous = null }: { report: Report; previous
         </Card>
       </div>
 
+      {measured(report, "chunks") && (
+        <Section title="Chunks" aside={<SeeAll href="#chunks">Chunks</SeeAll>}>
+          <SplitterTable runs={report.chunks ?? []} />
+        </Section>
+      )}
+
       {previous && (
         <Section title="Changed since the run before">
           <RunChanges report={report} previous={previous} />
@@ -171,12 +192,22 @@ export function HomePage({ report, previous = null }: { report: Report; previous
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Section title="Readiness">
-          <ReadinessCard report={report} />
+          {measured(report, "readiness") ? (
+            <ReadinessCard report={report} />
+          ) : (
+            <Card>
+              <CardContent>
+                <NotInRun report={report} content="readiness" size="section" />
+              </CardContent>
+            </Card>
+          )}
         </Section>
         <Section title="Where the cost goes" aside={<SeeAll href="#cost">Cost &amp; time</SeeAll>}>
           <Card>
             <CardContent>
-              {byCost.length === 0 ? (
+              {!priced ? (
+                <NotInRun report={report} content="cost" size="section" />
+              ) : byCost.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No document could be priced on the model chosen.</p>
               ) : (
                 <BarList series={COST} data={byCost} category="name" format={formatPageUsd} />

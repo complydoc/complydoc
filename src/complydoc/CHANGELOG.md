@@ -15,6 +15,14 @@ in complydoc needs it any more.
 
 ### Added
 
+- The viewer has the same pages for every run: Home, Security, Cost & time,
+  Documents, Loaders and Chunks. A page the run did not produce says so, what it
+  would hold, and the command that fills it for the same folder, ready to copy; Home
+  does the same card by card. Loaders moves from the foot of Documents to a page of
+  its own, and the new Chunks page shows each splitter a `complydoc chunks` run
+  tried: sizes, flags, expected facts, retrieval, repeated identifiers and every
+  chunk.
+
 - Your own concepts. `.complydoc-concepts.yaml` at the top of an audited folder, or the
   file `--concepts` names, describes things only you know to look for, such as a
   policy reference, each with a label, a description, a pattern and a severity. Each
@@ -70,6 +78,16 @@ in complydoc needs it any more.
   their library, as `langchain-community`'s were.
 
 ### Changed
+
+- `complydoc chunks` writes its JSON as a report like any other run's: the `run`
+  record, no documents, and each splitter's chunk report under a new `chunks` field.
+  `complydoc ui` lists it with the folder's audits, and `cd.load_report` reads it. It
+  was `{"tool_version", "chunkers"}`; a script that read `chunkers` reads `chunks`,
+  and `retrieval_hit_rate` and `mean_reciprocal_rank` are no longer written, being
+  worked out from `retrieval`.
+
+- The viewer no longer fails on a report from `complydoc cost` or any run that did
+  not scan for identifiers, which left each document's findings empty.
 
 - The viewer's document page is simpler. A document read more than one way shows a diff
   of two readers; one read one way shows its pages as read. Findings are underlined in

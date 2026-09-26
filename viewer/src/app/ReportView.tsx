@@ -9,8 +9,10 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { ChunksPage } from "@/features/chunks/ChunksPage";
 import { CostPage } from "@/features/cost/CostPage";
 import { DocumentsPage } from "@/features/documents/DocumentsPage";
+import { LoadersPage } from "@/features/loaders/LoadersPage";
 import { SecurityPage } from "@/features/security/SecurityPage";
 import { HomePage } from "@/features/home/HomePage";
 import { SettingsPage } from "@/features/settings/SettingsPage";
@@ -157,6 +159,8 @@ export function ReportView({
               {page === "security" && <SecurityPage report={report} />}
               {page === "cost" && <CostPage report={report} />}
               {page === "documents" && <DocumentsPage report={report} open={detail} />}
+              {page === "loaders" && <LoadersPage report={report} />}
+              {page === "chunks" && <ChunksPage report={report} />}
               {page === "settings" && <SettingsPage report={report} {...(run.source ? { source: run.source } : {})} />}
             </IgnoreProvider>
           </main>

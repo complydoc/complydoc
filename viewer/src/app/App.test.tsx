@@ -17,9 +17,9 @@ describe("App", () => {
     expect((await screen.findAllByRole("link", { name: "Home", current: "page" })).length).toBeGreaterThan(0);
     expect(screen.getAllByText("documents").length).toBeGreaterThan(0);
 
-    await userEvent.click(screen.getAllByRole("link", { name: "Documents" })[0] as HTMLElement);
+    await userEvent.click(screen.getAllByRole("link", { name: "Loaders" })[0] as HTMLElement);
     expect(await screen.findByRole("region", { name: "Loaders" })).toBeInTheDocument();
-    expect(window.location.hash).toBe("#documents");
+    expect(window.location.hash).toBe("#loaders");
   });
 
   it("explains a file it cannot open and stays put", async () => {

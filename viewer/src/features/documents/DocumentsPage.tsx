@@ -1,13 +1,14 @@
+import { NotInRun } from "@/components/NotInRun";
 import { Section, SectionStack } from "@/components/Section";
 import { usePlan } from "@/hooks/usePlan";
 import { formatPageUsd, formatSeconds, plural } from "@/report/format";
+import { measured } from "@/report/measured";
 import { reportTotals } from "@/report/plan";
 import { documentTree } from "@/report/tree";
 import { parseTarget } from "@/report/route";
 import type { Report } from "@/report/types";
 import { DocumentDetail } from "./detail/DocumentDetail";
 import { DocumentTree } from "./DocumentTree";
-import { LoadersSection } from "./loaders/LoadersSection";
 import { VerificationSection } from "./verification/VerificationSection";
 
 interface DocumentsPageProps {
@@ -16,7 +17,7 @@ interface DocumentsPageProps {
   open: string | null;
 }
 
-/** Every document first, then which loader read them best and what a vision check found; or one document, page by page. */
+/** Every document, then what a vision check found; or one document, page by page. */
 export function DocumentsPage({ report, open }: DocumentsPageProps) {
   const { plan } = usePlan();
   const target = open === null ? null : parseTarget(open);
@@ -34,6 +35,8 @@ export function DocumentsPage({ report, open }: DocumentsPageProps) {
     );
   }
 
+  if (!measured(report, "documents")) return <NotInRun report={report} content="documents" />;
+
   return (
     <SectionStack>
       <Section title="Documents" aside={<FolderTotals report={report} />}>
@@ -42,7 +45,6 @@ export function DocumentsPage({ report, open }: DocumentsPageProps) {
           vision={report.documents.some((document) => document.verification)}
         />
       </Section>
-      {report.loader_comparison && <LoadersSection comparison={report.loader_comparison} />}
       {report.verification && <VerificationSection report={report} />}
     </SectionStack>
   );

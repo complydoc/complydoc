@@ -1,6 +1,6 @@
 import { screen, within } from "@testing-library/react";
 import { renderPage } from "@/test/render";
-import { sampleAudit, sampleVerified } from "@/test/sample";
+import { sampleAudit, sampleRunOf, sampleVerified } from "@/test/sample";
 import { attentionDocuments, topFindings } from "@/report/home";
 import { HomePage } from "./HomePage";
 
@@ -35,6 +35,23 @@ describe("Home", () => {
       expect(screen.queryByRole("region", { name: gone })).not.toBeInTheDocument();
     }
     expect(screen.queryByText(/notes? on what this run could not check/)).not.toBeInTheDocument();
+  });
+});
+
+describe("Home for a run of some components", () => {
+  it("says what a pricing run did not measure, and shows what it did", () => {
+    renderPage(<HomePage report={sampleRunOf(["cost"])} />);
+    expect(screen.getAllByText("not in this run")).toHaveLength(2);
+    expect(screen.getByText("No identifier scan in this run")).toBeInTheDocument();
+    expect(screen.getByText("Readiness was not measured in this run")).toBeInTheDocument();
+    expect(screen.queryByText("No pricing in this run")).not.toBeInTheDocument();
+    expect(screen.getByText(/^complydoc sensitive /)).toBeInTheDocument();
+  });
+
+  it("says what a scan did not price", () => {
+    renderPage(<HomePage report={sampleRunOf(["sensitive"])} />);
+    expect(screen.getByText("No pricing in this run")).toBeInTheDocument();
+    expect(screen.queryByText("No identifier scan in this run")).not.toBeInTheDocument();
   });
 });
 

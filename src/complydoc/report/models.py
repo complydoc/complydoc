@@ -27,6 +27,7 @@ from complydoc.sensitive.base import SensitiveMatch
 from complydoc.sensitive.scanner import ScanResult
 
 if TYPE_CHECKING:  # pragma: no cover - type-checking imports only
+    from complydoc.extraction.chunks import ChunkReport
     from complydoc.extraction.routing import DocumentRouting
     from complydoc.report.overall import OverallReadiness
     from complydoc.report.quickwins import QuickWin
@@ -84,13 +85,14 @@ def report_shape() -> dict[str, object]:
             "verification",
             "ignores",
             "concepts",
+            "chunks",
             "limitations",
             "staleness_warnings",
             "signal_weights",
             "config_masking",
         ],
         "run": {
-            "components_run": "list of cost | readiness | sensitive",
+            "components_run": "list of cost | readiness | sensitive; empty for a chunks run",
             "offline_guard": "armed | not_armed",
             "content_sent_to": (
                 "hosts sent document text or page images, empty unless a hosted "
@@ -201,7 +203,18 @@ def report_shape() -> dict[str, object]:
             "identifier_differences[] (found_by[], missed_by[]), "
             "metadata_keys (key -> loaders returning it), documents (path -> loaders), "
             "recommended (the loader to use, null where the run cannot tell), verdict "
-            "(what decided it), ranked[]"
+            "(what decided it), ranked[], formats[] (per file type: label, documents, "
+            "loaders[] with documents, failures, seconds, similarity and facts_found, "
+            "skipped_by[], recommended, verdict), baselines (document -> the loader it was "
+            "measured against, where not the first)"
+        ),
+        "chunks": (
+            "null unless complydoc chunks ran, which writes no documents: one entry per "
+            "splitter with chunker, stats (count, tokens_total, tokens_min, tokens_median, "
+            "tokens_p95, tokens_max), flag_counts, repeated_identifiers, facts[] (fact, "
+            "status: whole | split | missing, chunks[]), retrieval[] (question, fact, "
+            "status, rank, answer_chunks[], top_chunks[]), top_k, and chunks[] (index, "
+            "document, page, tokens, identifiers[], hidden, flags[], preview, all masked)"
         ),
         "aggregate": (
             "folder totals: cost, signal_distribution, sensitive_by_category, "
@@ -1014,6 +1027,11 @@ class AuditReport:
     """The ignore file this run read, and what each entry set aside. None without one."""
     concepts: ConceptSummary | None = None
     """The custom concepts this run looked for. None without a concepts file."""
+    chunks: list[ChunkReport] | None = None
+    """Schema 17: each text splitter `complydoc chunks` ran, and what it made of the text.
+
+    None for a run that split nothing. A chunks run has no per-document entries.
+    """
 
     def to_pandas(self, table: str = "documents") -> Any:
         """One table of this report as a pandas DataFrame.

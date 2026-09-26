@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import dataclasses
+import datetime as dt
 import functools
 import inspect
 import shlex
+import time
 from pathlib import Path
 from typing import Annotated
 
@@ -122,8 +124,12 @@ def chunks(
     from complydoc.extraction.chunks import ChunkComparison, ChunkReport, inspect_chunks
     from complydoc.extraction.extract import extract_text
     from complydoc.extraction.retrieval import Question, read_questions
-    from complydoc.report.pages import write_chunks_html, write_chunks_json
+    from complydoc.report.chunk_run import chunk_run_report
+    from complydoc.report.json_writer import write_json
+    from complydoc.report.pages import write_chunks_html
 
+    started_at = dt.datetime.now().astimezone()
+    started = time.monotonic()
     offline.arm()
     config = load_config_or_exit(config_dir)
     try:
@@ -198,7 +204,18 @@ def chunks(
         raise typer.Exit(code=2) from exc
     reports = list(result.reports.values()) if isinstance(result, ChunkComparison) else [result]
 
-    json_path = write_chunks_json(result, out / f"{name}.json")
+    # The data is a report like any other run's, so `complydoc ui` lists it with the
+    # folder's audits; it holds the chunks and no per-document entries.
+    run_report = chunk_run_report(
+        reports,
+        target,
+        config,
+        started_at=started_at,
+        started=started,
+        extractor=extractor,
+        ocr_requested=ocr,
+    )
+    json_path = write_json(run_report, out / f"{name}.json")
     html_path = write_chunks_html(result, out / f"{name}.html", source=str(target))
     if quiet:
         return
@@ -228,3 +245,5 @@ def chunks(
     console.print()
     link("Report", html_path)
     link("Data", json_path)
+    viewer = "complydoc ui" if out.resolve() == DEFAULT_OUT.resolve() else f"complydoc ui {out}"
+    console.print(f"[bold]View[/]    {escape(viewer)}", no_wrap=True, crop=False)
