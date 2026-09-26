@@ -12,14 +12,18 @@ new network attempt or failure, or a new important limitation.
 
 from __future__ import annotations
 
+import dataclasses
+import json
 from collections import Counter
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 from complydoc.report.models import AuditReport, DocumentReport
+from complydoc.utils.files import write_text
 from complydoc.utils.frames import to_frame
 
-__all__ = ["Change", "ReportDiff", "diff_reports"]
+__all__ = ["Change", "ReportDiff", "diff_reports", "diff_to_dict", "write_diff_json"]
 
 _RATING_RANK = {"poor": 0, "fair": 1, "good": 2}
 
@@ -265,3 +269,16 @@ def _limitations(old: AuditReport, new: AuditReport) -> list[Change]:
     return [Change("limitations", "added", s, True) for s in sorted(now - was)] + [
         Change("limitations", "removed", s, False) for s in sorted(was - now)
     ]
+
+
+def diff_to_dict(diff: ReportDiff) -> dict[str, Any]:
+    """The changes as JSON-ready data, with how many got worse and how many better."""
+    data = dataclasses.asdict(diff)
+    data["regressions"] = len(diff.regressions)
+    data["improvements"] = len(diff.improvements)
+    return data
+
+
+def write_diff_json(diff: ReportDiff, path: str | Path) -> Path:
+    text = json.dumps(diff_to_dict(diff), indent=2, sort_keys=True, ensure_ascii=False, default=str)
+    return write_text(Path(path), text + "\n")

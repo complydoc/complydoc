@@ -22,4 +22,5 @@ for file_type in comparison.formats:
     print(f"  use {file_type.recommended or '—'}: {file_type.verdict}")
 
 print(comparison.verdict)
-cd.write_html(report, "loaders.html")
+# `complydoc ui` opens what is in .complydoc, where the command line writes too.
+cd.write_json(report, ".complydoc/loaders.json")

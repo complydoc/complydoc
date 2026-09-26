@@ -281,7 +281,7 @@ def test_extensions_are_normalised():
     assert extensions("csv") == (".csv",)
 
 
-def test_the_per_type_comparison_is_in_the_json_tables_and_html(folder: Path, tmp_path: Path):
+def test_the_per_type_comparison_is_in_the_json_and_tables(folder: Path, tmp_path: Path):
     report = cd.compare_loaders({"pypdf": PyPDFLoader, "docx2txt": Docx2txtLoader}, paths=folder)
     cd.write_json(report, tmp_path / "out.json")
     back = cd.load_report(tmp_path / "out.json")
@@ -290,11 +290,6 @@ def test_the_per_type_comparison_is_in_the_json_tables_and_html(folder: Path, tm
 
     rows = [row for row in table_rows(report, "loader_formats") if row["format"] == "docx"]
     assert {row["loader"]: row["given"] for row in rows} == {"pypdf": False, "docx2txt": True}
-
-    cd.write_html(report, tmp_path / "out.html")
-    page = (tmp_path / "out.html").read_text(encoding="utf-8")
-    assert "By file type" in page
-    assert "skipped" in page
 
 
 def test_a_comparison_file_names_each_loaders_file_types(folder: Path, tmp_path: Path):

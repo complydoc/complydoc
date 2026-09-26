@@ -7,8 +7,6 @@ import json
 import pytest
 
 from complydoc.config.loader import load_config
-from complydoc.report import assets
-from complydoc.report.html_writer import page_preview_svg
 from complydoc.report.models import to_jsonable
 from complydoc.report.preview import build_previews
 from complydoc.sensitive.scanner import scan
@@ -44,19 +42,6 @@ def test_preview_carries_no_document_text(loader, config):
         "Acme Holdings",
     ):
         assert secret not in serialised, f"{secret!r} reached the preview data"
-
-
-def test_preview_svg_contains_no_text_elements(loader, config):
-    _, previews = previews_for(loader, config, "sensitive_sample.pdf")
-    svg = page_preview_svg(previews[0])
-    assert "<text" not in svg
-    assert "<image" not in svg, "no rasterised page may be embedded"
-
-
-def test_preview_svg_is_self_contained(loader, config):
-    _, previews = previews_for(loader, config, "native_text.pdf")
-    svg = page_preview_svg(previews[0])
-    assert "http" not in svg
 
 
 # --- placement -------------------------------------------------------------
@@ -160,7 +145,6 @@ def test_no_page_image_by_default(loader, config):
 def test_page_images_are_embedded_when_asked_for():
     from complydoc.ingest.base import IngestOptions
     from complydoc.ingest.registry import load_document
-    from tests.helpers import FIXTURES
 
     document = load_document(
         FIXTURES / "sensitive_sample.pdf",
@@ -234,87 +218,3 @@ def test_a_name_from_the_model_is_not_called_a_pattern(loader, config):
     ner = [m for m in result.matches if config.sensitive.categories[m.category].detector == "ner"]
     for match in ner:
         assert "pattern" not in _why_sensitive(match, config.sensitive)
-
-
-def test_a_sensitive_mark_answers_the_pointer_across_its_whole_area():
-    """An SVG shape with no fill answers the pointer only along its stroke.
-
-    On a mark six pixels tall that is two hairlines, so pointing at the middle
-    of one did nothing at all.
-    """
-
-    styles = (assets.TEMPLATE_DIR / "report.css").read_text()
-    assert ".pv-mark rect { pointer-events: all; }" in styles
-
-
-def test_the_explanation_is_reachable_without_a_pointer():
-    """Marks can be focused with the keyboard."""
-
-    template = (assets.TEMPLATE_DIR / "report.js").read_text()
-    assert 'mark.setAttribute("tabindex", "0")' in template
-    assert 'mark.addEventListener("focus", show)' in template
-
-
-def _marks(html: str) -> list[str]:
-    import re
-
-    return re.findall(r'<g class="pv-mark"[^>]*>', html)
-
-
-def test_the_browser_draws_no_tooltip_of_its_own(config, tmp_path):
-    """Two tooltips for one mark is one tooltip too many.
-
-    An SVG <title> is the browser's own, and it appeared beside the report's
-    with the same words in a different box. `aria-label` says it to a screen
-    reader without drawing anything.
-    """
-    html = _rendered(config, tmp_path)
-    assert _marks(html), "the fixtures carry sensitive marks"
-    assert '<g class="pv-mark"><title>' not in html
-    assert all("aria-label=" in mark for mark in _marks(html))
-
-
-def test_a_mark_says_what_was_found_and_masks_it(config, tmp_path):
-    """A mark shows the last few characters, masked as in the findings table."""
-    import re
-
-    html = _rendered(config, tmp_path)
-    values = [
-        m.group(1) for m in (re.search(r'data-value="([^"]*)"', g) for g in _marks(html)) if m
-    ]
-    assert values, "every located mark should say what was found"
-    assert all("•" in value for value in values), values
-
-
-def test_a_mark_never_carries_a_value_the_run_did_not_reveal(config, tmp_path):
-    """A mark shows only masked values unless the run used --reveal.
-
-    Marks are the only place outside the findings table where a value is written.
-    """
-    import re
-
-    from complydoc.audit.run import run_audit
-
-    report = run_audit(FIXTURES, config, ("sensitive",), ocr=False)
-    revealed = {
-        m.revealed
-        for d in report.documents
-        if d.sensitive
-        for m in d.sensitive.matches
-        if m.revealed
-    }
-    assert not revealed, "a default run reveals nothing"
-
-    html = _rendered(config, tmp_path)
-    for mark in _marks(html):
-        found = re.search(r'data-value="([^"]*)"', mark)
-        if found:
-            assert "•" in found.group(1)
-
-
-def _rendered(config, tmp_path) -> str:
-    from complydoc.audit.run import run_audit
-    from complydoc.report.html_writer import write_html
-
-    report = run_audit(FIXTURES, config, ("sensitive",), ocr=False, page_images=False)
-    return write_html(report, config, tmp_path / "r.html").read_text()

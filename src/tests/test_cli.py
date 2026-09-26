@@ -42,10 +42,10 @@ def test_sensitive_only_run_computes_no_cost(tmp_path):
     assert data["documents"][0]["sensitive"] is not None
 
 
-def test_both_formats_are_written(tmp_path):
+def test_the_report_is_written_for_the_viewer(tmp_path):
     runner.invoke(app, ["audit", str(FIXTURES), "--out", str(tmp_path), "--name", "r", "--quiet"])
     assert (tmp_path / "r.json").is_file()
-    assert (tmp_path / "r.html").is_file()
+    assert not (tmp_path / "r.html").exists(), "the viewer reads the JSON; there is no HTML"
 
 
 def test_monthly_volume_reaches_the_report(tmp_path):
@@ -252,25 +252,6 @@ def test_pricing_import_emits_valid_yaml(tmp_path):
     assert parsed[0]["input_per_mtok_usd"] == 2.5
 
 
-def test_page_previews_reach_the_html(tmp_path):
-    runner.invoke(
-        app,
-        [
-            "audit",
-            str(FIXTURES / "sensitive_sample.pdf"),
-            "--out",
-            str(tmp_path),
-            "--name",
-            "pv",
-            "--quiet",
-        ],
-    )
-    html = (tmp_path / "pv.html").read_text()
-    assert 'class="pv"' in html, "the page wireframe should be in the report"
-    assert 'class="spread"' in html, "a page sits beside what was read off it"
-    assert "<text" not in html.split('class="pv"')[1].split("</svg>")[0]
-
-
 def test_skill_prints_valid_frontmatter():
     result = runner.invoke(app, ["skill"])
     assert result.exit_code == 0
@@ -443,9 +424,12 @@ def test_a_category_nothing_was_looked_for_is_named_in_the_summary(tmp_path, mon
     assert "Person name" in output
     assert "categories not scanned" in output
 
-    # And the report page says it above the findings, not only in the limitations.
-    html = (tmp_path / "s.html").read_text()
-    assert "categories were not scanned" in html
+    # And the report records it for the viewer, not only the summary.
+    data = json.loads((tmp_path / "s.json").read_text())
+    unscanned = {
+        c["category"] for d in data["documents"] for c in d["sensitive"]["unscanned_categories"]
+    }
+    assert "person_name" in unscanned
 
 
 def test_doctor_calls_a_working_fallback_working(monkeypatch):

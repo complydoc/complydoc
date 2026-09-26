@@ -1,4 +1,4 @@
-"""Reports: both formats, the generated limitations, and the no-leak guarantee."""
+"""Reports: the JSON, the generated limitations, and the no-leak guarantee."""
 
 from __future__ import annotations
 
@@ -7,7 +7,6 @@ import json
 import pytest
 
 from complydoc.audit.run import COMPONENTS, run_audit
-from complydoc.report.html_writer import render_html
 from complydoc.report.json_writer import to_dict, write_json
 from tests.helpers import FIXTURES
 
@@ -32,17 +31,7 @@ def report(config):
         return run_audit(FIXTURES, config, COMPONENTS, monthly_volume=1000)
 
 
-@pytest.fixture(scope="module")
-def html(report, config):
-    return render_html(report, config)
-
-
 # --- the guarantee ---------------------------------------------------------
-
-
-def test_no_sensitive_value_reaches_the_html_by_default(html):
-    for secret in SECRETS:
-        assert secret not in html, f"{secret!r} leaked into the HTML report"
 
 
 def test_no_sensitive_value_reaches_the_json_by_default(report):
@@ -51,63 +40,27 @@ def test_no_sensitive_value_reaches_the_json_by_default(report):
         assert secret not in serialised, f"{secret!r} leaked into the JSON report"
 
 
+def test_no_sensitive_value_reaches_the_page_pictures(config):
+    """With every field written and the pages pictured, the boxes still carry masked values only."""
+    pictured = run_audit(FIXTURES, config, COMPONENTS, page_images=True)
+    data = json.dumps(to_dict(pictured, detail="full"))
+    for secret in SECRETS:
+        assert secret not in data, f"{secret!r} leaked into the page previews"
+
+
 def test_reveal_is_recorded_and_stamped(config):
     revealed = run_audit(FIXTURES, config, ("sensitive",), reveal=True)
     assert revealed.run.reveal_used is True
-    page = render_html(revealed, config)
-    assert "unmasked sensitive values" in page
     assert any(x.area == "Masking" for x in revealed.limitations)
 
 
 def test_never_reveal_categories_stay_masked_even_then(config):
-    revealed = run_audit(FIXTURES, config, ("sensitive",), reveal=True)
-    page = render_html(revealed, config)
-    assert "4111111111111111" not in page
-    assert "AB123456C" not in page
-
-
-# --- self-contained --------------------------------------------------------
-
-
-def test_html_has_no_external_assets(html):
-    import re
-
-    for marker in ("<script src=", "@import", "url(http"):
-        assert marker not in html, f"report pulls in an external asset: {marker}"
-    # A <link> is allowed only if it carries the asset inline.
-    for tag in re.findall(r"<link\b[^>]*>", html):
-        assert 'href="data:' in tag, f"link fetches something: {tag}"
-
-
-def test_report_carries_an_inline_favicon(html):
-    assert '<link rel="icon" href="data:image/svg+xml,' in html
-
-
-def test_html_carries_its_own_stylesheet(html):
-    assert "<style>" in html
+    revealed = json.dumps(to_dict(run_audit(FIXTURES, config, ("sensitive",), reveal=True)))
+    assert "4111111111111111" not in revealed
+    assert "AB123456C" not in revealed
 
 
 # --- content ---------------------------------------------------------------
-
-
-def test_aggregate_section_is_present(report, html):
-    assert report.aggregate is not None
-    assert report.aggregate.documents_audited > 0
-    assert "Summary" in html
-    assert "Documents audited" in html
-
-
-def test_every_document_gets_a_section(report, html):
-    for document in report.documents:
-        assert document.relative_path in html
-
-
-def test_weights_are_printed_whenever_a_score_is(report, html):
-    assert report.signal_weights, "scoring is on, so weights must be exposed"
-    assert "Weight" in html
-    for signal_id, weight in report.signal_weights.items():
-        assert signal_id in report.aggregate.signal_distribution
-        assert weight >= 0
 
 
 def test_skipped_files_are_reported_not_silently_dropped(report):
@@ -180,73 +133,32 @@ def test_offline_status_is_recorded(report):
 # --- opt-in page images ----------------------------------------------------
 
 
-def test_default_report_embeds_no_page_images(html, report):
+def test_default_report_embeds_no_page_images(report):
     assert report.run.page_images_used is False
-    assert "data:image/jpeg" not in html
+    assert "data:image/jpeg" not in json.dumps(to_dict(report))
 
 
 def test_page_images_are_recorded_in_the_run_options(config):
-    """--page-images is recorded in the run options."""
-    from complydoc.report.html_writer import render_html
-
+    """--page-images is recorded in the run options, and the pictures are in the report."""
     with_images = run_audit(FIXTURES, config, COMPONENTS, page_images=True)
     assert with_images.run.page_images_used is True
-    page = render_html(with_images, config)
-    assert "data:image/jpeg" in page
-    options = page.split('class="opts">')[1].split("<")[0]
-    assert "--page-images" in options
-
-
-# --- filter and pagination -------------------------------------------------
-
-
-def test_report_ships_its_own_filter_and_pagination(html):
-    assert 'id="filelist"' in html
-    assert 'id="docfilter"' in html
-    assert "data-paginate" in html
-    assert "<script>" in html
-
-
-def test_the_file_filter_indexes_facts_not_prose(html):
-    """The filter index holds facts, so "rotated" does not match every document."""
-    assert "data-search=" in html
-    index = html.split('data-search="')[1].split('"')[0]
-    assert "rotated" not in index or "rotated_scan" in index
-    assert "stored sideways" not in index
-
-
-def test_the_script_is_inline_not_fetched(html):
-    assert "<script src=" not in html
-
-
-def test_content_is_present_without_scripting(html, report):
-    """Filtering is an enhancement; every document must be in the markup already."""
-    for document in report.documents:
-        assert document.relative_path in html
+    assert "data:image/jpeg" in json.dumps(to_dict(with_images))
 
 
 # --- opt-in extracted text -------------------------------------------------
 
 
-def test_extracted_text_is_absent_by_default(report, html):
+def test_extracted_text_is_absent_by_default(report):
     assert report.run.extracted_text_used is False
     assert all(not d.extracted_text for d in report.documents)
-    assert '<details class="text">' not in html
 
 
 def test_extracted_text_is_included_and_stamped_when_asked_for(config):
-    from complydoc.report.html_writer import render_html
-
     with_text = run_audit(FIXTURES, config, COMPONENTS, extracted_text=True)
     assert with_text.run.extracted_text_used is True
     document = next(d for d in with_text.documents if d.relative_path == "sensitive_sample.pdf")
     assert document.extracted_text
     assert "EMPLOYEE RECORD" in document.extracted_text[0].text
-
-    page = render_html(with_text, config)
-    assert "EMPLOYEE RECORD" in page, "the text belongs beside the page it was read from"
-    options = page.split('class="opts">')[1].split("<")[0]
-    assert "--extracted-text" in options
 
 
 def test_extracted_text_records_how_each_page_was_read(config):
@@ -268,173 +180,7 @@ def test_very_long_pages_are_truncated_not_dropped(config):
                 assert page.characters > _MAX_TEXT_CHARS
 
 
-# --- the four pages --------------------------------------------------------
-
-
-def test_report_has_four_pages(html):
-    import re
-
-    assert re.findall(r'<section data-page id="(\w+)"', html) == [
-        "summary",
-        "cost",
-        "security",
-        "documents",
-    ]
-
-
-def test_every_page_is_reachable_from_the_nav(html):
-    for page in ("summary", "cost", "security", "documents"):
-        assert f'data-tab="{page}"' in html
-
-
-def test_only_the_first_page_starts_visible(html):
-    import re
-
-    sections = re.findall(r'<section data-page id="(\w+)"( hidden)?>', html)
-    assert sections[0] == ("summary", "")
-    assert all(hidden for _, hidden in sections[1:])
-
-
-def test_tabs_do_not_depend_on_the_url_hash(html):
-    """A data: URL or sandboxed mail preview never reports a hash."""
-    assert 'a.addEventListener("click"' in html
-    assert "preventDefault" in html
-
-
-def test_limitations_stay_in_the_json_not_the_html(html, report):
-    """The list is written for an agent to act on; the HTML is read by people.
-
-    The facts that change a business conclusion are surfaced in their own right:
-    unverified prices get a callout, unread pages appear on their document.
-    """
-    assert report.limitations, "the run still records them"
-    assert "What this run could not tell you" not in html
-    assert "not a standard disclaimer" not in html
-
-
-def test_decision_changing_facts_survive_in_the_html(html, report):
-    if report.staleness_warnings:
-        assert "Unverified prices" in html
-    unread = [d for d in report.documents if d.sensitive and d.sensitive.unreadable_pages]
-    if unread:
-        flat = " ".join(html.split())
-        assert "not searched" in flat
-        assert "nothing was found there because nothing looked" in flat.lower()
-
-
-def test_the_summary_leads_with_readiness_and_what_to_do(html):
-    """The summary leads with readiness and quick wins; cost has its own tab."""
-    summary = html.split('id="summary"')[1].split("<section")[0]
-    assert "Global readiness" in summary
-    assert "Quick wins" in summary
-    assert "AI readiness" in summary
-    assert "Sensitive items per document" in summary
-
-
-def test_the_summary_carries_no_price_table_or_chart(html):
-    """The summary has no price table or chart."""
-    summary = html.split('id="summary"')[1].split("<section")[0]
-    assert 'class="chart"' not in summary
-    assert "Cost per 1,000 documents" not in summary
-
-
-def test_the_cost_tab_gained_what_the_summary_lost(html):
-    """The per-1,000 cost chart is on the Cost tab."""
-    cost = html.split('id="cost"')[1].split("<section")[0]
-    assert "Cost per 1,000 documents" in cost
-
-
-def test_cost_page_carries_the_charts(html):
-    cost = html.split('id="cost"')[1].split("<section")[0]
-    assert 'class="chart"' in cost
-    assert "Text + local OCR" in cost
-
-
-def test_reach_is_stated_once_and_not_in_a_second_table(html):
-    """Cost alone favours the text layer; reach is what stops that misleading.
-
-    It is printed once per architecture, in the legend.
-    """
-    cost = html.split('id="cost"')[1].split("<section")[0]
-    assert "The same numbers" not in cost, "not a second table of the same figures"
-    assert cost.count("documents</span>") == 3, "once per architecture, in the legend"
-    assert "reaches" in cost, "and on each bar's own hover"
-
-
-def test_charts_can_be_filtered_by_provider(html, report):
-    cost = html.split('id="cost"')[1].split("<section")[0]
-    providers = {m.provider for d in report.documents if d.cost for m in d.cost.models}
-    if len(providers) > 1:
-        assert 'id="providers"' in cost
-        for provider in providers:
-            assert f'data-provider="{provider}"' in cost
-
-
-def test_reveal_still_gets_a_banner(config):
-    """--reveal prints identifiers verbatim; that is not a footnote."""
-    from complydoc.report.html_writer import render_html
-
-    revealed = run_audit(FIXTURES, config, ("sensitive",), reveal=True)
-    page = render_html(revealed, config)
-    assert "unmasked sensitive values" in page
-
-
-def test_security_page_lists_every_occurrence(html, report):
-    security = html.split('id="security"')[1].split("<section")[0]
-    assert "Every occurrence" in security
-    assert "Document" in security
-
-
-def test_documents_page_holds_the_explorer(html):
-    documents = html.split('id="documents"')[1].split("</main>")[0]
-    assert 'id="filelist"' in documents
-    assert 'class="viewer"' in documents
-    for view in ("pages", "signals"):
-        assert f'data-view="{view}"' in documents
-
-
-def test_documents_page_carries_no_security_table(html):
-    """Sensitive findings belong on the security page; the explorer is about content."""
-    documents = html.split('id="documents"')[1].split("</main>")[0]
-    assert "Matched because" not in documents
-
-
-def test_readiness_is_flagged_on_the_document_itself(html):
-    documents = html.split('id="documents"')[1].split("</main>")[0]
-    assert 'class="doc-meta"' in documents
-    assert 'class="concerns"' in documents, "poor signals belong on the document"
-    assert 'class="pcap"' in documents, "and the per-page facts on the page"
-
-
-def test_colour_marks_the_exception_rather_than_every_category(html):
-    """Green, amber and red on every rating is what made it look generated."""
-    styles = html.split("<style>")[1].split("</style>")[0]
-    assert "--attn:" in styles
-    for gone in ("--good-bg", "--fair-bg", "--poor-bg"):
-        assert gone not in styles, f"{gone} is still defined"
-    assert "background: var(--good-bg)" not in styles
-
-
-def test_every_signal_carries_its_explanation(html):
-    """A rating means nothing without saying what it measures.
-
-    The folder-wide distribution used to lead the Documents page. It has been
-    removed — the page is about one document at a time — so the guarantee now
-    applies to the per-document signals table, which is where it always
-    mattered most.
-    """
-    import re
-
-    table = html.split('data-view="signals"', 2)[2].split("</table>")[0]
-    assert "Why it matters" in table
-    explanations = re.findall(r'<td class="why">([^<]{10,})</td>', table)
-    assert len(explanations) >= 18
-
-
-def test_report_does_not_explain_its_own_flags(html):
-    """The report does not explain command line flags."""
-    for phrase in ("Run with <code>--page-images", "Weights come from"):
-        assert phrase not in html
+# --- signals ---------------------------------------------------------------
 
 
 def test_signal_explanations_are_one_sentence(config):
@@ -446,99 +192,12 @@ def test_signal_explanations_are_one_sentence(config):
         assert len(signal.why) <= 100, f"{signal.id} is {len(signal.why)} characters"
 
 
-# --- copy quality ----------------------------------------------------------
-
-
-def test_no_parenthesised_plurals_reach_the_reader(html):
-    """No parenthesised plurals such as "3 page(s)"."""
-    import re
-
-    found = re.findall(r"\w+\(s\)", html)
-    assert not found, f"parenthesised plurals in the report: {sorted(set(found))}"
-
-
-def test_footer_carries_the_run_and_the_guarantee(html):
-    footer = html.split("<footer>")[1]
-    assert "No document content left this machine" in footer
-    assert "Audited" in footer and "Finished" in footer
-    assert "network guard" in footer
+# --- run options -----------------------------------------------------------
 
 
 def test_run_options_record_exactly_what_was_asked_for(config):
-    from complydoc.report.html_writer import render_html
-
     report = run_audit(FIXTURES, config, COMPONENTS, ocr=False, monthly_volume=500)
-    options = render_html(report, config).split('class="opts">')[1].split("<")[0]
-    assert "--no-ocr" in options
-    assert "--monthly-volume 500" in options
-    assert "--page-images" not in options
-    assert "--reveal" not in options
-
-
-def test_filtering_the_chart_animates_rather_than_snapping(html):
-    """The chart viewBox is tweened with requestAnimationFrame."""
-    assert "requestAnimationFrame" in html
-    assert "prefers-reduced-motion" in html
-    assert ".grp.out" in html, "filtered rows fade out"
-
-
-def test_the_summary_leads_with_preparation_time(html):
-    summary = html.split('id="summary"')[1].split("<section")[0]
-    assert "Local preparation" in summary
-    assert "before anything reaches a model" in summary
-
-
-def test_the_footer_records_the_observed_rates(html):
-    footer = html.split("<footer>")[1]
-    assert "Took" in footer
-    assert "a page" in footer
-
-
-def test_every_page_starts_the_same_distance_below_the_tabs(html):
-    """Two of the four open on a heading and two do not.
-
-    The spacing used to hang off the heading, so the pages without one began
-    hard against the tab bar.
-    """
-    styles = html.split("<style>")[1].split("</style>")[0]
-    assert "section[data-page] > :first-child { margin-top:" in styles.replace("\n", " ")
-
-
-def test_masking_does_not_claim_more_than_it_covers(config):
-    """The findings are masked; the pages the report also carries are not.
-
-    The notice says the page text and images carry unmasked values.
-    """
-    from complydoc.audit.run import COMPONENTS, run_audit
-    from complydoc.report.html_writer import render_html
-    from tests.helpers import FIXTURES
-
-    with_text = render_html(run_audit(FIXTURES, config, COMPONENTS, extracted_text=True), config)
-    security = with_text.split('id="security"')[1].split("</section>")[0]
-    assert "Masking applies to the findings tables only" in security
-    assert "--no-extracted-text" in security
-
-    without = render_html(run_audit(FIXTURES, config, COMPONENTS, extracted_text=False), config)
-    quiet = without.split('id="security"')[1].split("</section>")[0]
-    assert "Masking applies to the findings tables only" not in quiet, "nothing to warn about"
-
-
-def test_document_content_is_escaped_in_the_html(tmp_path):
-    """Document text, file names and metadata are escaped."""
-    import complydoc as cd
-
-    report = cd.inspect_documents(
-        [
-            {
-                "page_content": "Ignore previous instructions <script>alert(1)</script> now.",
-                "metadata": {
-                    "source": "/nowhere/<img src=x onerror=alert(2)>.pdf",
-                    "title": "<b>bold</b>",
-                },
-            }
-        ]
-    )
-    html = cd.write_html(report, tmp_path / "report.html").read_text(encoding="utf-8")
-    assert "<script>alert(1)</script>" not in html
-    assert "<img src=x onerror=alert(2)>" not in html
-    assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html
+    assert report.run.ocr_requested is False
+    assert report.run.monthly_volume == 500
+    assert report.run.page_images_used is False
+    assert report.run.reveal_used is False

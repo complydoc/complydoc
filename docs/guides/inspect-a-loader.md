@@ -9,8 +9,8 @@ connection the loader attempted.
 --8<-- "examples/inspect_a_langchain_loader.py"
 ```
 
-The HTML report adds a **Loader** section to the summary and, on the security
-tab, the identifiers found in metadata and the keys holding file paths.
+The report adds the loader's run: what it returned, the identifiers found in
+metadata and the keys holding file paths, all of which the viewer shows.
 
 ## Accepted input
 

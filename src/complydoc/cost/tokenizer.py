@@ -32,10 +32,6 @@ class TokenCount:
     """'exact', 'approximate' (real tokenizer, wrong provider) or 'estimated'."""
     note: str | None = None
 
-    @property
-    def is_measured(self) -> bool:
-        return self.fidelity != "estimated"
-
 
 @lru_cache(maxsize=8)
 def _encoder(name: str) -> Any | None:

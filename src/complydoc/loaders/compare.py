@@ -7,7 +7,7 @@
         {"pymupdf4llm": PyMuPDF4LLMLoader, "docling": cd.parsers.docling()},
         paths="contract.pdf",
     )
-    cd.write_html(report, "loaders.html")
+    cd.write_json(report, ".complydoc/loaders.json")
 
 Each loader is inspected exactly as `inspect_documents` would inspect it. The
 first one given is the baseline: the report's findings, scores and cost are

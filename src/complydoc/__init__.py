@@ -14,7 +14,8 @@ hidden from a reader or addressed to a model.
     for win in report.quick_wins:
         print(win.actor, win.title, len(win.documents))
 
-    cd.write_html(report, "audit.html")
+    cd.write_json(report, "reports/audit.json")
+    cd.launch_ui("reports")  # opens the viewer on it
 
 The names below are the public API, and the report objects they return are part
 of it. Everything else in this package is internal: it may be renamed or

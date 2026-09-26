@@ -5,7 +5,6 @@ from __future__ import annotations
 import pytest
 
 from complydoc.audit.run import run_audit
-from complydoc.utils.text import duration
 from tests.helpers import FIXTURES
 
 
@@ -72,24 +71,6 @@ def test_counters_reset_between_runs(config):
     first = run_audit(FIXTURES, config, ocr=True)
     second = run_audit(FIXTURES, config, ocr=True)
     assert second.aggregate.ocr_pages == first.aggregate.ocr_pages
-
-
-# --- formatting ------------------------------------------------------------
-
-
-@pytest.mark.parametrize(
-    ("seconds", "expected"),
-    [
-        (None, "—"),
-        (0.004, "4ms"),
-        (3.7, "3.7s"),
-        (95, "2m"),
-        (5400, "1.5h"),
-        (200_000, "2.3 days"),
-    ],
-)
-def test_durations_read_at_every_scale(seconds, expected):
-    assert duration(seconds) == expected
 
 
 # --- model time -------------------------------------------------------------

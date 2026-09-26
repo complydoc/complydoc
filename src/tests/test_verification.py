@@ -295,14 +295,6 @@ def test_verification_survives_the_json(one_pdf, tmp_path):
     assert back.documents[0].extracted_text[0].costs == report.documents[0].extracted_text[0].costs
 
 
-def test_the_html_report_shows_the_check(one_pdf, tmp_path):
-    report = cd.full_audit(one_pdf, verify_with=sharper, verify_scope="all", extracted_text=True)
-    html = cd.write_html(report, tmp_path / "report.html").read_text()
-    assert "Vision verification" in html
-    assert "from the provider's token counts" in html
-    assert "free, ran on this machine" in html
-
-
 # --- Loaders -----------------------------------------------------------------
 
 

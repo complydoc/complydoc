@@ -126,7 +126,6 @@ def chunks(
     from complydoc.extraction.retrieval import Question, read_questions
     from complydoc.report.chunk_run import chunk_run_report
     from complydoc.report.json_writer import write_json
-    from complydoc.report.pages import write_chunks_html
 
     started_at = dt.datetime.now().astimezone()
     started = time.monotonic()
@@ -216,7 +215,6 @@ def chunks(
         ocr_requested=ocr,
     )
     json_path = write_json(run_report, out / f"{name}.json")
-    html_path = write_chunks_html(result, out / f"{name}.html", source=str(target))
     if quiet:
         return
     table = Table(box=None, pad_edge=False)
@@ -243,4 +241,4 @@ def chunks(
         table.add_row(*cells)
     console.print(table)
     console.print()
-    print_written(html_path, json_path, out)
+    print_written(json_path, out)

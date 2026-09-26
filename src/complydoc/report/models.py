@@ -111,7 +111,8 @@ def report_shape() -> dict[str, object]:
             "extracted_text_used": "bool",
             "report_detail": (
                 "summary | full — summary leaves out documents[].cost.models, "
-                "documents[].previews and cost.documents; full writes every field"
+                "cost.documents and, unless --page-images, documents[].previews; "
+                "full writes every field"
             ),
             "jobs": "worker processes used",
             "timeout_seconds": "seconds each document was given, when --timeout was used",
@@ -127,7 +128,10 @@ def report_shape() -> dict[str, object]:
                 "full only: every priced model against this document, with text and "
                 "vision token counts and USD"
             ),
-            "previews[]": "full only: page geometry the HTML report draws its page views from",
+            "previews[]": (
+                "page geometry and pictures the viewer draws pages from; "
+                "full, or summary with --page-images"
+            ),
             "readiness.signals[]": "id, value, rating, weight, why, status",
             "readiness.score": "value 0-100, higher is better; label; low_confidence",
             "sensitive.matches[]": (

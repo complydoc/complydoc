@@ -48,7 +48,8 @@ import complydoc as cd
 
 report = cd.full_audit("./documents")
 print(report.overall.score)
-cd.write_html(report, "report.html")
+cd.write_json(report, ".complydoc/report.json")
+cd.launch_ui()                # the same viewer, from a script or a notebook
 ```
 
 Output from a LangChain or LlamaIndex loader, or several loaders over a folder:
@@ -193,9 +194,10 @@ finds and what it wrongly flags against a labelled corpus that ships with the pa
   corroboration, pattern or model.
 - **Configurable**: prices, signal weights and detection patterns are YAML files, and name
   detection can use your own spaCy models, per language, or any other model as a detector.
-- **One report**: a self-contained HTML file and a JSON file with a versioned schema,
-  safe to share: identifiers are masked throughout and pages are drawn as wireframes.
-  `--page-images` embeds a picture of each page instead, and says that it shows them.
+- **One report**: a JSON file with a versioned schema, opened in the viewer with
+  `complydoc ui`, safe to share: identifiers are masked throughout and pages are
+  drawn as wireframes. `--page-images` adds a picture of each page instead, and says
+  that it shows them.
 
 ## Resources
 

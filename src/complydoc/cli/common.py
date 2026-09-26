@@ -14,7 +14,6 @@ from rich.markup import escape
 
 from complydoc.config.loader import ConfigError, load_config
 from complydoc.config.schema import Config
-from complydoc.report.html_writer import write_html
 from complydoc.report.json_writer import Detail, to_dict, write_json
 from complydoc.report.models import AuditReport
 from complydoc.utils.text import count
@@ -150,8 +149,9 @@ DetailOpt = Annotated[
         "--detail",
         help="How much the JSON report carries. `summary`, the default, keeps every "
         "finding and score and the folder's cost on each model, and leaves out the "
-        "price of every document on every model and the page geometry the HTML draws "
-        "with. `full` writes every field; use it for anything that reprocesses reports.",
+        "price of every document on every model and, unless --page-images asked for "
+        "pictures, the page geometry the viewer draws pages with. `full` writes every "
+        "field; use it for anything that reprocesses reports.",
     ),
 ]
 ExtractedTextOpt = Annotated[
@@ -317,26 +317,23 @@ def link(label: str, path: Path) -> None:
     )
 
 
-def print_written(html_path: Path, json_path: Path, out: Path) -> None:
-    """Where a run's report and data went, and the command that opens them in the viewer."""
-    link("Report", html_path)
-    link("Data", json_path)
+def print_written(json_path: Path, out: Path) -> None:
+    """Where a run's report went, and the command that opens it in the viewer."""
+    link("Report", json_path)
     viewer = "complydoc ui" if out.resolve() == DEFAULT_OUT.resolve() else f"complydoc ui {out}"
     console.print(f"[bold]View[/]    {escape(viewer)}", no_wrap=True, crop=False)
 
 
 def emit(
     report: AuditReport,
-    config: Config,
     out: Path,
     name: str,
     quiet: bool,
     save_text: Path | None = None,
     detail: Detail = "summary",
 ) -> None:
-    """Write the JSON and HTML reports, and the extracted text when asked, then link them."""
+    """Write the report, and the extracted text when asked, then say where and how to open it."""
     json_path = write_json(report, out / f"{name}.json", detail=detail).resolve()
-    html_path = write_html(report, config, out / f"{name}.html").resolve()
 
     written: list[Path] = []
     if save_text is not None:
@@ -347,7 +344,7 @@ def emit(
     if quiet:
         return
     console.print()
-    print_written(html_path, json_path, out)
+    print_written(json_path, out)
     if save_text is not None:
         folder = save_text.expanduser().resolve()
         held = (

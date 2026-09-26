@@ -64,8 +64,6 @@ def test_facts_appear_in_the_report_and_tables(folder, tmp_path):
     report = cd.compare_loaders(
         {"faithful": faithful, "partial": fails_on_b}, paths=folder, facts=[CLAUSE]
     )
-    html = cd.write_html(report, tmp_path / "report.html").read_text(encoding="utf-8")
-    assert "Expected facts" in html
     rows = table_rows(report, "facts")
     assert {(row["loader"], row["found"]) for row in rows} == {
         ("faithful", "exact"),

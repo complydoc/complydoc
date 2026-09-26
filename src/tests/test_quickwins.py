@@ -69,7 +69,7 @@ def test_an_unsupported_file_is_not_called_broken(config):
 
 def test_the_saving_matches_the_price_the_report_shows(config):
     """The quoted saving matches the cost page."""
-    from complydoc.report.charts import build_comparison, headline_comparison
+    from complydoc.cost.comparison import build_comparison, headline_comparison
 
     report = run_audit(FIXTURES, config, ALL, ocr=False)
     entry = next(w for w in quick_wins(report) if w.id == "ocr_blank_pages")

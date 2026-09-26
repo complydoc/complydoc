@@ -25,4 +25,5 @@ print()
 for limitation in report.limitations:
     print(f"[{limitation.severity}] {limitation.area}: {limitation.statement}")
 
-cd.write_html(report, "inspection.html")
+# `complydoc ui` opens what is in .complydoc, where the command line writes too.
+cd.write_json(report, ".complydoc/inspection.json")

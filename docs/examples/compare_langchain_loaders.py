@@ -39,4 +39,5 @@ for difference in comparison.identifier_differences:
 for check in comparison.facts:
     print(check.fact, check.found)
 
-cd.write_html(report, "loaders.html")
+# `complydoc ui` opens what is in .complydoc, where the command line writes too.
+cd.write_json(report, ".complydoc/loaders.json")

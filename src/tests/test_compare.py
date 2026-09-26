@@ -169,24 +169,14 @@ def test_a_path_is_not_a_set_of_loaders():
         cd.compare_loaders("contract.pdf")
 
 
-def test_the_comparison_is_written_to_json_and_html(tmp_path):
+def test_the_comparison_is_written_to_json(tmp_path):
     report = compare()
-    data = json.loads(cd.write_json(report, tmp_path / "r.json").read_text(encoding="utf-8"))
+    written = cd.write_json(report, tmp_path / "r.json").read_text(encoding="utf-8")
+    data = json.loads(written)
     assert data["loader_comparison"]["baseline"] == "faithful"
     assert data["loader_comparison"]["identifier_differences"][0]["missed_by"] == ["drops"]
-
-    html = cd.write_html(report, tmp_path / "r.html").read_text(encoding="utf-8")
-    pages = {
-        name: html.split(f'id="{name}"')[1].split("<section data-page")[0]
-        for name in ("summary", "security", "documents")
-    }
-    # Everything about loaders and readers belongs with the documents they read.
-    assert "<h2>Loaders</h2>" in pages["documents"]
-    assert "Identifiers only some loaders kept" in pages["documents"]
-    assert "Loaders" not in pages["summary"] and "loaders kept" not in pages["security"]
-
-    differences_table = html.split("Identifiers only some loaders kept")[1].split("</table>")[0]
-    assert "jane.doe@example.com" not in differences_table
+    # The identifiers only some loaders kept are named masked, like every other finding.
+    assert "jane.doe@example.com" not in written
 
 
 def test_metadata_keys_differing_only_in_case_are_the_same_key():

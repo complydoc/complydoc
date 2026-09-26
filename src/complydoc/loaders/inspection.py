@@ -4,7 +4,7 @@
     from langchain_pymupdf4llm import PyMuPDF4LLMLoader
 
     report = cd.inspect_documents(PyMuPDF4LLMLoader("contract.pdf"))
-    cd.write_html(report, "inspection.html")
+    cd.write_json(report, ".complydoc/inspection.json")
 
 complydoc does not replace the loader. It runs it — or takes the documents it
 already returned — and reports on the output: the same identifier scan, the

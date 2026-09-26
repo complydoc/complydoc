@@ -54,9 +54,8 @@ def diff(
     file, or a new important limitation. Exits 1 when there is a regression, 2
     when a file cannot be read.
     """
-    from complydoc.report.compare import diff_reports
+    from complydoc.report.compare import diff_reports, diff_to_dict, write_diff_json
     from complydoc.report.json_reader import load_report
-    from complydoc.report.pages import diff_to_dict, write_diff_html, write_diff_json
 
     route_output(print_json)
     if print_json:
@@ -87,11 +86,9 @@ def diff(
             else "No changes."
         )
     if out is not None:
-        html_path = write_diff_html(changes, out / f"{name}.html", old=old.name, new=new.name)
         json_path = write_diff_json(changes, out / f"{name}.json")
         if not quiet:
             console.print()
-            link("Report", html_path)
             link("Data", json_path)
     if print_json:
         sys.stdout.write(json.dumps(diff_to_dict(changes), indent=2, default=str) + "\n")

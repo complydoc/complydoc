@@ -329,7 +329,7 @@ def test_a_folder_of_the_new_formats_is_audited(tmp_path):
         "c.html": "html",
     }
     assert by_name["a.txt"].sensitive.total == 1
-    cd.write_html(report, tmp_path / "out" / "report.html")
+    assert cd.load_report(cd.write_json(report, tmp_path / "out" / "report.json")).documents
 
 
 def test_each_format_names_the_reader_that_read_it(tmp_path, config):

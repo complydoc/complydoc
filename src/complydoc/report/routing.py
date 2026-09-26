@@ -25,10 +25,10 @@ from pathlib import Path
 from typing import Any
 
 from complydoc.config.schema import PricingConfig
+from complydoc.cost.comparison import build_comparison, headline_comparison
 from complydoc.cost.estimator import DocumentCostEstimate, ModelCostEstimate
 from complydoc.cost.vision import vision_tokens
 from complydoc.extraction.routing import ROUTES
-from complydoc.report.charts import build_comparison, headline_comparison
 from complydoc.report.models import AuditReport
 from complydoc.utils.files import write_text
 from complydoc.utils.text import count
@@ -62,11 +62,6 @@ class RoutingSummary:
         if self.routed_usd is None or self.vision_usd is None:
             return None
         return round(self.vision_usd - self.routed_usd, 6)
-
-    @property
-    def vision_pages_pct(self) -> float | None:
-        total = sum(self.pages.values())
-        return round(self.pages.get("vision", 0) / total * 100, 1) if total else None
 
 
 def _headline_model(estimate: DocumentCostEstimate, wanted: str) -> ModelCostEstimate | None:

@@ -30,7 +30,7 @@ and `PyMuPDF4LLM`, `PyPDFLoader` from `langchain_community` `LangChain` and `pyp
 LlamaIndex reader `LlamaIndex`. Parser presets declare their
 tags, and hosted presets are also tagged `hosted`. Loaders from other modules get no
 tags. The tags are in `LoaderSummary.tags` and `LoaderRun.tags`, in the `tags` column of
-`report.to_pandas("loaders")`, and beside each loader's name in the HTML report.
+`report.to_pandas("loaders")`, and beside each loader's name in the viewer.
 
 ## Baseline
 
@@ -56,8 +56,8 @@ compared.
 different order.
 
 With `extracted_text` on, the default, each page's `readings` holds the other
-loaders' text for that page, and the Documents page of the HTML report marks
-the words that differ. Documents without page numbers get readings only when
+loaders' text for that page, and the viewer's document view shows the words
+that differ. Documents without page numbers get readings only when
 the baseline returned them as a single page.
 
 ## Identifiers
@@ -186,7 +186,7 @@ In addition to the baseline's own limitations, a comparison adds:
 ## From the command line
 
 `complydoc compare-loaders FILE` runs a comparison described in YAML and writes
-the same JSON and HTML report as `complydoc audit`:
+the same JSON report as `complydoc audit`, which `complydoc ui` opens:
 
 ```yaml title="loaders.yaml"
 loaders:

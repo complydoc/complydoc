@@ -1,10 +1,11 @@
 """The two shapes a JSON report can be written in.
 
 `summary` is the default and leaves out two things: the price of every document
-on every model, which was also stored twice, and the page geometry the HTML draws
-with. Both are most of a large report and neither is what a reader of the JSON
-came for. What these tests hold to is that nothing else changes, that the folder's
-cost per model survives, and that a summary reads back as what it is.
+on every model, which was also stored twice, and the page geometry the viewer
+draws pages with, unless the run asked for page images. Both are most of a large
+report and neither is what a reader of the JSON came for. What these tests hold
+to is that nothing else changes, that the folder's cost per model survives, and
+that a summary reads back as what it is.
 """
 
 from __future__ import annotations
@@ -44,6 +45,14 @@ def test_a_summary_keeps_the_folders_cost_on_every_model(report):
     assert len(models) == len(report.cost.documents[0].models), "one row per priced model"
     paths = {a["key"] for a in models[0]["architectures"]}
     assert paths == {"text_layer", "text_ocr", "vision"}
+
+
+def test_a_summary_keeps_the_page_pictures_a_run_asked_for(config):
+    """The report is the only place they are kept, and the viewer shows them from it."""
+    pictured = cd.full_audit(SAMPLE, config=config, ocr=False, page_images=True)
+    data = to_dict(pictured, detail="summary")
+    previews = [p for d in data["documents"] for p in d.get("previews", [])]
+    assert any(p.get("image_data_uri") for p in previews)
 
 
 def test_a_full_report_writes_every_field(report):
