@@ -145,7 +145,8 @@ def compare_from_file(
 
     def resolve(value: str) -> Path:
         candidate = Path(value).expanduser()
-        return candidate if candidate.is_absolute() else source.parent / candidate
+        # Resolved, so the report names the folder as an audit of it would, without `..`.
+        return (candidate if candidate.is_absolute() else source.parent / candidate).resolve()
 
     paths = [resolve(p) for p in ([spec.paths] if isinstance(spec.paths, str) else spec.paths)]
     return compare_loaders(

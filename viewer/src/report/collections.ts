@@ -38,12 +38,23 @@ function commonFolder(paths: string[]): string {
   return first.slice(0, length).join("/");
 }
 
+/** A path with its `.` and `..` steps taken and no trailing separator, so one folder reads one way. */
+function normalised(path: string): string {
+  const parts: string[] = [];
+  for (const part of path.split(/[\\/]+/)) {
+    if (part === ".") continue;
+    if (part === ".." && parts.length > 0 && parts[parts.length - 1] !== "..") parts.pop();
+    else parts.push(part);
+  }
+  return parts.join("/").replace(/\/+$/, "") || (path.startsWith("/") ? "/" : "");
+}
+
 /**
  * The folder a report audited. An audit names it; a loader comparison names
  * its baseline loader instead, so there it is the folder its documents share.
  */
 function folderOf(report: Report): string {
-  const target = (report.run.target || "").replace(/[\\/]+$/, "");
+  const target = normalised(report.run.target || "");
   if (report.loader_comparison && target === report.loader_comparison.baseline) {
     return commonFolder(report.documents.map((d) => d.relative_path)) || target;
   }
@@ -64,6 +75,15 @@ export function collectionsOf(loaded: Loaded[]): Collection[] {
       runs: [...runs].sort((a, b) => b.report.run.started_at.localeCompare(a.report.run.started_at)),
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/**
+ * The run a folder opens on and is summed up by: the newest that read its documents.
+ * A later run of another kind, such as `complydoc chunks`, is one of its runs, but
+ * holds no documents to show; only a folder with no other run opens on it.
+ */
+export function leadRun(collection: Collection): Loaded | undefined {
+  return collection.runs.find((run) => run.report.documents.length > 0) ?? collection.runs[0];
 }
 
 export interface RunChange {

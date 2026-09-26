@@ -60,6 +60,15 @@ def test_a_file_runs_a_comparison(spec):
     assert [row.facts_found for row in comparison.loaders] == [1, 0]
 
 
+def test_a_path_through_a_parent_folder_names_the_folder_itself(spec, tmp_path):
+    tools = tmp_path / "tools"
+    tools.mkdir()
+    moved = tools / "comparison.yaml"
+    moved.write_text(spec.read_text().replace("paths: docs", "paths: ../docs"))
+    report = compare_from_file(moved)
+    assert report.run.target == str((tmp_path / "docs").resolve())
+
+
 @pytest.mark.parametrize(
     ("content", "message"),
     [

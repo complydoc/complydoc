@@ -5,7 +5,7 @@ import { Section, SectionStack } from "@/components/Section";
 import { Stat, StatGrid } from "@/components/Stat";
 import { ToneBadge } from "@/components/ToneBadge";
 import { measured } from "@/report/measured";
-import { changeBetween, runLabel, type Collection } from "@/report/collections";
+import { changeBetween, leadRun, runLabel, type Collection } from "@/report/collections";
 import { formatCount, formatPageUsd, formatScore, formatSeconds, plural } from "@/report/format";
 import { EMPTY, combine, reportTotals, type Totals } from "@/report/plan";
 import { planFor } from "@/report/planChoice";
@@ -29,8 +29,13 @@ interface Row {
 
 function rowsOf(collections: Collection[]): Row[] {
   return collections.flatMap((collection) => {
-    const [latest, previous] = collection.runs;
+    // The folder is summed up by its newest run that read documents, and compared with the
+    // one of those before it; a chunks run holds none to count.
+    const latest = leadRun(collection);
     if (!latest) return [];
+    const previous = collection.runs
+      .slice(collection.runs.indexOf(latest) + 1)
+      .find((run) => run.report.documents.length > 0);
     const report = latest.report;
     const change = previous ? changeBetween(report, previous.report) : null;
     const before = change?.readiness?.before;
@@ -41,7 +46,7 @@ function rowsOf(collections: Collection[]): Row[] {
         name: collection.name,
         path: collection.id,
         runs: collection.runs.length,
-        lastRun: runLabel(report),
+        lastRun: runLabel(collection.runs[0]?.report ?? report),
         readiness: measured(report, "readiness") ? report.overall.score : null,
         readinessChange:
           before !== null && before !== undefined && report.overall.score !== null

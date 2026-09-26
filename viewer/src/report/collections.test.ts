@@ -1,5 +1,5 @@
 import { sampleAudit, sampleReport } from "@/test/sample";
-import { changeBetween, collectionsOf, type Loaded } from "./collections";
+import { changeBetween, collectionsOf, leadRun, type Loaded } from "./collections";
 import type { Report } from "./types";
 
 function run(id: string, report: Report, started: string, target?: string): Loaded {
@@ -50,5 +50,26 @@ describe("collections", () => {
     expect(collections.map((c) => [c.id, c.runs.map((r) => r.id)])).toEqual([
       ["viewer/sample/documents", ["loaders", "audit"]],
     ]);
+  });
+
+  it("takes a folder named through `..` as the same folder", () => {
+    const audit = sampleAudit();
+    const collections = collectionsOf([
+      run("audit", audit, "2026-09-01", "/data/contracts"),
+      run("spec", audit, "2026-09-02", "/data/tools/../contracts"),
+    ]);
+    expect(collections.map((c) => [c.id, c.runs.length])).toEqual([["/data/contracts", 2]]);
+  });
+
+  it("opens a folder on its newest run that read documents", () => {
+    const chunks = { ...sampleAudit(), documents: [] };
+    const [folder] = collectionsOf([
+      run("audit", sampleAudit(), "2026-09-01", "/data/contracts"),
+      run("chunks", chunks, "2026-09-02", "/data/contracts"),
+    ]);
+    expect(folder?.runs[0]?.id).toBe("chunks");
+    expect(folder && leadRun(folder)?.id).toBe("audit");
+    const [only] = collectionsOf([run("chunks", chunks, "2026-09-02", "/data/contracts")]);
+    expect(only && leadRun(only)?.id).toBe("chunks");
   });
 });

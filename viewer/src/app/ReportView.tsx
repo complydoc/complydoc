@@ -24,10 +24,14 @@ import { IgnoreProvider } from "@/components/IgnoreProvider";
 import { cn } from "@/lib/utils";
 import { CollectionSwitcher, type Selection } from "@/components/CollectionSwitcher";
 import { OverviewPage } from "@/features/collections/OverviewPage";
-import type { Collection, Loaded } from "@/report/collections";
+import { leadRun, type Collection, type Loaded } from "@/report/collections";
 import { fileName } from "@/report/format";
 import { AppSidebar } from "./AppSidebar";
 import { PAGES, PAGE_INFO } from "./pages";
+
+function leadIdOf(collection: Collection | undefined): string | null {
+  return collection ? (leadRun(collection)?.id ?? null) : null;
+}
 
 interface ReportViewProps {
   collections: Collection[];
@@ -103,7 +107,7 @@ export function ReportView({
             <OverviewPage
               collections={collections}
               onOpen={(id) =>
-                onSelect({ collection: id, run: collections.find((c) => c.id === id)?.runs[0]?.id ?? null })
+                onSelect({ collection: id, run: leadIdOf(collections.find((c) => c.id === id)) })
               }
             />
           </main>

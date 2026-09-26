@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
-import { runLabel, type Collection } from "@/report/collections";
+import { leadRun, runLabel, type Collection } from "@/report/collections";
 import { plural } from "@/report/format";
 
 export interface Selection {
@@ -32,8 +32,8 @@ interface CollectionSwitcherProps {
 export function CollectionSwitcher({ collections, selection, onSelect, onAdd, onCloseAll }: CollectionSwitcherProps) {
   const input = useRef<HTMLInputElement>(null);
   const current = collections.find((c) => c.id === selection.collection) ?? null;
-  const run = current?.runs.find((r) => r.id === selection.run) ?? current?.runs[0];
-  const documents = collections.reduce((sum, c) => sum + (c.runs[0]?.report.documents.length ?? 0), 0);
+  const run = current?.runs.find((r) => r.id === selection.run) ?? (current && leadRun(current));
+  const documents = collections.reduce((sum, c) => sum + (leadRun(c)?.report.documents.length ?? 0), 0);
 
   return (
     <SidebarMenu>
@@ -68,7 +68,7 @@ export function CollectionSwitcher({ collections, selection, onSelect, onAdd, on
               {collections.map((collection) => (
                 <DropdownMenuItem
                   key={collection.id}
-                  onSelect={() => onSelect({ collection: collection.id, run: collection.runs[0]?.id ?? null })}
+                  onSelect={() => onSelect({ collection: collection.id, run: leadRun(collection)?.id ?? null })}
                   title={collection.id}
                 >
                   <FolderIcon />

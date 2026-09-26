@@ -7,7 +7,7 @@ import { SAMPLES } from "@/features/open/samples";
 import { useLocalReports } from "@/hooks/useLocalReports";
 import { embeddedReports, useReports } from "@/hooks/useReports";
 import { useTheme } from "@/hooks/useTheme";
-import { collectionsOf } from "@/report/collections";
+import { collectionsOf, leadRun } from "@/report/collections";
 import { ReportView } from "./ReportView";
 
 /** Shows the open reports, or the way to open some. */
@@ -23,7 +23,7 @@ export function App() {
     chosen && (chosen.collection === null || collections.some((c) => c.id === chosen.collection))
       ? chosen
       : collections.length === 1
-        ? { collection: collections[0]?.id ?? null, run: collections[0]?.runs[0]?.id ?? null }
+        ? { collection: collections[0]?.id ?? null, run: collections[0] ? (leadRun(collections[0])?.id ?? null) : null }
         : { collection: null, run: null };
 
   const openSamples = useCallback(
