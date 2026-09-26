@@ -35,8 +35,8 @@ load.
   Beside it are the page's picture, when the report has one, and the page's findings,
   each with a box to tick it off as ignored. A ticked finding is crossed out, and under
   `complydoc ui` it is saved to the ignore file. A finding opened from the Security page
-  is marked in the diff's text and scrolled to. The header says what the page and the
-  whole document cost. The separate Pages and Diff views, the reading panes and the
+  is marked in the diff's text and scrolled to. Each page's first line says what the
+  page costs and takes to read, and the whole document's figure sits beside its name. The separate Pages and Diff views, the reading panes and the
   per-reader costs are gone. An eye button shows the values in a report written with
   `--reveal`, which opens masked.
 

@@ -52,12 +52,10 @@ function fingerprinted(): Report {
 }
 
 describe("DocumentDetail", () => {
-  it("diffs a document read more than one way, with what the page and the document cost", async () => {
+  it("diffs a document read more than one way, with what the document costs beside its name", async () => {
     open(sampleAudit(), "master-services-agreement.pdf");
     expect(screen.getByRole("heading", { name: "master-services-agreement.pdf" })).toBeInTheDocument();
-    const totals = screen.getByRole("group", { name: "Cost and time" });
-    expect(totals).toHaveTextContent(/This page\s*\$\d/);
-    expect(totals).toHaveTextContent(/Document\s*\$\d/);
+    expect(screen.getByTitle("The whole document, under the plan chosen above")).toHaveTextContent(/^\$\d/);
     expect(screen.getByRole("navigation", { name: "pagination" })).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Base reader" })).toHaveTextContent("pdfplumber");
     expect(screen.getByRole("combobox", { name: "Compare reader" })).toHaveTextContent("pypdf");
@@ -69,6 +67,11 @@ describe("DocumentDetail", () => {
     expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
     const reading = screen.getByTestId("page-reading");
     expect(reading.querySelectorAll("mark").length).toBeGreaterThan(0);
+  });
+
+  it("says on each page's first line what the page costs to read", () => {
+    open(sampleAudit(), "supplier-invoices-scanned.pdf");
+    expect(screen.getByTestId("page-reading")).toHaveTextContent(/# Page 1 · \$\d/);
   });
 
   it("moves through the pages of a document read one way", async () => {

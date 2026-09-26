@@ -48,6 +48,6 @@ describe("the vision check on the Documents page", () => {
 
   it("prices the document on the model chosen", () => {
     renderPage(<DocumentsPage report={sampleVerified()} open="0" />);
-    expect(screen.getByRole("group", { name: "Cost and time" })).toHaveTextContent(/Document\s*\$\d/);
+    expect(screen.getByTitle("The whole document, under the plan chosen above")).toHaveTextContent(/^\$\d/);
   });
 });

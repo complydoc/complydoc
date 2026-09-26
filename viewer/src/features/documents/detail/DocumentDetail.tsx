@@ -5,7 +5,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { DocumentDiff } from "@/features/documents/diff/DocumentDiff";
 import { usePlan } from "@/hooks/usePlan";
 import { KEPT, canReveal, pageText, readersOf } from "@/report/documentDiff";
-import { fileName } from "@/report/format";
+import { fileName, formatPageUsd, formatSeconds } from "@/report/format";
 import { findingHighlight } from "@/report/highlight";
 import { pageFindings } from "@/report/pageFindings";
 import { hasPicture } from "@/report/picture";
@@ -13,7 +13,6 @@ import { documentTotals, pageEstimate } from "@/report/plan";
 import type { FindingRef } from "@/report/route";
 import type { DocumentEntry, Report } from "@/report/types";
 import { useIsIgnored } from "@/hooks/useIgnores";
-import { DocumentTotals } from "./DocumentTotals";
 import { FindingChecklist } from "./FindingChecklist";
 import { PagePicker } from "./PagePicker";
 import { PagePane } from "./PagePane";
@@ -126,6 +125,19 @@ export function DocumentDetail({
       : highlight.needle
     : null;
 
+  // What each page costs and takes to read under the plan, written on its first line.
+  const notes: Record<number, string> = {};
+  if (priced)
+    for (const each of pages) {
+      const estimate = pageEstimate(report, document, each, plan);
+      if (!estimate.read) continue;
+      notes[each.number] = [
+        formatPageUsd(estimate.usd),
+        ...(estimate.seconds !== null ? [formatSeconds(estimate.seconds)] : []),
+      ].join(" · ");
+    }
+  const totals = priced ? documentTotals(report, document, plan) : null;
+
   const pick = (next: number) => {
     setPageIndex(next);
     const target = pages[next];
@@ -133,68 +145,71 @@ export function DocumentDetail({
   };
 
   return (
-    <div className="flex flex-col gap-4 lg:h-[calc(100svh-6rem)]">
-      <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2">
-        <h2 className="min-w-0 truncate font-heading text-lg font-semibold tracking-tight">
-          {fileName(document.relative_path)}
-        </h2>
-        <span className="ml-auto flex items-center gap-4">
-          {priced && (
-            <DocumentTotals
-              page={pageEstimate(report, document, page, plan)}
-              document={documentTotals(report, document, plan)}
-            />
+    // Two columns from the top, so the page's picture has the full height beside the text.
+    <div className="flex flex-col gap-6 lg:h-[calc(100svh-6rem)] lg:flex-row">
+      <div className="flex h-[80svh] min-h-0 min-w-0 flex-1 flex-col gap-3 lg:h-auto">
+        <div className="flex shrink-0 flex-wrap items-baseline gap-x-3 gap-y-1">
+          <h2 className="min-w-0 truncate font-heading text-lg font-semibold tracking-tight">
+            {fileName(document.relative_path)}
+          </h2>
+          {totals && totals.usd !== null && (
+            <span
+              className="text-sm text-muted-foreground tabular-nums"
+              title="The whole document, under the plan chosen above"
+            >
+              {formatPageUsd(totals.usd)}
+              {totals.seconds !== null && totals.untimed === 0 && ` · ${formatSeconds(totals.seconds)}`}
+            </span>
           )}
-          <EyeToggle available={revealable} on={unmasked} onChange={setEye} />
-        </span>
-      </div>
-
-      <div className="flex min-h-0 flex-1 flex-col gap-6 lg:flex-row">
-        <div className="flex h-[70svh] min-h-0 min-w-0 flex-1 flex-col gap-3 lg:h-auto">
-          {compared ? (
-            <DocumentDiff
-              report={report}
-              index={index}
-              jump={jump}
-              unmasked={unmasked}
-              mark={mark}
-              onVisiblePage={(number) => setPageIndex(pageAt(number))}
-            />
-          ) : (
-            <PageReading
-              key={page.number}
-              text={pageText(page, KEPT, unmasked)}
-              findings={found.filter((f) => !isIgnored(f))}
-              active={active}
-            />
-          )}
-          <div className="flex shrink-0 justify-center">
-            <PagePicker count={pages.length} current={pageIndex} onPick={pick} />
-          </div>
+          <span className="ml-auto self-center">
+            <EyeToggle available={revealable} on={unmasked} onChange={setEye} />
+          </span>
         </div>
-
-        {column && (
-          // As tall as the text beside it: the page takes what the findings below it leave.
-          <aside aria-label="Page" className="flex min-h-0 shrink-0 flex-col gap-4 lg:w-80 xl:w-96">
-            {pictured && (
-              <div className="h-96 min-h-64 shrink-0 lg:h-auto lg:flex-1">
-                <PagePane
-                  number={page.number}
-                  name={fileName(document.relative_path)}
-                  preview={preview}
-                  mark={highlight && highlight.page === page.number ? highlight.box : null}
-                />
-              </div>
-            )}
-            {checked && checked.status !== "agrees" && (
-              <VisionNote page={checked} model={document.verification?.model ?? ""} />
-            )}
-            <div className="shrink-0 overflow-y-auto lg:max-h-[45%]">
-              <FindingChecklist findings={found} active={active} />
-            </div>
-          </aside>
+        {compared ? (
+          <DocumentDiff
+            report={report}
+            index={index}
+            jump={jump}
+            unmasked={unmasked}
+            mark={mark}
+            notes={notes}
+            onVisiblePage={(number) => setPageIndex(pageAt(number))}
+          />
+        ) : (
+          <PageReading
+            key={page.number}
+            heading={notes[page.number] ? `# Page ${page.number} · ${notes[page.number]}` : `# Page ${page.number}`}
+            text={pageText(page, KEPT, unmasked)}
+            findings={found.filter((f) => !isIgnored(f))}
+            active={active}
+          />
         )}
+        <div className="flex shrink-0 justify-center">
+          <PagePicker count={pages.length} current={pageIndex} onPick={pick} />
+        </div>
       </div>
+
+      {column && (
+        // As tall as the text beside it: the page takes what the findings below it leave.
+        <aside aria-label="Page" className="flex min-h-0 shrink-0 flex-col gap-4 lg:w-80 xl:w-[28rem]">
+          {pictured && (
+            <div className="h-96 min-h-64 shrink-0 lg:h-auto lg:flex-1">
+              <PagePane
+                number={page.number}
+                name={fileName(document.relative_path)}
+                preview={preview}
+                mark={highlight && highlight.page === page.number ? highlight.box : null}
+              />
+            </div>
+          )}
+          {checked && checked.status !== "agrees" && (
+            <VisionNote page={checked} model={document.verification?.model ?? ""} />
+          )}
+          <div className="shrink-0 overflow-y-auto lg:max-h-[40%]">
+            <FindingChecklist findings={found} active={active} />
+          </div>
+        </aside>
+      )}
     </div>
   );
 }

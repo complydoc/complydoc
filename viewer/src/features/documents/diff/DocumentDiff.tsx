@@ -48,6 +48,8 @@ interface DocumentDiffProps {
   unmasked?: boolean;
   /** Text to mark and scroll to: the finding a link opened. */
   mark?: string | null;
+  /** A few words after each page's `# Page N` line, such as what the page costs. */
+  notes?: Record<number, string>;
 }
 
 /**
@@ -62,6 +64,7 @@ export function DocumentDiff({
   onVisiblePage,
   unmasked = false,
   mark = null,
+  notes = {},
 }: DocumentDiffProps) {
   const [[base, compare], setSides] = useState<[Side, Side]>(() => defaultSides(report, index));
   // Side by side where there is room for two columns of text.
@@ -90,9 +93,9 @@ export function DocumentDiff({
       <Suspense fallback={<Skeleton className="min-h-0 w-full flex-1 rounded-xl" />}>
         <GitDiff
           oldName={sideName(report, base)}
-          oldText={sideText(report, base, "sentences", unmasked)}
+          oldText={sideText(report, base, "sentences", unmasked, notes)}
           newName={sideName(report, compare)}
-          newText={sideText(report, compare, "sentences", unmasked)}
+          newText={sideText(report, compare, "sentences", unmasked, notes)}
           split={split}
           jump={jump}
           mark={mark}

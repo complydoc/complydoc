@@ -66,7 +66,8 @@ function textRanges(container: HTMLElement, needle: string): Range[] {
   return ranges;
 }
 
-const MARKER = /^# Page (\d+)$/;
+/** A page's first line, and whatever note follows its number. */
+const MARKER = /^# Page (\d+)(?: · .*)?$/;
 
 /** Every `# Page N` line drawn, as its page and element, in order down the view. */
 function markers(container: HTMLElement): { page: number; element: Element }[] {

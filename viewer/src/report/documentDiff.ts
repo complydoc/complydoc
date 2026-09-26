@@ -82,9 +82,22 @@ function pagesOf(report: Report, side: Side, layout: Layout, unmasked: boolean):
   });
 }
 
-/** A document's reading as one text, page by page. With `unmasked`, the values, where the report holds them. */
-export function sideText(report: Report, side: Side, layout: Layout, unmasked = false): string {
-  const lines = pagesOf(report, side, layout, unmasked).flatMap((page) => [`# Page ${page.number}`, ...page.lines]);
+/**
+ * A document's reading as one text, page by page. With `unmasked`, the values,
+ * where the report holds them. `notes` adds a few words to a page's `# Page N`
+ * line, such as what it costs; the same on both sides, so it never shows as a change.
+ */
+export function sideText(
+  report: Report,
+  side: Side,
+  layout: Layout,
+  unmasked = false,
+  notes: Record<number, string> = {},
+): string {
+  const lines = pagesOf(report, side, layout, unmasked).flatMap((page) => [
+    notes[page.number] ? `# Page ${page.number} · ${notes[page.number]}` : `# Page ${page.number}`,
+    ...page.lines,
+  ]);
   return `${lines.join("\n")}\n`;
 }
 
