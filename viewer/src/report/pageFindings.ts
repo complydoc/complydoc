@@ -115,3 +115,13 @@ export function findingFor(findings: PageFinding[], document: DocumentEntry, ref
   const match = ref.kind === "identifier" ? document.sensitive.matches[ref.index] : undefined;
   return match ? findings.find((f) => f.match?.masked === match.masked && f.label === match.label) : undefined;
 }
+
+/**
+ * A finding in words for the ignore file, which never holds a value: the
+ * identifier's masked form whatever the screen shows, and a passage by its
+ * page, since a revealing run keeps values in a passage's excerpt.
+ */
+export function ignoreDescription(finding: PageFinding): string {
+  if (finding.match) return `${finding.label} ${finding.match.masked}`;
+  return finding.page !== null ? `${finding.label} on page ${finding.page}` : finding.label;
+}

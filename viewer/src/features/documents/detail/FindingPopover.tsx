@@ -3,7 +3,7 @@ import { ToneBadge } from "@/components/ToneBadge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover";
 import { TICKED, useIgnores, useIsIgnored } from "@/hooks/useIgnores";
-import type { PageFinding } from "@/report/pageFindings";
+import { ignoreDescription, type PageFinding } from "@/report/pageFindings";
 import { severityTone } from "@/report/select";
 
 interface FindingPopoverProps {
@@ -65,7 +65,7 @@ export function FindingPopover({ finding, rect, onClose, onPointerEnter, onPoint
                     ? ignore({
                         finding: finding.fingerprint,
                         reason: TICKED,
-                        what: `${finding.label} ${finding.value}`,
+                        what: ignoreDescription(finding),
                       })
                     : unignore(finding.fingerprint));
                 }}
