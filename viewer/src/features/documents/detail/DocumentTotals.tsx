@@ -12,12 +12,12 @@ function Figure({ label, usd, seconds, note }: { label: string; usd: number | nu
   );
 }
 
-/** What this page and the whole document cost and take to read, under the plan chosen above. */
-export function DocumentTotals({ page, document }: { page: PageEstimate; document: Totals }) {
+/** What the whole document, and a page of it when given, cost and take to read, under the plan chosen above. */
+export function DocumentTotals({ page, document }: { page?: PageEstimate; document: Totals }) {
   const untimed = document.untimed > 0 ? `${document.untimed} of ${document.pages} pages were not timed` : undefined;
   return (
     <div role="group" aria-label="Cost and time" className="flex flex-wrap items-baseline gap-x-5 gap-y-1 text-sm">
-      <Figure label="This page" usd={page.usd} seconds={page.seconds} />
+      {page && <Figure label="This page" usd={page.usd} seconds={page.seconds} />}
       <Figure label="Document" usd={document.usd} seconds={document.seconds} {...(untimed ? { note: untimed } : {})} />
     </div>
   );

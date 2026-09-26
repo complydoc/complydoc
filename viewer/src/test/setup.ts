@@ -4,6 +4,12 @@ import { afterEach, beforeEach } from "vitest";
 
 // jsdom has no layout, so it lacks a few browser APIs the components use.
 let systemDark = false;
+let wideScreen = false;
+
+/** Make `min-width` queries match, as on a wide screen, for the next render. */
+export function wide() {
+  wideScreen = true;
+}
 
 /** Make `prefers-color-scheme: dark` match, or not, for the next render. */
 export function setSystemDark(dark: boolean) {
@@ -13,7 +19,7 @@ export function setSystemDark(dark: boolean) {
 beforeEach(() => {
   window.matchMedia = (query: string) =>
     ({
-      matches: query.includes("dark") && systemDark,
+      matches: (query.includes("dark") && systemDark) || (query.includes("min-width") && wideScreen),
       media: query,
       onchange: null,
       addEventListener: () => {},
@@ -37,6 +43,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   systemDark = false;
+  wideScreen = false;
   window.location.hash = "";
   document.documentElement.classList.remove("dark");
   localStorage.clear();

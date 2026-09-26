@@ -2,7 +2,6 @@
  * A finding shown where it sits: which page, what to mark in the text, and
  * which box to mark on the page picture.
  */
-import type { DiffPart } from "./readings";
 import type { FindingRef } from "./route";
 import type { DocumentEntry, Evidence, SensitiveMatch, Severity } from "./types";
 
@@ -53,10 +52,6 @@ export function findingHighlight(document: DocumentEntry, ref: FindingRef): High
   };
 }
 
-export interface Segment extends DiffPart {
-  highlighted: boolean;
-}
-
 function escape(text: string) {
   return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -67,28 +62,4 @@ export function findAll(text: string, needle: string): [number, number][] {
   if (words.length === 0) return [];
   const pattern = new RegExp(words.map(escape).join("\\s+"), "g");
   return [...text.matchAll(pattern)].map((m) => [m.index, m.index + m[0].length]);
-}
-
-/** A reading's diff parts, cut again wherever the needle sits, so it can be marked across word boundaries. */
-export function segments(parts: DiffPart[], needle: string | null): Segment[] {
-  if (!needle) return parts.map((part) => ({ ...part, highlighted: false }));
-  const ranges = findAll(parts.map((p) => p.text).join(""), needle);
-  const out: Segment[] = [];
-  let offset = 0;
-  for (const part of parts) {
-    const end = offset + part.text.length;
-    const cuts = new Set([offset, end]);
-    for (const [a, b] of ranges) {
-      if (a > offset && a < end) cuts.add(a);
-      if (b > offset && b < end) cuts.add(b);
-    }
-    const points = [...cuts].sort((x, y) => x - y);
-    for (let i = 0; i < points.length - 1; i += 1) {
-      const [from, to] = [points[i] as number, points[i + 1] as number];
-      const highlighted = ranges.some(([a, b]) => from >= a && to <= b);
-      out.push({ text: part.text.slice(from - offset, to - offset), changed: part.changed, highlighted });
-    }
-    offset = end;
-  }
-  return out;
 }

@@ -1,7 +1,7 @@
 import { screen, within } from "@testing-library/react";
 import { renderPage } from "@/test/render";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { sampleAudit, sampleVerified } from "@/test/sample";
+import { wide } from "@/test/setup";
 import { DocumentsPage } from "../DocumentsPage";
 
 describe("the vision check on the Documents page", () => {
@@ -39,19 +39,16 @@ describe("the vision check on the Documents page", () => {
     expect(screen.queryByRole("columnheader", { name: /Vision check/ })).not.toBeInTheDocument();
   });
 
-  it("puts the vision reading's cost beside the page, and says what the check found", () => {
-    renderPage(
-      <TooltipProvider>
-        <DocumentsPage report={sampleVerified()} open="0" />
-      </TooltipProvider>,
-    );
-    expect(screen.getByRole("note")).toHaveTextContent("A line only the picture had");
-    expect(screen.getAllByText("free · local").length).toBeGreaterThan(0);
+  it("says beside the page what the check found", () => {
+    wide();
+    renderPage(<DocumentsPage report={sampleVerified()} open="0" />);
+    const page = screen.getByRole("complementary", { name: "Page" });
+    expect(within(page).getByRole("note")).toHaveTextContent("A line only the picture had");
   });
 
-  it("prices each reading of the page on the model chosen", () => {
+  it("prices the document, and each reader's reading of all of it, on the model chosen", () => {
     renderPage(<DocumentsPage report={sampleVerified()} open="0" />);
     expect(screen.getByRole("group", { name: "Cost and time" })).toHaveTextContent(/\$\d/);
-    expect(screen.getAllByText(/per page on /).length).toBeGreaterThan(0);
+    expect(screen.getAllByTitle(/The whole document as this reader extracted it/).length).toBeGreaterThan(0);
   });
 });

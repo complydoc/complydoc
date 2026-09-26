@@ -1,13 +1,24 @@
 import { ArrowLeftRightIcon, ArrowRightIcon } from "lucide-react";
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { usePlan } from "@/hooks/usePlan";
-import { KEPT, OCR, defaultSides, readersOf, sideName, sideText, type Layout, type Side } from "@/report/documentDiff";
+import {
+  KEPT,
+  OCR,
+  defaultSides,
+  lineMarks,
+  readersOf,
+  sideName,
+  sideText,
+  type Layout,
+  type Side,
+} from "@/report/documentDiff";
 import { formatPageUsd, formatSeconds } from "@/report/format";
 import { documentTotals, type ReaderChoice } from "@/report/plan";
+import type { FindingRef } from "@/report/route";
 import type { Report } from "@/report/types";
 
 const GitDiff = lazy(() => import("./GitDiff"));
@@ -75,20 +86,44 @@ interface DocumentDiffProps {
   jump?: { page: number } | null;
   /** Called with the page at the top of the diff as it scrolls. */
   onVisiblePage?: (page: number) => void;
+  /** Show the values, where the report holds them. */
+  unmasked?: boolean;
+  /** The finding opened from a link, marked out from the rest. */
+  active?: FindingRef | null;
+  /** A finding to scroll to; a new object each time. */
+  focus?: { ref: FindingRef } | null;
 }
 
 /**
  * This document as one extraction method read it against another, as a git
  * diff: the text layer against another library, OCR or a vision model.
  */
-export function DocumentDiff({ report, index, jump = null, onVisiblePage }: DocumentDiffProps) {
+export function DocumentDiff({
+  report,
+  index,
+  jump = null,
+  onVisiblePage,
+  unmasked = false,
+  active = null,
+  focus = null,
+}: DocumentDiffProps) {
   const [[base, compare], setSides] = useState<[Side, Side]>(() => defaultSides(report, index));
   const [split, setSplit] = useState(true);
   const [layout, setLayout] = useState<Layout>("sentences");
+  const document = report.documents[index];
+  // A document read one way has one reading to show, and nothing to compare it with.
+  const single = document ? readersOf(report, document).length < 2 : true;
+  const marks = useMemo(
+    () => ({
+      old: lineMarks(report, base, layout, unmasked),
+      new: lineMarks(report, compare, layout, unmasked),
+    }),
+    [report, base, compare, layout, unmasked],
+  );
 
   return (
     // Takes whatever height its parent leaves, and gives all of it but the controls to the text.
-    <div className="flex min-h-0 flex-1 flex-col gap-3">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3">
       {/* One row, so the text below gets the height. */}
       <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2">
         <ReaderPicker
@@ -98,17 +133,27 @@ export function DocumentDiff({ report, index, jump = null, onVisiblePage }: Docu
           reader={base.reader}
           onChange={(reader) => setSides([{ ...base, reader }, compare])}
         />
-        <ArrowRightIcon className="size-4 text-muted-foreground" aria-hidden="true" />
-        <ReaderPicker
-          label="Compare reader"
-          report={report}
-          index={index}
-          reader={compare.reader}
-          onChange={(reader) => setSides([base, { ...compare, reader }])}
-        />
-        <Button variant="ghost" size="icon-sm" aria-label="Swap" title="Swap" onClick={() => setSides([compare, base])}>
-          <ArrowLeftRightIcon />
-        </Button>
+        {!single && (
+          <>
+            <ArrowRightIcon className="size-4 text-muted-foreground" aria-hidden="true" />
+            <ReaderPicker
+              label="Compare reader"
+              report={report}
+              index={index}
+              reader={compare.reader}
+              onChange={(reader) => setSides([base, { ...compare, reader }])}
+            />
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Swap"
+              title="Swap"
+              onClick={() => setSides([compare, base])}
+            >
+              <ArrowLeftRightIcon />
+            </Button>
+          </>
+        )}
         <div className="ml-auto flex flex-wrap items-center gap-2">
           <ToggleGroup
             type="single"
@@ -125,28 +170,33 @@ export function DocumentDiff({ report, index, jump = null, onVisiblePage }: Docu
               Lines as read
             </ToggleGroupItem>
           </ToggleGroup>
-          <ToggleGroup
-            type="single"
-            variant="outline"
-            size="sm"
-            value={split ? "split" : "unified"}
-            aria-label="Diff view"
-            onValueChange={(value) => value && setSplit(value === "split")}
-          >
-            <ToggleGroupItem value="split">Split</ToggleGroupItem>
-            <ToggleGroupItem value="unified">Unified</ToggleGroupItem>
-          </ToggleGroup>
+          {!single && (
+            <ToggleGroup
+              type="single"
+              variant="outline"
+              size="sm"
+              value={split ? "split" : "unified"}
+              aria-label="Diff view"
+              onValueChange={(value) => value && setSplit(value === "split")}
+            >
+              <ToggleGroupItem value="split">Split</ToggleGroupItem>
+              <ToggleGroupItem value="unified">Unified</ToggleGroupItem>
+            </ToggleGroup>
+          )}
         </div>
       </div>
 
       <Suspense fallback={<Skeleton className="min-h-0 w-full flex-1 rounded-xl" />}>
         <GitDiff
           oldName={sideName(report, base)}
-          oldText={sideText(report, base, layout)}
+          oldText={sideText(report, base, layout, unmasked)}
           newName={sideName(report, compare)}
-          newText={sideText(report, compare, layout)}
+          newText={sideText(report, compare, layout, unmasked)}
           split={split}
+          marks={marks}
+          active={active}
           jump={jump}
+          focus={focus}
           {...(onVisiblePage && { onVisiblePage })}
         />
       </Suspense>

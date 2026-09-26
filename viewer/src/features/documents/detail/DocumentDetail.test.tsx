@@ -1,8 +1,8 @@
 import { screen, within } from "@testing-library/react";
-import { renderPage } from "@/test/render";
 import userEvent from "@testing-library/user-event";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { renderPage } from "@/test/render";
 import { required, sampleAudit, sampleReport } from "@/test/sample";
+import { wide } from "@/test/setup";
 import type { FindingRef } from "@/report/route";
 import type { Report } from "@/report/types";
 import { DocumentDetail } from "./DocumentDetail";
@@ -12,90 +12,115 @@ function open(report: Report, name: string, where: { page?: number; finding?: Fi
   const document = report.documents[index];
   if (!document) throw new Error(`no ${name} in the sample`);
   renderPage(
-    <TooltipProvider>
-      <DocumentDetail report={report} document={document} index={index} page={where.page ?? null} finding={where.finding ?? null} />
-    </TooltipProvider>,
+    <DocumentDetail
+      report={report}
+      document={document}
+      index={index}
+      page={where.page ?? null}
+      finding={where.finding ?? null}
+    />,
   );
   return document;
 }
 
+const page = () => screen.getByRole("complementary", { name: "Page" });
+
+/** The sample, as a run with --reveal writes it: the values in `text`, a masked copy beside them. */
+function revealed(): Report {
+  const report = sampleAudit();
+  for (const document of report.documents)
+    for (const text of document.extracted_text) {
+      text.masked_text = text.text;
+      text.masked_ocr_text = text.ocr_text;
+      text.masked_readings = { ...text.readings };
+      text.text = `${text.text} REVEALED-VALUE`;
+    }
+  report.run.reveal_used = true;
+  return report;
+}
+
 describe("DocumentDetail", () => {
-  it("names the document, with what the page and the document cost and take, and nothing else", () => {
+  beforeEach(() => wide());
+
+  it("names the document with what all of it costs, and has one view, the diff", async () => {
     open(sampleAudit(), "master-services-agreement.pdf");
     expect(screen.getByRole("heading", { name: "master-services-agreement.pdf" })).toBeInTheDocument();
-    const totals = screen.getByRole("group", { name: "Cost and time" });
-    expect(totals).toHaveTextContent(/This page\s*\$\d/);
-    expect(totals).toHaveTextContent(/Document\s*\$\d/);
-    expect(screen.queryByText(/pypdf \d+%/)).not.toBeInTheDocument();
-    expect(screen.queryByText("kept")).not.toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Cost and time" })).toHaveTextContent(/Document\s*\$\d/);
+    expect(screen.queryByRole("radio", { name: "Pages" })).not.toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Base reader" })).toHaveTextContent("pdfplumber");
+    expect(screen.getByRole("combobox", { name: "Compare reader" })).toHaveTextContent("pypdf");
+    expect(await screen.findByLabelText("Lines changed", {}, { timeout: 5000 })).toBeInTheDocument();
   });
 
-  it("enlarges a reading to read it in full", async () => {
+  it("puts the page beside the text: its picture, its cost and what was found on it", () => {
     open(sampleAudit(), "master-services-agreement.pdf");
-    await userEvent.click(screen.getByRole("button", { name: "Enlarge pdfplumber" }));
-    expect(await screen.findByRole("dialog", { name: "pdfplumber" })).toBeInTheDocument();
-  });
-
-  it("shows the page beside two readings, the kept one against the next reader", () => {
-    open(sampleAudit(), "master-services-agreement.pdf");
-    expect(screen.getByRole("figure", { name: "Page 1" })).toBeInTheDocument();
-    expect(screen.getByRole("combobox", { name: "Left reading" })).toHaveTextContent("pdfplumber");
-    expect(screen.getByRole("combobox", { name: "Right reading" })).toHaveTextContent("pypdf");
-    expect(screen.getAllByText(/\d+ differences$/)).toHaveLength(1);
-    expect(document.querySelectorAll("mark").length).toBeGreaterThan(0);
-  });
-
-  it("marks where identifiers sit on the page", () => {
-    open(sampleAudit(), "master-services-agreement.pdf");
-    const page = screen.getByRole("figure", { name: "Page 1" });
-    expect(within(page).getAllByLabelText(/Person name/).length).toBeGreaterThan(0);
-  });
-
-  it("switches a pane to OCR", async () => {
-    open(sampleAudit(), "master-services-agreement.pdf");
-    await userEvent.click(screen.getByRole("combobox", { name: "Right reading" }));
-    await userEvent.click(await screen.findByRole("option", { name: /^OCR/ }));
-    expect(screen.getByRole("combobox", { name: "Right reading" })).toHaveTextContent("OCR");
-  });
-
-  it("leaves the page out when there is nothing to draw, and shows only the readings", () => {
-    open(sampleReport(), "master-services-agreement.pdf");
-    expect(screen.queryByText("No picture of this page")).not.toBeInTheDocument();
-    expect(screen.queryByRole("figure")).not.toBeInTheDocument();
-    expect(screen.getByRole("combobox", { name: "Left reading" })).toBeInTheDocument();
-    expect(screen.getByRole("combobox", { name: "Right reading" })).toBeInTheDocument();
-  });
-
-  it("gives a page read only one way the page and that reading, in two halves", () => {
-    open(sampleAudit(), "supplier-invoices-scanned.pdf");
-    // A scanned page's only reading is OCR's, so there is nothing to pick and nothing to compare.
-    expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
-    expect(screen.getByText("OCR", { selector: "[data-slot=card-title]" })).toBeInTheDocument();
-    expect(document.querySelectorAll("mark:not([data-finding])")).toHaveLength(0);
+    expect(within(page()).getByRole("figure", { name: "Page 1" })).toBeInTheDocument();
+    expect(within(page()).getByText("This page").nextElementSibling).toHaveTextContent(/^\$\d/);
+    const found = within(page()).getByRole("region", { name: "On this page" });
+    expect(within(found).getAllByRole("button").length).toBeGreaterThan(0);
   });
 
   it("opens on the page asked for", () => {
     open(sampleAudit(), "master-services-agreement.pdf", { page: 3 });
-    expect(screen.getByRole("figure", { name: "Page 3" })).toBeInTheDocument();
+    expect(within(page()).getByRole("figure", { name: "Page 3" })).toBeInTheDocument();
   });
 
-  it("shows an identifier where it sits: its page, its box and its text", () => {
+  it("leaves the picture out when there is nothing to draw", () => {
+    open(sampleReport(), "master-services-agreement.pdf");
+    expect(within(page()).queryByRole("figure")).not.toBeInTheDocument();
+    expect(within(page()).getByRole("region", { name: "On this page" })).toBeInTheDocument();
+  });
+
+  it("shows a document read one way as its text, with nothing to compare", async () => {
+    open(sampleAudit(), "supplier-invoices-scanned.pdf");
+    expect(screen.queryByRole("combobox", { name: "Compare reader" })).not.toBeInTheDocument();
+    expect(await screen.findByText("One reading", {}, { timeout: 5000 })).toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "Text" })).toHaveTextContent("# Page 1");
+  });
+
+  it("puts each finding under its line, and marks out the one a link opened", async () => {
     const report = sampleAudit();
     const entry = required(report.documents.find((d) => d.relative_path === "master-services-agreement.pdf"));
     const index = entry.sensitive.matches.findIndex((m) => m.category === "iban");
     const match = required(entry.sensitive.matches[index]);
     open(report, "master-services-agreement.pdf", { finding: { kind: "identifier", index } });
 
-    expect(screen.getByRole("figure", { name: `Page ${match.page}` })).toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveTextContent(match.label);
-    expect(document.body.querySelector("[data-finding]")).toBeTruthy();
-    const marked = [...document.body.querySelectorAll("mark[data-finding]")].map((m) => m.textContent).join("");
-    expect(marked).toContain(match.masked.split(" ").at(-1));
+    expect(within(page()).getByRole("figure", { name: `Page ${match.page}` })).toBeInTheDocument();
+    await vi.waitFor(() => expect(document.querySelector(`[data-finding="identifier-${index}"]`)).toBeTruthy(), {
+      timeout: 5000,
+    });
+    expect(document.querySelector(`[data-finding="identifier-${index}"]`)?.className).toContain("ring");
   });
 
-  it("points at a hidden instruction's passage", () => {
+  it("points at a hidden instruction's passage", async () => {
     open(sampleAudit(), "vendor-due-diligence.pdf", { finding: { kind: "hidden", index: 0 } });
     expect(screen.getByRole("alert")).toHaveTextContent("Hidden instruction");
-    expect(document.body.querySelectorAll("mark[data-finding]").length).toBeGreaterThan(0);
+    await vi.waitFor(() => expect(document.querySelector('[data-finding="hidden-0"]')).toBeTruthy(), {
+      timeout: 5000,
+    });
+  });
+
+  it("scrolls the text to a finding picked beside it", async () => {
+    open(sampleAudit(), "master-services-agreement.pdf");
+    const scroller = await screen.findByTestId("diff-scroller", {}, { timeout: 5000 });
+    const scrolled = vi.spyOn(scroller, "scrollTo");
+    const found = within(page()).getByRole("region", { name: "On this page" });
+    await userEvent.click(required(within(found).getAllByRole("button")[0]));
+    await vi.waitFor(() => expect(scrolled).toHaveBeenCalled(), { timeout: 3000 });
+  });
+
+  it("cannot show values a report does not hold", () => {
+    open(sampleAudit(), "master-services-agreement.pdf");
+    expect(screen.getByRole("button", { name: "Show the values" })).toBeDisabled();
+  });
+
+  it("opens a revealing report masked, and shows the values on request", async () => {
+    open(revealed(), "supplier-invoices-scanned.pdf");
+    const text = await screen.findByRole("list", { name: "Text" }, { timeout: 5000 });
+    expect(text).not.toHaveTextContent("REVEALED-VALUE");
+    await userEvent.click(screen.getByRole("button", { name: "Show the values" }));
+    expect(screen.getByRole("list", { name: "Text" })).toHaveTextContent("REVEALED-VALUE");
+    expect(screen.getByText("Values visible")).toBeInTheDocument();
   });
 });

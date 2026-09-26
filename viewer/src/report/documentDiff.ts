@@ -6,7 +6,9 @@
  * readings is mostly line endings; laid out one sentence per line, the only
  * lines that differ are the ones whose words do.
  */
-import type { DocumentEntry, PageText, Report } from "./types";
+import { findAll } from "./highlight";
+import type { FindingRef } from "./route";
+import type { DocumentEntry, Evidence, PageText, Report, Severity } from "./types";
 
 export type Layout = "lines" | "sentences";
 
@@ -39,10 +41,20 @@ export function readersOf(report: Report, document: DocumentEntry): ReaderOption
   return options;
 }
 
-function pageText(page: PageText, reader: string): string {
-  if (reader === KEPT) return page.text;
-  if (reader === OCR) return page.ocr_text;
-  return page.readings[reader] ?? "";
+/**
+ * Whether this document's text can be shown both ways: the run kept the values
+ * (`--reveal`) and a masked copy of every page beside them.
+ */
+export function canReveal(document: DocumentEntry): boolean {
+  return document.extracted_text.length > 0 && document.extracted_text.every((p) => typeof p.masked_text === "string");
+}
+
+/** A reading of the page: masked, unless `unmasked` and the report holds the values. */
+function pageText(page: PageText, reader: string, unmasked = false): string {
+  const covered = !unmasked && typeof page.masked_text === "string";
+  if (reader === KEPT) return covered ? (page.masked_text ?? "") : page.text;
+  if (reader === OCR) return covered ? (page.masked_ocr_text ?? "") : page.ocr_text;
+  return (covered ? page.masked_readings?.[reader] : undefined) ?? page.readings[reader] ?? "";
 }
 
 /** One line per line as read, spacing evened out and blank lines dropped. */
@@ -63,17 +75,96 @@ function asSentences(text: string): string[] {
     .filter(Boolean);
 }
 
-/** A document's reading as one text, page by page. */
-export function sideText(report: Report, side: Side, layout: Layout): string {
+interface PageLines {
+  number: number;
+  /** The `# Page N` line's number, counting from 1. */
+  marker: number;
+  lines: string[];
+}
+
+function pagesOf(report: Report, side: Side, layout: Layout, unmasked: boolean): PageLines[] {
   const document = report.documents[side.document];
-  if (!document) return "";
-  const lines: string[] = [];
-  for (const page of document.extracted_text) {
-    lines.push(`# Page ${page.number}`);
-    const text = pageText(page, side.reader);
-    lines.push(...(layout === "sentences" ? asSentences(text) : asLines(text)));
-  }
+  if (!document) return [];
+  let next = 1;
+  return document.extracted_text.map((page) => {
+    const text = pageText(page, side.reader, unmasked);
+    const lines = layout === "sentences" ? asSentences(text) : asLines(text);
+    const laid = { number: page.number, marker: next, lines };
+    next += 1 + lines.length;
+    return laid;
+  });
+}
+
+/** A document's reading as one text, page by page. With `unmasked`, the values, where the report holds them. */
+export function sideText(report: Report, side: Side, layout: Layout, unmasked = false): string {
+  const lines = pagesOf(report, side, layout, unmasked).flatMap((page) => [`# Page ${page.number}`, ...page.lines]);
   return `${lines.join("\n")}\n`;
+}
+
+/** A finding, placed on a line of one side of the diff. */
+export interface LineMark {
+  ref: FindingRef;
+  page: number | null;
+  label: string;
+  severity: Severity;
+  evidence: Evidence | null;
+  /** What the finding reads as on this side: the value as shown, or the start of the passage. */
+  text: string;
+  /** False when the text could not be found on the page, and the mark sits on the page's own line. */
+  placed: boolean;
+}
+
+/** Long enough to be found only where it is; short enough to stay within one sentence. */
+const PASSAGE_START = 40;
+
+/**
+ * Every finding in the document, by the line of this side it is on, counting from 1.
+ *
+ * A finding is looked for on its own page's lines, spacing aside. One this
+ * reader broke across lines, or did not read at all, is put on the page's
+ * `# Page N` line, so it is still shown where its page starts.
+ */
+export function lineMarks(report: Report, side: Side, layout: Layout, unmasked = false): Record<number, LineMark[]> {
+  const document = report.documents[side.document];
+  if (!document) return {};
+  const marks: Record<number, LineMark[]> = {};
+  const pages = pagesOf(report, side, layout, unmasked);
+  const place = (mark: Omit<LineMark, "placed">, needle: string) => {
+    const page = pages.find((p) => p.number === mark.page) ?? pages[0];
+    if (!page) return;
+    const at = needle.trim() ? page.lines.findIndex((line) => findAll(line, needle).length > 0) : -1;
+    const line = at >= 0 ? page.marker + 1 + at : page.marker;
+    (marks[line] ??= []).push({ ...mark, placed: at >= 0 });
+  };
+  document.sensitive.matches.forEach((match, index) => {
+    const shown = unmasked ? (match.revealed ?? match.masked) : match.masked;
+    place(
+      {
+        ref: { kind: "identifier", index },
+        page: match.page,
+        label: match.label,
+        severity: match.severity,
+        evidence: match.evidence,
+        text: shown,
+      },
+      shown,
+    );
+  });
+  document.content_findings.forEach((finding, index) => {
+    const start = finding.excerpt.replace(/…$/, "").slice(0, PASSAGE_START);
+    place(
+      {
+        ref: { kind: "hidden", index },
+        page: finding.page,
+        label: "Hidden instruction",
+        severity: finding.severity,
+        evidence: null,
+        text: finding.excerpt,
+      },
+      start,
+    );
+  });
+  return marks;
 }
 
 /** What a side is called in the diff's header: its reader, the document being the one on screen. */

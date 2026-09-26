@@ -12,6 +12,7 @@ documentation describes, not a regression this could pin down.
 
 from __future__ import annotations
 
+import json
 import shutil
 from pathlib import Path
 
@@ -105,3 +106,25 @@ def test_page_pictures_are_opt_in_and_disclosed(tmp_path, folder):
     written = _written(out)
     assert "data:image/jpeg" in written
     assert "embeds a picture of each page" in written
+
+
+def test_reveal_keeps_a_masked_copy_of_each_page_for_the_viewer(tmp_path, folder, confirmed_values):
+    out = tmp_path / "out"
+    _audit(folder, out, "--reveal")
+    (document,) = json.loads((out / "complydoc.json").read_text())["documents"]
+    pages = document["extracted_text"]
+    shown = "\n".join(p["text"] for p in pages)
+    covered = "\n".join(
+        [p["masked_text"] for p in pages]
+        + [text for p in pages for text in p["masked_readings"].values()]
+    )
+    assert any(value in shown for value in confirmed_values)
+    assert not [value for value in confirmed_values if value in covered]
+    assert all(p["masked_readings"].keys() == p["readings"].keys() for p in pages)
+
+
+def test_a_default_audit_keeps_no_second_copy(tmp_path, folder):
+    out = tmp_path / "out"
+    _audit(folder, out)
+    (document,) = json.loads((out / "complydoc.json").read_text())["documents"]
+    assert all(p.get("masked_text") is None for p in document["extracted_text"])

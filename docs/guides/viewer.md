@@ -31,17 +31,28 @@ complydoc ui reports/ baseline.json
 
 ## What the viewer shows
 
-The same report as the HTML file an audit writes, drawn differently: a summary,
-every finding linked to its page, the cost of each model under a loading plan,
-and each document's readings side by side or as a diff. A page picture needs a
-report taken with them:
+The same report as the HTML file an audit writes, drawn differently: a Home page,
+every finding linked to where it sits, and the cost of each model under a
+loading plan.
+
+Each document opens as a diff of two readers' text, the kept reading against
+another library, OCR or a vision model. Each finding is noted under the line it
+is on, like a review comment. Beside the text is the page the diff is scrolled
+to: its picture, what a vision check made of it, what it costs to read, and what
+was found on it. Picking a finding there scrolls the text to it. A document read
+only one way shows that reading whole.
+
+A page picture needs a report taken with them. Without pictures, the side panel
+shows the rest.
 
 ```bash
 complydoc audit ./documents --page-images --detail full
 ```
 
-Without pictures, the readings still sit side by side, and the page pane says how
-to get them.
+The text is masked, as the report is. A report written with `--reveal` holds the
+values as well as a masked copy of every page. The viewer opens it masked, and
+the eye button shows the values until you mask them again. On any other report,
+the button is disabled and says how to get the values.
 
 ## From Python
 

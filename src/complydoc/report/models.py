@@ -140,6 +140,11 @@ def report_shape() -> dict[str, object]:
                 "reader -> tokenizer -> text tokens in that reading of the page"
             ),
             "extracted_text[].image_tokens": "vision formula -> image tokens for the page",
+            "extracted_text[].masked_text": (
+                "with --reveal only: the page's text with every identifier covered, "
+                "beside `text`, which holds the values; also masked_ocr_text and "
+                "masked_readings"
+            ),
             "extracted_text[].vision_estimate": (
                 "what the cheapest priced vision model would cost for this page, estimated"
             ),
@@ -543,6 +548,17 @@ class PageText:
     the run priced models, whether or not a vision model read the page, so the
     reading kept can be weighed against what a vision read would have cost.
     """
+    masked_text: str | None = None
+    """On a run with --reveal, `text` with every identifier covered; None otherwise.
+
+    A revealing report holds the values, and a viewer that shows them by default
+    shows them to whoever is looking at the screen. With this copy it can open
+    masked and reveal on request.
+    """
+    masked_ocr_text: str | None = None
+    """`ocr_text` covered the same way, on a run with --reveal."""
+    masked_readings: dict[str, str] | None = None
+    """`readings` covered the same way, on a run with --reveal."""
 
 
 @dataclass(frozen=True, slots=True)

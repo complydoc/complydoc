@@ -1,5 +1,5 @@
 import { required, sampleAudit } from "@/test/sample";
-import { KEPT, OCR, defaultSides, readersOf, sideName, sideText } from "./documentDiff";
+import { KEPT, OCR, canReveal, defaultSides, lineMarks, readersOf, sideName, sideText } from "./documentDiff";
 
 const report = sampleAudit();
 const index = report.documents.findIndex((d) => d.relative_path.endsWith("annual-report-2025.pdf"));
@@ -43,5 +43,36 @@ describe("document diffs", () => {
     const [base, compare] = defaultSides(report, scanned);
     expect(base.document).toBe(scanned);
     expect(compare.document).toBe(scanned);
+  });
+
+  it("puts each identifier on the line that holds it, on its own page", () => {
+    const msa = report.documents.findIndex((d) => d.relative_path.endsWith("master-services-agreement.pdf"));
+    const side = { document: msa, reader: KEPT };
+    const lines = sideText(report, side, "sentences").split("\n");
+    const marks = lineMarks(report, side, "sentences");
+    const placed = Object.entries(marks).flatMap(([line, found]) =>
+      found.filter((m) => m.placed && m.ref.kind === "identifier").map((m) => ({ line: Number(line), m })),
+    );
+    expect(placed.length).toBeGreaterThan(0);
+    for (const { line, m } of placed)
+      expect(lines[line - 1]?.replace(/\s+/g, " ")).toContain(m.text.replace(/\s+/g, " "));
+    const total = Object.values(marks).reduce(
+      (n, found) => n + found.filter((m) => m.ref.kind === "identifier").length,
+      0,
+    );
+    expect(total).toBe(required(report.documents[msa]).sensitive.matches.length);
+  });
+
+  it("shows the values only where a run kept them, and a masked copy otherwise", () => {
+    expect(canReveal(annual)).toBe(false);
+    const copy = structuredClone(report);
+    const page = required(required(copy.documents[index]).extracted_text[0]);
+    page.masked_text = page.text;
+    page.text = `${page.text} VALUE`;
+    for (const other of required(copy.documents[index]).extracted_text) other.masked_text ??= other.text;
+    expect(canReveal(required(copy.documents[index]))).toBe(true);
+    const side = { document: index, reader: KEPT };
+    expect(sideText(copy, side, "lines")).not.toContain("VALUE");
+    expect(sideText(copy, side, "lines", true)).toContain("VALUE");
   });
 });

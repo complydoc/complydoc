@@ -75,6 +75,8 @@ export interface RunMetadata {
   verify_model?: string | null;
   verify_scope?: "flagged" | "all" | null;
   content_sent_to?: string[];
+  /** True when the run kept identifier values unmasked (`--reveal`). */
+  reveal_used?: boolean;
 }
 
 export interface Factor {
@@ -128,6 +130,8 @@ export interface SensitiveMatch {
   label: string;
   severity: Severity;
   masked: string;
+  /** The value itself, on a run with --reveal; null otherwise, and for a category never revealed. */
+  revealed?: string | null;
   page: number | null;
   evidence: Evidence;
   /** Checks the value passed, such as "luhn" or "iban_mod97". */
@@ -194,6 +198,10 @@ export interface PageText {
   tokens?: Record<string, Record<string, number>>;
   /** Schema 16: image tokens for the page, by `ModelCost.vision_formula`. */
   image_tokens?: Record<string, number>;
+  /** Schema 17, with --reveal only: `text` with every identifier covered; `text` then holds the values. */
+  masked_text?: string | null;
+  masked_ocr_text?: string | null;
+  masked_readings?: Record<string, string> | null;
 }
 
 export type VerificationStatus = "agrees" | "disagrees" | "filled" | "failed" | "not_rendered";

@@ -287,8 +287,14 @@ def extractor_readings(document: Document) -> list[ExtractorReading]:
     return readings
 
 
-def _mask(text: str, work: Work, located: list[SensitiveMatch] | None = None) -> str:
-    """`text` with its identifiers covered, unless the run reveals them."""
+def _mask(
+    text: str, work: Work, located: list[SensitiveMatch] | None = None, *, fully: bool = False
+) -> str:
+    """`text` with its identifiers covered, unless the run reveals them.
+
+    `fully` covers every identifier even on a run that reveals them: the masked
+    copy a revealing report keeps beside the values, so a viewer can show either.
+    """
     # Imported here: extract builds on the audit, which builds on this module.
     from complydoc.extraction.extract import mask_matches
 
@@ -296,7 +302,7 @@ def _mask(text: str, work: Work, located: list[SensitiveMatch] | None = None) ->
         return text
     if located is None:
         located, _unavailable = scan_text(text, work.config.sensitive, reveal=work.reveal)
-    if work.reveal:
+    if work.reveal and not fully:
         located = [m for m in located if m.revealed is None]
     return mask_matches(text, located)[0]
 
@@ -452,6 +458,18 @@ def _page_text(
 
     text = masked(page.text, matches)
     kept = _kept_by(page, work, verification)
+    # On a revealing run, the same readings with every value covered too, so a
+    # viewer can open masked and show the values only when asked.
+    masked_text = masked_ocr = masked_readings = None
+    if work.reveal:
+        masked_text = _mask(page.text, work, matches, fully=True)[:_MAX_TEXT_CHARS]
+        masked_ocr = _mask(page.ocr_text, work, fully=True)[:_MAX_TEXT_CHARS]
+        masked_readings = {
+            name: (masked_text if reading == page.text else _mask(reading, work, fully=True))[
+                :_MAX_TEXT_CHARS
+            ]
+            for name, reading in page.readings.items()
+        }
     return PageText(
         number=page.number,
         source=page.text_source,
@@ -469,6 +487,9 @@ def _page_text(
         tokens=_page_tokens(page, kept, tokenizers_of(work.models)),
         image_tokens=image_tokens or {},
         vision_estimate=vision_estimate,
+        masked_text=masked_text,
+        masked_ocr_text=masked_ocr,
+        masked_readings=masked_readings,
     )
 
 

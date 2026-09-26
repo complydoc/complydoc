@@ -24,7 +24,18 @@ load.
   `complydoc ui`, the Security page can ignore a finding and stop ignoring it, writing
   the audited folder's ignore file. It accepts that write only from its own page.
 
+- With `--reveal`, each page's text in the report also carries a masked copy
+  (`masked_text`, `masked_ocr_text`, `masked_readings`). The viewer opens the report
+  masked and shows the values when you ask.
+
 ### Changed
+
+- The viewer's document page is one view, the diff. Each finding is noted under its
+  line, and a link from Security scrolls to it and marks it. Beside the text, a panel
+  follows the page you are on, with its picture, the vision check, its cost and what
+  was found there. A document read one way shows its text whole. The separate Pages
+  view, with a reading pane for each reader, is gone. An eye button shows the values
+  in a report written with `--reveal`, which opens masked.
 
 - One kind of price. Every model is priced from the vendored table, from models.dev and
   litellm, which a workflow refreshes each week by pull request, and a report says once
