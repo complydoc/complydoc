@@ -27,6 +27,7 @@ from complydoc.cli.common import (
     route_output,
 )
 from complydoc.config.loader import ConfigError
+from complydoc.report.models import LoaderComparison
 from complydoc.verification.vision import VERIFY_SCOPES, VisionError
 
 
@@ -113,11 +114,16 @@ def compare_loaders_command(
                 str(len(row.network_attempts)),
             ]
             if with_facts:
-                cells.append(f"{row.facts_found or 0} of {len(comparison.facts)}")
+                checked = sum(
+                    1 for check in report.loader_comparison.facts if row.name in check.found
+                )
+                cells.append(f"{row.facts_found or 0} of {checked}" if checked else "—")
             table.add_row(*cells)
         console.print(table)
 
         lc = report.loader_comparison
+        if len(lc.formats) > 1:
+            console.print(_by_file_type(lc))
         if lc.recommended:
             console.print(f"\n[bold green]Use {lc.recommended}[/] — {escape(lc.verdict)}")
         elif lc.verdict:
@@ -127,3 +133,32 @@ def compare_loaders_command(
     emit(report, config, out, name, quiet)
     if print_json:
         print_report_json(report)
+
+
+def _by_file_type(comparison: LoaderComparison) -> Table:
+    """Each file type's documents, what each loader did with them, and the choice."""
+    table = Table(box=None, pad_edge=False, title="By file type", title_justify="left")
+    table.add_column("Type")
+    table.add_column("Files", justify="right")
+    for row in comparison.loaders:
+        table.add_column(row.name, justify="right")
+    table.add_column("Use")
+    for by_type in comparison.formats:
+        rows = {row.name: row for row in by_type.loaders}
+        cells = [by_type.label, str(by_type.documents)]
+        for loader in comparison.loaders:
+            result = rows.get(loader.name)
+            if result is None:
+                cells.append("[dim]skipped[/]")
+            elif result.failures:
+                cells.append(f"[red]failed on {len(result.failures)}[/]")
+            else:
+                cells.append(f"{result.documents} read")
+        if by_type.recommended:
+            cells.append(by_type.recommended)
+        elif len(by_type.loaders) == 1:
+            cells.append(f"{by_type.loaders[0].name} [dim](only one)[/]")
+        else:
+            cells.append("[dim]—[/]")
+        table.add_row(*cells)
+    return table

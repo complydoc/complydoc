@@ -24,11 +24,31 @@ says so rather than picking the faster of two readings that may be wrong.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
+from pathlib import PurePath
+from typing import Protocol
 
-from complydoc.report.models import DocumentReport, LoaderComparison, LoaderSummary
+from complydoc.report.models import DocumentReport, FormatComparison, LoaderComparison
 
-__all__ = ["LoaderVerdict", "recommend"]
+__all__ = ["LoaderVerdict", "recommend", "recommend_across_formats", "recommend_rows"]
+
+
+class _Row(Protocol):
+    """What the verdict reads of a loader: a whole run's row, or one file type's."""
+
+    @property
+    def name(self) -> str: ...
+    @property
+    def documents(self) -> int: ...
+    @property
+    def seconds(self) -> float | None: ...
+    @property
+    def failures(self) -> dict[str, str]: ...
+    @property
+    def facts_found(self) -> int | None: ...
+    @property
+    def error(self) -> str | None: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -43,15 +63,15 @@ class LoaderVerdict:
     """Every loader, best first, by whatever the run could measure."""
 
 
-def _failures(loader: LoaderSummary) -> int:
+def _failures(loader: _Row) -> int:
     return len(loader.failures)
 
 
-def _facts(loader: LoaderSummary) -> int:
+def _facts(loader: _Row) -> int:
     return loader.facts_found if loader.facts_found is not None else -1
 
 
-def _order(loader: LoaderSummary) -> tuple[int, int, int, float]:
+def _order(loader: _Row) -> tuple[int, int, int, float]:
     """Best first: fewest failures, most documents, most facts, then quickest."""
     return (_failures(loader), -loader.documents, -_facts(loader), loader.seconds or 0.0)
 
@@ -62,7 +82,14 @@ def _disagreeing_documents(documents: list[DocumentReport]) -> list[str]:
 
 def recommend(comparison: LoaderComparison, documents: list[DocumentReport]) -> LoaderVerdict:
     """Which of the compared loaders to use, and the evidence for it."""
-    loaders = [loader for loader in comparison.loaders if loader.error is None]
+    return recommend_rows(comparison.loaders, len(comparison.facts), documents)
+
+
+def recommend_rows(
+    rows: Sequence[_Row], facts: int, documents: list[DocumentReport]
+) -> LoaderVerdict:
+    """The verdict on these loaders' rows, with `facts` expected facts checked."""
+    loaders = [loader for loader in rows if loader.error is None]
     if len(loaders) < 2:
         return LoaderVerdict(reason="only one loader ran, so there is nothing to compare")
 
@@ -81,8 +108,8 @@ def recommend(comparison: LoaderComparison, documents: list[DocumentReport]) -> 
             ranked=names,
         )
 
-    if comparison.facts and _facts(best) > _facts(runner_up):
-        total = len(comparison.facts)
+    if facts and _facts(best) > _facts(runner_up):
+        total = facts
         return LoaderVerdict(
             recommended=best.name,
             reason=(
@@ -96,7 +123,11 @@ def recommend(comparison: LoaderComparison, documents: list[DocumentReport]) -> 
     if differing:
         first = len(differing)
         advice = (
-            "Pass a passage these documents contain, as a fact, and the comparison can say "
+            f"Every loader kept the expected {'fact' if facts == 1 else 'facts'}; one from "
+            f"{', '.join(PurePath(d).name for d in differing[:3])}"
+            f"{' and others' if first > 3 else ''} would tell them apart."
+            if facts
+            else "Pass a passage these documents contain, as a fact, and the comparison can say "
             "which reading holds it."
         )
         return LoaderVerdict(
@@ -122,3 +153,47 @@ def recommend(comparison: LoaderComparison, documents: list[DocumentReport]) -> 
         reason="the loaders read the same text in about the same time, so take either",
         ranked=names,
     )
+
+
+def recommend_across_formats(
+    overall: LoaderVerdict, formats: Sequence[FormatComparison]
+) -> LoaderVerdict:
+    """The verdict for a run of several file types.
+
+    Each type is decided among the loaders meant for it. One loader is the answer
+    for the folder only when it is the choice for every type; otherwise the
+    verdict names the choice for each, and the types nothing could decide.
+    """
+    if len(formats) < 2:
+        return overall
+    picks: dict[str, str] = {}
+    undecided: list[FormatComparison] = []
+    uncovered: list[str] = []
+    for comparison in formats:
+        loaders = comparison.loaders
+        if not loaders:
+            uncovered.append(comparison.label)
+        elif comparison.recommended:
+            picks[comparison.label] = comparison.recommended
+        elif len(loaders) == 1:
+            picks[comparison.label] = loaders[0].name
+        else:
+            undecided.append(comparison)
+
+    chosen = set(picks.values())
+    if len(chosen) == 1 and not undecided and not uncovered:
+        name = chosen.pop()
+        return LoaderVerdict(
+            recommended=name,
+            reason=f"{name} is the best reading of every file type here ({', '.join(picks)})",
+            ranked=overall.ranked,
+        )
+
+    sentences = ["Each file type is decided on its own."]
+    if picks:
+        each = ", ".join(f"{name} for {label}" for label, name in picks.items())
+        sentences.append(f"Use {each}.")
+    sentences.extend(f"For {c.label}, {c.verdict.rstrip('.')}." for c in undecided)
+    if uncovered:
+        sentences.append(f"None of the loaders is meant for {' or '.join(uncovered)} files.")
+    return LoaderVerdict(reason=" ".join(sentences), ranked=overall.ranked)

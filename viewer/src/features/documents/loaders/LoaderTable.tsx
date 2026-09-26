@@ -29,7 +29,11 @@ export function LoaderTable({ comparison }: { comparison: LoaderComparison }) {
     columns.push(
       column.accessor("facts_found", {
         header: "Facts kept",
-        cell: (c) => `${c.getValue()} of ${comparison.facts.length}`,
+        cell: (c) => {
+          // A loader is checked only on facts in the file types it was given.
+          const checked = comparison.facts.filter((check) => c.row.original.name in check.found).length;
+          return checked > 0 ? `${c.getValue()} of ${checked}` : "—";
+        },
         ...numeric,
       }),
     );

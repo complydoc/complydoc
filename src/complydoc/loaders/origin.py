@@ -13,7 +13,7 @@ import functools
 import inspect
 from typing import Any
 
-__all__ = ["loader_tags"]
+__all__ = ["loader_tags", "owner"]
 
 _FRAMEWORKS: tuple[tuple[str, tuple[str, ...]], ...] = (
     # Ordered: the more specific module prefix first.
@@ -47,7 +47,7 @@ _LIBRARIES = {
 """Loader classes that wrap one library, by class name."""
 
 
-def _owner(source: Any) -> Any:
+def owner(source: Any) -> Any:
     """The class or function whose module says where `source` comes from."""
     while isinstance(source, functools.partial):
         source = source.func
@@ -71,8 +71,8 @@ def loader_tags(source: Any) -> list[str]:
     if isinstance(source, FolderSource):
         return list(source.tags) if source.tags else loader_tags(source.factory)
 
-    owner = _owner(source)
-    module = getattr(owner, "__module__", None) or ""
+    cls = owner(source)
+    module = getattr(cls, "__module__", None) or ""
     tags: list[str] = []
     for prefix, names in _FRAMEWORKS:
         if module == prefix or module.startswith((f"{prefix}.", f"{prefix}_")):
@@ -80,7 +80,7 @@ def loader_tags(source: Any) -> list[str]:
             break
     if not tags:
         return []
-    library = _LIBRARIES.get(getattr(owner, "__name__", ""))
+    library = _LIBRARIES.get(getattr(cls, "__name__", ""))
     if library and library not in tags:
         tags.append(library)
     return tags

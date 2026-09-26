@@ -27,6 +27,7 @@ dictionaries and needs nothing installed.
 | `limitations` | Limitation of the run |
 | `quick_wins` | Quick win |
 | `loaders` | Loader in a `compare_loaders` report |
+| `loader_formats` | Loader and file type in a `compare_loaders` report: what it read, failed on, or was not given |
 | `differences` | Identifier found by some loaders only |
 | `facts` | Expected fact per loader in a `compare_loaders` report |
 

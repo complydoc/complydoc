@@ -12,6 +12,18 @@ load.
 
 ### Added
 
+- Comparing loaders over several file types. In `compare_loaders(..., paths=...)` each
+  loader is given only the file types it is meant for: `formats={"name": [...]}` says so,
+  as extensions or format names, parser presets declare theirs, and loaders known to read
+  one type, such as `PyPDFLoader` or `Docx2txtLoader`, are recognised by name. A file not
+  given to a loader is listed in its row's `skipped`, not counted as a failure.
+  `loader_comparison.formats` repeats the comparison for each file type, with each
+  loader's documents, failures, load time, facts found and mean similarity, and a
+  recommendation per type; the folder's recommendation names one loader only when it is
+  the choice for every type. A comparison file takes `formats` per loader. The command
+  line, the HTML report and `complydoc ui` show a table by file type, and
+  `to_pandas("loader_formats")` has its rows.
+
 - Ignoring findings. `complydoc ignore <fingerprint> --reason …` records a finding that is
   not a problem in `.complydoc-ignore.yaml`, with who decided, an optional end date and
   optional path globs. An audit reads that file at the top of the folder, or the one
@@ -25,6 +37,13 @@ load.
   the audited folder's ignore file. It accepts that write only from its own page.
 
 ### Changed
+
+- In a loader comparison, a document the first loader did not return, because it failed
+  on the file or was not given its type, is now in the report, measured against the
+  next loader that returned it; `loader_comparison.baselines` lists these. Facts,
+  metadata keys and documents returned by some loaders only are compared between the
+  loaders given each file type, so a Word loader is not counted as missing a PDF's
+  sentence. Each loader's reading of a file carries its load time in `seconds`.
 
 - One kind of price. Every model is priced from the vendored table, from models.dev and
   litellm, which a workflow refreshes each week by pull request, and a report says once

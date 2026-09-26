@@ -10,7 +10,13 @@
 
 Each loader is inspected exactly as `inspect_documents` would inspect it. The
 first one given is the baseline: the report's findings, scores and cost are
-built from its output, and every other loader is measured against it.
+built from its output, and every other loader is measured against it. A
+document the first loader did not return, because it failed on the file or is
+not meant for its type, is measured against the next loader that returned it.
+
+Over a folder of several file types, each loader is given only the types it is
+meant for (see `complydoc.loaders.formats`), and the comparison is repeated for
+each type in `loader_comparison.formats`, with its own recommendation.
 
 - Text: how closely each loader's text matches the baseline's, page by page,
   with the words that differ marked on the Documents page.
@@ -26,6 +32,7 @@ the whole document's text is compared.
 
 from __future__ import annotations
 
+import copy
 import dataclasses
 import datetime as dt
 import os
@@ -42,6 +49,13 @@ from complydoc.config.schema import Config, ParserPricing, TokenizerSpec
 from complydoc.cost.estimator import resolve_models
 from complydoc.extraction.facts import FUZZY_THRESHOLD, Fact, as_facts, evaluate_facts
 from complydoc.loaders.cache import LoaderCache
+from complydoc.loaders.formats import (
+    FORMAT_LABELS,
+    SUFFIX_FORMATS,
+    extensions,
+    format_of,
+    loader_formats,
+)
 from complydoc.loaders.inspection import (
     FolderSource,
     Inspection,
@@ -51,12 +65,19 @@ from complydoc.loaders.inspection import (
 )
 from complydoc.loaders.origin import loader_tags
 from complydoc.loaders.parsers import LoaderSpec
-from complydoc.loaders.verdict import recommend
+from complydoc.loaders.verdict import (
+    LoaderVerdict,
+    recommend,
+    recommend_across_formats,
+    recommend_rows,
+)
 from complydoc.report.models import (
     AuditReport,
     DocumentReport,
     ExtractorReading,
     FactCheck,
+    FormatComparison,
+    FormatLoaderRow,
     IdentifierDifference,
     Limitation,
     LoaderComparison,
@@ -86,6 +107,7 @@ def compare_loaders(
     cache_dir: str | os.PathLike[str] | None = None,
     verify_with: str | VisionModel | None = None,
     verify_scope: str = "flagged",
+    formats: Mapping[str, Iterable[str]] | None = None,
 ) -> AuditReport:
     """Run several loaders on the same input and report where their output differs.
 
@@ -105,6 +127,11 @@ def compare_loaders(
     With `paths`, a folder, a file or a list of files, each loader is a callable
     taking a file path, such as a loader class or a `complydoc.loaders.parsers` preset, and
     runs once per file. Files a loader raises on are recorded in its row.
+
+    `formats` maps a loader's name to the file types it is meant for, as
+    extensions (`.pdf`) or format names (`docx`), and it is given only those
+    files. Parser presets and well-known loader classes, such as `PyPDFLoader`,
+    already know theirs; any other loader is given every file.
 
     `cache_dir` stores each loader's output per file when `paths` is given, so a later
     run does not parse unchanged files again; see `complydoc.loaders.cache`.
@@ -127,8 +154,17 @@ def compare_loaders(
     files = _files(paths) if paths is not None else None
     if cache_dir is not None and files is None:
         raise TypeError("cache_dir caches output per file, so it needs paths=")
+    if formats is not None:
+        if files is None:
+            raise TypeError("formats chooses the files each loader is given, so it needs paths=")
+        unknown = sorted(set(formats) - {name for name, _value in named})
+        if unknown:
+            raise ValueError(f"formats names loaders that are not compared: {', '.join(unknown)}")
     cache = LoaderCache(cache_dir) if cache_dir is not None else None
-    sources = [_source(name, value, files, cache) for name, value in named]
+    sources = [
+        _source(name, value, files, cache, _loader_extensions(name, value, formats))
+        for name, value in named
+    ]
     networks = [_network(name, value, allow_network) for name, value in named]
     fact_list = as_facts(facts or ())
     specs = {name: value for name, value in named if isinstance(value, LoaderSpec)}
@@ -165,9 +201,23 @@ def compare_loaders(
         i.loader.name: sum(p.characters for e in i.entries for p in e.extracted_text)
         for i in inspections
     }
+    seconds = [source.seconds if isinstance(source, FolderSource) else None for source in sources]
 
+    owners = _take_unreturned_documents(baseline, inspections, by_path, files)
     for entry in baseline.entries:
-        entry.extractions = _readings(entry, baseline, list(zip(others, by_path[1:], strict=True)))
+        owner = owners[str(entry.path)]
+        entry.extractions = _readings(
+            entry,
+            inspections[owner],
+            [
+                (inspection, entries, seconds[index])
+                for index, (inspection, entries) in enumerate(
+                    zip(inspections, by_path, strict=True)
+                )
+                if index != owner
+            ],
+            seconds[owner],
+        )
     _price_readings(
         baseline.entries,
         {
@@ -177,9 +227,18 @@ def compare_loaders(
         tokenizers_of(resolve_models(settings.pricing, models) if "cost" in components else None),
     )
     differences = _identifier_differences(inspections, by_path, reveal)
-    fact_checks = evaluate_facts(
-        {i.loader.name: i.entries for i in inspections}, fact_list, fact_threshold
-    )
+    # Each loader's own documents: the baseline's entries now hold borrowed ones too.
+    fact_checks = [
+        _for_loaders_meant_for(check, inspections)
+        for check in evaluate_facts(
+            {
+                i.loader.name: list(entries.values())
+                for i, entries in zip(inspections, by_path, strict=True)
+            },
+            fact_list,
+            fact_threshold,
+        )
+    ]
 
     if not extracted_text:
         for entry in baseline.entries:
@@ -205,20 +264,30 @@ def compare_loaders(
                 characters[i.loader.name],
                 fact_checks if fact_list else None,
                 _parser_price(specs.get(i.loader.name), settings),
+                set(entries),
             )
-            for i in inspections
+            for i, entries in zip(inspections, by_path, strict=True)
         ],
         identifier_differences=differences,
         metadata_keys=_uneven_keys(inspections),
         documents=_uneven_documents(inspections, by_path),
         facts=fact_checks,
+        baselines={
+            entry.relative_path: inspections[owners[str(entry.path)]].loader.name
+            for entry in report.documents
+            if owners.get(str(entry.path), 0) != 0
+        },
     )
-    verdict = recommend(comparison, report.documents)
+    by_format = _format_comparisons(
+        inspections, by_path, report.documents, files, seconds, fact_checks, bool(fact_list)
+    )
+    verdict = recommend_across_formats(recommend(comparison, report.documents), by_format)
     comparison = dataclasses.replace(
         comparison,
         recommended=verdict.recommended,
         verdict=verdict.reason,
         ranked=verdict.ranked,
+        formats=by_format,
     )
     report.loader_comparison = comparison
     report.limitations[:0] = [
@@ -256,7 +325,25 @@ def _files(paths: str | os.PathLike[str] | Sequence[str | os.PathLike[str]]) -> 
     return files
 
 
-def _source(name: str, value: Any, files: list[Path] | None, cache: LoaderCache | None) -> Any:
+def _loader_extensions(
+    name: str, value: Any, formats: Mapping[str, Iterable[str]] | None
+) -> tuple[str, ...] | None:
+    """The extensions a loader is given: the caller's, else what the loader is known for."""
+    if formats is not None and name in formats:
+        chosen = extensions(formats[name])
+        if not chosen:
+            raise ValueError(f"formats for {name} names no file type")
+        return chosen
+    return loader_formats(value)
+
+
+def _source(
+    name: str,
+    value: Any,
+    files: list[Path] | None,
+    cache: LoaderCache | None,
+    formats: tuple[str, ...] | None = None,
+) -> Any:
     """The loader to run: the value itself, or its factory run over `files`."""
     if files is None:
         if isinstance(value, LoaderSpec):
@@ -267,7 +354,9 @@ def _source(name: str, value: Any, files: list[Path] | None, cache: LoaderCache 
     factory = value.factory if isinstance(value, LoaderSpec) else value
     if not callable(factory):
         raise TypeError(f"with paths, {name} must be a callable taking a file path")
-    return FolderSource(factory, files, name=name, cache=cache, tags=loader_tags(value))
+    return FolderSource(
+        factory, files, name=name, cache=cache, tags=loader_tags(value), formats=formats
+    )
 
 
 def _network(name: str, value: Any, allow_network: bool) -> bool:
@@ -328,15 +417,44 @@ def _whole(pages: dict[int, str]) -> str:
     return "\n\n".join(pages[number] for number in sorted(pages))
 
 
+def _take_unreturned_documents(
+    baseline: Inspection,
+    inspections: list[Inspection],
+    by_path: list[dict[str, DocumentReport]],
+    files: list[Path] | None,
+) -> dict[str, int]:
+    """Give the report every document some loader returned, and say whose reading it is.
+
+    The report is built from the first loader's entries. A document it did not
+    return is taken, as a copy, from the first loader that did, and measured
+    against that one. Returns each document's path with the index of its loader.
+    """
+    owners: dict[str, int] = {}
+    for index, entries in enumerate(by_path):
+        for path in entries:
+            owners.setdefault(path, index)
+    borrowed = [copy.deepcopy(by_path[index][path]) for path, index in owners.items() if index != 0]
+    if borrowed:
+        baseline.entries.extend(borrowed)
+        order = {str(path): position for position, path in enumerate(files or [])}
+        baseline.entries.sort(key=lambda e: order.get(str(e.path), len(order)))
+    return owners
+
+
 def _readings(
     entry: DocumentReport,
     baseline: Inspection,
-    others: list[tuple[Inspection, dict[str, DocumentReport]]],
+    others: list[tuple[Inspection, dict[str, DocumentReport], dict[str, float] | None]],
+    seconds: dict[str, float] | None = None,
 ) -> list[ExtractorReading]:
-    """Every loader's reading of one document, the baseline's first."""
+    """Every loader's reading of one document, the baseline's first.
+
+    `baseline` is the loader the document is measured against, and `seconds` its
+    loading time per file, when it ran over files.
+    """
     own = _pages(entry)
-    readings = [_reading(baseline.loader.name, entry, 1.0, False)]
-    for inspection, entries in others:
+    readings = [_reading(baseline.loader.name, entry, 1.0, False, _file_seconds(seconds, entry))]
+    for inspection, entries, their_seconds in others:
         other = entries.get(str(entry.path))
         if other is None:
             continue
@@ -357,8 +475,14 @@ def _readings(
             reordered = similarity < 1.0 and same_words(left, right)
             if len(entry.extracted_text) == 1:
                 entry.extracted_text[0].readings[name] = _whole(theirs)
-        readings.append(_reading(name, other, similarity, reordered))
+        readings.append(
+            _reading(name, other, similarity, reordered, _file_seconds(their_seconds, other))
+        )
     return readings
+
+
+def _file_seconds(seconds: dict[str, float] | None, entry: DocumentReport) -> float:
+    return seconds.get(str(entry.path), 0.0) if seconds else 0.0
 
 
 def _paged_similarity(left: dict[int, str], right: dict[int, str]) -> tuple[float, bool]:
@@ -380,13 +504,13 @@ def _paged_similarity(left: dict[int, str], right: dict[int, str]) -> tuple[floa
 
 
 def _reading(
-    name: str, entry: DocumentReport, similarity: float, reordered: bool
+    name: str, entry: DocumentReport, similarity: float, reordered: bool, seconds: float = 0.0
 ) -> ExtractorReading:
     return ExtractorReading(
         extractor=name,
         characters=sum(page.characters for page in entry.extracted_text),
         mean_coverage_pct=None,
-        seconds=0.0,
+        seconds=seconds,
         granularity="none",
         reads_tables=False,
         similarity=similarity,
@@ -463,18 +587,40 @@ def _uneven_keys(inspections: list[Inspection]) -> dict[str, list[str]]:
 
     PyPDF writes `author` where PDFPlumber writes `Author`. A key
     spelled differently is shown under every spelling, joined by a slash.
+    Keys are compared file type by file type, between the loaders that returned
+    documents of that type.
     """
-    returned = {i.loader.name: {k.casefold() for k in i.loader.metadata_keys} for i in inspections}
     spellings: dict[str, list[str]] = {}
     for inspection in inspections:
         for key in inspection.loader.metadata_keys:
             seen = spellings.setdefault(key.casefold(), [])
             if key not in seen:
                 seen.append(key)
+
+    uneven: dict[str, list[str]] = {}
+    formats = {format_of(path) for i in inspections for path in i.metadata_keys}
+    for document_format in sorted(formats):
+        returned = {
+            i.loader.name: {
+                key.casefold()
+                for path, keys in i.metadata_keys.items()
+                if format_of(path) == document_format
+                for key in keys
+            }
+            for i in inspections
+            if any(format_of(path) == document_format for path in i.metadata_keys)
+        }
+        if len(returned) < 2:
+            continue
+        for folded in sorted(set().union(*returned.values())):
+            if all(folded in keys for keys in returned.values()):
+                continue
+            names = uneven.setdefault(folded, [])
+            names.extend(n for n, keys in returned.items() if folded in keys and n not in names)
+    order = [i.loader.name for i in inspections]
     return {
-        " / ".join(spellings[folded]): [name for name, keys in returned.items() if folded in keys]
-        for folded in sorted(spellings)
-        if not all(folded in keys for keys in returned.values())
+        " / ".join(spellings[folded]): sorted(uneven[folded], key=order.index)
+        for folded in sorted(uneven)
     }
 
 
@@ -489,7 +635,8 @@ def _uneven_documents(
             for inspection, entries in zip(inspections, by_path, strict=True)
             if path in entries
         ]
-        if len(holders) < len(inspections):
+        meant_for = [i for i in inspections if _covers(i.loader.formats, format_of(path))]
+        if len(holders) < len(meant_for):
             uneven[holders[0][1].relative_path] = [name for name, _entry in holders]
     return uneven
 
@@ -500,8 +647,10 @@ def _summary(
     characters: int,
     fact_checks: list[FactCheck] | None,
     price: ParserPricing | None,
+    returned: set[str],
 ) -> LoaderSummary:
-    entries = report.documents
+    # The baseline's report also holds the documents it took from other loaders.
+    entries = [entry for entry in report.documents if str(entry.path) in returned]
     loader = inspection.loader
     pages = sum(entry.page_count for entry in entries)
     return LoaderSummary(
@@ -523,6 +672,8 @@ def _summary(
         failures=dict(loader.failures),
         cached_files=loader.cached_files,
         tags=list(loader.tags),
+        skipped=list(loader.skipped),
+        formats=list(loader.formats) if loader.formats is not None else None,
         facts_found=(
             sum(1 for check in fact_checks if check.found.get(loader.name))
             if fact_checks is not None
@@ -569,7 +720,14 @@ def _comparison_limitations(
         )
 
     missing = [
-        (row.name, sum(1 for check in comparison.facts if not check.found.get(row.name)))
+        (
+            row.name,
+            sum(
+                1
+                for check in comparison.facts
+                if row.name in check.found and not check.found[row.name]
+            ),
+        )
         for row in comparison.loaders
     ]
     missing = [(name, number) for name, number in missing if number]
@@ -633,3 +791,147 @@ def _price_limitations(specs: dict[str, LoaderSpec], settings: Config) -> list[L
             continue
         limitations.append(Limitation(area="Parser prices", statement=statement, severity="info"))
     return limitations
+
+
+def _covers(formats: Sequence[str] | None, document_format: str) -> bool:
+    """Whether a loader meant for these extensions reads documents of this format."""
+    if formats is None:
+        return True
+    return any(SUFFIX_FORMATS.get(suffix) == document_format for suffix in formats)
+
+
+def _fact_format(check: FactCheck) -> str | None:
+    """The file type a fact belongs to: its document's, or where a loader found it."""
+    where = check.document or next((d for d in check.documents.values() if d), None)
+    return format_of(where) if where else None
+
+
+def _format_comparisons(
+    inspections: list[Inspection],
+    by_path: list[dict[str, DocumentReport]],
+    documents: list[DocumentReport],
+    files: list[Path] | None,
+    seconds: list[dict[str, float] | None],
+    fact_checks: list[FactCheck],
+    with_facts: bool,
+) -> list[FormatComparison]:
+    """The comparison repeated for each file type, over the loaders meant for it."""
+    paths: list[str] = [str(path) for path in files or []]
+    for entries in by_path:
+        paths.extend(entries)
+    for inspection in inspections:
+        paths.extend(inspection.loader.failures)
+    groups: dict[str, list[str]] = {}
+    for path in dict.fromkeys(paths):
+        groups.setdefault(format_of(path), []).append(path)
+    report_entries = {str(entry.path): entry for entry in documents}
+    order = list(FORMAT_LABELS)
+
+    comparisons: list[FormatComparison] = []
+    for document_format in sorted(groups, key=order.index):
+        here = groups[document_format]
+        facts = [c for c in fact_checks if _fact_format(c) == document_format]
+        rows: list[FormatLoaderRow] = []
+        skipped_by: list[str] = []
+        for inspection, entries, timing in zip(inspections, by_path, seconds, strict=True):
+            loader = inspection.loader
+            if not _covers(loader.formats, document_format):
+                skipped_by.append(loader.name)
+                continue
+            returned = [entries[path] for path in here if path in entries]
+            similarities = [
+                reading.similarity
+                for path in here
+                if path in report_entries
+                for reading in report_entries[path].extractions
+                if reading.extractor == loader.name and reading.similarity is not None
+            ]
+            rows.append(
+                FormatLoaderRow(
+                    name=loader.name,
+                    documents=len(returned),
+                    pages=sum(entry.page_count for entry in returned),
+                    characters=sum(
+                        page.characters for entry in returned for page in entry.extracted_text
+                    ),
+                    seconds=(
+                        round(sum(timing.get(path, 0.0) for path in here), 3)
+                        if timing is not None
+                        else None
+                    ),
+                    similarity=(
+                        round(sum(similarities) / len(similarities), 4) if similarities else None
+                    ),
+                    failures={
+                        path: reason
+                        for path, reason in loader.failures.items()
+                        if format_of(path) == document_format
+                    },
+                    facts_found=(
+                        sum(1 for check in facts if check.found.get(loader.name))
+                        if with_facts
+                        else None
+                    ),
+                    error=loader.error,
+                )
+            )
+        verdict = _format_verdict(
+            FORMAT_LABELS.get(document_format, str(document_format)),
+            rows,
+            len(facts),
+            [report_entries[p] for p in here if p in report_entries],
+        )
+        comparisons.append(
+            FormatComparison(
+                format=str(document_format),
+                label=FORMAT_LABELS.get(document_format, str(document_format)),
+                documents=len(here),
+                loaders=rows,
+                skipped_by=skipped_by,
+                facts=len(facts),
+                recommended=verdict.recommended,
+                verdict=verdict.reason,
+                ranked=verdict.ranked,
+            )
+        )
+    return comparisons
+
+
+def _format_verdict(
+    label: str, rows: list[FormatLoaderRow], facts: int, documents: list[DocumentReport]
+) -> LoaderVerdict:
+    """The verdict for one file type, which may have one loader meant for it, or none."""
+    if not rows:
+        return LoaderVerdict(reason=f"none of the loaders is meant for {label} files")
+    if len(rows) == 1:
+        return LoaderVerdict(
+            reason=f"{rows[0].name} is the only loader meant for {label} files",
+            ranked=[rows[0].name],
+        )
+    return recommend_rows(rows, facts, documents)
+
+
+def _for_loaders_meant_for(check: FactCheck, inspections: list[Inspection]) -> FactCheck:
+    """The fact as checked by the loaders meant for its file type only.
+
+    A fact in a PDF says nothing about a Word loader that was never given the PDF,
+    so that loader is left out of the check rather than counted as missing it.
+    """
+    document_format = _fact_format(check)
+    if document_format is None:
+        return check
+    meant = {i.loader.name for i in inspections if _covers(i.loader.formats, document_format)}
+    if meant >= set(check.found):
+        return check
+
+    def only(values: dict[str, Any]) -> dict[str, Any]:
+        return {name: value for name, value in values.items() if name in meant}
+
+    return dataclasses.replace(
+        check,
+        found=only(check.found),
+        scores=only(check.scores),
+        pages=only(check.pages),
+        documents=only(check.documents),
+        nearest=only(check.nearest),
+    )

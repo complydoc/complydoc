@@ -68,6 +68,7 @@ from complydoc.ingest.base import (
     Page,
     sha256_of,
 )
+from complydoc.loaders.formats import SUFFIX_FORMATS
 from complydoc.loaders.origin import loader_tags
 from complydoc.report.models import (
     SCHEMA_VERSION,
@@ -96,25 +97,7 @@ __all__ = [
 SOURCE_KEYS = ("source", "file_path", "filename", "file_name")
 """Metadata keys loaders use to name the file a document came from, in order."""
 
-_FORMATS = {
-    ".pdf": DocumentFormat.PDF,
-    ".docx": DocumentFormat.DOCX,
-    ".xlsx": DocumentFormat.XLSX,
-    ".xlsm": DocumentFormat.XLSX,
-    ".pptx": DocumentFormat.PPTX,
-    ".html": DocumentFormat.HTML,
-    ".htm": DocumentFormat.HTML,
-    ".md": DocumentFormat.MARKDOWN,
-    ".markdown": DocumentFormat.MARKDOWN,
-    ".txt": DocumentFormat.TEXT,
-    ".eml": DocumentFormat.EMAIL,
-    ".png": DocumentFormat.IMAGE,
-    ".jpg": DocumentFormat.IMAGE,
-    ".jpeg": DocumentFormat.IMAGE,
-    ".tif": DocumentFormat.IMAGE,
-    ".tiff": DocumentFormat.IMAGE,
-    ".bmp": DocumentFormat.IMAGE,
-}
+_FORMATS = SUFFIX_FORMATS
 
 ABSOLUTE_PATH = re.compile(r"^(?:/[^/\s]+){2,}|^[A-Za-z]:[\\/]|^~[/\\]")
 
@@ -189,6 +172,13 @@ class Inspection:
     different span in each reading makes two identical pages look different.
     This never reaches the report: it is held for the length of the comparison
     and dropped with the Inspection.
+    """
+    metadata_keys: dict[str, set[str]] = field(default_factory=dict)
+    """The metadata keys the loader returned, by document path.
+
+    A comparison over several file types compares keys only between loaders
+    that read the same type, since a PDF loader's keys say nothing about a Word
+    loader's.
     """
 
 
@@ -293,7 +283,15 @@ def inspect_run(
             verify_scope=verify_scope if vision is not None else None,
         )
 
-    return Inspection(settings, tuple(components), entries, run, loader_run, page_text)
+    keys: dict[str, set[str]] = {}
+    for item in items:
+        _text, metadata = document_content(item)
+        path = next(
+            (str(metadata[k]) for k in SOURCE_KEYS if isinstance(metadata.get(k), str | PurePath)),
+            loader_run.name,
+        )
+        keys.setdefault(str(Path(path)), set()).update(metadata)
+    return Inspection(settings, tuple(components), entries, run, loader_run, page_text, keys)
 
 
 def finish_report(inspection: Inspection) -> AuditReport:
@@ -346,6 +344,10 @@ def _run_loader(source: Any, name: str | None, allow_network: bool) -> tuple[lis
         failures=dict(source.failures) if isinstance(source, FolderSource) else {},
         cached_files=source.cached_files if isinstance(source, FolderSource) else 0,
         tags=loader_tags(source),
+        skipped=list(source.skipped) if isinstance(source, FolderSource) else [],
+        formats=list(source.formats)
+        if isinstance(source, FolderSource) and source.formats is not None
+        else None,
     )
 
 
@@ -355,6 +357,8 @@ class FolderSource:
     `factory` is called with each file path and returns a loader or documents. A file
     that raises is recorded in `failures` and loading continues with the next. With a
     `cache`, output is stored per file under `name`, and a cached file is not parsed.
+    With `formats`, a list of extensions, files of other types are not given to the
+    factory and are listed in `skipped`. `seconds` is each file's loading time.
     """
 
     def __init__(
@@ -365,35 +369,46 @@ class FolderSource:
         name: str = "",
         cache: LoaderCache | None = None,
         tags: Iterable[str] = (),
+        formats: Iterable[str] | None = None,
     ) -> None:
         self.factory = factory
-        self.files = list(files)
         self.name = name
         self.cache = cache
         self.tags = list(tags)
+        self.formats = tuple(formats) if formats is not None else None
+        given = list(files)
+        self.files = [p for p in given if self.formats is None or p.suffix.lower() in self.formats]
+        self.skipped = [str(p) for p in given if p not in self.files]
         self.failures: dict[str, str] = {}
+        self.seconds: dict[str, float] = {}
         self.cached_files = 0
 
     def load(self) -> list[Any]:
         items: list[Any] = []
         for path in self.files:
-            if self.cache is not None:
-                cached = self.cache.get(self.name, path)
-                if cached is not None:
-                    items.extend(cached)
-                    self.cached_files += 1
-                    continue
+            started = time.perf_counter()
             try:
-                source = self.factory(str(path))
-                loaded = _load_items(source, _loading_call(source))
-            # The loader is caller code. Whatever it raises is recorded against the file.
-            except Exception as exc:
-                self.failures[str(path)] = f"{type(exc).__name__}: {exc}"
-                continue
-            if self.cache is not None:
-                self.cache.put(self.name, path, [document_content(item) for item in loaded])
-            items.extend(loaded)
+                items.extend(self._load_file(path))
+            finally:
+                self.seconds[str(path)] = round(time.perf_counter() - started, 3)
         return items
+
+    def _load_file(self, path: Path) -> list[Any]:
+        if self.cache is not None:
+            cached = self.cache.get(self.name, path)
+            if cached is not None:
+                self.cached_files += 1
+                return list(cached)
+        try:
+            source = self.factory(str(path))
+            loaded = _load_items(source, _loading_call(source))
+        # The loader is caller code. Whatever it raises is recorded against the file.
+        except Exception as exc:
+            self.failures[str(path)] = f"{type(exc).__name__}: {exc}"
+            return []
+        if self.cache is not None:
+            self.cache.put(self.name, path, [document_content(item) for item in loaded])
+        return loaded
 
 
 def load_items(source: Any) -> list[Any]:

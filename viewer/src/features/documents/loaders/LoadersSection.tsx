@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { returnedBySomeOnly } from "@/report/select";
 import type { LoaderComparison } from "@/report/types";
 import { FactList } from "./FactList";
+import { FormatTable } from "./FormatTable";
 import { LoaderTable } from "./LoaderTable";
 import { DifferenceList, ReturnedList } from "./OnlySomeList";
 import { Verdict } from "./Verdict";
@@ -51,6 +52,7 @@ export function LoadersSection({ comparison }: { comparison: LoaderComparison })
       <div className="flex flex-col gap-4">
         <Verdict comparison={comparison} />
         <LoaderTable comparison={comparison} />
+        {(comparison.formats?.length ?? 0) > 1 && <FormatTable comparison={comparison} />}
         {panels.length > 0 && <div className="grid gap-4 lg:grid-cols-2">{panels}</div>}
       </div>
     </Section>

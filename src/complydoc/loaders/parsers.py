@@ -28,6 +28,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any, Literal
 
+from complydoc.loaders.formats import EXCEL, HTML, IMAGES, MARKDOWN, PDF, POWERPOINT, WORD
 from complydoc.loaders.inspection import SOURCE_KEYS
 
 __all__ = [
@@ -52,6 +53,11 @@ class LoaderSpec:
     """Entry under `parsers` in `pricing.yaml`, for the cost per page."""
     tags: tuple[str, ...] = ()
     """Framework and library names shown beside the loader in reports."""
+    formats: tuple[str, ...] | None = None
+    """File extensions the parser reads, such as `.pdf`, or format names such as `docx`.
+
+    In a comparison over a folder, it is given only these files. None gives it every file.
+    """
 
 
 class _WithSource:
@@ -95,7 +101,11 @@ def docling(export: Literal["markdown", "chunks"] = "markdown", **options: Any) 
         return _WithSource(loader.load, path)
 
     return LoaderSpec(
-        name="docling", factory=factory, price_key="docling", tags=("LangChain", "Docling")
+        name="docling",
+        factory=factory,
+        price_key="docling",
+        tags=("LangChain", "Docling"),
+        formats=(*PDF, *WORD, *EXCEL, *POWERPOINT, *HTML, *MARKDOWN, *IMAGES),
     )
 
 
@@ -194,4 +204,6 @@ def azure_document_intelligence(
         tags=("LangChain", "Azure Document Intelligence"),
         network=True,
         price_key=_AZURE_PRICES.get(model),
+        # prebuilt-read and prebuilt-layout; Office and HTML files are read as text only.
+        formats=(*PDF, *IMAGES, *WORD, *EXCEL, *POWERPOINT, *HTML),
     )

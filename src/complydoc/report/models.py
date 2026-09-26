@@ -261,6 +261,10 @@ class LoaderRun:
     through. complydoc's own processing stays behind the guard either way."""
     tags: list[str] = field(default_factory=list)
     """The framework and library the loader comes from, such as `LangChain` and `pypdf`."""
+    skipped: list[str] = field(default_factory=list)
+    """Files not given to the loader, because they are not of a type it is meant for."""
+    formats: list[str] | None = None
+    """The file extensions the loader is meant for. None when it was given every file."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -315,6 +319,10 @@ class LoaderSummary:
     """Estimated parser cost for these pages, from `parsers` in `pricing.yaml`."""
     tags: list[str] = field(default_factory=list)
     """The framework and library the loader comes from, such as `LangChain` and `pypdf`."""
+    skipped: list[str] = field(default_factory=list)
+    """Files not given to the loader, because they are not of a type it is meant for."""
+    formats: list[str] | None = None
+    """The file extensions the loader is meant for. None when it was given every file."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -369,6 +377,51 @@ class FactCheck:
 
 
 @dataclass(frozen=True, slots=True)
+class FormatLoaderRow:
+    """One loader's results on the documents of one file type."""
+
+    name: str
+    documents: int
+    """Documents of this type the loader returned."""
+    pages: int
+    characters: int
+    seconds: float | None
+    """Time spent loading files of this type. None when the documents came loaded."""
+    similarity: float | None
+    """Mean similarity of its text to each document's baseline, from 0 to 1.
+
+    None when it returned none of these documents.
+    """
+    failures: dict[str, str] = field(default_factory=dict)
+    """Files of this type the loader raised on, with the error."""
+    facts_found: int | None = None
+    """Expected facts of this type found in its text, when facts were given."""
+    error: str | None = None
+    """The loader stopped before loading anything."""
+
+
+@dataclass(frozen=True, slots=True)
+class FormatComparison:
+    """The loaders compared on the documents of one file type."""
+
+    format: str
+    """A `DocumentFormat` value: `pdf`, `docx`, `xlsx` and so on."""
+    label: str
+    """The type as a reader names it: PDF, Word, Excel."""
+    documents: int
+    """Files of this type in the run."""
+    loaders: list[FormatLoaderRow]
+    """The loaders given these files, in the order the comparison named them."""
+    skipped_by: list[str] = field(default_factory=list)
+    """Loaders not meant for this type, which were not given these files."""
+    facts: int = 0
+    """Expected facts checked in documents of this type."""
+    recommended: str | None = None
+    verdict: str = ""
+    ranked: list[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True, slots=True)
 class LoaderComparison:
     """Where several loaders' output differed, measured against the first."""
 
@@ -387,6 +440,14 @@ class LoaderComparison:
     """What decided the recommendation, or what stopped it being decided."""
     ranked: list[str] = field(default_factory=list)
     """Every loader, best first, by what the run could measure."""
+    formats: list[FormatComparison] = field(default_factory=list)
+    """The same comparison for each file type in the run, with its own recommendation."""
+    baselines: dict[str, str] = field(default_factory=dict)
+    """Documents measured against a loader other than the first, and that loader.
+
+    A document's baseline is the first loader, in the order given, that returned
+    it. The first loader may skip a file type or fail on a file.
+    """
 
 
 @dataclass(frozen=True, slots=True)
