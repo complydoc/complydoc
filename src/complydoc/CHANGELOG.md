@@ -183,6 +183,11 @@ in complydoc needs it any more.
 
 ### Fixed
 
+- `clean_document` left the network guard on for the rest of the caller's
+  process once it returned, so a notebook that cleaned a file could no longer
+  reach the network. It now holds the guard for the call only, as the other
+  entry points do.
+
 - A parallel audit on a Mac no longer loses its workers. The name model ran on
   the GPU inside each worker, and a worker cannot start Metal's shader compiler:
   the first page that needed a new kernel aborted it (`MTLCompilerService ... No

@@ -25,7 +25,15 @@ def test_the_formats_come_from_complydocs_own_readers():
     readable = {document_format.value for document_format in suffix_formats().values()}
     for loader, formats in _KNOWN.items():
         assert set(formats) <= readable, f"{loader} names a format complydoc does not read"
-    assert extensions(["email", "image"]) == (".eml", ".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp")
+    assert extensions(["email", "image"]) == (
+        ".eml",
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".tif",
+        ".tiff",
+        ".bmp",
+    )
 
 
 class Document:
