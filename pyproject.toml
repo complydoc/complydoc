@@ -53,7 +53,9 @@ multilingual-names = ["transformers>=4.40", "torch>=2.2"]
 # A hosted judgement service for passages that read as instructions to a model.
 # Off unless the caller asks for it: it sends text off the machine, which is the
 # one thing the rest of this tool is built not to do.
-typesafe = ["typesafe-sdk>=0.6"]
+# Through LangChain's TypeSafe integration, an alpha: the floor is the release this
+# was written against.
+typesafe = ["langchain-typesafe>=0.0.1a3"]
 # `complydoc assist`: drafts quick wins from a finished report with a hosted
 # chat model. Off unless the caller asks for it, same as `typesafe` above — it
 # sends the whole report off the machine.
@@ -171,7 +173,6 @@ module = [
     "spacy.*",
     "torch.*",
     "transformers.*",
-    "typesafe_sdk.*",
     "tiktoken.*",
     "docx.*",
     "openpyxl.*",

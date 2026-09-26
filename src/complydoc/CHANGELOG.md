@@ -71,25 +71,25 @@ in complydoc needs it any more.
 
 ### Changed
 
-- The viewer's document page is simpler. A document read more than one way shows a
-  diff of two readers; one read one way shows its pages as read. Findings are underlined
-  in the text itself, coloured by severity, and a rail at the text's edge shows where
-  each sits in the whole document. Resting the pointer on one says what it is and lets
-  you tick it off as not a problem, which under `complydoc ui` is saved to the ignore
-  file; ignored findings leave the text. The page picker is a compact "Page 3 of 8" above
-  the text, and the eye button sits beside the reader dropdowns. Each page's
-  first line says what it costs to read. The page picture sits to the left of the text,
-  as tall as it, and can be put away to give the text the whole width. The separate Pages and Diff views, the
-  reading panes and the per-reader costs are gone. An eye button shows the values in a
-  report written with `--reveal`, which opens masked.
+- The viewer's document page is simpler. A document read more than one way shows a diff
+  of two readers; one read one way shows its pages as read. Findings are underlined in
+  the text itself, coloured by severity, and a rail at the text's edge shows where each
+  sits in the whole document. Resting the pointer on one says what it is and lets you
+  tick it off as not a problem, which under `complydoc ui` is saved to the ignore file;
+  ignored findings stay in the text, struck through. The page picker is a compact "Page
+  3 of 8" above the text, and the eye button sits beside the reader dropdowns. Each
+  page's first line says what it costs to read. The page picture sits to the left of the
+  text, as tall as it, and can be put away to give the text the whole width. The
+  separate Pages and Diff views, the reading panes and the per-reader costs are gone. An
+  eye button shows the values in a report written with `--reveal`, which opens masked.
 
 - Elsewhere in the viewer: the findings table has a search box, a severity filter and
   pages of 25. It shows severity and confidence as icons, as Linear shows priority and
   status: signal bars filled by severity, leading each row, and a ring filled by how
-  sure complydoc is, each with its word in a tooltip. Home's "Needs attention" gives one line per kind of
-  identifier in a document. The readiness ring now fills to the score. Each page opens
-  at its top. Chart labels are cut at a whole word. The cost table lists the cheapest
-  model first.
+  sure complydoc is, each with its word in a tooltip. Home's "Needs attention" gives one
+  line per kind of identifier in a document. The readiness ring now fills to the score.
+  Each page opens at its top. Chart labels are cut at a whole word. The cost table lists
+  the cheapest model first.
 
 - In a loader comparison, a document the first loader did not return, because it failed
   on the file or was not given its type, is now in the report, measured against the
@@ -97,6 +97,15 @@ in complydoc needs it any more.
   metadata keys and documents returned by some loaders only are compared between the
   loaders given each file type, so a Word loader is not counted as missing a PDF's
   sentence. Each loader's reading of a file carries its load time in `seconds`.
+
+- The Jev classifier calls TypeSafe through `langchain-typesafe`, LangChain's integration,
+  in place of `typesafe-sdk`; the `typesafe` extra installs it. The request, the key
+  variables, the 4,000-character cap and the network guard are unchanged. LangSmith
+  tracing is off for these calls even when the environment turns it on, since the
+  passage would be sent there too; `jev_classifier(trace=True)` turns it on, and sends
+  the trace before the call returns so its connections are recorded. `http_client=`
+  passes a client of your own, for a proxy or a test transport. The judge of your own
+  concepts, `--judge-concepts jev`, goes the same way.
 
 - One kind of price. Every model is priced from the vendored table, from models.dev and
   litellm, which a workflow refreshes each week by pull request, and a report says once

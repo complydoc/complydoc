@@ -1,4 +1,4 @@
-"""Score passages with TypeSafe's Jev, a hosted judgement model.
+"""Score passages with TypeSafe's Jev, a hosted judgement model, through LangChain.
 
     import complydoc as cd
     from complydoc.integrations.typesafe import jev_classifier
@@ -18,6 +18,12 @@ of any passage that looks worth asking about is sent to `api.typesafe.ai`.
 Nothing here is implicit — `allow_network=True` has to be passed, and the
 connections made are returned so a caller can record them.
 
+The calls go through `langchain-typesafe`, LangChain's integration for TypeSafe,
+as a `TypeSafeClassifier` runnable. LangSmith tracing is switched off for them
+unless `trace=True` is passed: with tracing on in the environment, LangChain
+would otherwise send every passage to LangSmith too, a second destination the
+caller did not choose.
+
 Two limits worth knowing before relying on it:
 
 - Registering this in Python covers the process that registered it. An audit
@@ -32,19 +38,24 @@ Two limits worth knowing before relying on it:
 
 from __future__ import annotations
 
+import contextlib
 import os
+import warnings
+from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:  # pragma: no cover - type-checking imports only
     from collections.abc import Callable
+
+    import httpx2
 
 __all__ = ["JEV_KEY_VARIABLES", "connections_made", "jev_classifier", "jev_concept_judge"]
 
 JEV_KEY_VARIABLES = ("JEV_KEY", "TYPESAFE_API_KEY")
 """Environment variables read for the key, in order.
 
-The SDK's own variable is `TYPESAFE_API_KEY`. `JEV_KEY` is read first because
-that is what the key is called where people keep it.
+The integration's own variable is `TYPESAFE_API_KEY`. `JEV_KEY` is read first
+because that is what the key is called where people keep it.
 """
 
 _QUESTION = "injection"
@@ -97,6 +108,8 @@ def jev_classifier(
     model: str | None = None,
     timeout: float = 20.0,
     max_characters: int = 4_000,
+    trace: bool = False,
+    http_client: httpx2.Client | None = None,
 ) -> Callable[[str], float]:
     """A classifier for `register_instruction_classifier`, backed by Jev.
 
@@ -106,6 +119,15 @@ def jev_classifier(
     `max_characters` caps what is sent from any one passage. A hidden
     instruction is short, and the cap keeps a whole page from being sent because
     one paragraph of it looked interesting.
+
+    `model` pins a Jev release; by default the integration's `jev-latest`.
+
+    `trace=True` lets LangSmith record each call, when tracing is configured in
+    the environment. The passage then goes to LangSmith as well, and the trace is
+    sent before the call returns, so its connections are recorded with Jev's.
+
+    `http_client` is an `httpx2.Client` to send the requests through, for a
+    proxy, a custom TLS policy or a test transport.
 
     Returns a callable taking a passage and returning the probability, from 0 to
     1, that it is addressed to a model. A call that fails raises, and the caller
@@ -118,42 +140,73 @@ def jev_classifier(
             "part of complydoc does. Pass allow_network=True to accept that."
         )
 
-    from complydoc.utils.install import extra_hint
-
-    try:
-        from typesafe_sdk import Noul, NoulCriteria, TypeSafeClient
-    except ImportError as exc:  # pragma: no cover - depends on the extra
-        raise ImportError(
-            f"the Jev classifier needs the optional extra: {extra_hint('typesafe')}"
-        ) from exc
-
-    key = _api_key(api_key)
-    client = TypeSafeClient(api_key=key, model=model, timeout=timeout)
-    question = Noul(
-        instructions=_INSTRUCTIONS,
-        criteria=NoulCriteria(true=_CRITERIA_TRUE, false=_CRITERIA_FALSE),
-    )
+    classifier, ask = _client("the Jev classifier", api_key, model, timeout, http_client)
+    question = ask(_INSTRUCTIONS, _CRITERIA_TRUE, _CRITERIA_FALSE)
 
     def classify(passage: str) -> float:
-        from complydoc import offline
-
         text = passage.strip()[:max_characters]
         if not text:
             return 0.0
-        # The guard is armed for the whole of a scan. This is the one call the
-        # caller allowed out, so it is let through here and recorded, rather
-        # than the guard being lowered for the run.
-        with offline.permitted() as seen:
-            response: Any = client.system_one(
-                state={"passage": text},
-                questions={_QUESTION: question},
-            )
-        for connection in seen:
-            if connection not in _connections:
-                _connections.append(connection)
-        return float(response.nouls[_QUESTION].noul)
+        request = {"state": {"passage": text}, "questions": {_QUESTION: question}}
+        return _ask(classifier, request, _QUESTION, trace)
 
     return classify
+
+
+def _client(
+    what: str,
+    api_key: str | None,
+    model: str | None,
+    timeout: float,
+    http_client: httpx2.Client | None,
+) -> tuple[Any, Callable[[str, str, str], Any]]:
+    """A `TypeSafeClassifier`, and a way to put a yes-or-no question to it.
+
+    The question is given as its instructions, what counts as yes, and what
+    counts as no.
+    """
+    from complydoc.utils.install import extra_hint
+
+    try:
+        from langchain_core._api import LangChainBetaWarning
+        from langchain_typesafe import Noul, NoulCriteria, TypeSafeClassifier
+    except ImportError as exc:  # pragma: no cover - depends on the extra
+        raise ImportError(f"{what} needs the optional extra: {extra_hint('typesafe')}") from exc
+
+    settings: dict[str, Any] = {"api_key": _api_key(api_key), "timeout": timeout}
+    if model:
+        settings["model"] = model
+    if http_client is not None:
+        settings["client"] = http_client
+    with warnings.catch_warnings():
+        # The integration is marked beta. That is LangChain's notice to people
+        # writing against it, which here is complydoc, not whoever runs an audit.
+        warnings.simplefilter("ignore", LangChainBetaWarning)
+        classifier = TypeSafeClassifier(**settings)
+
+    def question(instructions: str, true: str, false: str) -> Any:
+        return Noul(instructions=instructions, criteria=NoulCriteria(true=true, false=false))
+
+    return classifier, question
+
+
+def _ask(classifier: Any, request: Any, question: str, trace: bool) -> float:
+    """One call to Jev, let through the network guard and recorded.
+
+    The guard is armed for the whole of a scan. This is the one call the caller
+    allowed out, so it is let through here and recorded, rather than the guard
+    being lowered for the run.
+    """
+    from complydoc import offline
+
+    with offline.permitted() as seen, _tracing(trace):
+        response = classifier.invoke(request)
+        if trace:
+            _flush_traces()
+    for connection in seen:
+        if connection not in _connections:
+            _connections.append(connection)
+    return float(response.nouls[question].noul)
 
 
 def jev_concept_judge(
@@ -163,66 +216,66 @@ def jev_concept_judge(
     model: str | None = None,
     timeout: float = 20.0,
     max_characters: int = 6_000,
+    trace: bool = False,
+    http_client: httpx2.Client | None = None,
 ) -> Callable[[str, str, str], float]:
-    """A judge of your own concepts, backed by Jev: does this page contain the thing described?
+    """A judge of your own concepts, backed by Jev: does this page hold the thing described?
 
     Returns a callable taking a concept's label, its description and a page's
-    text, and returning the probability, from 0 to 1, that the page contains it.
+    text, and returning the probability, from 0 to 1, that the page holds it.
     The concept's own words are the question, so a concept no pattern can pin
     down can still be found. As with `jev_classifier`, `allow_network` has to be
     `True`, the page is capped at `max_characters`, every connection is recorded
-    for the report, and a call that fails raises rather than scoring nothing.
+    for the report, tracing is off unless `trace=True`, and a call that fails
+    raises rather than scoring nothing.
     """
     if not allow_network:
         raise ValueError(
             "jev_concept_judge sends page text to api.typesafe.ai, which no other "
             "part of complydoc does. Pass allow_network=True to accept that."
         )
-
-    from complydoc.utils.install import extra_hint
-
-    try:
-        from typesafe_sdk import Noul, NoulCriteria, TypeSafeClient
-    except ImportError as exc:  # pragma: no cover - depends on the extra
-        raise ImportError(
-            f"the Jev concept judge needs the optional extra: {extra_hint('typesafe')}"
-        ) from exc
-
-    client = TypeSafeClient(api_key=_api_key(api_key), model=model, timeout=timeout)
+    classifier, ask = _client("the Jev concept judge", api_key, model, timeout, http_client)
     questions: dict[tuple[str, str], Any] = {}
 
     def question(label: str, description: str) -> Any:
-        key = (label, description)
-        if key not in questions:
-            questions[key] = Noul(
-                instructions=(
-                    "The state holds one page of a business document. Does the page contain "
-                    f"{label}? {description}"
-                ),
-                criteria=NoulCriteria(
-                    true=f"The page contains {label}, as described: {description}",
-                    false=(
-                        f"The page does not contain {label}, or only mentions that kind of "
-                        "thing in general without an instance of it."
-                    ),
-                ),
+        if (label, description) not in questions:
+            questions[(label, description)] = ask(
+                "The state holds one page of a business document. Does the page contain "
+                f"{label}? {description}",
+                f"The page contains {label}, as described: {description}",
+                f"The page does not contain {label}, or only mentions that kind of thing in "
+                "general without an instance of it.",
             )
-        return questions[key]
+        return questions[(label, description)]
 
     def judge(label: str, description: str, page: str) -> float:
-        from complydoc import offline
-
         text = page.strip()[:max_characters]
         if not text:
             return 0.0
-        with offline.permitted() as seen:
-            response: Any = client.system_one(
-                state={"page": text},
-                questions={"concept": question(label, description)},
-            )
-        for connection in seen:
-            if connection not in _connections:
-                _connections.append(connection)
-        return float(response.nouls["concept"].noul)
+        request = {"state": {"page": text}, "questions": {"concept": question(label, description)}}
+        return _ask(classifier, request, "concept", trace)
 
     return judge
+
+
+@contextlib.contextmanager
+def _tracing(enabled: bool) -> Iterator[None]:
+    """LangSmith tracing as the caller chose, whatever the environment says."""
+    if enabled:
+        yield
+        return
+    from langsmith.run_helpers import tracing_context
+
+    with tracing_context(enabled=False):
+        yield
+
+
+def _flush_traces() -> None:
+    """Send the traces now, inside the block the connection is allowed and recorded in.
+
+    LangSmith sends them from a background thread, which would otherwise try to
+    connect after the guard is back up, or while another call has it lowered.
+    """
+    from langchain_core.tracers.langchain import wait_for_all_tracers
+
+    wait_for_all_tracers()

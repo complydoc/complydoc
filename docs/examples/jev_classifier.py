@@ -1,6 +1,6 @@
 """Score passages with a hosted classifier, for instructions no pattern covers."""
 
-# requires: typesafe_sdk
+# requires: langchain_typesafe
 
 import os
 
