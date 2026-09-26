@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useInView } from "@/hooks/useInView";
 import { links } from "@/links";
 import { cn } from "@/lib/utils";
-import { CostAnswer, MaskAnswer, SectionAnswer, VisionAnswer } from "./Answers";
+import { CostAnswer, FileTypeAnswer, MaskAnswer, SectionAnswer, VisionAnswer } from "./Answers";
 
 interface Question {
   value: string;
@@ -32,6 +32,14 @@ const QUESTIONS: Question[] = [
       "Your loader may have split it. On two-column pages, some loaders read each line across both columns, so a section ends up mixed into the one beside it.",
     body: <SectionAnswer />,
     more: { label: "Comparing loaders", href: links.compareLoaders },
+  },
+  {
+    value: "file-types",
+    question: "Which loader should I use for the PDFs, and which for the Word files?",
+    answer:
+      "complydoc gives each loader only the file types it reads, compares them one type at a time, and names a loader for each. A PDF loader is not marked as failing on a spreadsheet.",
+    body: <FileTypeAnswer />,
+    more: { label: "Several file types", href: links.compareFileTypes },
   },
   {
     value: "cost",

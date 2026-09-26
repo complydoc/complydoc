@@ -23,6 +23,7 @@ export const links = {
   policy: `${DOCS}/guides/policy/`,
   action: `${DOCS}/guides/github-action/`,
   compareLoaders: `${DOCS}/guides/compare-loaders/`,
+  compareFileTypes: `${DOCS}/guides/compare-loaders/#several-file-types`,
   chunks: `${DOCS}/guides/inspect-chunks/`,
   identifiers: `${DOCS}/reference/identifiers/`,
 } as const;

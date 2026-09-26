@@ -78,6 +78,9 @@ in complydoc needs it any more.
 
 - The examples, the README and the landing page use `PyMuPDF4LLMLoader`.
 
+- The landing page's Questions ask which loader to use for the PDFs and which for the
+  Word files, answered with the comparison by file type.
+
 ## [0.6.0] — 2026-09-25
 
 The minor number moves for `complydoc ui`, a new way to read reports. Nothing in the
