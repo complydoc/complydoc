@@ -292,9 +292,33 @@ def scan_text(
     return _scan_page(1, text, config, reveal, unavailable), unavailable
 
 
+def _prepare(texts: list[str], config: SensitiveConfig) -> None:
+    """Let each detector that can read a whole document ahead do so, as one batch.
+
+    A model reads many windows at once far quicker than one at a time. Only the
+    first link of a category's chain is asked: it is the one that will run
+    unless it cannot, and a detector that fails here fails again on the page,
+    where the scan reports why.
+    """
+    asked: set[tuple[str, str | None]] = set()
+    for category_id, category in config.enabled_categories.items():
+        detector_id, link = category.chain()[0]
+        engine = detector_by_id(detector_id)
+        prepare = getattr(engine, "prepare", None)
+        key = (detector_id, link.model.name if link.model is not None else None)
+        if prepare is None or key in asked:
+            continue
+        asked.add(key)
+        try:
+            prepare(texts, DetectorContext(category_id, link))
+        except Exception:
+            continue
+
+
 def scan(document: Document, config: SensitiveConfig, reveal: bool = False) -> ScanResult:
     result = ScanResult(path=document.path, reveal_used=reveal)
     unavailable: dict[str, str] = {}
+    _prepare([page.text for page in document.pages if page.text.strip()], config)
 
     for page in document.pages:
         if not page.text.strip():

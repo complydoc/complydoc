@@ -138,6 +138,12 @@ def evidence_of(
 
 @runtime_checkable
 class Detector(Protocol):
+    """Finds spans of one kind in a page's text.
+
+    A detector may also define `prepare(texts, context)`, called with every page
+    of a document before the first `find`, to read them all ahead in one batch.
+    """
+
     id: str
 
     def find(self, text: str, context: DetectorContext) -> list[Finding]: ...

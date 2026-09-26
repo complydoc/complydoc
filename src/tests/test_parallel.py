@@ -7,6 +7,7 @@ findings and the second must state that it read only part of the folder.
 
 from __future__ import annotations
 
+import sys
 import types
 from multiprocessing import get_all_start_methods
 
@@ -170,7 +171,7 @@ def test_a_worker_that_stops_is_recovered_in_the_main_process(config, serial, mo
     from complydoc.audit import run as audit_run
 
     class StoppingPool:
-        def __init__(self, jobs, work):
+        def __init__(self, jobs, work, models):
             self.work = work
 
         def __enter__(self):
@@ -191,33 +192,38 @@ def test_a_worker_that_stops_is_recovered_in_the_main_process(config, serial, mo
     assert any(item.area == "Parallel workers" for item in recovered.limitations)
 
 
-# --- Forking a process that has loaded torch --------------------------------
+# --- How the workers are started ------------------------------------------------
 
 
-def test_the_pool_avoids_forking_an_address_space_that_holds_torch(monkeypatch):
-    """Every audit after the first one in a process used to lose its workers.
+def _work(tmp_path, config, **choices):
+    from complydoc.audit.run import plan_audit
 
-    The forkserver is started from this process and inherits what it has
-    initialised. A worker forked from an address space where torch has brought
-    up Metal and Objective-C state dies as `BrokenProcessPool` the moment it
-    reads a document. `ner_available` loads that model here, on every audit that
-    scans for identifiers, so the first audit forked cleanly and the next one
-    read every document in the parent instead.
+    return plan_audit(tmp_path, config, **choices).work
+
+
+def test_the_pool_forks_from_its_server_even_once_torch_is_loaded_here(
+    monkeypatch, tmp_path, config
+):
+    """The forkserver is a fresh interpreter, so what this process loaded is not inherited.
+
+    What did kill workers was Metal inside a forked worker: the name model ran on
+    the GPU there, and the first kernel it had not compiled aborted the worker.
+    It no longer runs in a worker on the GPU, so the forkserver's preload is kept.
     """
-    import sys
-
     from complydoc.audit.run import _pool_context
 
-    monkeypatch.delitem(sys.modules, "torch", raising=False)
-    before = _pool_context().get_start_method()
-
     monkeypatch.setitem(sys.modules, "torch", types.ModuleType("torch"))
-    assert _pool_context().get_start_method() == "spawn", (
-        "a pool forked from here would die on its first document"
-    )
-
-    # And the choice is about torch, not a blanket downgrade: without it the
-    # forkserver and its preload are still used where they are available.
-    assert before in {"forkserver", "spawn"}
+    method = _pool_context(_work(tmp_path, config)).get_start_method()
     if "forkserver" in get_all_start_methods():
-        assert before == "forkserver", "the preload is worth having where it is safe"
+        assert method == "forkserver", "the preload is worth having where it is safe"
+
+
+def test_a_run_with_the_callers_own_model_code_starts_each_worker_afresh(tmp_path, config):
+    """A classifier, vision model or judge of the caller's may use the GPU.
+
+    A forked worker cannot, so each worker is spawned instead.
+    """
+    from complydoc.audit.run import _pool_context
+
+    work = _work(tmp_path, config, classifier_spec="mymodels:classifier")
+    assert _pool_context(work).get_start_method() == "spawn"

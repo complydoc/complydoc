@@ -413,6 +413,8 @@ def test_a_category_nothing_was_looked_for_is_named_in_the_summary(tmp_path, mon
     from complydoc.sensitive.detectors import token_classifier
 
     monkeypatch.setattr(token_classifier, "_load", unavailable)
+    # The transformer keeps what it read of each page, for the same reason.
+    token_classifier._entities_by_page.clear()
     try:
         result = runner.invoke(
             app,

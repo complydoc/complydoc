@@ -19,12 +19,13 @@ import datetime as dt
 import os
 import platform
 import re
-import sys
+import threading
 import time
 from collections import Counter, deque
 from collections.abc import Callable, Iterator, Sequence
 from concurrent.futures import Future, ProcessPoolExecutor
 from concurrent.futures.process import BrokenProcessPool
+from contextlib import contextmanager, suppress
 from dataclasses import dataclass
 from multiprocessing import get_all_start_methods, get_context
 from pathlib import Path
@@ -97,6 +98,8 @@ from complydoc.report.quickwins import quick_wins
 from complydoc.report.routing import summarise_routes
 from complydoc.report.verification import summarise_verification
 from complydoc.sensitive.base import SensitiveMatch
+from complydoc.sensitive.detectors.model_server import ModelServer, ServerAddress
+from complydoc.sensitive.detectors.model_server import connect as connect_models
 from complydoc.sensitive.scanner import ScanResult, scan, scan_text
 from complydoc.utils.files import relative_to_root
 from complydoc.verification.check import verify_document
@@ -712,37 +715,80 @@ def _process(path: Path, work: Work) -> _Outcome:
 _WORKER_WORK: Work | None = None
 
 
-def _pool_context() -> Any:
+def _pool_context(work: Work) -> Any:
     """How to start the workers.
 
-    Forkserver where it exists: the server process loads the tokenizer, the
-    language model and the entity model once, and every worker forks from it
-    with those already in memory. Under spawn each worker loads its own copy,
-    which on a folder of small documents costs more than the work itself.
+    Forkserver where it exists: the server process loads the tokenizer and the
+    language identifier once, and every worker forks from it with those already
+    in memory. Under spawn each worker loads its own copy, which on a folder of
+    small documents costs more than the work itself.
 
     Never a plain fork of this process. The OCR engine holds native threads, and
-    forking a process that has them is a known way to hang a child; the
-    forkserver is started before any of that exists.
+    forking a process that has them is a known way to hang a child. The
+    forkserver is a fresh interpreter, so it inherits none of that.
 
-    Spawn once torch has been imported here. The forkserver is started on
-    demand, from this process, so it inherits whatever this process has already
-    initialised — and a worker forked from an address space where torch has
-    brought up Metal and Objective-C state dies the moment it does real work,
-    as `BrokenProcessPool`. `warm` refuses to preload the entity model for this
-    reason; what it could not account for is that a scan loads that model here
-    too, by way of `ner_available`, which every audit calls to fill a field in
-    its report. So the first audit in a process forks cleanly and every one
-    after it would not, which is why this was invisible until an audit ran twice.
-    Nothing is lost but the preload's measured six per cent, and a run that
-    completes beats one that quietly reads every document in this process.
+    A forked worker cannot use the GPU on a Mac: Metal cannot reach its shader
+    compiler from a process that was forked without being started afresh, and
+    the first kernel it has not compiled aborts the worker, which ends the pool
+    as `BrokenProcessPool`. complydoc's own name model therefore never runs in a
+    worker on the GPU (see `model_server`). Code of the caller's does run there,
+    a classifier, a vision model or a concept judge, and may well use the GPU,
+    so a run with any of those starts each worker afresh instead.
     """
-    if "torch" in sys.modules:
-        return get_context("spawn")
-    if "forkserver" in get_all_start_methods():
+    callers_code = work.classifier or work.verify_spec or work.concept_judge
+    if not callers_code and "forkserver" in get_all_start_methods():
         context = get_context("forkserver")
         context.set_forkserver_preload(["complydoc.audit.warm"])
         return context
     return get_context("spawn")
+
+
+def _name_model_warmer(work: Work) -> Callable[[], None] | None:
+    """What loads the run's name models ahead of its first page; None if it needs none."""
+    from complydoc.sensitive.detectors import token_classifier
+
+    if "sensitive" not in work.requested:
+        return None
+    names = token_classifier.configured_models(work.config.sensitive)
+    if not names:
+        return None
+
+    def warm() -> None:
+        for name in names:
+            token_classifier.model_available(name)
+
+    return warm
+
+
+def _warm_in_background(work: Work) -> None:
+    """Load the name model on a thread while the first document is read.
+
+    Loading it takes two to three seconds, most of a small folder's run; reading
+    the first document takes about as long, and the two need not wait on each other.
+    """
+    warm = _name_model_warmer(work)
+    if warm is not None:
+        threading.Thread(target=warm, name="complydoc-warm", daemon=True).start()
+
+
+@contextmanager
+def _served_models(work: Work) -> Iterator[ServerAddress | None]:
+    """Serve this process's name model to the workers, where the run reads names with one.
+
+    The model is loaded while the workers start and read, not before: loading it
+    first held every worker back by the two seconds it takes.
+    """
+    from complydoc.sensitive.detectors import token_classifier
+
+    warm = _name_model_warmer(work)
+    if warm is None:
+        yield None
+        return
+    server = ModelServer(token_classifier.classify_windows, warm)
+    try:
+        yield server.address
+    finally:
+        server.close()
 
 
 _CLASSIFIER_TOTALS = [0, 0]
@@ -760,22 +806,31 @@ def _count_classifier(outcome: _Outcome) -> None:
             _CLASSIFIER_HOSTS.append(host)
 
 
-def _worker_init(work: Work) -> None:
+def _worker_init(work: Work, models: ServerAddress | None, ocr_threads: int) -> None:
     """Set up a worker process. The network guard is armed here too.
 
     A guard that only holds in the parent would be no guard at all, so every
     process that opens a document arms it before it opens anything.
 
-    The native thread pools are pinned to one thread each. OCR otherwise spreads
-    one page across every core, so without this the workers spend their time
-    fighting each other for the same cores and the run gets slower. It has to
-    happen before the OCR engine is built.
+    The cores are shared out between the workers: OCR is given its share, and
+    the other native thread pools one thread each. OCR otherwise spreads one page
+    across every core, so the workers would spend their time fighting each other
+    for the same cores. Pinning it to one thread wastes them instead when there
+    are fewer workers than cores: two workers on eleven cores read a page in
+    4.3s each, against 1.2s with five threads apiece. It has to happen before
+    the OCR engine is built.
     """
     global _WORKER_WORK
     for variable in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS"):
         os.environ.setdefault(variable, "1")
-    ocr_module.set_threads(1)
+    ocr_module.set_threads(ocr_threads)
     offline.arm()
+    if models is not None:
+        from complydoc.sensitive.detectors import token_classifier
+
+        # A worker that cannot reach the audit's model loads its own, on the CPU.
+        with suppress(OSError):
+            token_classifier.use_server(connect_models(models))
     if work.classifier is not None:
         # After the guard, and after the fork rather than in the preload: a
         # classifier of the caller's may load a model, and `warm` is explicit
@@ -793,12 +848,12 @@ def _worker(path: Path) -> _Outcome:
     return _process(path, _WORKER_WORK)
 
 
-def _process_pool(jobs: int, work: Work) -> ProcessPoolExecutor:
+def _process_pool(jobs: int, work: Work, models: ServerAddress | None) -> ProcessPoolExecutor:
     return ProcessPoolExecutor(
         max_workers=jobs,
-        mp_context=_pool_context(),
+        mp_context=_pool_context(work),
         initializer=_worker_init,
-        initargs=(work,),
+        initargs=(work, models, max(1, (os.cpu_count() or 1) // jobs)),
     )
 
 
@@ -814,7 +869,9 @@ def _kill(pool: ProcessPoolExecutor) -> None:
     pool.shutdown(wait=False, cancel_futures=True)
 
 
-def _timed(files: list[Path], work: Work, jobs: int, timeout: float) -> Iterator[_Outcome]:
+def _timed(
+    files: list[Path], work: Work, jobs: int, timeout: float, models: ServerAddress | None
+) -> Iterator[_Outcome]:
     """Outcomes in order, giving each document `timeout` seconds of its own.
 
     Only killing the process stops a document stuck inside a parser's native code,
@@ -826,7 +883,7 @@ def _timed(files: list[Path], work: Work, jobs: int, timeout: float) -> Iterator
     """
     queue = deque(files)
     in_flight: dict[Future[_Outcome], tuple[Path, float]] = {}
-    pool = _process_pool(jobs, work)
+    pool = _process_pool(jobs, work, models)
     try:
         while queue or in_flight:
             while queue and len(in_flight) < jobs:
@@ -840,7 +897,7 @@ def _timed(files: list[Path], work: Work, jobs: int, timeout: float) -> Iterator
                 queue.extendleft(reversed([p for p, _began in in_flight.values()]))
                 in_flight.clear()
                 _kill(pool)
-                pool = _process_pool(jobs, work)
+                pool = _process_pool(jobs, work, models)
                 yield _Outcome(
                     None,
                     SkipRecord(
@@ -879,9 +936,11 @@ def _outcomes(
     workers, because a document can only be stopped by killing the process reading it.
     """
     if timeout is not None and timeout > 0 and files:
-        yield from _timed(files, work, max(1, jobs), timeout)
+        with _served_models(work) as models:
+            yield from _timed(files, work, max(1, jobs), timeout, models)
         return
     if jobs <= 1 or len(files) < 2:
+        _warm_in_background(work)
         for path in files:
             outcome = _process(path, work)
             _count_classifier(outcome)
@@ -890,7 +949,7 @@ def _outcomes(
 
     returned = 0
     try:
-        with _process_pool(jobs, work) as pool:
+        with _served_models(work) as models, _process_pool(jobs, work, models) as pool:
             for outcome in pool.map(_worker, files, chunksize=1):
                 ocr_module.add_stats(outcome.ocr_pages, outcome.ocr_seconds)
                 _count_classifier(outcome)

@@ -57,10 +57,13 @@ def test_nothing_that_cannot_be_forked_is_warmed():
     assert result.stdout.strip() == "False", "warming must not pull in torch"
 
 
-def test_the_pool_never_forks_this_process():
+def test_the_pool_never_forks_this_process(tmp_path, config):
     """This process may hold the OCR engine's native threads by then.
 
     Forking one that does is a known way to hang the child, so the pool either
     forks from a clean server process or spawns.
     """
-    assert _pool_context().get_start_method() in {"forkserver", "spawn"}
+    from complydoc.audit.run import plan_audit
+
+    work = plan_audit(tmp_path, config).work
+    assert _pool_context(work).get_start_method() in {"forkserver", "spawn"}

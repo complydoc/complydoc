@@ -46,7 +46,7 @@ def pools(monkeypatch):
     """Every pool `_timed` builds, with the second document hanging in the first."""
     built: list[FakePool] = []
 
-    def build(jobs, work):
+    def build(jobs, work, models):
         pool = FakePool({"two.pdf"} if not built else set())
         built.append(pool)
         return pool
@@ -57,7 +57,7 @@ def pools(monkeypatch):
 
 def test_a_document_past_its_deadline_is_skipped_and_the_workers_killed(tmp_path, pools):
     files = [tmp_path / name for name in ("one.pdf", "two.pdf", "three.pdf")]
-    outcomes = list(audit_run._timed(files, work=None, jobs=2, timeout=0.01))
+    outcomes = list(audit_run._timed(files, work=None, jobs=2, timeout=0.01, models=None))
 
     assert [o.skipped.path.name for o in outcomes] == ["one.pdf", "two.pdf", "three.pdf"]
     assert [o.skipped.reason for o in outcomes] == ["read", TIMED_OUT, "read"]

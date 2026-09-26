@@ -79,6 +79,17 @@ in complydoc needs it any more.
 
 ### Changed
 
+- Audits are quicker, most of all in parallel. On a folder of 24 mixed
+  documents: 7.0s instead of 14.7s with the default two workers, 45s instead of
+  126s with `--ocr-compare`, and 91s instead of 199s with page images, OCR
+  comparison, two compared extractors and `--verify`. A page is read by the name
+  model once rather than once for people and again for organisations; a
+  document's pages are read in batches; the model loads while the first
+  documents are read rather than before; each worker's OCR is given its share of
+  the cores rather than one; and OCR recognises one text line at a time, which
+  on pages of mixed line lengths is quicker than padded batches. Findings are
+  unchanged apart from those the better OCR spacing adds.
+
 - The viewer's top bar chooses how pages are read, not which reader is kept:
   Loader, Loader + OCR on scans, OCR on every page, Vision on every page, or the
   complydoc router, which reads each page the cheapest way that reads it well and is
@@ -158,6 +169,22 @@ in complydoc needs it any more.
 
 - The landing page's Questions ask which loader to use for the PDFs and which for the
   Word files, answered with the comparison by file type.
+
+### Fixed
+
+- A parallel audit on a Mac no longer loses its workers. The name model ran on
+  the GPU inside each worker, and a worker cannot start Metal's shader compiler:
+  the first page that needed a new kernel aborted it (`MTLCompilerService ... No
+  such process`), and the run read every document again in one process, taking
+  about twice as long. `--ocr-compare` made it happen on most runs. The audit's
+  own process now holds the one copy of the model and reads names for the
+  workers over a local socket; a worker that cannot reach it reads on the CPU.
+
+- OCR keeps the spaces between words far more often. Text lines were recognised
+  in batches padded to the widest, which ran words together: `Payto:sortcode12-34-56`
+  is now `sortcode 12-34-56`, and the sort code in it is found. Patterns that
+  begin with `\b`, such as an invoice number after `Invoice`, match more OCR'd
+  pages as a result.
 
 ## [0.6.0] — 2026-09-25
 

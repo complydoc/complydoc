@@ -136,6 +136,8 @@ def test_a_category_that_could_not_run_is_not_silently_unmasked(monkeypatch):
     from complydoc.sensitive.detectors import token_classifier
 
     monkeypatch.setattr(token_classifier, "_load", unavailable)
+    # And the pages it read for an earlier test, which would answer instead.
+    token_classifier._entities_by_page.clear()
 
     result = cd.extract_text(SENSITIVE, ocr=False)
     assert MASKING_INCOMPLETE in kinds(result)

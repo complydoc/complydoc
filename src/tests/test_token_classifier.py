@@ -15,11 +15,14 @@ import sys
 
 import pytest
 
+from complydoc.sensitive.base import DetectorContext
+from complydoc.sensitive.detectors import token_classifier
 from complydoc.sensitive.detectors.token_classifier import (
     TokenClassifierDetector,
     _windows,
     configured_models,
     model_available,
+    use_server,
 )
 from complydoc.sensitive.registry import detector_by_id
 
@@ -66,6 +69,67 @@ def test_this_detector_is_what_the_shipped_configuration_prefers(config):
         assert [detector for detector, _ in chain] == ["token_classifier", "ner"]
         assert chain[-1][1].model is not None
         assert chain[-1][1].model.name == "en_core_web_sm"
+
+
+@pytest.fixture
+def served():
+    """A stand-in for the audit's model: "Jane Doe" is a person, "Acme" an organisation."""
+    requests: list[list[str]] = []
+
+    def read(model_name, windows):
+        requests.append(list(windows))
+        found = []
+        for window in windows:
+            entities = []
+            for word, label in (("Jane Doe", "PER"), ("Acme", "ORG")):
+                start = window.find(word)
+                if start >= 0:
+                    entities.append((label, start, start + len(word), 0.99))
+            found.append(entities)
+        return found
+
+    token_classifier._entities_by_page.clear()
+    use_server(read)
+    yield requests
+    use_server(None)
+    token_classifier._entities_by_page.clear()
+
+
+def _context(config, category):
+    return DetectorContext(category, config.sensitive.categories[category])
+
+
+def test_a_page_is_read_once_for_people_and_organisations(config, served):
+    """Both categories name the same model, which used to read every page twice."""
+    text = "Signed by Jane Doe for Acme.\n"
+    detector = TokenClassifierDetector()
+    people = detector.find(text, _context(config, "person_name"))
+    organisations = detector.find(text, _context(config, "organisation_name"))
+
+    assert [text[f.start : f.end] for f in people] == ["Jane Doe"]
+    assert [text[f.start : f.end] for f in organisations] == ["Acme"]
+    assert len(served) == 1
+
+
+def test_a_document_is_read_ahead_in_one_request(config, served):
+    long_page = "\n".join(f"Line {index}: some contract text." for index in range(400))
+    long_page += "\nSigned by Jane Doe.\n"
+    pages = ["Acme invoice.\n", long_page]
+    detector = TokenClassifierDetector()
+    detector.prepare(pages, _context(config, "person_name"))
+
+    assert len(served) == 1, "every window of every page in one batch"
+    assert len(served[0]) == 1 + len(_windows(long_page))
+    found = detector.find(long_page, _context(config, "person_name"))
+    assert [long_page[f.start : f.end] for f in found] == ["Jane Doe"], "an offset that slipped"
+    assert len(served) == 1, "the page was already read"
+
+
+def test_a_worker_reads_with_the_cpu(monkeypatch):
+    """Metal cannot compile a kernel in a process forked without a fresh start."""
+    assert token_classifier._device() is None, "the audit's own process uses the best device"
+    monkeypatch.setattr(token_classifier, "parent_process", lambda: object())
+    assert token_classifier._device() == "cpu"
 
 
 @requires_model
