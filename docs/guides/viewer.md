@@ -63,12 +63,16 @@ the button is disabled.
 
 ## Settings
 
-Under `complydoc ui`, the Settings page lists the findings the ignore file sets
-aside, where each reason and end date can be changed and each entry removed. It
-also lists [your own concepts](custom-concepts.md), which it can add, edit and
-remove. Both are files beside the documents a report audited, which the command
-line reads too, and changes apply from the next run. A report opened any other
-way shows what its run used, read only.
+The Settings page holds [your own concepts](custom-concepts.md), the models every
+report is priced on, and the findings the ignore file sets aside.
+
+- **Concepts and ignored findings** are files beside the documents a report
+  audited, which the command line reads too. Under `complydoc ui` they can be
+  added, changed and removed here, and changes apply from the next run. A report
+  opened any other way shows what its run used, read only.
+- **Preferred models** are kept in the browser, and are the same choice as the top
+  bar's. A report that did not price the preferred model uses its cheapest model
+  from the same provider.
 
 ## From Python
 

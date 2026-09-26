@@ -23,10 +23,13 @@ load.
   sends page text to TypeSafe, and the report names where it went. A run without it
   says which concepts went unjudged.
 
-- A Settings page in the viewer. Under `complydoc ui` it manages the ignored findings
-  (reasons, end dates, removal) and your concepts (add, edit, remove, and try a pattern
-  on some text first), writing the files beside the documents. Changes apply from the
-  next run. Opened any other way, it shows what the run used, read only.
+- A Settings page in the viewer: your concepts first (add, edit, remove, and try a
+  pattern on some text first), then the models every report is priced on, then the
+  ignored findings (reasons, end dates, removal). Under `complydoc ui` the concepts and
+  the ignored findings are written to the files beside the documents, and apply from
+  the next run; opened any other way, they show what the run used, read only. The
+  preferred models are kept in the browser. A report that did not price the preferred
+  model uses its cheapest from the same provider rather than its first.
 
 - Ignoring findings. `complydoc ignore <fingerprint> --reason …` records a finding that is
   not a problem in `.complydoc-ignore.yaml`, with who decided, an optional end date and

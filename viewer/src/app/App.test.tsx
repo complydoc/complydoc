@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { sampleText } from "@/test/sample";
 import { App } from "./App";
@@ -69,7 +69,8 @@ describe("App", () => {
     render(<App />);
     await userEvent.click(screen.getByRole("button", { name: "pypdf against pdfplumber" }));
     await userEvent.click(await screen.findByRole("button", { name: "Switch to the dark theme" }));
-    expect(document.documentElement).toHaveClass("dark");
+    // The class is applied in an effect after the click, which a busy run can take a moment to reach.
+    await waitFor(() => expect(document.documentElement).toHaveClass("dark"));
     expect(screen.getByRole("button", { name: "Switch to the light theme" })).toBeInTheDocument();
   });
 

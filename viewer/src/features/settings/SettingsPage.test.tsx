@@ -7,6 +7,9 @@ import type { Report } from "@/report/types";
 import { required, sampleAudit } from "@/test/sample";
 import { ConceptForm } from "./ConceptForm";
 import { SettingsPage } from "./SettingsPage";
+import { preferred } from "@/report/planChoice";
+import type { PricedModel } from "@/report/pricing";
+import { renderPage } from "@/test/render";
 
 function withSetup(): Report {
   const report = sampleAudit();
@@ -44,12 +47,18 @@ function readOnly(report: Report): IgnoreState {
 describe("SettingsPage", () => {
   it("shows what the run used, read only, outside complydoc ui", () => {
     const report = withSetup();
-    render(
+    renderPage(
       <IgnoreContext.Provider value={readOnly(report)}>
         <SettingsPage report={report} />
       </IgnoreContext.Provider>,
     );
-    expect(screen.getByText("Read only")).toBeInTheDocument();
+    // Your concepts come first, then the models, then what is ignored.
+    expect(screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent)).toEqual([
+      "Your concepts",
+      "Preferred models",
+      "Ignored findings",
+    ]);
+    expect(screen.getByRole("button", { name: "Preferred text model" })).toBeInTheDocument();
     const ignored = screen.getByRole("list", { name: "Ignored findings" });
     expect(ignored).toHaveTextContent("Our own account.");
     expect(ignored).toHaveTextContent("Set aside 2 on this run");
@@ -109,5 +118,32 @@ describe("the ignore file", () => {
     const described = ignoreDescription({ ...finding, value: "the value in the clear" });
     expect(described).not.toContain("the value in the clear");
     expect(described).toContain(finding.match?.masked ?? "");
+  });
+});
+
+describe("the preferred model", () => {
+  const model = (id: string, provider: string, inputPerMtok: number): PricedModel => ({
+    id,
+    name: id,
+    provider,
+    inputPerMtok,
+    vision: true,
+    formula: null,
+    tokenizer: "o200k_base",
+  });
+  const models = [
+    model("gpt-6-sol", "openai", 5),
+    model("claude-sonnet-5", "anthropic", 3),
+    model("claude-haiku-4-5", "anthropic", 1),
+  ];
+
+  it("is used where the report priced it", () => {
+    expect(preferred(models, "claude-sonnet-5", "anthropic")?.id).toBe("claude-sonnet-5");
+  });
+
+  it("falls back to the cheapest from the same provider, then to the report's first", () => {
+    expect(preferred(models, "claude-opus-5-5", "anthropic")?.id).toBe("claude-haiku-4-5");
+    expect(preferred(models, "grok-4-7", "xai")?.id).toBe("gpt-6-sol");
+    expect(preferred([], "x", "y")).toBeNull();
   });
 });
