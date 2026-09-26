@@ -45,8 +45,7 @@ finding sits in the whole document; click one to go there. Rest the pointer on
 an underlined value to see what it is and how sure complydoc is, and tick it off
 as not a problem. Under `complydoc ui` the tick is saved to the audited folder's
 ignore file; otherwise it lasts while the page is open. Ignored findings leave
-the text, and the Security page lists them. The arrows beside the file name step
-through the findings in order.
+the text, and the Security page lists them.
 
 To the left of the text is the page's picture, when the report has one. Put it
 away to give the text the whole width.

@@ -14,9 +14,8 @@ import { hasPicture } from "@/report/picture";
 import { documentTotals, pageEstimate } from "@/report/plan";
 import type { FindingRef } from "@/report/route";
 import type { DocumentEntry, Report } from "@/report/types";
-import { EyeToggle, FindingStepper } from "./DocumentControls";
+import { EyeToggle, PageStepper } from "./DocumentControls";
 import { FindingPopover } from "./FindingPopover";
-import { PagePicker } from "./PagePicker";
 import { PagePane } from "./PagePane";
 import { PageReading } from "./PageReading";
 import { VisionNote } from "./VisionNote";
@@ -35,7 +34,7 @@ interface DocumentDetailProps {
 /**
  * One document. Read more than one way, a diff of two readings; read one way,
  * its pages as read. What was found is marked in the text itself: rest on a
- * mark for what it is and to ignore it, or step through the marks in order. To
+ * mark for what it is and to ignore it, or pick one from the rail beside it. To
  * the left of the text, the page's picture when the report has one, which can
  * be put away to give the text the whole width.
  */
@@ -84,8 +83,6 @@ export function DocumentDetail({
     [findings, isIgnored],
   );
   // The findings to step through: those still open, in page order.
-  const open = findings.filter((f) => !isIgnored(f));
-  const at = open.findIndex((f) => f.key === active);
 
   const page = pages[pageIndex];
   if (!page) {
@@ -126,15 +123,6 @@ export function DocumentDetail({
     const target = pages[next];
     if (target) setJump({ page: target.number });
   };
-  const step = (next: number) => {
-    const target = open[next];
-    if (!target) return;
-    setActive(target.key);
-    setFocus({ key: target.key });
-    setPicked(null);
-    // Read one way, the text is one page at a time: turn to the finding's page.
-    if (!compared && target.page !== null) setPageIndex(pageAt(target.page));
-  };
   const onPick = (key: string, rect: DOMRect) => {
     cancelClose();
     setActive(key);
@@ -163,6 +151,7 @@ export function DocumentDetail({
   };
 
   const eyeToggle = <EyeToggle available={revealable} on={unmasked} onChange={setEye} />;
+  const pager = <PageStepper number={page.number} index={pageIndex} count={pages.length} onPick={pick} />;
 
   return (
     <div className="flex flex-col gap-3 lg:h-[calc(100svh-6rem)]">
@@ -190,11 +179,13 @@ export function DocumentDetail({
             {totals.seconds !== null && totals.untimed === 0 && ` · ${formatSeconds(totals.seconds)}`}
           </span>
         )}
-        <span className="ml-auto flex items-center gap-1">
-          <FindingStepper at={at} count={open.length} onStep={step} />
-          {/* Read one way, there is no readers' row: the eye sits here, right above the text. */}
-          {!compared && eyeToggle}
-        </span>
+        {/* Read one way, there is no readers' row: the eye and the pages sit here, right above the text. */}
+        {!compared && (
+          <span className="ml-auto flex items-center gap-3">
+            {eyeToggle}
+            {pager}
+          </span>
+        )}
       </div>
 
       {/* The page on the left and the text on the right, each as tall as the space below the title. */}
@@ -240,7 +231,8 @@ export function DocumentDetail({
               unmasked={unmasked}
               notes={notes}
               inline={inline}
-              toolbar={eyeToggle}
+              controls={eyeToggle}
+              end={pager}
               onVisiblePage={(number) => setPageIndex(pageAt(number))}
             />
           ) : (
@@ -251,9 +243,6 @@ export function DocumentDetail({
               inline={inline}
             />
           )}
-          <div className="flex shrink-0 justify-center">
-            <PagePicker count={pages.length} current={pageIndex} onPick={pick} />
-          </div>
         </div>
       </div>
 

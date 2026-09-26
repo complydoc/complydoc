@@ -83,7 +83,8 @@ describe("DocumentDetail", () => {
     open(sampleAudit(), "master-services-agreement.pdf");
     expect(screen.getByRole("heading", { name: "master-services-agreement.pdf" })).toBeInTheDocument();
     expect(screen.getByTitle("The whole document, under the plan chosen above")).toHaveTextContent(/^\$\d/);
-    expect(screen.getByRole("navigation", { name: "pagination" })).toBeInTheDocument();
+    // The pages sit at the end of the readers' row, right above the diff.
+    expect(screen.getByRole("group", { name: "Pages" })).toHaveTextContent("Page 1 of 8");
     expect(screen.getByRole("combobox", { name: "Base reader" })).toHaveTextContent("pdfplumber");
     expect(screen.getByRole("combobox", { name: "Compare reader" })).toHaveTextContent("pypdf");
     expect(await screen.findByLabelText("Lines changed", {}, { timeout: 5000 })).toBeInTheDocument();
@@ -98,8 +99,8 @@ describe("DocumentDetail", () => {
   it("moves through the pages of a document read one way", async () => {
     open(sampleAudit(), "supplier-invoices-scanned.pdf");
     const first = screen.getByTestId("page-reading").textContent;
-    await userEvent.click(screen.getByRole("link", { name: "Go to next page" }));
-    expect(screen.getByRole("link", { name: "2" })).toHaveAttribute("aria-current", "page");
+    await userEvent.click(screen.getByRole("button", { name: "Next page" }));
+    expect(screen.getByRole("group", { name: "Pages" })).toHaveTextContent(/Page 2 of/);
     expect(screen.getByTestId("page-reading").textContent).not.toBe(first);
   });
 
@@ -143,23 +144,15 @@ describe("DocumentDetail", () => {
   });
 
   it("puts a tick on the rail for each finding, which goes to it", async () => {
-    recordHighlights();
+    const registry = recordHighlights();
     open(sampleAudit(), "supplier-invoices-scanned.pdf");
     const rail = await screen.findByRole("group", { name: "Where the findings are" });
     const [tick] = within(rail).getAllByRole("button");
+    expect(marked(registry, "active")).toHaveLength(0);
     await userEvent.click(required(tick));
-    expect(within(screen.getByRole("group", { name: "Findings" })).getByText(/Finding \d+ of \d+/)).toBeInTheDocument();
+    // The finding it names is drawn out from the rest.
+    await vi.waitFor(() => expect(marked(registry, "active").length).toBeGreaterThan(0));
     stopRecording();
-  });
-
-  it("steps through the findings in order", async () => {
-    open(sampleAudit(), "master-services-agreement.pdf");
-    const findings = within(screen.getByRole("group", { name: "Findings" }));
-    expect(findings.getByText(/\d+ findings/)).toBeInTheDocument();
-    await userEvent.click(findings.getByRole("button", { name: "Next finding" }));
-    expect(findings.getByText(/Finding 1 of \d+/)).toBeInTheDocument();
-    await userEvent.click(findings.getByRole("button", { name: "Previous finding" }));
-    expect(findings.getByText(/Finding (\d+) of \1/)).toBeInTheDocument();
   });
 
   it("opens on a finding a link named, marked out from the rest, on its page", async () => {
@@ -169,7 +162,7 @@ describe("DocumentDetail", () => {
     const index = entry.sensitive.matches.findIndex((m) => m.category === "iban");
     const match = required(entry.sensitive.matches[index]);
     open(report, "master-services-agreement.pdf", { finding: { kind: "identifier", index } });
-    expect(screen.getByRole("link", { name: String(match.page) })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("group", { name: "Pages" })).toHaveTextContent(`Page ${match.page} of`);
     await vi.waitFor(() => expect(marked(registry, "active").length).toBeGreaterThan(0), { timeout: 5000 });
     expect(required(marked(registry, "active")[0]).replace(/\s+/g, "")).toBe(match.masked.replace(/\s+/g, ""));
     stopRecording();

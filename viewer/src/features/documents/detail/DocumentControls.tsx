@@ -21,14 +21,15 @@ export function EyeToggle({
         {/* A disabled button takes no pointer events, so the tooltip hangs on a wrapper. */}
         <span tabIndex={available ? -1 : 0}>
           <Button
-            variant={on ? "secondary" : "ghost"}
-            size="icon-sm"
+            variant={on ? "secondary" : "outline"}
+            size="sm"
             aria-pressed={on}
             disabled={!available}
             onClick={() => onChange(!on)}
             aria-label={on ? "Mask the values" : "Show the values"}
           >
             {on ? <EyeIcon /> : <EyeOffIcon />}
+            {on ? "Values shown" : "Masked"}
           </Button>
         </span>
       </TooltipTrigger>
@@ -43,23 +44,40 @@ export function EyeToggle({
   );
 }
 
-/** A way through the findings in order, like the results of a search. */
-export function FindingStepper({ at, count, onStep }: { at: number; count: number; onStep: (next: number) => void }) {
-  if (count === 0) return <span className="text-sm text-muted-foreground">Nothing found</span>;
+/** Which page the text is on, and the pages either side: small enough to sit beside the text's controls. */
+export function PageStepper({
+  number,
+  index,
+  count,
+  onPick,
+}: {
+  number: number;
+  index: number;
+  count: number;
+  onPick: (index: number) => void;
+}) {
+  if (count < 2) return null;
   return (
-    <span className="flex items-center text-sm text-muted-foreground" role="group" aria-label="Findings">
+    <span className="flex items-center text-sm text-muted-foreground" role="group" aria-label="Pages">
       <Button
         variant="ghost"
         size="icon-sm"
-        aria-label="Previous finding"
-        onClick={() => onStep(at <= 0 ? count - 1 : at - 1)}
+        aria-label="Previous page"
+        disabled={index === 0}
+        onClick={() => onPick(index - 1)}
       >
         <ChevronLeftIcon />
       </Button>
       <span className="tabular-nums">
-        {at < 0 ? `${count} ${count === 1 ? "finding" : "findings"}` : `Finding ${at + 1} of ${count}`}
+        Page {number} of {count}
       </span>
-      <Button variant="ghost" size="icon-sm" aria-label="Next finding" onClick={() => onStep((at + 1) % count)}>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        aria-label="Next page"
+        disabled={index === count - 1}
+        onClick={() => onPick(index + 1)}
+      >
         <ChevronRightIcon />
       </Button>
     </span>

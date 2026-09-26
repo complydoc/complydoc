@@ -35,7 +35,8 @@ load.
   in the text itself, coloured by severity, and a rail at the text's edge shows where
   each sits in the whole document. Resting the pointer on one says what it is and lets
   you tick it off as not a problem, which under `complydoc ui` is saved to the ignore
-  file; ignored findings leave the text. Arrows step through the findings in order. Each page's
+  file; ignored findings leave the text. The page picker is a compact "Page 3 of 8" above
+  the text, and the eye button sits beside the reader dropdowns. Each page's
   first line says what it costs to read. The page picture sits to the left of the text,
   as tall as it, and can be put away to give the text the whole width. The separate Pages and Diff views, the
   reading panes and the per-reader costs are gone. An eye button shows the values in a

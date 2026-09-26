@@ -49,8 +49,10 @@ interface DocumentDiffProps {
   unmasked?: boolean;
   /** Findings to mark where they sit in the text. */
   inline?: InlineFindings;
-  /** More controls at the end of the readers' row, right above the text, such as the eye. */
-  toolbar?: ReactNode;
+  /** More controls beside the readers, such as the eye. */
+  controls?: ReactNode;
+  /** Controls at the far end of the readers' row, right above the text, such as the pages. */
+  end?: ReactNode;
   /** A few words after each page's `# Page N` line, such as what the page costs. */
   notes?: Record<number, string>;
 }
@@ -67,7 +69,8 @@ export function DocumentDiff({
   onVisiblePage,
   unmasked = false,
   inline,
-  toolbar,
+  controls,
+  end,
   notes = {},
 }: DocumentDiffProps) {
   const [[base, compare], setSides] = useState<[Side, Side]>(() => defaultSides(report, index));
@@ -92,7 +95,8 @@ export function DocumentDiff({
           reader={compare.reader}
           onChange={(reader) => setSides([base, { ...compare, reader }])}
         />
-        {toolbar && <span className="ml-auto">{toolbar}</span>}
+        {controls}
+        {end && <span className="ml-auto">{end}</span>}
       </div>
 
       <Suspense fallback={<Skeleton className="min-h-0 w-full flex-1 rounded-xl" />}>
