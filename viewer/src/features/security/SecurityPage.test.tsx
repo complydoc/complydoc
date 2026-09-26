@@ -61,4 +61,22 @@ describe("concepts a model found", () => {
     render(<SecurityPage report={sampleAudit()} />);
     expect(screen.queryByRole("list", { name: "Found by a model" })).not.toBeInTheDocument();
   });
+
+  it("says which categories were not looked for, and why", () => {
+    const report = sampleAudit();
+    const unscanned = { category: "person_name", label: "Person name", reason: "no name model is installed" };
+    const documents = report.documents.map((document) => ({
+      ...document,
+      sensitive: { ...document.sensitive, unscanned_categories: [unscanned] },
+    }));
+    render(<SecurityPage report={{ ...report, documents }} />);
+    const notice = screen.getByRole("alert");
+    expect(within(notice).getByText("1 category was not looked for")).toBeInTheDocument();
+    expect(within(notice).getByText(/no name model is installed/)).toBeInTheDocument();
+  });
+
+  it("raises no notice when everything was looked for", () => {
+    render(<SecurityPage report={sampleAudit()} />);
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
 });

@@ -35,12 +35,12 @@ export function ModelPicker({ label, models, value, onChange, visionOnly = false
   return (
     <ModelSelector open={open} onOpenChange={setOpen}>
       <ModelSelectorTrigger asChild>
-        <Button variant="outline" size="sm" aria-label={label} className="max-w-64 justify-between gap-2">
+        <Button variant="outline" size="sm" aria-label={label} className="max-w-64 min-w-0 shrink justify-between gap-2">
           {visionOnly && <EyeIcon aria-hidden="true" className="size-3.5 text-muted-foreground" />}
           {value ? (
             <>
               <ModelSelectorLogo provider={value.provider} className="size-3.5" />
-              <ModelSelectorName>{value.name}</ModelSelectorName>
+              <ModelSelectorName className="truncate">{value.name}</ModelSelectorName>
             </>
           ) : (
             <ModelSelectorName className="text-muted-foreground">No priced model</ModelSelectorName>

@@ -11,10 +11,12 @@ import type { ChartConfig } from "@/components/ui/chart";
 import { usePlan } from "@/hooks/usePlan";
 import { fileName, formatCount, formatPageUsd, formatSeconds, plural } from "@/report/format";
 import { attentionDocuments, topFindings } from "@/report/home";
+import { limitationsOf } from "@/report/limitations";
 import { measured } from "@/report/measured";
 import { documentTotals, reportTotals } from "@/report/plan";
 import { documentHref } from "@/report/route";
 import type { Report } from "@/report/types";
+import { ImportantLimitations, LimitationNotes } from "./Limitations";
 import { ReadinessCard } from "./ReadinessCard";
 import { RunChanges } from "./RunChanges";
 
@@ -63,6 +65,7 @@ export function HomePage({ report, previous = null }: { report: Report; previous
   const priced = measured(report, "cost");
   const hasDocuments = measured(report, "documents");
   const NOT_IN_RUN = "not in this run";
+  const limitations = limitationsOf(report);
   const byCost = report.documents
     .map((document) => ({ name: fileName(document.relative_path), usd: documentTotals(report, document, plan).usd ?? 0 }))
     .filter((row) => row.usd > 0)
@@ -101,6 +104,12 @@ export function HomePage({ report, previous = null }: { report: Report; previous
           }
         />
       </div>
+
+      {limitations.important.length > 0 && (
+        <Section title="Before you draw conclusions">
+          <ImportantLimitations report={report} limitations={limitations.important} />
+        </Section>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
@@ -216,6 +225,8 @@ export function HomePage({ report, previous = null }: { report: Report; previous
           </Card>
         </Section>
       </div>
+
+      {limitations.notes.length > 0 && <LimitationNotes report={report} limitations={limitations.notes} />}
     </SectionStack>
   );
 }

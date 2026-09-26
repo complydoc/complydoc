@@ -15,6 +15,8 @@ import { HiddenInstructions } from "./HiddenInstructions";
 import { IgnoredFindings } from "./IgnoredFindings";
 import { JudgedConcepts } from "./JudgedConcepts";
 import { judgedRows } from "@/report/judged";
+import { notLookedFor } from "@/report/limitations";
+import { NotLookedFor } from "./NotLookedFor";
 
 const BY_KIND = { count: { label: "Found", color: "var(--chart-5)" } } satisfies ChartConfig;
 const BY_EVIDENCE = { count: { label: "Found", color: "var(--primary)" } } satisfies ChartConfig;
@@ -37,9 +39,11 @@ export function SecurityPage({ report }: { report: Report }) {
   const kinds = categoriesByCount(report);
   const ignored = ignoredRows(report);
   const judged = judgedRows(report);
+  const unscanned = notLookedFor(report);
 
   return (
     <SectionStack>
+      {unscanned.length > 0 && <NotLookedFor categories={unscanned} documents={report.documents.length} />}
       <Section title="Found">
         <StatGrid>
           {SEVERITIES.map((severity) => (

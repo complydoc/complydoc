@@ -18,6 +18,13 @@ This is a breaking change for anyone calling `cd.write_html`; see Removed.
 
 ### Added
 
+- The viewer shows the run's limitations, which only the retired HTML page did. The
+  important ones, which change what a figure means, sit on Home before the findings,
+  each naming and linking the documents it applies to. The rest, on how the figures
+  were got, fold away beneath. The Security page names any identifier category
+  nothing was looked for, and why, above the findings, so a missing name model
+  does not read as a folder with no names in it.
+
 - The report carries the lines it was judged by, under `thresholds`: the lowest
   score in each readiness band and the similarity below which two readings of a
   page differ. The viewer bands scores and marks disagreeing readers on these
@@ -208,6 +215,9 @@ This is a breaking change for anyone calling `cd.write_html`; see Removed.
   still sends no page picture or page text.
 
 ### Fixed
+
+- The viewer's top bar no longer pushes the page sideways on a narrow window: the
+  reading method, loader and model pickers shorten their labels instead.
 
 - `clean_document` left the network guard on for the rest of the caller's
   process once it returned, so a notebook that cleaned a file could no longer

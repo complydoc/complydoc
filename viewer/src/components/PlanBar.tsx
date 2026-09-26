@@ -19,9 +19,9 @@ export function PlanBar() {
   const text = plan.method !== "vision";
 
   return (
-    <div role="group" aria-label="Loading plan" className="flex items-center gap-2">
+    <div role="group" aria-label="Loading plan" className="flex min-w-0 items-center gap-2">
       <Select value={plan.method} onValueChange={(id) => chooseMethod(id as Method)}>
-        <SelectTrigger size="sm" aria-label="How pages are read" className="max-w-56">
+        <SelectTrigger size="sm" aria-label="How pages are read" className="max-w-56 min-w-0 shrink">
           <BookOpenTextIcon className="size-3.5 text-muted-foreground" />
           <SelectValue />
         </SelectTrigger>
@@ -43,7 +43,7 @@ export function PlanBar() {
             value={plan.loaders[loaders.format] ?? loaders.readers[0] ?? ""}
             onValueChange={(reader) => chooseLoader(loaders.format, reader)}
           >
-            <SelectTrigger size="sm" aria-label={`${loaders.label} loader`} className="max-w-48">
+            <SelectTrigger size="sm" aria-label={`${loaders.label} loader`} className="max-w-48 min-w-0 shrink">
               <span className="text-xs text-muted-foreground">{loaders.label}</span>
               <SelectValue />
             </SelectTrigger>

@@ -125,6 +125,12 @@ export interface Limitation {
   affected: string[];
 }
 
+export interface UnscannedCategory {
+  category: string;
+  label: string;
+  reason: string;
+}
+
 export interface SensitiveMatch {
   category: string;
   label: string;
@@ -276,7 +282,11 @@ export interface DocumentEntry {
   relative_path: string;
   format: string;
   page_count: number;
-  sensitive: { matches: SensitiveMatch[] };
+  sensitive: {
+    matches: SensitiveMatch[];
+    /** Categories nothing was looked for in this document, and why: a missing model, say. */
+    unscanned_categories?: UnscannedCategory[];
+  };
   content_findings: ContentFinding[];
   /** Schema 17: findings an ignore file set aside. Not in `sensitive.matches` or `content_findings`. */
   ignored?: IgnoredFinding[];

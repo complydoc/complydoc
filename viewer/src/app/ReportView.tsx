@@ -152,7 +152,8 @@ export function ReportView({
                 )}
               </BreadcrumbList>
             </Breadcrumb>
-            <div className="ml-auto flex shrink-0 items-center gap-2">
+            {/* The plan's pickers give up width before the page scrolls sideways. */}
+            <div className="ml-auto flex min-w-0 items-center gap-2">
               <PlanBar />
               <ModeToggle dark={dark} onToggle={onToggleTheme} />
             </div>

@@ -73,4 +73,16 @@ describe("what Home points at", () => {
     expect(confirmedHigh).toBeLessThanOrEqual(high);
     expect(rows.every((row) => row.severity === "high")).toBe(true);
   });
+
+  it("says what the figures cannot be trusted for, before anything else is read", () => {
+    const report = sampleAudit();
+    renderPage(<HomePage report={report} />);
+    const important = screen.getByRole("list", { name: "Important limitations" });
+    const expected = report.limitations.filter((l) => l.severity === "important").length;
+    expect(within(important).getAllByRole("listitem")).toHaveLength(expected);
+    // A limitation on a document opens that document.
+    expect(within(important).getAllByRole("link")[0]).toHaveAttribute("href", expect.stringMatching(/^#documents\/\d+$/));
+    // The rest say how the figures were got, and wait to be opened.
+    expect(screen.getByText(/notes on how the figures were got/)).toBeInTheDocument();
+  });
 });
