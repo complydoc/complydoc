@@ -7,6 +7,7 @@ import { formatCount, formatPageUsd, formatPercent, formatScore, formatSeconds }
 import type { Totals } from "@/report/plan";
 import { agreementTone, bandOf, bandTone, severityTone, visionTone } from "@/report/select";
 import type { TreeNode } from "@/report/tree";
+import type { Thresholds } from "@/report/types";
 
 const column = createColumnHelper<TreeNode>();
 const numeric = { meta: { numeric: true }, sortUndefined: "last" } as const;
@@ -29,7 +30,7 @@ function Time({ totals }: { totals: Totals }) {
   );
 }
 
-function columnsFor(vision: boolean): Columns<TreeNode> {
+function columnsFor(vision: boolean, thresholds: Thresholds): Columns<TreeNode> {
   const columns: Columns<TreeNode> = [
     column.accessor("name", {
       header: "Name",
@@ -77,7 +78,7 @@ function columnsFor(vision: boolean): Columns<TreeNode> {
       header: "Readiness",
       cell: (c) => {
         const score = c.getValue() ?? null;
-        return <ToneBadge tone={bandTone(bandOf(score))}>{formatScore(score)}</ToneBadge>;
+        return <ToneBadge tone={bandTone(bandOf(thresholds, score))}>{formatScore(score)}</ToneBadge>;
       },
       ...numeric,
     }),
@@ -88,7 +89,7 @@ function columnsFor(vision: boolean): Columns<TreeNode> {
         const value = getValue();
         if (value === undefined) return "–";
         return (
-          <ToneBadge tone={agreementTone(value)}>
+          <ToneBadge tone={agreementTone(thresholds, value)}>
             {formatPercent(value)}
             {row.original.document?.reordered && " · reordered"}
           </ToneBadge>
@@ -146,11 +147,19 @@ function columnsFor(vision: boolean): Columns<TreeNode> {
  * Every document, in the folders it came from. Each folder adds up what its
  * documents cost and take to read under the plan chosen in the top bar.
  */
-export function DocumentTree({ nodes, vision }: { nodes: TreeNode[]; vision: boolean }) {
+export function DocumentTree({
+  nodes,
+  vision,
+  thresholds,
+}: {
+  nodes: TreeNode[];
+  vision: boolean;
+  thresholds: Thresholds;
+}) {
   return (
     <DataTable
       caption="Documents"
-      columns={columnsFor(vision)}
+      columns={columnsFor(vision, thresholds)}
       rows={nodes}
       rowKey={(node) => node.id}
       subRows={(node) => node.children}

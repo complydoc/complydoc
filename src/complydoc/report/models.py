@@ -14,7 +14,7 @@ import datetime as dt
 from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Final
 
 from complydoc.config.schema import MaskingConfig
 from complydoc.cost.estimator import DocumentCostEstimate, FolderCostEstimate
@@ -22,6 +22,7 @@ from complydoc.ingest import ocr as ocr_module
 from complydoc.ingest.base import DocumentFormat, SkipRecord
 from complydoc.readiness.analyser import ReadinessReport
 from complydoc.readiness.base import SignalStatus
+from complydoc.readiness.scoring import BAND_FLOORS
 from complydoc.report.preview import PagePreview
 from complydoc.sensitive.base import SensitiveMatch
 from complydoc.sensitive.scanner import ScanResult
@@ -35,6 +36,7 @@ if TYPE_CHECKING:  # pragma: no cover - type-checking imports only
 
 __all__ = [
     "SCHEMA_VERSION",
+    "SIMILAR_ENOUGH",
     "Aggregate",
     "AuditReport",
     "ConceptFinding",
@@ -56,6 +58,7 @@ __all__ = [
     "PageVerification",
     "ReadingCost",
     "RunMetadata",
+    "Thresholds",
     "VerificationSummary",
 ]
 
@@ -725,7 +728,7 @@ class VerificationSummary:
     """One sentence a person reads first, such as "3 of 80 pages disagree"."""
 
 
-_SIMILAR_ENOUGH = 0.95
+SIMILAR_ENOUGH: Final = 0.95
 """Below this, two readings of a page are telling different stories.
 
 Line endings and stray whitespace put agreeing extractors at about 0.99 of each
@@ -923,7 +926,7 @@ class DocumentReport:
             # same characters in a different order — one reading straight
             # across a two-column page and scrambling every sentence — and a
             # count says they agreed.
-            if other.similarity < _SIMILAR_ENOUGH:
+            if other.similarity < SIMILAR_ENOUGH:
                 return (
                     "same words, different order"
                     if other.reordered
@@ -992,6 +995,20 @@ class Aggregate:
     """
 
 
+@dataclass(frozen=True, slots=True)
+class Thresholds:
+    """The lines complydoc draws, written into the report so a reader of it draws the same ones.
+
+    Schema 17. The viewer bands scores and marks disagreeing readings on these,
+    keeping no copy of its own that could drift from them.
+    """
+
+    bands: dict[str, float] = field(default_factory=lambda: dict(BAND_FLOORS))
+    """The lowest score in each readiness band, best first."""
+    similar_enough: float = SIMILAR_ENOUGH
+    """Below this, two readings of a page tell different stories."""
+
+
 @dataclass(slots=True)
 class AuditReport:
     run: RunMetadata
@@ -1032,6 +1049,8 @@ class AuditReport:
 
     None for a run that split nothing. A chunks run has no per-document entries.
     """
+    thresholds: Thresholds = field(default_factory=Thresholds)
+    """Schema 17: the bands and the similarity line this report was judged by."""
 
     def to_pandas(self, table: str = "documents") -> Any:
         """One table of this report as a pandas DataFrame.

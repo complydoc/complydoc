@@ -10,12 +10,13 @@ this document, so signals that do not apply do not lower the score.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Final
 
 from complydoc.config.schema import ScoringConfig
 from complydoc.readiness.base import SignalResult
 from complydoc.utils.text import count
 
-__all__ = ["ReadinessScore", "ScoreComponent", "band_label", "compute_score"]
+__all__ = ["BAND_FLOORS", "ReadinessScore", "ScoreComponent", "band_label", "compute_score"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -43,19 +44,24 @@ class ReadinessScore:
     confidence_note: str | None
 
 
+BAND_FLOORS: Final[dict[str, float]] = {
+    "ready": 75,
+    "workable": 50,
+    "needs work": 25,
+    "not ready": 0,
+}
+"""The lowest score in each band, best first. Written into every report, so the
+viewer bands a score, a folder's average among them, on these numbers and no
+copy of its own."""
+
+
 def band_label(value: float) -> str:
     """The band, worded so that it reads the same way round as the number.
 
     The score used to be called difficulty while a high one meant easy, so both
     the name and half the labels ran against the scale.
     """
-    if value >= 75:
-        return "ready"
-    if value >= 50:
-        return "workable"
-    if value >= 25:
-        return "needs work"
-    return "not ready"
+    return next((band for band, floor in BAND_FLOORS.items() if value >= floor), "not ready")
 
 
 def compute_score(results: list[SignalResult], config: ScoringConfig) -> ReadinessScore | None:

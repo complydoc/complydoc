@@ -15,6 +15,12 @@ in complydoc needs it any more.
 
 ### Added
 
+- The report carries the lines it was judged by, under `thresholds`: the lowest
+  score in each readiness band and the similarity below which two readings of a
+  page differ. The viewer bands scores and marks disagreeing readers on these
+  instead of a copy of its own, so the two cannot drift apart. A report written
+  before them is judged on the lines it was scored with.
+
 - The viewer has the same pages for every run: Home, Security, Cost & time,
   Documents, Loaders and Chunks. A page the run did not produce says so, what it
   would hold, and the command that fills it for the same folder, ready to copy; Home

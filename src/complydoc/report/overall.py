@@ -36,7 +36,7 @@ from complydoc.readiness.scoring import band_label
 from complydoc.report.models import AuditReport, DocumentReport, MetadataFinding
 from complydoc.sensitive.base import EVIDENCE_ORDER, SEVERITY_WEIGHT, SensitiveMatch
 
-__all__ = ["Factor", "OverallReadiness", "band_of", "overall_readiness"]
+__all__ = ["Factor", "OverallReadiness", "overall_readiness"]
 
 _EVIDENCE_WEIGHT = {
     "confirmed": 1.0,
@@ -49,11 +49,6 @@ _EVIDENCE_WEIGHT = {
 A model's guess is not nothing — it is the only evidence available for a
 person's name — but it should not weigh the same as a checksum that passed.
 """
-
-
-def band_of(value: float) -> str:
-    """The same four bands the content score uses, so one scale reads across."""
-    return band_label(value)
 
 
 @dataclass(frozen=True, slots=True)
@@ -197,12 +192,13 @@ def overall_readiness(report: AuditReport, config: OverallConfig) -> OverallRead
             continue
         scores.append(value)
         result.by_document[document.relative_path] = value
-        result.bands[band_of(value)] = result.bands.get(band_of(value), 0) + 1
+        # The same four bands the content score uses, so one scale reads across.
+        result.bands[band_label(value)] = result.bands.get(band_label(value), 0) + 1
 
     result.scored_documents = len(scores)
     if scores:
         result.score = round(sum(scores) / len(scores), 1)
-        result.label = band_of(result.score)
+        result.label = band_label(result.score)
 
     def mean(key: str) -> float | None:
         values = collected[key]

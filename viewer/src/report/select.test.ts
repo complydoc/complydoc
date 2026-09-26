@@ -19,8 +19,9 @@ describe("select", () => {
     ]);
   });
 
-  it("bands a score on complydoc's thresholds", () => {
-    expect([100, 75, 74.9, 50, 25, 0].map(bandOf)).toEqual([
+  it("bands a score on the thresholds the report carries", () => {
+    const { thresholds } = sampleAudit();
+    expect([100, 75, 74.9, 50, 25, 0].map((score) => bandOf(thresholds, score))).toEqual([
       "ready",
       "ready",
       "workable",
@@ -28,7 +29,10 @@ describe("select", () => {
       "needs work",
       "not ready",
     ]);
-    expect(bandOf(null)).toBeNull();
+    expect(bandOf(thresholds, null)).toBeNull();
+    // A report scored on other lines is banded on those, not on a copy of today's.
+    const stricter = { ...thresholds, bands: { ready: 90, workable: 60, "needs work": 30, "not ready": 0 } };
+    expect(bandOf(stricter, 80)).toBe("workable");
   });
 
   it("gives each band and severity a tone", () => {
@@ -80,8 +84,10 @@ describe("select", () => {
     expect(rows.every((row, _, all) => all.filter((r) => r.index === row.index).length === 1)).toBe(true);
   });
 
-  it("colours agreement on complydoc's threshold", () => {
-    expect([1, 0.95, 0.8, 0.51].map(agreementTone)).toEqual(["good", "good", "warn", "bad"]);
+  it("colours agreement on the report's own line", () => {
+    const { thresholds } = sampleAudit();
+    expect([1, 0.95, 0.8, 0.51].map((value) => agreementTone(thresholds, value))).toEqual(["good", "good", "warn", "bad"]);
+    expect(agreementTone({ ...thresholds, similar_enough: 0.99 }, 0.97)).toBe("warn");
   });
 
   it("finds each document's score, and calls a reading reordered only where it differs", () => {

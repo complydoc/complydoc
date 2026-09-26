@@ -55,7 +55,7 @@ const FORMAT_LABELS: Record<string, string> = {
   other: "Other files",
 };
 
-export function formatLabel(format: string): string {
+function formatLabel(format: string): string {
   return FORMAT_LABELS[format] ?? format;
 }
 

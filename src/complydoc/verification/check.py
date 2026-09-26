@@ -41,7 +41,12 @@ from complydoc.config.schema import ModelPricing, PricingConfig
 from complydoc.cost.vision import RenderedSize, vision_tokens
 from complydoc.extraction.routing import DocumentRouting
 from complydoc.ingest.base import Document, Page
-from complydoc.report.models import DocumentVerification, PageVerification, ReadingCost
+from complydoc.report.models import (
+    SIMILAR_ENOUGH,
+    DocumentVerification,
+    PageVerification,
+    ReadingCost,
+)
 from complydoc.utils.text import MAX_WORDS, reading_similarity
 from complydoc.verification.vision import (
     VisionModel,
@@ -51,10 +56,6 @@ from complydoc.verification.vision import (
 )
 
 __all__ = ["Comparison", "compare", "reading_cost", "render_page", "verify_document"]
-
-_DISAGREEING_READERS = 0.95
-"""Below this similarity, two extractors read a page differently. The same line
-`DocumentReport.disagreement` draws."""
 
 _IMAGE_SUFFIXES = frozenset({".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp", ".gif", ".webp"})
 
@@ -195,7 +196,7 @@ def _why(
         return f"routing sent it to vision: {reason}"
     if len(page.text.strip()) < min_characters:
         return "no usable reading of the page"
-    disputed = [e for e in page.extractions if e.similarity < _DISAGREEING_READERS]
+    disputed = [e for e in page.extractions if e.similarity < SIMILAR_ENOUGH]
     if disputed:
         return f"{disputed[0].extractor} read it differently from the kept reader"
     return "every page is checked" if scope == "all" else None

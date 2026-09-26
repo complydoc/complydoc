@@ -7,7 +7,8 @@ result states which factors it used.
 from __future__ import annotations
 
 from complydoc.audit.run import run_audit
-from complydoc.report.overall import band_of, overall_readiness
+from complydoc.readiness.scoring import band_label
+from complydoc.report.overall import overall_readiness
 from tests.helpers import FIXTURES
 
 ALL = ("cost", "readiness", "sensitive")
@@ -49,10 +50,10 @@ def test_the_bands_count_documents_not_the_average(config):
 
 
 def test_the_score_reads_the_same_way_round_as_the_content_score(config):
-    assert band_of(90) == "ready"
-    assert band_of(60) == "workable"
-    assert band_of(30) == "needs work"
-    assert band_of(10) == "not ready"
+    assert band_label(90) == "ready"
+    assert band_label(60) == "workable"
+    assert band_label(30) == "needs work"
+    assert band_label(10) == "not ready"
 
 
 def test_a_document_full_of_confirmed_identifiers_scores_below_a_clean_one(config):

@@ -1,14 +1,5 @@
 /** Schema 17: the report's `chunks`, one entry per text splitter `complydoc chunks` ran. */
 
-export type ChunkFlag =
-  | "tiny"
-  | "oversized"
-  | "split_sentence"
-  | "split_table"
-  | "heading_at_end"
-  | "duplicate"
-  | "path_metadata";
-
 export interface InspectedChunk {
   index: number;
   document: string | null;

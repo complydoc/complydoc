@@ -43,6 +43,7 @@ export function DocumentsPage({ report, open }: DocumentsPageProps) {
         <DocumentTree
           nodes={documentTree(report, plan)}
           vision={report.documents.some((document) => document.verification)}
+          thresholds={report.thresholds}
         />
       </Section>
       {report.verification && <VerificationSection report={report} />}

@@ -13,10 +13,11 @@ import type {
   PageVerification,
   Report,
   Severity,
+  Thresholds,
   VerificationStatus,
 } from "./types";
 
-export const BANDS: readonly { key: Band; id: string; label: string; tone: Tone }[] = [
+const BANDS: readonly { key: Band; id: string; label: string; tone: Tone }[] = [
   { key: "ready", id: "ready", label: "Ready", tone: "good" },
   { key: "workable", id: "workable", label: "Workable", tone: "neutral" },
   { key: "needs work", id: "needsWork", label: "Needs work", tone: "warn" },
@@ -57,23 +58,17 @@ export const EVIDENCE: readonly { key: Evidence; label: string; tone: Tone; how:
   },
 ];
 
-export function evidenceLabel(evidence: Evidence): string {
-  return EVIDENCE.find((e) => e.key === evidence)?.label ?? evidence;
-}
-
 export type Tone = "good" | "neutral" | "warn" | "bad";
 
 export function severityTone(severity: Severity): Tone {
   return severity === "high" ? "bad" : severity === "medium" ? "warn" : "neutral";
 }
 
-/** The band a score falls in, on the same thresholds complydoc scores with. */
-export function bandOf(score: number | null): Band | null {
+/** The band a score falls in, on the thresholds the report was scored with. */
+export function bandOf(thresholds: Thresholds, score: number | null): Band | null {
   if (score === null) return null;
-  if (score >= 75) return "ready";
-  if (score >= 50) return "workable";
-  if (score >= 25) return "needs work";
-  return "not ready";
+  const bands = Object.entries(thresholds.bands) as [Band, number][];
+  return bands.sort((a, b) => b[1] - a[1]).find(([, floor]) => score >= floor)?.[0] ?? "not ready";
 }
 
 export function bandTone(band: Band | null): Tone {
@@ -115,6 +110,8 @@ export interface DocumentRow {
   highest: Severity | null;
   /** The least any other reader agreed with the kept one, 0 to 1; null when no other read it. */
   agreement: number | null;
+  /** Whether another reader told a different story, on the report's own line. */
+  disagree: boolean;
   reordered: boolean;
   /** How a vision model's second read of the document went; null when none was made. */
   vision: DocumentVision | null;
@@ -177,30 +174,28 @@ function highestSeverity(document: DocumentEntry): Severity | null {
 }
 
 /** A document's readiness score. The report keys scores by the path relative to the folder. */
-export function documentScore(report: Report, document: DocumentEntry): number | null {
+function documentScore(report: Report, document: DocumentEntry): number | null {
   return report.overall.by_document[document.relative_path] ?? null;
 }
 
-/** Below this, two readings of a page tell different stories; complydoc uses the same line. */
-export const SIMILAR_ENOUGH = 0.95;
-
-/** Whether a reader moved the words around in a way worth saying: only where the readings differ. */
-export function worthCallingReordered(reading: { similarity: number; reordered: boolean }): boolean {
-  return reading.reordered && reading.similarity < SIMILAR_ENOUGH;
-}
-
-function agreement(document: DocumentEntry): { agreement: number | null; reordered: boolean } {
+function agreement(
+  thresholds: Thresholds,
+  document: DocumentEntry,
+): { agreement: number | null; disagree: boolean; reordered: boolean } {
   const others = document.extractions.slice(1);
-  if (others.length === 0) return { agreement: null, reordered: false };
+  if (others.length === 0) return { agreement: null, disagree: false, reordered: false };
+  const differing = others.filter((reading) => reading.similarity < thresholds.similar_enough);
   return {
     agreement: Math.min(...others.map((reading) => reading.similarity)),
-    reordered: others.some(worthCallingReordered),
+    disagree: differing.length > 0,
+    // Moving the words around is only worth saying where the readings differ.
+    reordered: differing.some((reading) => reading.reordered),
   };
 }
 
 /** How worrying a level of agreement between two readers is. */
-export function agreementTone(similarity: number): Tone {
-  if (similarity >= SIMILAR_ENOUGH) return "good";
+export function agreementTone(thresholds: Thresholds, similarity: number): Tone {
+  if (similarity >= thresholds.similar_enough) return "good";
   return similarity >= 0.75 ? "warn" : "bad";
 }
 
@@ -215,7 +210,7 @@ export function documentRows(report: Report): DocumentRow[] {
       score: documentScore(report, document),
       findings: document.sensitive.matches.length,
       highest: highestSeverity(document),
-      ...agreement(document),
+      ...agreement(report.thresholds, document),
       vision: documentVision(document),
     }))
     .sort((a, b) => (a.score ?? -1) - (b.score ?? -1) || a.path.localeCompare(b.path));
