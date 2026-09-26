@@ -14,7 +14,7 @@ const plan: Plan = {
 const pdf = required(report.documents[0], "a document");
 const page = required(pdf.extracted_text[0], "a page");
 
-/** The sample's first page as a spreadsheet sheet: its own text, read by openpyxl, and no picture. */
+/** The sample's first page as a spreadsheet sheet: its own text, read by openpyxl, and nothing to draw. */
 function sheet(): { report: Report; document: DocumentEntry; page: PageText } {
   const text = { ...page.tokens?.pdfplumber };
   const sheetPage: PageText = {
@@ -23,9 +23,15 @@ function sheet(): { report: Report; document: DocumentEntry; page: PageText } {
     readings: { openpyxl: page.text },
     tokens: { openpyxl: text },
     seconds: { openpyxl: 0.01 },
-    image_tokens: {},
+    // A run estimates a picture's tokens for every page, drawn or not.
   };
-  const document: DocumentEntry = { ...pdf, format: "xlsx", extracted_text: [sheetPage], routing: null };
+  const document: DocumentEntry = {
+    ...pdf,
+    format: "xlsx",
+    extracted_text: [sheetPage],
+    // Routing sends a sheet with merged header cells to vision, which cannot be shown it.
+    routing: { pages: [{ number: sheetPage.number, route: "vision", reason: "merged header cells" }] },
+  };
   return { report: { ...report, documents: [...report.documents, document] }, document, page: sheetPage };
 }
 

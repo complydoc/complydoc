@@ -215,8 +215,12 @@ function ocrReading(page: PageText): string | null {
   return page.tokens?.ocr ? "ocr" : null;
 }
 
-function hasImage(page: PageText): boolean {
-  return Boolean(page.image_tokens && Object.keys(page.image_tokens).length > 0);
+/** The file types complydoc can draw as page pictures; other files carry a picture's size only as an estimate. */
+const DRAWN = new Set(["pdf", "image"]);
+
+/** Whether a vision model can be shown this page. */
+function hasImage(document: DocumentEntry, page: PageText): boolean {
+  return DRAWN.has(document.format) && Boolean(page.image_tokens && Object.keys(page.image_tokens).length > 0);
 }
 
 /** One page under a plan: what sending it costs, and how long reading it took. */
@@ -234,10 +238,10 @@ export function pageEstimate(report: Report, document: DocumentEntry, page: Page
       // A file with no page picture, such as a spreadsheet, has nothing to recognise: its loader reads it.
       return text(ocr ?? loader);
     case "vision":
-      return hasImage(page) ? image() : text(loader ?? ocr);
+      return hasImage(document, page) ? image() : text(loader ?? ocr);
     case "router": {
       const route = document.routing?.pages.find((p) => p.number === page.number)?.route ?? "text";
-      if (route === "vision" && hasImage(page)) return image();
+      if (route === "vision" && hasImage(document, page)) return image();
       return text(route === "ocr" ? (ocr ?? loader) : (loader ?? ocr));
     }
   }
