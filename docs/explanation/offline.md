@@ -41,6 +41,12 @@ recorded. A report that sent text somewhere names the hosts in
 above the summary. A run without such a classifier registered reports nothing
 there, because nothing left.
 
+The classifier calls Jev through LangChain's integration, and LangChain sends a
+traced call to LangSmith when tracing is configured in the environment. That
+would be a second destination, so tracing is switched off for these calls unless
+`trace=True` is passed. With it, the trace is sent before the call returns, and
+LangSmith's host is recorded with TypeSafe's.
+
 `--classifier` hands the name to every worker process, which resolves its own,
 so a parallel run judges every document and a hosted classifier opens a
 connection from each worker rather than only from this one. A classifier

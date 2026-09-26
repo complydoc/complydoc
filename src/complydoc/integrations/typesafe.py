@@ -1,4 +1,4 @@
-"""Score passages with TypeSafe's Jev, a hosted judgement model.
+"""Score passages with TypeSafe's Jev, a hosted judgement model, through LangChain.
 
     import complydoc as cd
     from complydoc.integrations.typesafe import jev_classifier
@@ -18,6 +18,12 @@ of any passage that looks worth asking about is sent to `api.typesafe.ai`.
 Nothing here is implicit — `allow_network=True` has to be passed, and the
 connections made are returned so a caller can record them.
 
+The calls go through `langchain-typesafe`, LangChain's integration for TypeSafe,
+as a `TypeSafeClassifier` runnable. LangSmith tracing is switched off for them
+unless `trace=True` is passed: with tracing on in the environment, LangChain
+would otherwise send every passage to LangSmith too, a second destination the
+caller did not choose.
+
 Two limits worth knowing before relying on it:
 
 - Registering this in Python covers the process that registered it. An audit
@@ -32,19 +38,24 @@ Two limits worth knowing before relying on it:
 
 from __future__ import annotations
 
+import contextlib
 import os
+import warnings
+from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:  # pragma: no cover - type-checking imports only
     from collections.abc import Callable
+
+    import httpx2
 
 __all__ = ["JEV_KEY_VARIABLES", "connections_made", "jev_classifier"]
 
 JEV_KEY_VARIABLES = ("JEV_KEY", "TYPESAFE_API_KEY")
 """Environment variables read for the key, in order.
 
-The SDK's own variable is `TYPESAFE_API_KEY`. `JEV_KEY` is read first because
-that is what the key is called where people keep it.
+The integration's own variable is `TYPESAFE_API_KEY`. `JEV_KEY` is read first
+because that is what the key is called where people keep it.
 """
 
 _QUESTION = "injection"
@@ -97,6 +108,8 @@ def jev_classifier(
     model: str | None = None,
     timeout: float = 20.0,
     max_characters: int = 4_000,
+    trace: bool = False,
+    http_client: httpx2.Client | None = None,
 ) -> Callable[[str], float]:
     """A classifier for `register_instruction_classifier`, backed by Jev.
 
@@ -106,6 +119,15 @@ def jev_classifier(
     `max_characters` caps what is sent from any one passage. A hidden
     instruction is short, and the cap keeps a whole page from being sent because
     one paragraph of it looked interesting.
+
+    `model` pins a Jev release; by default the integration's `jev-latest`.
+
+    `trace=True` lets LangSmith record each call, when tracing is configured in
+    the environment. The passage then goes to LangSmith as well, and the trace is
+    sent before the call returns, so its connections are recorded with Jev's.
+
+    `http_client` is an `httpx2.Client` to send the requests through, for a
+    proxy, a custom TLS policy or a test transport.
 
     Returns a callable taking a passage and returning the probability, from 0 to
     1, that it is addressed to a model. A call that fails raises, and the caller
@@ -121,14 +143,23 @@ def jev_classifier(
     from complydoc.utils.install import extra_hint
 
     try:
-        from typesafe_sdk import Noul, NoulCriteria, TypeSafeClient
+        from langchain_core._api import LangChainBetaWarning
+        from langchain_typesafe import Noul, NoulCriteria, TypeSafeClassifier
     except ImportError as exc:  # pragma: no cover - depends on the extra
         raise ImportError(
             f"the Jev classifier needs the optional extra: {extra_hint('typesafe')}"
         ) from exc
 
-    key = _api_key(api_key)
-    client = TypeSafeClient(api_key=key, model=model, timeout=timeout)
+    settings: dict[str, Any] = {"api_key": _api_key(api_key), "timeout": timeout}
+    if model:
+        settings["model"] = model
+    if http_client is not None:
+        settings["client"] = http_client
+    with warnings.catch_warnings():
+        # The integration is marked beta. That is LangChain's notice to people
+        # writing against it, which here is complydoc, not whoever runs an audit.
+        warnings.simplefilter("ignore", LangChainBetaWarning)
+        classifier = TypeSafeClassifier(**settings)
     question = Noul(
         instructions=_INSTRUCTIONS,
         criteria=NoulCriteria(true=_CRITERIA_TRUE, false=_CRITERIA_FALSE),
@@ -140,17 +171,40 @@ def jev_classifier(
         text = passage.strip()[:max_characters]
         if not text:
             return 0.0
+        request: Any = {"state": {"passage": text}, "questions": {_QUESTION: question}}
         # The guard is armed for the whole of a scan. This is the one call the
         # caller allowed out, so it is let through here and recorded, rather
         # than the guard being lowered for the run.
-        with offline.permitted() as seen:
-            response: Any = client.system_one(
-                state={"passage": text},
-                questions={_QUESTION: question},
-            )
+        with offline.permitted() as seen, _tracing(trace):
+            response = classifier.invoke(request)
+            if trace:
+                _flush_traces()
         for connection in seen:
             if connection not in _connections:
                 _connections.append(connection)
         return float(response.nouls[_QUESTION].noul)
 
     return classify
+
+
+@contextlib.contextmanager
+def _tracing(enabled: bool) -> Iterator[None]:
+    """LangSmith tracing as the caller chose, whatever the environment says."""
+    if enabled:
+        yield
+        return
+    from langsmith.run_helpers import tracing_context
+
+    with tracing_context(enabled=False):
+        yield
+
+
+def _flush_traces() -> None:
+    """Send the traces now, inside the block the connection is allowed and recorded in.
+
+    LangSmith sends them from a background thread, which would otherwise try to
+    connect after the guard is back up, or while another call has it lowered.
+    """
+    from langchain_core.tracers.langchain import wait_for_all_tracers
+
+    wait_for_all_tracers()

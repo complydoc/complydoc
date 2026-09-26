@@ -115,7 +115,11 @@ A pattern finds an instruction by its wording, so it answers yes or no and
 cannot say how sure it is. A classifier gives a number instead, and
 `complydoc.integrations.typesafe.jev_classifier` is one: it asks a hosted model,
 for each passage, how likely it is to be addressed to a model rather than to a
-person.
+person. It calls TypeSafe's Jev through `langchain-typesafe`, LangChain's
+integration for it, as a `TypeSafeClassifier` runnable. `model=` pins a Jev
+release, `http_client=` sends the requests through a client of your own, and
+`trace=True` lets LangSmith record the calls, which is off by default because the
+passage would go there too.
 
 What that buys depends on where the threshold sits, and the measured numbers are
 in [Detection accuracy](accuracy.md). An instruction written plainly scores near

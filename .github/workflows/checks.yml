@@ -107,7 +107,7 @@ jobs:
         with:
           enable-cache: true
           python-version: "3.12"
-      - run: uv sync --extra ocr --group dev --group integrations
+      - run: uv sync --extra ocr --extra typesafe --group dev --group integrations
       - name: tests
         run: uv run pytest -q
 

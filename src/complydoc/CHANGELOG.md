@@ -26,6 +26,14 @@ load.
 
 ### Changed
 
+- The Jev classifier calls TypeSafe through `langchain-typesafe`, LangChain's integration,
+  in place of `typesafe-sdk`; the `typesafe` extra installs it. The request, the key
+  variables, the 4,000-character cap and the network guard are unchanged. LangSmith
+  tracing is off for these calls even when the environment turns it on, since the
+  passage would be sent there too; `jev_classifier(trace=True)` turns it on, and sends
+  the trace before the call returns so its connections are recorded. `http_client=`
+  passes a client of your own, for a proxy or a test transport.
+
 - One kind of price. Every model is priced from the vendored table, from models.dev and
   litellm, which a workflow refreshes each week by pull request, and a report says once
   how old the prices are (`cost.prices_as_of`). `pricing.yaml` no longer carries prices
