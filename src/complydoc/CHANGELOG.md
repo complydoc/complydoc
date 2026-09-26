@@ -30,11 +30,12 @@ load.
 
 ### Changed
 
-- The viewer's document page is one view, the diff. Each finding is noted under its
-  line, and a link from Security scrolls to it and marks it. Beside the text, a panel
-  follows the page you are on, with its picture, the vision check, its cost and what
-  was found there. A document read one way shows its text whole. The separate Pages
-  view, with a reading pane for each reader, is gone. An eye button shows the values
+- The viewer's document page is simpler. A document read more than one way shows a
+  diff of two readers; one read one way shows its pages as read, with findings marked.
+  Beside it are the page's picture, when the report has one, and the page's findings,
+  each with a box to tick it off as ignored. A ticked finding is crossed out, and under
+  `complydoc ui` it is saved to the ignore file. The separate Pages and Diff views,
+  the reading panes and the per-reader costs are gone. An eye button shows the values
   in a report written with `--reveal`, which opens masked.
 
 - One kind of price. Every model is priced from the vendored table, from models.dev and

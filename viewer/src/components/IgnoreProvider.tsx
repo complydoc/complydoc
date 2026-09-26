@@ -12,11 +12,14 @@ interface Listing {
  *
  * With `source`, the report came from `complydoc ui`, which reads and writes the
  * file on this machine; the viewer asks nothing of any other server. Without
- * it, the entries are the ones the run read, and cannot be changed from here.
+ * it, the entries are the ones the run read, and what is ignored here is kept
+ * only while the page is open.
  */
 export function IgnoreProvider({ report, source, children }: { report: Report; source?: string; children: ReactNode }) {
   const [listing, setListing] = useState<Listing | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Ignored in this page only, when there is no complydoc ui to write the file.
+  const [local, setLocal] = useState<IgnoreRule[]>([]);
   const url = source ? `${source}/ignores` : null;
 
   useEffect(() => {
@@ -56,12 +59,20 @@ export function IgnoreProvider({ report, source, children }: { report: Report; s
     () => ({
       editable: listing !== null,
       file: listing?.file ?? report.ignores?.file ?? null,
-      entries: listing?.ignores ?? report.ignores?.rules ?? [],
+      entries: listing?.ignores ?? [...(report.ignores?.rules ?? []), ...local],
       error,
-      ignore: (request: IgnoreRequest) => write("POST", request),
-      unignore: (finding: string) => write("DELETE", { finding }),
+      ignore: async (request: IgnoreRequest) => {
+        if (url) return write("POST", request);
+        setLocal((current) => [...current.filter((e) => e.finding !== request.finding), request]);
+        return true;
+      },
+      unignore: async (finding: string) => {
+        if (url) return write("DELETE", { finding });
+        setLocal((current) => current.filter((e) => e.finding !== finding));
+        return true;
+      },
     }),
-    [listing, report.ignores, error, write],
+    [listing, report.ignores, local, error, write, url],
   );
 
   return <IgnoreContext.Provider value={state}>{children}</IgnoreContext.Provider>;

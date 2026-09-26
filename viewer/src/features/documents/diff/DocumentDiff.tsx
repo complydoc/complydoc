@@ -1,34 +1,11 @@
-import { ArrowLeftRightIcon, ArrowRightIcon } from "lucide-react";
-import { lazy, Suspense, useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { lazy, Suspense, useState } from "react";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { usePlan } from "@/hooks/usePlan";
-import {
-  KEPT,
-  OCR,
-  defaultSides,
-  lineMarks,
-  readersOf,
-  sideName,
-  sideText,
-  type Layout,
-  type Side,
-} from "@/report/documentDiff";
-import { formatPageUsd, formatSeconds } from "@/report/format";
-import { documentTotals, type ReaderChoice } from "@/report/plan";
-import type { FindingRef } from "@/report/route";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { defaultSides, readersOf, sideName, sideText, type Side } from "@/report/documentDiff";
 import type { Report } from "@/report/types";
 
 const GitDiff = lazy(() => import("./GitDiff"));
-
-/** The plan's name for a reading the diff can show. */
-function asPlanReader(reader: string): ReaderChoice {
-  if (reader === KEPT) return "kept";
-  if (reader === OCR) return "ocr";
-  return `reader:${reader}`;
-}
 
 interface ReaderPickerProps {
   label: string;
@@ -38,44 +15,25 @@ interface ReaderPickerProps {
   onChange: (reader: string) => void;
 }
 
-/**
- * One side of the diff: which reader's extraction of this document, and what
- * sending all of it on to the chosen model costs, and took to read where timed.
- */
+/** One side of the diff: which reader's extraction of this document. */
 function ReaderPicker({ label, report, index, reader, onChange }: ReaderPickerProps) {
-  const { plan } = usePlan();
   const document = report.documents[index];
   const readers = document ? readersOf(report, document) : [];
-  const totals = document ? documentTotals(report, document, { ...plan, reader: asPlanReader(reader) }) : null;
   return (
-    <span className="flex items-center gap-2">
-      <Select value={reader} onValueChange={onChange}>
-        <SelectTrigger size="sm" aria-label={label} className="w-44">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectGroup>
-            {readers.map((option) => (
-              <SelectItem key={option.id} value={option.id}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectGroup>
-        </SelectContent>
-      </Select>
-      {totals && totals.usd !== null && (
-        <span
-          className="text-xs tabular-nums text-muted-foreground"
-          title={`The whole document as this reader extracted it, on ${plan.text?.name ?? "the chosen model"}`}
-        >
-          {formatPageUsd(totals.usd)}
-          {/* "~" is a loader's total spread over its pages rather than each page timed. */}
-          {totals.seconds !== null &&
-            totals.untimed === 0 &&
-            ` · ${totals.averaged ? "~" : ""}${formatSeconds(totals.seconds)}`}
-        </span>
-      )}
-    </span>
+    <Select value={reader} onValueChange={onChange}>
+      <SelectTrigger size="sm" aria-label={label} className="w-44">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectGroup>
+          {readers.map((option) => (
+            <SelectItem key={option.id} value={option.id}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectGroup>
+      </SelectContent>
+    </Select>
   );
 }
 
@@ -88,44 +46,21 @@ interface DocumentDiffProps {
   onVisiblePage?: (page: number) => void;
   /** Show the values, where the report holds them. */
   unmasked?: boolean;
-  /** The finding opened from a link, marked out from the rest. */
-  active?: FindingRef | null;
-  /** A finding to scroll to; a new object each time. */
-  focus?: { ref: FindingRef } | null;
 }
 
 /**
  * This document as one extraction method read it against another, as a git
- * diff: the text layer against another library, OCR or a vision model.
+ * diff: the text layer against another library, OCR or a vision model. One
+ * sentence per line, so only the sentences whose words differ show as changed.
  */
-export function DocumentDiff({
-  report,
-  index,
-  jump = null,
-  onVisiblePage,
-  unmasked = false,
-  active = null,
-  focus = null,
-}: DocumentDiffProps) {
+export function DocumentDiff({ report, index, jump = null, onVisiblePage, unmasked = false }: DocumentDiffProps) {
   const [[base, compare], setSides] = useState<[Side, Side]>(() => defaultSides(report, index));
-  const [split, setSplit] = useState(true);
-  const [layout, setLayout] = useState<Layout>("sentences");
-  const document = report.documents[index];
-  // A document read one way has one reading to show, and nothing to compare it with.
-  const single = document ? readersOf(report, document).length < 2 : true;
-  const marks = useMemo(
-    () => ({
-      old: lineMarks(report, base, layout, unmasked),
-      new: lineMarks(report, compare, layout, unmasked),
-    }),
-    [report, base, compare, layout, unmasked],
-  );
+  // Side by side where there is room for two columns of text.
+  const split = useMediaQuery("(min-width: 80rem)");
 
   return (
-    // Takes whatever height its parent leaves, and gives all of it but the controls to the text.
     <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3">
-      {/* One row, so the text below gets the height. */}
-      <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2">
+      <div className="flex shrink-0 flex-wrap items-center gap-2 text-sm">
         <ReaderPicker
           label="Base reader"
           report={report}
@@ -133,70 +68,24 @@ export function DocumentDiff({
           reader={base.reader}
           onChange={(reader) => setSides([{ ...base, reader }, compare])}
         />
-        {!single && (
-          <>
-            <ArrowRightIcon className="size-4 text-muted-foreground" aria-hidden="true" />
-            <ReaderPicker
-              label="Compare reader"
-              report={report}
-              index={index}
-              reader={compare.reader}
-              onChange={(reader) => setSides([base, { ...compare, reader }])}
-            />
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              aria-label="Swap"
-              title="Swap"
-              onClick={() => setSides([compare, base])}
-            >
-              <ArrowLeftRightIcon />
-            </Button>
-          </>
-        )}
-        <div className="ml-auto flex flex-wrap items-center gap-2">
-          <ToggleGroup
-            type="single"
-            variant="outline"
-            size="sm"
-            value={layout}
-            aria-label="How lines are laid out"
-            onValueChange={(value) => value && setLayout(value as Layout)}
-          >
-            <ToggleGroupItem value="sentences" title="Each reader's line breaks removed, one sentence per line">
-              Sentences
-            </ToggleGroupItem>
-            <ToggleGroupItem value="lines" title="Lines as each reader broke them">
-              Lines as read
-            </ToggleGroupItem>
-          </ToggleGroup>
-          {!single && (
-            <ToggleGroup
-              type="single"
-              variant="outline"
-              size="sm"
-              value={split ? "split" : "unified"}
-              aria-label="Diff view"
-              onValueChange={(value) => value && setSplit(value === "split")}
-            >
-              <ToggleGroupItem value="split">Split</ToggleGroupItem>
-              <ToggleGroupItem value="unified">Unified</ToggleGroupItem>
-            </ToggleGroup>
-          )}
-        </div>
+        <span className="text-muted-foreground">vs</span>
+        <ReaderPicker
+          label="Compare reader"
+          report={report}
+          index={index}
+          reader={compare.reader}
+          onChange={(reader) => setSides([base, { ...compare, reader }])}
+        />
       </div>
 
       <Suspense fallback={<Skeleton className="min-h-0 w-full flex-1 rounded-xl" />}>
         <GitDiff
           oldName={sideName(report, base)}
-          oldText={sideText(report, base, layout, unmasked)}
+          oldText={sideText(report, base, "sentences", unmasked)}
           newName={sideName(report, compare)}
-          newText={sideText(report, compare, layout, unmasked)}
+          newText={sideText(report, compare, "sentences", unmasked)}
           split={split}
-          marks={marks}
-          active={active}
           jump={jump}
-          focus={focus}
           {...(onVisiblePage && { onVisiblePage })}
         />
       </Suspense>

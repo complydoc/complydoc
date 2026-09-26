@@ -35,15 +35,15 @@ The same report as the HTML file an audit writes, drawn differently: a Home page
 every finding linked to where it sits, and the cost of each model under a
 loading plan.
 
-Each document opens as a diff of two readers' text, the kept reading against
-another library, OCR or a vision model. Each finding is noted under the line it
-is on, like a review comment. Beside the text is the page the diff is scrolled
-to: its picture, what a vision check made of it, what it costs to read, and what
-was found on it. Picking a finding there scrolls the text to it. A document read
-only one way shows that reading whole.
+A document read more than one way opens as a diff of two readers' text: the kept
+reading against another library, OCR or a vision model. A document read one way
+shows each page's text, with what was found marked in it. Beside either is the
+page's picture, when the report has one, and a list of what was found on the
+page. Tick a finding to ignore it: it is crossed out and no longer marked. Under
+`complydoc ui` the tick is saved to the audited folder's ignore file; otherwise
+it lasts while the page is open.
 
-A page picture needs a report taken with them. Without pictures, the side panel
-shows the rest.
+Page pictures need a report written with them:
 
 ```bash
 complydoc audit ./documents --page-images --detail full
@@ -52,7 +52,7 @@ complydoc audit ./documents --page-images --detail full
 The text is masked, as the report is. A report written with `--reveal` holds the
 values as well as a masked copy of every page. The viewer opens it masked, and
 the eye button shows the values until you mask them again. On any other report,
-the button is disabled and says how to get the values.
+the button is disabled.
 
 ## From Python
 

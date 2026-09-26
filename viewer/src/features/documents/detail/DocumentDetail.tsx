@@ -1,21 +1,22 @@
-import { EyeIcon, EyeOffIcon, PanelRightCloseIcon, PanelRightOpenIcon } from "lucide-react";
+import { ChevronLeftIcon, ChevronRightIcon, EyeIcon, EyeOffIcon } from "lucide-react";
 import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DocumentDiff } from "@/features/documents/diff/DocumentDiff";
-import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { usePlan } from "@/hooks/usePlan";
-import { canReveal } from "@/report/documentDiff";
-import { fileName } from "@/report/format";
+import { KEPT, canReveal, pageText, readersOf } from "@/report/documentDiff";
+import { fileName, formatPageUsd } from "@/report/format";
 import { findingHighlight } from "@/report/highlight";
+import { pageFindings } from "@/report/pageFindings";
+import { hasPicture } from "@/report/picture";
 import { documentTotals } from "@/report/plan";
-import { documentHref, type FindingRef } from "@/report/route";
+import type { FindingRef } from "@/report/route";
 import type { DocumentEntry, Report } from "@/report/types";
-import { DocumentTotals } from "./DocumentTotals";
-import { FindingBanner } from "./FindingBanner";
-import { PageSide } from "./PageSide";
+import { useIsIgnored } from "@/hooks/useIgnores";
+import { FindingChecklist } from "./FindingChecklist";
+import { PagePane } from "./PagePane";
+import { PageReading } from "./PageReading";
+import { VisionNote } from "./VisionNote";
 
 interface DocumentDetailProps {
   report: Report;
@@ -24,7 +25,7 @@ interface DocumentDetailProps {
   index: number;
   /** The page to open on, as printed; the first when null. */
   page?: number | null;
-  /** A finding to show where it sits. */
+  /** A finding to open on, marked out from the rest. */
   finding?: FindingRef | null;
 }
 
@@ -33,39 +34,76 @@ interface DocumentDetailProps {
  * them; it opens masked all the same, since whoever can see the screen can read them.
  */
 function EyeToggle({ available, on, onChange }: { available: boolean; on: boolean; onChange: (on: boolean) => void }) {
-  const button = (
-    <Button
-      variant="outline"
-      size="sm"
-      aria-pressed={on}
-      disabled={!available}
-      onClick={() => onChange(!on)}
-      aria-label={on ? "Mask the values" : "Show the values"}
-    >
-      {on ? <EyeIcon /> : <EyeOffIcon />}
-      {on ? "Values shown" : "Masked"}
-    </Button>
-  );
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         {/* A disabled button takes no pointer events, so the tooltip hangs on a wrapper. */}
-        <span tabIndex={available ? -1 : 0}>{button}</span>
+        <span tabIndex={available ? -1 : 0}>
+          <Button
+            variant={on ? "secondary" : "ghost"}
+            size="icon-sm"
+            aria-pressed={on}
+            disabled={!available}
+            onClick={() => onChange(!on)}
+            aria-label={on ? "Mask the values" : "Show the values"}
+          >
+            {on ? <EyeIcon /> : <EyeOffIcon />}
+          </Button>
+        </span>
       </TooltipTrigger>
       <TooltipContent className="max-w-xs">
         {available
           ? on
-            ? "The text shows each identifier's value. Mask them again before sharing your screen."
-            : "Show each identifier's value, which this report holds because it was written with --reveal."
-          : "This report holds masked values only. Audit with --reveal to keep the values and show them here; the report then holds them too."}
+            ? "Showing each identifier's value. Mask them again before sharing your screen."
+            : "Show each identifier's value. This report holds them because it was written with --reveal."
+          : "Values are masked. Audit with --reveal to keep them and show them here."}
       </TooltipContent>
     </Tooltip>
   );
 }
 
+function Pager({
+  number,
+  index,
+  count,
+  onPick,
+}: {
+  number: number;
+  index: number;
+  count: number;
+  onPick: (i: number) => void;
+}) {
+  return (
+    <span className="flex items-center gap-1 text-sm text-muted-foreground">
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        aria-label="Previous page"
+        disabled={index === 0}
+        onClick={() => onPick(index - 1)}
+      >
+        <ChevronLeftIcon />
+      </Button>
+      <span className="tabular-nums">
+        Page {number} of {count}
+      </span>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        aria-label="Next page"
+        disabled={index === count - 1}
+        onClick={() => onPick(index + 1)}
+      >
+        <ChevronRightIcon />
+      </Button>
+    </span>
+  );
+}
+
 /**
- * One document, read as a diff of two readers' text, with the page it is on
- * beside it: the picture, the vision check, the cost, and what was found there.
+ * One document. Read more than one way, a diff of two readings; read one way,
+ * its pages as read. Beside it, the page's picture when the report has one, and
+ * what was found on the page, each finding with a box to tick it off.
  */
 export function DocumentDetail({
   report,
@@ -82,28 +120,17 @@ export function DocumentDetail({
       document.extracted_text.findIndex((p) => p.number === number),
     );
   const [pageIndex, setPageIndex] = useState(() => (opening === null ? 0 : pageAt(opening)));
-  // A page or finding the diff should scroll to. A new object each time, so asking again still scrolls.
-  const [jump, setJump] = useState<{ page: number } | null>(() =>
-    opening !== null && !finding ? { page: opening } : null,
-  );
-  const [focus, setFocus] = useState<{ ref: FindingRef } | null>(() => (finding ? { ref: finding } : null));
+  // A page the diff should scroll to. A new object each time, so asking again still scrolls.
+  const [jump, setJump] = useState<{ page: number } | null>(() => (opening !== null ? { page: opening } : null));
   const revealable = canReveal(document);
-  const [unmasked, setUnmasked] = useState(false);
-  const wide = useMediaQuery("(min-width: 64rem)");
-  // Beside the text on a wide screen; on a narrow one, a sheet opened on request.
-  const [panelOpen, setPanelOpen] = useState(true);
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const showPanel = wide && panelOpen;
+  const [eye, setEye] = useState(false);
+  const unmasked = eye && revealable;
+  const isIgnored = useIsIgnored();
   const { plan, models } = usePlan();
-  const priced = models.length > 0 && document.extracted_text.some((p) => p.tokens !== undefined);
 
-  const pick = (next: number) => {
-    setPageIndex(next);
-    const target = document.extracted_text[next];
-    if (target) setJump({ page: target.number });
-  };
-
-  if (document.extracted_text.length === 0) {
+  const pages = document.extracted_text;
+  const page = pages[pageIndex];
+  if (!page) {
     return (
       <div className="flex flex-col gap-4">
         <h2 className="font-heading text-lg font-semibold tracking-tight">{fileName(document.relative_path)}</h2>
@@ -114,70 +141,81 @@ export function DocumentDetail({
     );
   }
 
-  const side = (
-    <PageSide
-      report={report}
-      document={document}
-      pageIndex={pageIndex}
-      onPick={pick}
-      highlight={highlight}
-      onFinding={(ref) => setFocus({ ref })}
-      unmasked={unmasked && revealable}
-    />
-  );
+  const compared = readersOf(report, document).length > 1;
+  const found = pageFindings(document, page.number, unmasked);
+  const active = finding ? `${finding.kind}-${finding.index}` : null;
+  const preview = document.previews?.find((p) => p.number === page.number);
+  const pictured = hasPicture(preview);
+  const checked = document.verification?.pages.find((p) => p.number === page.number);
+  // The column is kept for every page once any page needs it, so the text does not jump sideways.
+  const column =
+    (document.previews ?? []).some(hasPicture) ||
+    document.sensitive.matches.length + document.content_findings.length + (document.ignored?.length ?? 0) > 0;
+  const priced = models.length > 0 && pages.some((p) => p.tokens !== undefined);
+  const totals = priced ? documentTotals(report, document, plan) : null;
+
+  const pick = (next: number) => {
+    setPageIndex(next);
+    const target = pages[next];
+    if (target) setJump({ page: target.number });
+  };
 
   return (
-    // Fills the window below the bar, less the page's own padding: 3rem of bar, and 2rem or 3rem
-    // of padding. The text scrolls inside, so the page itself never scrolls past it.
-    <div className="flex h-[calc(100svh-5rem)] min-h-[28rem] flex-col gap-4 md:h-[calc(100svh-6rem)]">
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-3">
-          <h2 className="truncate font-heading text-lg font-semibold tracking-tight">
-            {fileName(document.relative_path)}
-          </h2>
-          {unmasked && revealable && <Badge variant="destructive">Values visible</Badge>}
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          {priced && <DocumentTotals document={documentTotals(report, document, plan)} />}
-          <EyeToggle available={revealable} on={unmasked && revealable} onChange={setUnmasked} />
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label={showPanel ? "Hide the page" : "Show the page"}
-            title={showPanel ? "Hide the page" : "Show the page"}
-            onClick={() => (wide ? setPanelOpen((open) => !open) : setSheetOpen(true))}
-          >
-            {showPanel ? <PanelRightCloseIcon /> : <PanelRightOpenIcon />}
-          </Button>
-        </div>
+    <div className="flex flex-col gap-4 lg:h-[calc(100svh-6rem)]">
+      <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2">
+        <h2 className="min-w-0 truncate font-heading text-lg font-semibold tracking-tight">
+          {fileName(document.relative_path)}
+        </h2>
+        {pages.length > 1 && <Pager number={page.number} index={pageIndex} count={pages.length} onPick={pick} />}
+        <span className="ml-auto flex items-center gap-3">
+          {totals && totals.usd !== null && (
+            <span className="text-sm text-muted-foreground" title="The whole document, under the plan chosen above">
+              {formatPageUsd(totals.usd)} to read
+            </span>
+          )}
+          <EyeToggle available={revealable} on={unmasked} onChange={setEye} />
+        </span>
       </div>
 
-      {highlight && <FindingBanner highlight={highlight} clearHref={documentHref(index, highlight.page)} />}
+      <div className="flex min-h-0 flex-1 flex-col gap-6 lg:flex-row">
+        <div className="flex h-[70svh] min-h-0 min-w-0 flex-1 flex-col lg:h-auto">
+          {compared ? (
+            <DocumentDiff
+              report={report}
+              index={index}
+              jump={jump}
+              unmasked={unmasked}
+              onVisiblePage={(number) => setPageIndex(pageAt(number))}
+            />
+          ) : (
+            <PageReading
+              key={page.number}
+              text={pageText(page, KEPT, unmasked)}
+              findings={found.filter((f) => !isIgnored(f))}
+              active={active}
+            />
+          )}
+        </div>
 
-      <div className="flex min-h-0 flex-1 gap-4">
-        <DocumentDiff
-          report={report}
-          index={index}
-          jump={jump}
-          focus={focus}
-          active={finding}
-          unmasked={unmasked && revealable}
-          onVisiblePage={(number) => setPageIndex(pageAt(number))}
-        />
-        {showPanel && <div className="w-80 shrink-0 xl:w-96">{side}</div>}
+        {column && (
+          <aside aria-label="Page" className="flex min-h-0 shrink-0 flex-col gap-4 overflow-y-auto lg:w-80">
+            {pictured && (
+              <div className="h-96 shrink-0">
+                <PagePane
+                  number={page.number}
+                  name={fileName(document.relative_path)}
+                  preview={preview}
+                  mark={highlight && highlight.page === page.number ? highlight.box : null}
+                />
+              </div>
+            )}
+            {checked && checked.status !== "agrees" && (
+              <VisionNote page={checked} model={document.verification?.model ?? ""} />
+            )}
+            <FindingChecklist findings={found} active={active} />
+          </aside>
+        )}
       </div>
-
-      {!wide && (
-        <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-          <SheetContent side="right" className="w-[min(24rem,92vw)] p-4">
-            <SheetHeader className="p-0">
-              <SheetTitle>{fileName(document.relative_path)}</SheetTitle>
-              <SheetDescription>The page the text above is on.</SheetDescription>
-            </SheetHeader>
-            {side}
-          </SheetContent>
-        </Sheet>
-      )}
     </div>
   );
 }
