@@ -225,7 +225,7 @@ def check(
         except UnknownModelError as exc:
             errors.print(f"[bold red]Unknown model[/] — {escape(str(exc))}")
             raise typer.Exit(code=2) from exc
-        emit(audit, config, out, name, quiet)
+        emit(audit, out, name, quiet)
 
     result = check_policy(audit, rules)
     written: list[tuple[str, Path]] = []

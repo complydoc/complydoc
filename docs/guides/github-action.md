@@ -54,7 +54,7 @@ rules:
 | `comment` | `true` | Keep one comment on the pull request with the result |
 | `sarif` | `false` | Upload the failures to code scanning |
 | `fail` | `true` | Fail the job when an `error` rule fails |
-| `upload-report` | `false` | Upload the HTML and JSON reports as an artifact |
+| `upload-report` | `false` | Upload the JSON report as an artifact, to open with `complydoc ui` |
 | `token` | `github.token` | Token for the comment |
 
 ## Outputs

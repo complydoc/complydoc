@@ -20,3 +20,16 @@ requires_ner = pytest.mark.skipif(
     not spacy_model_available(),
     reason="the optional NER extra and en_core_web_sm are not installed",
 )
+
+
+def ocr_available() -> bool:
+    from complydoc.ingest.engines.registry import DEFAULT_ENGINE, engine_by_id
+
+    engine = engine_by_id(DEFAULT_ENGINE)
+    return engine is not None and engine.available()
+
+
+requires_ocr = pytest.mark.skipif(
+    not ocr_available(),
+    reason="no local OCR engine is installed (the ocr extra)",
+)

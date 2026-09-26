@@ -31,6 +31,7 @@ from complydoc.cli.common import (
     errors,
     link,
     load_config_or_exit,
+    print_written,
     route_output,
 )
 from complydoc.cost.estimator import UnknownModelError
@@ -61,7 +62,7 @@ def routing(
     stacked headers, a page that is mostly picture, a scan too coarse for OCR, or
     one OCR read poorly. The thresholds are in `readiness.yaml` under `routing`.
     """
-    from complydoc.report.html_writer import write_html
+    from complydoc.report.json_writer import write_json
     from complydoc.report.routing import routing_manifest, write_routing_json
 
     offline.arm()
@@ -94,7 +95,8 @@ def routing(
 
     summary = report.routing
     manifest_path = write_routing_json(report, out / f"{name}.json")
-    html_path = write_html(report, config, out / f"{name}.html")
+    # The manifest is for a pipeline to follow; the report is for `complydoc ui` to open.
+    report_path = write_json(report, out / f"{name}-report.json")
 
     if print_json:
         import json
@@ -134,4 +136,4 @@ def routing(
         )
     console.print()
     link("Manifest", manifest_path)
-    link("Report", html_path)
+    print_written(report_path, out)

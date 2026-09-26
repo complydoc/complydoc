@@ -9,7 +9,8 @@ import { changeBetween, leadRun, runLabel, type Collection } from "@/report/coll
 import { formatCount, formatPageUsd, formatScore, formatSeconds, plural } from "@/report/format";
 import { EMPTY, combine, reportTotals, type Totals } from "@/report/plan";
 import { planFor } from "@/report/planChoice";
-import { bandOf, bandTone } from "@/report/select";
+import { bandTone } from "@/report/select";
+import type { Band } from "@/report/types";
 
 interface Row {
   id: string;
@@ -19,6 +20,8 @@ interface Row {
   lastRun: string;
   /** Null where the run did not measure it: shown as not measured, never as nought. */
   readiness: number | null;
+  /** The band complydoc put that score in. */
+  band: Band | null;
   /** Change since the run before, where the two can be compared. */
   readinessChange: number | null;
   sensitive: number | null;
@@ -48,6 +51,7 @@ function rowsOf(collections: Collection[]): Row[] {
         runs: collection.runs.length,
         lastRun: runLabel(collection.runs[0]?.report ?? report),
         readiness: measured(report, "readiness") ? report.overall.score : null,
+        band: report.overall.label,
         readinessChange:
           before !== null && before !== undefined && report.overall.score !== null
             ? report.overall.score - before
@@ -122,7 +126,7 @@ function columnsFor(onOpen: (id: string) => void): Columns<Row> {
             <NotMeasured />
           ) : (
             <>
-              <ToneBadge tone={bandTone(bandOf(row.original.readiness))}>{formatScore(row.original.readiness)}</ToneBadge>
+              <ToneBadge tone={bandTone(row.original.band)}>{formatScore(row.original.readiness)}</ToneBadge>
               <Change value={row.original.readinessChange} better="up" />
             </>
           )}

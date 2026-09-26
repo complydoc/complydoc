@@ -28,7 +28,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any, Literal
 
-from complydoc.loaders.formats import EXCEL, HTML, IMAGES, MARKDOWN, PDF, POWERPOINT, WORD
+from complydoc.loaders.formats import extensions
 from complydoc.loaders.inspection import SOURCE_KEYS
 
 __all__ = [
@@ -107,7 +107,7 @@ def docling(export: Literal["markdown", "chunks"] = "markdown", **options: Any) 
         factory=factory,
         price_key="docling",
         tags=("LangChain", "Docling"),
-        formats=(*PDF, *WORD, *EXCEL, *POWERPOINT, *HTML, *MARKDOWN, *IMAGES),
+        formats=extensions(("pdf", "docx", "xlsx", "pptx", "html", "markdown", "image")),
     )
 
 
@@ -236,5 +236,5 @@ def azure_document_intelligence(
         network=True,
         price_key=_AZURE_PRICES.get(model),
         # prebuilt-read and prebuilt-layout; Office and HTML files are read as text only.
-        formats=(*PDF, *IMAGES, *WORD, *EXCEL, *POWERPOINT, *HTML),
+        formats=extensions(("pdf", "image", "docx", "xlsx", "pptx", "html")),
     )

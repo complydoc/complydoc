@@ -90,11 +90,6 @@ def test_tags_reach_the_report_its_tables_and_its_json(tmp_path):
     assert report.to_pandas("loaders")["tags"].tolist() == ["LangChain, pypdf", ""]
 
     out = tmp_path / "out"
-    html = cd.write_html(report, out / "report.html").read_text(encoding="utf-8")
-    assert '<span class="ltag">LangChain</span>' in html
-    assert '<span class="ltag">pypdf</span>' in html
-    assert "·" not in html.split('<span class="ltag">LangChain</span>')[1][:80]
-
     loaded = cd.load_report(cd.write_json(report, out / "report.json"))
     assert loaded.loader_comparison.loaders[0].tags == ["LangChain", "pypdf"]
 

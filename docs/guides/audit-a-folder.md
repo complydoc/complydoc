@@ -4,8 +4,8 @@
 complydoc audit ~/contracts
 ```
 
-Reads every document in the folder, writes an HTML report and a JSON file
-beside it, and prints a summary.
+Reads every document in the folder, writes a JSON report to `.complydoc`, and
+prints a summary. `complydoc ui` opens it in the [viewer](viewer.md).
 
 `--ocr` recognises pages with no text layer. Without it such a page contributes
 no text, and the run reports it as unread.
@@ -38,10 +38,9 @@ The JSON is written in one of two shapes, and `run.report_detail` says which:
 
 | `--detail` | Carries | 200 one-page documents |
 | --- | --- | --- |
-| `summary` (default) | Every finding, score and limitation, and the folder's cost on each model | 4.6 MB |
-| `full` | All of that, plus the price of every document on every model, and the page geometry the HTML draws with | 20.3 MB |
+| `summary` (default) | Every finding, score and limitation, and the folder's cost on each model; the page pictures too when `--page-images` asked for them | 4.6 MB |
+| `full` | All of that, plus the price of every document on every model, and the page geometry the viewer draws pages with | 20.3 MB |
 
-The HTML report is the same either way: it is drawn before the JSON is written.
 Use `--detail full` on `audit` or `cost` when you need a single document's price on a
 given model, or when something reprocesses the reports, since a summary reads back
 without the parts it left out. In Python, `cd.write_json(report, path, detail="full")`.

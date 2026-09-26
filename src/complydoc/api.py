@@ -126,7 +126,6 @@ from complydoc.readiness.base import Measurement, Signal
 from complydoc.readiness.registry import register as register_signal
 from complydoc.report.compare import Change, ReportDiff, diff_reports
 from complydoc.report.expectations import Expectation, ExpectationError, expect
-from complydoc.report.html_writer import write_html as _write_html
 from complydoc.report.json_reader import load_report
 from complydoc.report.json_writer import write_json as _write_json
 from complydoc.report.models import (
@@ -140,7 +139,6 @@ from complydoc.report.models import (
     LoaderSummary,
     MetadataFinding,
 )
-from complydoc.report.pages import write_chunks_html, write_diff_html
 from complydoc.sensitive.base import Detector, DetectorContext, Finding
 from complydoc.sensitive.registry import register as register_detector
 from complydoc.verification.vision import VisionModel, VisionPage, VisionReading
@@ -242,9 +240,6 @@ __all__ = [
     "security_audit",
     "sha256_of",
     "supported_extensions",
-    "write_chunks_html",
-    "write_diff_html",
-    "write_html",
     "write_json",
 ]
 
@@ -392,21 +387,6 @@ def readiness_audit(target: str | os.PathLike[str], **options: Unpack[AuditOptio
     return _audit(target, ("readiness",), options)
 
 
-def write_html(
-    report: AuditReport,
-    path: str | os.PathLike[str],
-    *,
-    config: Config | None = None,
-) -> Path:
-    """Write the report as one self-contained HTML file, and return where.
-
-    Pass the same `config` the audit used if it was not the default one: the
-    page echoes parts of it, so a report written against a different
-    configuration would describe settings that did not produce it.
-    """
-    return _write_html(report, config or load_config(), Path(path).expanduser())
-
-
 def write_json(
     report: AuditReport,
     path: str | os.PathLike[str],
@@ -415,8 +395,9 @@ def write_json(
 ) -> Path:
     """Write the report as JSON, and return where. Same shape the CLI writes.
 
-    `detail="summary"` leaves out the price of every document on every model and
-    the page geometry the HTML draws with, keeping the folder's cost per model.
+    `detail="summary"` leaves out the price of every document on every model and,
+    unless the run asked for page images, the page geometry the viewer draws pages
+    with, keeping the folder's cost per model.
     `detail="full"` writes every field; use it for anything that reprocesses
     reports, since a summary reads back without the parts it left out.
     """

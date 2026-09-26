@@ -7,8 +7,9 @@ Two shapes, chosen by `detail`:
     every model. Left out are two things a reader of the JSON rarely wants and
     that made up three quarters of it: the price of every document on every
     model, which was also stored twice, and the geometry of every word on every
-    page, which exists to draw the HTML report's page views. For 200 one-page
-    documents that is 20 MB down to about 5.
+    page, which the viewer draws pages with. For 200 one-page documents that is
+    20 MB down to about 5. A run that asked for page images keeps them, since the
+    report is the only place they go.
 `full`
     Every field. Keep this for anything that reprocesses reports, since a summary
     reads back without the parts it left out. `run.report_detail` says which a
@@ -39,7 +40,7 @@ def _model_totals(report: AuditReport) -> list[dict[str, Any]]:
     if report.cost is None:
         return []
     if report.cost.documents:
-        from complydoc.report.charts import build_comparison
+        from complydoc.cost.comparison import build_comparison
 
         return [dict(row) for row in to_jsonable(build_comparison(report))]
     return report.cost.models
@@ -60,7 +61,10 @@ def to_dict(report: AuditReport, *, detail: Detail = "summary") -> dict[str, Any
     if isinstance(data.get("cost"), dict):
         data["cost"].pop("documents", None)
     for document in data.get("documents") or []:
-        document.pop("previews", None)
+        # Pictures asked for with --page-images are kept: the report is where the viewer
+        # finds them, and nothing else would carry them.
+        if not report.run.page_images_used:
+            document.pop("previews", None)
         if isinstance(document.get("cost"), dict):
             document["cost"].pop("models", None)
     return data

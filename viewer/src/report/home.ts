@@ -4,7 +4,7 @@
  */
 import { measured } from "./measured";
 import { findingRows, type FindingRow } from "./security";
-import { SIMILAR_ENOUGH, bandOf, documentRows, documentVision, type Tone } from "./select";
+import { bandOf, documentRows, documentVision, type Tone } from "./select";
 import type { Report } from "./types";
 
 export interface Reason {
@@ -43,12 +43,12 @@ export function attentionDocuments(report: Report, limit = 6): AttentionRow[] {
       reasons.push({ label: `vision disputes ${vision.disagree} of ${vision.checked} pages`, tone: "bad" });
       weight += 8;
     }
-    if (row.agreement !== null && row.agreement < SIMILAR_ENOUGH) {
+    if (row.disagree) {
       reasons.push({ label: row.reordered ? "readers scramble the order" : "readers disagree", tone: "warn" });
       weight += 4;
     }
     // A run that did not measure readiness gives no score to worry about, not a score of nought.
-    const band = measured(report, "readiness") && row.score !== null ? bandOf(row.score) : null;
+    const band = measured(report, "readiness") && row.score !== null ? bandOf(report.thresholds, row.score) : null;
     if (band === "needs work" || band === "not ready") {
       reasons.push({ label: `readiness ${Math.round(row.score ?? 0)}`, tone: band === "not ready" ? "bad" : "warn" });
       weight += 2;

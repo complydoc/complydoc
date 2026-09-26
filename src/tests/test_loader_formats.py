@@ -16,6 +16,26 @@ CLAUSE = "Payment is due within thirty days of the invoice date."
 SUPPLIER = "The supplier list names four approved vendors in Lisbon."
 
 
+def test_the_formats_come_from_complydocs_own_readers():
+    """One table of extensions, the readers', so a second one cannot drift from it."""
+    from complydoc.ingest.registry import suffix_formats, supported_extensions
+    from complydoc.loaders.formats import _KNOWN
+
+    assert set(suffix_formats()) == set(supported_extensions())
+    readable = {document_format.value for document_format in suffix_formats().values()}
+    for loader, formats in _KNOWN.items():
+        assert set(formats) <= readable, f"{loader} names a format complydoc does not read"
+    assert extensions(["email", "image"]) == (
+        ".eml",
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".tif",
+        ".tiff",
+        ".bmp",
+    )
+
+
 class Document:
     def __init__(self, page_content: str, metadata: dict | None = None) -> None:
         self.page_content = page_content
@@ -261,7 +281,7 @@ def test_extensions_are_normalised():
     assert extensions("csv") == (".csv",)
 
 
-def test_the_per_type_comparison_is_in_the_json_tables_and_html(folder: Path, tmp_path: Path):
+def test_the_per_type_comparison_is_in_the_json_and_tables(folder: Path, tmp_path: Path):
     report = cd.compare_loaders({"pypdf": PyPDFLoader, "docx2txt": Docx2txtLoader}, paths=folder)
     cd.write_json(report, tmp_path / "out.json")
     back = cd.load_report(tmp_path / "out.json")
@@ -270,11 +290,6 @@ def test_the_per_type_comparison_is_in_the_json_tables_and_html(folder: Path, tm
 
     rows = [row for row in table_rows(report, "loader_formats") if row["format"] == "docx"]
     assert {row["loader"]: row["given"] for row in rows} == {"pypdf": False, "docx2txt": True}
-
-    cd.write_html(report, tmp_path / "out.html")
-    page = (tmp_path / "out.html").read_text(encoding="utf-8")
-    assert "By file type" in page
-    assert "skipped" in page
 
 
 def test_a_comparison_file_names_each_loaders_file_types(folder: Path, tmp_path: Path):

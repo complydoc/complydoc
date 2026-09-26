@@ -1,14 +1,5 @@
 /** Schema 17: the report's `chunks`, one entry per text splitter `complydoc chunks` ran. */
 
-export type ChunkFlag =
-  | "tiny"
-  | "oversized"
-  | "split_sentence"
-  | "split_table"
-  | "heading_at_end"
-  | "duplicate"
-  | "path_metadata";
-
 export interface InspectedChunk {
   index: number;
   document: string | null;
@@ -56,6 +47,8 @@ export interface ChunkRun {
   token_encoding: string;
   token_fidelity: string;
   flag_counts: Record<string, number>;
+  /** What sets each flag, as complydoc words it. Absent from the first chunks reports. */
+  flag_meanings?: Record<string, string>;
   repeated_identifiers: Record<string, number>;
   facts: FactLocation[];
   retrieval: QuestionResult[];

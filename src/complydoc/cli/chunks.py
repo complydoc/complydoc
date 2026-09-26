@@ -31,8 +31,8 @@ from complydoc.cli.common import (
     app,
     console,
     errors,
-    link,
     load_config_or_exit,
+    print_written,
 )
 from complydoc.cost.estimator import UnknownModelError
 from complydoc.utils.imports import load_object
@@ -126,7 +126,6 @@ def chunks(
     from complydoc.extraction.retrieval import Question, read_questions
     from complydoc.report.chunk_run import chunk_run_report
     from complydoc.report.json_writer import write_json
-    from complydoc.report.pages import write_chunks_html
 
     started_at = dt.datetime.now().astimezone()
     started = time.monotonic()
@@ -216,7 +215,6 @@ def chunks(
         ocr_requested=ocr,
     )
     json_path = write_json(run_report, out / f"{name}.json")
-    html_path = write_chunks_html(result, out / f"{name}.html", source=str(target))
     if quiet:
         return
     table = Table(box=None, pad_edge=False)
@@ -243,7 +241,4 @@ def chunks(
         table.add_row(*cells)
     console.print(table)
     console.print()
-    link("Report", html_path)
-    link("Data", json_path)
-    viewer = "complydoc ui" if out.resolve() == DEFAULT_OUT.resolve() else f"complydoc ui {out}"
-    console.print(f"[bold]View[/]    {escape(viewer)}", no_wrap=True, crop=False)
+    print_written(json_path, out)

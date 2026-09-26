@@ -96,10 +96,9 @@ splitter as documents with `source` and `page` metadata. `--splitter` takes a
 created with the arguments; a function is called with the documents and the
 arguments. Repeating `--splitter` compares them.
 
-The command writes `complydoc-chunks.json` and `complydoc-chunks.html` to `--out`
-(`.complydoc` by default). Both hold masked previews and identifiers, not the
-document text. `cd.write_chunks_html(report, path)` writes the same page from
-Python, for a `ChunkReport` or a `ChunkComparison`.
+The command writes `complydoc-chunks.json` to `--out` (`.complydoc` by default),
+which `complydoc ui` opens on its Chunks page. It holds masked previews and
+identifiers, not the document text.
 
 The JSON is a report like an audit's, with the same `run` record, no per-document
 entries, and each splitter's `ChunkReport` under `chunks`. `complydoc ui` lists it

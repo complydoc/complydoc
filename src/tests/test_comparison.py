@@ -1,14 +1,12 @@
-"""Architecture cost comparison and the charts drawn from it."""
+"""Architecture cost comparison: what each way of reading the folder costs, and reaches."""
 
 from __future__ import annotations
-
-import re
 
 import pytest
 
 from complydoc.audit.run import run_audit
-from complydoc.report.charts import SERIES, build_comparison, grouped_bars_svg
-from tests.helpers import FIXTURES
+from complydoc.cost.comparison import ARCHITECTURES, build_comparison
+from tests.helpers import FIXTURES, requires_ocr
 
 
 @pytest.fixture(scope="module")
@@ -22,7 +20,7 @@ def test_every_priced_model_is_compared(comparisons, config):
 
 def test_all_three_architectures_are_costed(comparisons):
     for comparison in comparisons:
-        assert [a.key for a in comparison.architectures] == [k for k, _, _ in SERIES]
+        assert [a.key for a in comparison.architectures] == [k for k, _ in ARCHITECTURES]
 
 
 def test_vision_costs_more_than_text(comparisons):
@@ -49,6 +47,7 @@ def test_a_text_only_model_has_no_vision_cost_rather_than_zero(comparisons):
         assert comparison.by_key("text_ocr").folder_usd is not None
 
 
+@requires_ocr
 def test_ocr_reaches_more_documents_than_the_text_layer_alone(comparisons):
     """OCR reaches documents the text layer alone cannot."""
     for comparison in comparisons:
@@ -77,34 +76,3 @@ def test_annual_needs_a_volume(config):
 
 
 # --- the drawing -----------------------------------------------------------
-
-
-def test_chart_is_inline_svg_with_no_external_reference(comparisons):
-    svg = grouped_bars_svg(comparisons, "folder_usd", "t")
-    assert svg.startswith("<svg")
-    assert "http" not in svg.replace('xmlns="http://www.w3.org/2000/svg"', "")
-
-
-def test_every_bar_carries_a_direct_label(comparisons):
-    """Two of the three series sit below 3:1 on the page, so labels are required."""
-    svg = grouped_bars_svg(comparisons, "folder_usd", "t")
-    bars = svg.count("<path")
-    labels = len(re.findall(r">\$[\d,.]+<", svg))
-    assert labels == bars
-
-
-def test_one_precision_across_a_whole_chart(comparisons):
-    """Mixing $0.00848 and $0.01 reads as two accuracies when it is one."""
-    svg = grouped_bars_svg(comparisons, "folder_usd", "t")
-    decimals = {len(v.split(".")[1]) for v in re.findall(r">\$([\d,.]+)<", svg) if "." in v}
-    assert len(decimals) == 1
-
-
-def test_series_colours_avoid_the_status_palette(comparisons):
-    """Green, amber and red mean good, fair and poor everywhere else in the report."""
-    colours = {c.lower() for _, _, c in SERIES}
-    assert not colours & {"#1a7f4b", "#8a5a00", "#b3261e"}
-
-
-def test_empty_input_draws_nothing(comparisons):
-    assert grouped_bars_svg([], "folder_usd", "t") == ""

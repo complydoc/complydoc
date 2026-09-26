@@ -29,7 +29,7 @@ def test_a_real_tokenizer_is_used_not_a_character_heuristic():
     spec = TokenizerSpec(encoding="o200k_base", fidelity="exact")
     count = count_tokens("Invoice total 5,100.00 due 26/03/2026", spec)
     assert count.fidelity == "exact"
-    assert count.is_measured
+    assert count.fidelity != "estimated"
     assert 5 < count.tokens < 30
 
 
@@ -42,7 +42,7 @@ def test_an_unavailable_encoding_degrades_loudly_rather_than_silently():
     spec = TokenizerSpec(encoding="not-a-real-encoding", fidelity="exact")
     count = count_tokens("some text here", spec)
     assert count.fidelity == "estimated"
-    assert not count.is_measured
+    assert count.fidelity == "estimated"
     assert "will not download it at runtime" in (count.note or "")
 
 
@@ -125,7 +125,9 @@ def test_document_facts_are_reported(loader, config):
     assert estimate.page_count == 2
     assert estimate.has_text_layer is True
     assert len(estimate.pages) == 2
-    assert estimate.pages[0].size_label.startswith("595 x 842")
+    assert (estimate.pages[0].width_pt, estimate.pages[0].height_pt) == pytest.approx(
+        (595, 842), abs=1
+    )
 
 
 def test_dpi_is_reported_for_a_scan_and_not_for_text(loader, config):

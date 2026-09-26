@@ -44,11 +44,11 @@ export const UNITS: readonly { key: CostUnit; label: string }[] = [
   { key: "folder", label: "This folder" },
 ];
 
-export function perThousand(model: ModelCost, path: CostPath): number | null {
+function perThousand(model: ModelCost, path: CostPath): number | null {
   return model.architectures.find((a) => a.key === path)?.per_1000_usd ?? null;
 }
 
-export function costOf(model: ModelCost, path: CostPath, unit: CostUnit): number | null {
+function costOf(model: ModelCost, path: CostPath, unit: CostUnit): number | null {
   const architecture = model.architectures.find((a) => a.key === path);
   return (unit === "folder" ? architecture?.folder_usd : architecture?.per_1000_usd) ?? null;
 }

@@ -38,9 +38,13 @@ def ui(
     server listens on 127.0.0.1 only and makes no outbound connection. Ctrl+C
     stops it.
     """
+    serve_viewer(sources or [DEFAULT_OUT], port=port, browser=browser)
+
+
+def serve_viewer(folders: list[Path], *, port: int = 8500, browser: bool = True) -> None:
+    """Serve the viewer on the reports in `folders` until Ctrl+C."""
     from complydoc.viewer import ViewerNotBuiltError, find_reports, launch_ui
 
-    folders = sources or [DEFAULT_OUT]
     found = find_reports(*folders)
     try:
         viewer = launch_ui(*folders, port=port, open_browser=False, block=False)

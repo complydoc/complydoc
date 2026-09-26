@@ -101,17 +101,3 @@ def test_every_finding_carries_a_tier(config):
     found = matches(config)
     assert found
     assert all(m.evidence in EVIDENCE_ORDER for m in found)
-
-
-def test_the_table_breaks_a_severity_tie_by_evidence(config):
-    """Two medium findings are not equally worth acting on.
-
-    One passed a checksum and one is a model's guess; the confirmed one should
-    not be below the guess just because its filename sorts later.
-    """
-    from complydoc.report.html_writer import evidence_rank, sensitive_rows, severity_rank
-
-    report = run_audit(FIXTURES, config, ("sensitive",), ocr=False)
-    rows = sensitive_rows(report)
-    keys = [(severity_rank(m.severity), evidence_rank(m.evidence)) for _, m in rows]
-    assert keys == sorted(keys, reverse=True)

@@ -33,4 +33,11 @@ describe("parseReport", () => {
     const single = JSON.stringify({ run: { schema_version: 15 }, overall: {}, documents: [] });
     expect(parseReport(single).loader_comparison).toBeNull();
   });
+
+  it("judges a report by the lines it carries, and an older one by those it was scored on", () => {
+    expect(parseReport(sampleText).thresholds.bands.ready).toBe(75);
+    const own = { bands: { ready: 90, workable: 60, "needs work": 30, "not ready": 0 }, similar_enough: 0.9 };
+    const newer = JSON.stringify({ run: { schema_version: 17 }, overall: {}, documents: [], thresholds: own });
+    expect(parseReport(newer).thresholds).toEqual(own);
+  });
 });

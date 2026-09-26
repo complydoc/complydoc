@@ -7,7 +7,7 @@
         {"pymupdf4llm": PyMuPDF4LLMLoader, "docling": cd.parsers.docling()},
         paths="contract.pdf",
     )
-    cd.write_html(report, "loaders.html")
+    cd.write_json(report, ".complydoc/loaders.json")
 
 Each loader is inspected exactly as `inspect_documents` would inspect it. The
 first one given is the baseline: the report's findings, scores and cost are
@@ -52,10 +52,10 @@ from complydoc.extraction.facts import FUZZY_THRESHOLD, Fact, as_facts, evaluate
 from complydoc.loaders.cache import LoaderCache
 from complydoc.loaders.formats import (
     FORMAT_LABELS,
-    SUFFIX_FORMATS,
     extensions,
     format_of,
     loader_formats,
+    suffix_formats,
 )
 from complydoc.loaders.inspection import (
     FolderSource,
@@ -798,7 +798,8 @@ def _covers(formats: Sequence[str] | None, document_format: str) -> bool:
     """Whether a loader meant for these extensions reads documents of this format."""
     if formats is None:
         return True
-    return any(SUFFIX_FORMATS.get(suffix) == document_format for suffix in formats)
+    known = suffix_formats()
+    return any(known.get(suffix) == document_format for suffix in formats)
 
 
 def _fact_format(check: FactCheck) -> str | None:

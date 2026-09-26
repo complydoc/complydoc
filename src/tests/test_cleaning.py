@@ -61,6 +61,15 @@ def test_a_copy_carries_no_identifier_that_was_found(folder, tmp_path, config, n
     assert not left, f"{name} still carries {left}"
 
 
+def test_cleaning_leaves_the_callers_network_as_it_found_it(folder, tmp_path, config):
+    """The guard holds while the copy is made, and not for the rest of the caller's process."""
+    from complydoc import offline
+
+    assert not offline.is_armed()
+    clean_document(folder / "notes.txt", tmp_path / "out", config)
+    assert not offline.is_armed()
+
+
 def test_a_masked_copy_is_still_the_document(folder, tmp_path, config):
     result = clean_document(folder / "notes.txt", tmp_path / "out", config)
     text = result.output.read_text()

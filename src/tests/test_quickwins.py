@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from complydoc.audit.run import run_audit
 from complydoc.report.quickwins import quick_wins
-from tests.helpers import FIXTURES
+from tests.helpers import FIXTURES, requires_ocr
 
 ALL = ("cost", "readiness", "sensitive")
 
@@ -45,6 +45,7 @@ def test_pages_nothing_came_off_are_offered_to_ocr(config):
     assert entry.saving_usd_per_1000 is not None
 
 
+@requires_ocr
 def test_running_ocr_removes_the_reason_to_run_ocr(config):
     """A quick win that has already been taken should stop being offered."""
     assert "ocr_blank_pages" not in {w.id for w in wins(config, ocr=True)}
@@ -68,7 +69,7 @@ def test_an_unsupported_file_is_not_called_broken(config):
 
 def test_the_saving_matches_the_price_the_report_shows(config):
     """The quoted saving matches the cost page."""
-    from complydoc.report.charts import build_comparison, headline_comparison
+    from complydoc.cost.comparison import build_comparison, headline_comparison
 
     report = run_audit(FIXTURES, config, ALL, ocr=False)
     entry = next(w for w in quick_wins(report) if w.id == "ocr_blank_pages")

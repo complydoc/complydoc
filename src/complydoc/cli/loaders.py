@@ -130,7 +130,7 @@ def compare_loaders_command(
             console.print(f"\n[yellow]No recommendation[/] — {escape(lc.verdict)}")
         if report.verification is not None:
             console.print(f"[dim]{escape(report.verification.headline)}.[/]")
-    emit(report, config, out, name, quiet)
+    emit(report, out, name, quiet)
     if print_json:
         print_report_json(report)
 

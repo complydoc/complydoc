@@ -13,7 +13,16 @@ load.
 LangChain sunset `langchain-community` on 22 May 2026 and archived it on 19 June. Nothing
 in complydoc needs it any more.
 
+The static HTML report is retired: the viewer is the one place a report is read.
+This is a breaking change for anyone calling `cd.write_html`; see Removed.
+
 ### Added
+
+- The report carries the lines it was judged by, under `thresholds`: the lowest
+  score in each readiness band and the similarity below which two readings of a
+  page differ. The viewer bands scores and marks disagreeing readers on these
+  instead of a copy of its own, so the two cannot drift apart. A report written
+  before them is judged on the lines it was scored with.
 
 - The viewer has the same pages for every run: Home, Security, Cost & time,
   Documents, Loaders and Chunks. A page the run did not produce says so, what it
@@ -175,7 +184,35 @@ in complydoc needs it any more.
 - The landing page's Questions ask which loader to use for the PDFs and which for the
   Word files, answered with the comparison by file type.
 
+### Removed
+
+- The static HTML report. Every run writes its JSON report, and `complydoc ui`
+  opens it in the viewer, from the command line or, with `cd.launch_ui()`, from a
+  script or a notebook. The HTML page duplicated what the viewer shows, and each
+  new part of a report had to be built twice and drifted between the two.
+  - `cd.write_html`, `cd.write_chunks_html` and `cd.write_diff_html` are gone.
+    Use `cd.write_json`, and open the file with `complydoc ui`.
+  - `complydoc audit`, `cost`, `sensitive`, `readiness`, `compare-readers`,
+    `compare-loaders`, `check`, `chunks` and `diff` no longer write a `.html` file.
+    They print the report's path and the `complydoc ui` command that opens it.
+  - `complydoc routing` writes its manifest as before, and the run as a report,
+    `<name>-report.json`, in place of the HTML page, so a routing run opens in
+    the viewer too.
+  - `complydoc demo` opens the viewer on the sample's report instead of an HTML
+    file.
+  - The `upload-report` input of the GitHub Action uploads the JSON report.
+  - `jinja2` is no longer a dependency.
+
+  A summary report (the default `--detail`) now keeps the page pictures when the
+  run asked for them with `--page-images`, since nothing else carries them. `assist`
+  still sends no page picture or page text.
+
 ### Fixed
+
+- `clean_document` left the network guard on for the rest of the caller's
+  process once it returned, so a notebook that cleaned a file could no longer
+  reach the network. It now holds the guard for the call only, as the other
+  entry points do.
 
 - A parallel audit on a Mac no longer loses its workers. The name model ran on
   the GPU inside each worker, and a worker cannot start Metal's shader compiler:

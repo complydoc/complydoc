@@ -57,9 +57,9 @@ inputs:
     default: "true"
   upload-report:
     description: >-
-      Upload the HTML and JSON reports as a workflow artifact. The reports carry
+      Upload the JSON report as a workflow artifact, to open with `complydoc ui`. It carries
       masked findings and no page text, but anyone who can read the run can
-      download them.
+      download it.
     required: false
     default: "false"
   token:
@@ -168,7 +168,7 @@ runs:
         sarif_file: ${{ steps.check.outputs.sarif }}
         category: complydoc
 
-    - name: Upload the reports
+    - name: Upload the report
       if: inputs.upload-report == 'true' && steps.check.outputs.exit-code != '2'
       uses: actions/upload-artifact@v4
       with:

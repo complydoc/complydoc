@@ -77,7 +77,7 @@ def _vision_saving_per_1000(report: AuditReport) -> float | None:
     Taken from the headline model's own figures in this report, so the number
     a quick win quotes is the number the cost page shows.
     """
-    from complydoc.report.charts import build_comparison, headline_comparison
+    from complydoc.cost.comparison import build_comparison, headline_comparison
 
     comparisons = build_comparison(report)
     headline = headline_comparison(comparisons, "claude-sonnet-5")

@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 2
 requires-python = ">=3.11, <3.14"
 resolution-markers = [
     "python_full_version >= '3.13' and sys_platform == 'win32'",
@@ -491,7 +491,6 @@ wheels = [
 name = "complydoc"
 source = { editable = "." }
 dependencies = [
-    { name = "jinja2" },
     { name = "lxml" },
     { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "numpy", version = "2.5.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
@@ -558,7 +557,6 @@ integrations = [
 
 [package.metadata]
 requires-dist = [
-    { name = "jinja2", specifier = ">=3.1" },
     { name = "langchain", marker = "extra == 'assistant'", specifier = ">=1.0" },
     { name = "langchain-openai", marker = "extra == 'assistant'", specifier = ">=0.3" },
     { name = "langchain-typesafe", marker = "extra == 'typesafe'", specifier = ">=0.0.1a3" },

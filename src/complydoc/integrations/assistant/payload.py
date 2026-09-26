@@ -33,8 +33,9 @@ from complydoc.report.models import AuditReport
 
 __all__ = ["HELD_BACK", "report_payload"]
 
-HELD_BACK = ("extracted_text",)
-"""Per-document keys left out on top of what a summary report already leaves out."""
+HELD_BACK = ("extracted_text", "previews")
+"""Per-document keys left out of the summary report: the page text, and the page
+pictures a summary keeps when the run asked for them. Neither is sent anywhere."""
 
 
 def report_payload(report: AuditReport) -> str:

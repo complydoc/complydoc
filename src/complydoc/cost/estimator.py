@@ -47,12 +47,6 @@ class PageFacts:
     text_coverage_pct: float
     rendered: dict[str, RenderedSize]
 
-    @property
-    def size_label(self) -> str:
-        if self.width_pt <= 0 or self.height_pt <= 0:
-            return "not determinable"
-        return f"{self.width_pt:.0f} x {self.height_pt:.0f} pt"
-
 
 @dataclass(frozen=True, slots=True)
 class ModelCostEstimate:

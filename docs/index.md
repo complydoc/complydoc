@@ -44,13 +44,14 @@ complydoc audit ~/contracts --ocr
 import complydoc as cd
 
 report = cd.full_audit("~/contracts")
-cd.write_html(report, "report.html")
+cd.write_json(report, ".complydoc/report.json")
+cd.launch_ui()  # opens the viewer on .complydoc
 ```
 
 ## Output
 
-An HTML report and a JSON file with the same data. The JSON carries
-`schema_version`, currently 17. Identifiers are masked everywhere in both,
+A JSON report, which `complydoc ui` opens in the [viewer](guides/viewer.md). It
+carries `schema_version`, currently 17. Identifiers are masked everywhere in it,
 including the page text, unless the run used `--reveal`; `--page-images` adds a
 picture of each page, which shows them.
 

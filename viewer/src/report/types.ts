@@ -46,6 +46,15 @@ export interface Report {
   ignores?: IgnoreSummary | null;
   /** Schema 17: the custom concepts the run looked for. Null or absent without a concepts file. */
   concepts?: ConceptSummary | null;
+  /** The lines complydoc judged this report by. Filled in by `parseReport` for reports older than schema 17. */
+  thresholds: Thresholds;
+}
+
+export interface Thresholds {
+  /** The lowest score in each readiness band. */
+  bands: Record<Band, number>;
+  /** Below this, two readings of a page tell different stories. */
+  similar_enough: number;
 }
 
 export interface RunMetadata {

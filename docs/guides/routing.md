@@ -21,8 +21,8 @@ text layer, scans through local OCR $0.0067
 as an image to a vision model       $0.0398
 ```
 
-It writes `complydoc-routing.json`, a manifest an ingestion job can read, and the
-usual HTML report.
+It writes `complydoc-routing.json`, a manifest an ingestion job can read, and
+`complydoc-routing-report.json`, the run as a report, which `complydoc ui` opens.
 
 ## How each page is decided
 

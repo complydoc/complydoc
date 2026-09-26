@@ -1,7 +1,17 @@
-import type { Report } from "./types";
+import type { Report, Thresholds } from "./types";
 
 /** The report schemas this viewer was written against. */
-export const SUPPORTED_SCHEMAS = [15, 16, 17] as const;
+const SUPPORTED_SCHEMAS = [15, 16, 17] as const;
+
+/**
+ * The lines complydoc drew before reports carried them (schemas 15 and 16, and
+ * early 17). A record of what those reports were judged by, not a rule of the
+ * viewer's: a newer report brings its own.
+ */
+const EARLIER_THRESHOLDS: Thresholds = {
+  bands: { ready: 75, workable: 50, "needs work": 25, "not ready": 0 },
+  similar_enough: 0.95,
+};
 
 export class ReportError extends Error {
   override name = "ReportError";
@@ -36,7 +46,13 @@ export function parseReport(text: string): Report {
   if (!Array.isArray(data.documents)) {
     throw new ReportError("This report has no document list.");
   }
-  const report = { loader_comparison: null, cost: null, verification: null, ...data } as unknown as Report;
+  const report = {
+    loader_comparison: null,
+    cost: null,
+    verification: null,
+    thresholds: EARLIER_THRESHOLDS,
+    ...data,
+  } as unknown as Report;
   // A run that did not scan for identifiers leaves these null; the pages read them as none found,
   // and say from `run.components_run` that the scan was not part of the run.
   for (const document of report.documents as unknown as Record<string, unknown>[]) {

@@ -19,8 +19,8 @@ complydoc audit <path> --print-json
 ```
 
 `--print-json` puts the report on stdout and nothing else; progress goes to stderr.
-Parse stdout. Without it, the tool writes `.complydoc/complydoc.{html,json}` and prints
-both paths. `complydoc` with no arguments audits the current directory; it does not
+Parse stdout. Without it, the tool writes `.complydoc/complydoc.json` and prints
+its path; `complydoc ui` opens it in a viewer for a person. `complydoc` with no arguments audits the current directory; it does not
 take a path, so use `complydoc audit <path>` for anything else.
 
 | Command | Scope |
@@ -72,7 +72,7 @@ Do not pass these unless the user asked for exactly that:
   locally without it.
 - `--reveal` writes identifiers unmasked into the findings, the page text and
   `--save-text` files.
-- `--page-images` embeds a picture of every page in the HTML report. A picture shows
+- `--page-images` adds a picture of every page to the report. A picture shows
   every value on the page, so the report then holds them all.
 
 ## Reading the JSON

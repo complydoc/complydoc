@@ -125,12 +125,6 @@ class PagePreview:
             found.append(("bad", f"{self.sensitive_count} sensitive"))
         return found
 
-    @property
-    def aspect(self) -> float:
-        if self.width_pt <= 0 or self.height_pt <= 0:
-            return 1.4142
-        return self.height_pt / self.width_pt
-
 
 def _normalise(value: str) -> str:
     """Compare values ignoring whitespace and separators, which words split on."""

@@ -34,3 +34,15 @@ def loader() -> Callable[..., Document]:
         return cache[key]
 
     return _load
+
+
+@pytest.fixture(autouse=True)
+def _guard_left_as_found():
+    """A command run in this process arms the network guard for good, as it should in
+    a process of its own. Here that would block the network for every later test."""
+    from complydoc import offline
+
+    armed = offline.is_armed()
+    yield
+    if offline.is_armed() and not armed:
+        offline.disarm()

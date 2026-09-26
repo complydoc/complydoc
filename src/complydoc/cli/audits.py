@@ -4,8 +4,6 @@
 from __future__ import annotations
 
 import contextlib
-import subprocess
-import sys
 from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Annotated
@@ -357,8 +355,8 @@ def run(
     elif page_images:
         errors.print(
             "[bold yellow]--page-images is set.[/] Each page is embedded as a picture, "
-            "and a picture shows every value on it unmasked. Treat the HTML report as "
-            "a sensitive document in its own right."
+            "and a picture shows every value on it unmasked. Treat the report as a "
+            "sensitive document in its own right."
         )
 
     try:
@@ -417,7 +415,7 @@ def run(
     if not quiet:
         summary(report)
     level: Detail = "full" if detail is ReportDetail.full else "summary"
-    emit(report, config, out, name, quiet, save_text, detail=level)
+    emit(report, out, name, quiet, save_text, detail=level)
     if print_json:
         print_report_json(report, level)
 
@@ -512,7 +510,7 @@ def demo(
     ocr: OcrOpt = True,
     open_report: Annotated[
         bool,
-        typer.Option("--open/--no-open", help="Open the report when it is written."),
+        typer.Option("--open/--no-open", help="Open the report in the viewer when it is written."),
     ] = True,
 ) -> None:
     """Audit the sample documents, so you can see a report without finding a folder.
@@ -546,7 +544,9 @@ def demo(
         compare_extractors=["pypdf"],
     )
     if open_report:
-        _open((out / "complydoc-demo.html").resolve())
+        from complydoc.cli.ui import serve_viewer
+
+        serve_viewer([out / "complydoc-demo.json"])
 
 
 def _sample_folder() -> Path | None:
@@ -564,16 +564,6 @@ def _sample_folder() -> Path | None:
         return None
     documents = [p for p in folder.iterdir() if p.is_file()] if folder.is_dir() else []
     return folder if documents else None
-
-
-def _open(path: Path) -> None:
-    """Show the report, without making a failure to do so a failed run."""
-    openers = {"darwin": ["open"], "win32": ["cmd", "/c", "start", ""]}
-    opener = openers.get(sys.platform, ["xdg-open"])
-    try:
-        subprocess.run([*opener, str(path)], check=False, capture_output=True, timeout=10)
-    except (OSError, subprocess.SubprocessError):
-        console.print(f"[dim]Open it yourself: {path}[/]")
 
 
 @app.command("compare-readers", rich_help_panel="Compare readers and loaders")

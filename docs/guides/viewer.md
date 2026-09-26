@@ -31,9 +31,8 @@ complydoc ui reports/ baseline.json
 
 ## What the viewer shows
 
-The same report as the HTML file an audit writes, drawn differently: a Home page,
-every finding linked to where it sits, and the cost of each model under a
-loading plan.
+The report every run writes: a Home page, every finding linked to where it
+sits, and the cost of each model under a loading plan.
 
 Every run opens on the same pages, whichever command wrote it:
 

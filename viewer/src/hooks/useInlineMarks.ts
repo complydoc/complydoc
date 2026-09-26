@@ -44,7 +44,7 @@ function indexText(container: HTMLElement): TextIndex {
  * nodes. A line the diff splits into several nodes where words changed is
  * searched whole, and each match mapped back to the nodes it spans.
  */
-export function rangesOf(index: TextIndex, needle: string): Range[] {
+function rangesOf(index: TextIndex, needle: string): Range[] {
   const words = needle.trim().split(/\s+/).filter(Boolean);
   if (words.length === 0) return [];
   const at = (offset: number) => {

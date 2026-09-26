@@ -47,7 +47,9 @@ def test_the_manifest_carries_a_route_and_a_reason_for_every_page(folder, tmp_pa
     assert manifest["model"]
     assert manifest["cost_usd"]["routed"] is not None
     assert manifest["cost_usd"]["routed"] <= manifest["cost_usd"]["vision"]
-    assert (out / "complydoc-routing.html").exists()
+    # And the run as a report, which the viewer opens; the manifest is for pipelines.
+    report = json.loads((out / "complydoc-routing-report.json").read_text())
+    assert report["routing"]["pages"]
 
 
 def test_the_summary_is_printed(folder, tmp_path):

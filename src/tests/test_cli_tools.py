@@ -82,9 +82,7 @@ def test_chunks_writes_a_masked_report(folder, tmp_path):
     [report] = data["chunks"]
     assert report["stats"]["count"] == 3
     assert report["facts"][0]["status"] == "whole"
-    page = (out / "complydoc-chunks.html").read_text()
-    assert EMAIL not in page and EMAIL not in json.dumps(data)
-    assert "Expected facts" in page
+    assert EMAIL not in json.dumps(data)
 
 
 def test_chunks_compares_several_splitters(folder, tmp_path):
@@ -102,7 +100,6 @@ def test_chunks_compares_several_splitters(folder, tmp_path):
     data = json.loads((out / "complydoc-chunks.json").read_text())
     names = [r["chunker"] for r in data["chunks"]]
     assert names == ["Halves parts=2", "Halves parts=4"]
-    assert "Splitters" in (out / "complydoc-chunks.html").read_text()
     assert "Halves parts=4" in result.output
 
 
@@ -138,7 +135,6 @@ def test_chunks_checks_retrieval_from_a_questions_file(folder, tmp_path):
     assert result.exit_code == 0, result.output
     [report] = json.loads((out / "complydoc-chunks.json").read_text())["chunks"]
     assert report["retrieval"][0]["status"] == "retrieved"
-    assert "<h3>Retrieval</h3>" in (out / "complydoc-chunks.html").read_text()
 
     questions.write_text("- question: only a question\n")
     bad = runner.invoke(
@@ -167,9 +163,9 @@ def test_diff_fails_on_a_regression_and_passes_otherwise(folder, tmp_path):
     assert worse.exit_code == 1, worse.output
     assert "worse  identifiers added: terms.docx: Email address" in worse.output
     assert EMAIL not in worse.output
-    page = (tmp_path / "complydoc-diff.html").read_text()
-    assert "Regressions" in page and EMAIL not in page
-    data = json.loads((tmp_path / "complydoc-diff.json").read_text())
+    written = (tmp_path / "complydoc-diff.json").read_text()
+    assert EMAIL not in written
+    data = json.loads(written)
     assert f"{data['regressions']} regression" in worse.output
     assert any(c["area"] == "identifiers" and c["worse"] for c in data["changes"])
 
@@ -202,7 +198,6 @@ def test_compare_loaders_runs_a_comparison_file(tmp_path):
     out = tmp_path / "out"
     result = runner.invoke(app, ["compare-loaders", str(spec), "--out", str(out)])
     assert result.exit_code == 0, result.output
-    assert (out / "complydoc-loaders.html").exists()
     data = json.loads((out / "complydoc-loaders.json").read_text())
     assert [row["name"] for row in data["loader_comparison"]["loaders"]] == ["full", "short"]
 

@@ -98,9 +98,6 @@ def test_the_public_surface_is_exactly_what_was_promised():
         "TextResult",
         "ExtractionWarning",
         # writing a report somewhere
-        "write_chunks_html",
-        "write_diff_html",
-        "write_html",
         "write_json",
         # configuration, and the errors a caller has to catch by name
         "load_config",
@@ -237,13 +234,12 @@ def test_it_does_not_start_processes_unless_asked():
     assert report.run.jobs == 1
 
 
-def test_the_report_can_be_written_out_both_ways(tmp_path):
+def test_the_report_is_written_out_and_read_back(tmp_path):
     import json
 
     report = cd.full_audit(SAMPLE)
-    html = cd.write_html(report, tmp_path / "r.html")
     data = cd.write_json(report, tmp_path / "r.json")
-    assert html.exists() and "complydoc" in html.read_text()
+    assert cd.load_report(data).run.schema_version == report.run.schema_version
     assert json.loads(data.read_text())["run"]["schema_version"] == report.run.schema_version
 
 

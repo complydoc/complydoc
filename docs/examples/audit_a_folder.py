@@ -14,4 +14,5 @@ print(f"\n{report.overall.bands}")
 for win in report.quick_wins:
     print(f"[{win.actor}] {win.title} — {len(win.documents)} document(s)")
 
-cd.write_html(report, "audit.html")
+# `complydoc ui` opens what is in .complydoc, where the command line writes too.
+cd.write_json(report, ".complydoc/audit.json")

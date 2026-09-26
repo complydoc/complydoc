@@ -103,9 +103,17 @@ def clean_document(
     file rebuilt from those, so the text layer does not survive.
     """
     from complydoc import offline
+
+    # Guarded for the call only: a caller's own network use carries on afterwards.
+    with offline.guarded():
+        return _clean_document(path, out_dir, config, rasterise=rasterise)
+
+
+def _clean_document(
+    path: str | Path, out_dir: str | Path, config: Config | None, *, rasterise: bool
+) -> CleanResult:
     from complydoc.extraction.strings import resolve_config
 
-    offline.arm()
     source = Path(path).expanduser()
     settings = resolve_config(config)
     destination = Path(out_dir).expanduser()

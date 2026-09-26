@@ -147,13 +147,6 @@ def test_the_matrix_limitations_and_quick_wins(pdf_report):
     assert "hidden_instructions" in {win.id for win in pdf_report.quick_wins}
 
 
-def test_the_report_shows_the_matrix(pdf_report, tmp_path):
-    html = cd.write_html(pdf_report, tmp_path / "report.html").read_text(encoding="utf-8")
-    assert "Hidden content and instructions" in html
-    assert 'data-cm-cell="pattern:confirmed"' in html
-    assert 'data-cm="pattern:confirmed"' in html
-
-
 # ----------------------------------------------------------------------- Word
 
 

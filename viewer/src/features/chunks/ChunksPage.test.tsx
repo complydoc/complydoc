@@ -62,4 +62,16 @@ describe("ChunksPage", () => {
     await userEvent.click(screen.getByRole("radio", { name: "character" }));
     expect(within(screen.getByRole("region", { name: "Expected facts" })).getByText("whole")).toBeInTheDocument();
   });
+
+  it("words each flag as the report does", () => {
+    const worded = { ...splitter("recursive", true), flag_meanings: { split_sentence: "stops half way", tiny: "too small" } };
+    renderPage(<ChunksPage report={chunksRun(worded)} />);
+    expect(screen.getByText("stops half way")).toBeInTheDocument();
+    expect(screen.getByText("too small")).toBeInTheDocument();
+  });
+
+  it("names the flags of a report written before it worded them", () => {
+    renderPage(<ChunksPage report={chunksRun(splitter("recursive", true))} />);
+    expect(screen.getByText("split sentence")).toBeInTheDocument();
+  });
 });

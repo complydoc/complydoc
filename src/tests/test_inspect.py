@@ -245,8 +245,6 @@ def test_an_allowed_loader_reaches_the_network_and_is_recorded(tmp_path):
         limitation.area == "Loader" and "may have left this machine" in limitation.statement
         for limitation in report.limitations
     )
-    html = cd.write_html(report, tmp_path / "report.html").read_text(encoding="utf-8")
-    assert "document content may have left this machine" in html
 
 
 def test_allowing_the_network_is_stated_even_when_nothing_connects(tmp_path):
@@ -263,8 +261,6 @@ def test_allowing_the_network_is_stated_even_when_nothing_connects(tmp_path):
 
     assert report.run.offline_guard == "armed", "complydoc's own processing stays guarded"
     assert any("made no connections" in limitation.statement for limitation in report.limitations)
-    html = cd.write_html(report, tmp_path / "report.html").read_text(encoding="utf-8")
-    assert "was allowed network access" in html
 
 
 def test_the_network_is_blocked_unless_allowed():
