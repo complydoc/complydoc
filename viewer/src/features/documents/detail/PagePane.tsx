@@ -5,6 +5,7 @@ import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/componen
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { plural } from "@/report/format";
 import type { PagePreview } from "@/report/types";
+import { isIgnoredBox, type BoxRef } from "@/report/picture";
 import { PagePicture } from "./PagePicture";
 
 interface PagePaneProps {
@@ -13,12 +14,14 @@ interface PagePaneProps {
   /** The document's name, for the enlarged view's title. */
   name: string;
   /** A finding's box to mark on the page. */
-  mark: { value: string; label: string } | null;
+  mark: BoxRef | null;
+  /** Findings ignored as not a problem: drawn faintly, and left out of the count. */
+  ignored?: BoxRef[];
 }
 
 /** The page, on a card shaped like the reading panes beside it, and enlarged on request to read it. */
-export function PagePane({ number, preview, name, mark }: PagePaneProps) {
-  const found = preview?.sensitive.length ?? 0;
+export function PagePane({ number, preview, name, mark, ignored = [] }: PagePaneProps) {
+  const found = preview?.sensitive.filter((box) => !isIgnoredBox(box, ignored)).length ?? 0;
   const identifiers = found > 0 && <Badge variant="destructive">{plural(found, "identifier")}</Badge>;
 
   return (
@@ -46,7 +49,7 @@ export function PagePane({ number, preview, name, mark }: PagePaneProps) {
                   <DialogDescription>Every identifier found is boxed where it sits.</DialogDescription>
                 </DialogHeader>
                 <div className="min-h-0 flex-1">
-                  <PagePicture preview={preview} mark={mark} />
+                  <PagePicture preview={preview} mark={mark} ignored={ignored} />
                 </div>
               </DialogContent>
             </Dialog>
@@ -55,7 +58,7 @@ export function PagePane({ number, preview, name, mark }: PagePaneProps) {
       </CardHeader>
       {/* Tighter than a card's usual padding: every pixel here goes to the page. */}
       <CardContent className="min-h-0 flex-1 px-2">
-        <PagePicture preview={preview} mark={mark} />
+        <PagePicture preview={preview} mark={mark} ignored={ignored} />
       </CardContent>
     </Card>
   );

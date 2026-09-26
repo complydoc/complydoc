@@ -2,7 +2,7 @@ import { ImageOffIcon } from "lucide-react";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { hasPicture } from "@/report/picture";
+import { hasPicture, isIgnoredBox, isMarked, type BoxRef } from "@/report/picture";
 import type { Box, PagePreview } from "@/report/types";
 
 function place(box: Box) {
@@ -18,14 +18,14 @@ function place(box: Box) {
 interface PagePictureProps {
   preview: PagePreview | undefined;
   /** A finding's box to mark, found by its masked value and label. */
-  mark?: { value: string; label: string } | null;
+  mark?: BoxRef | null;
+  /** Findings ignored as not a problem, drawn faintly rather than flagged. */
+  ignored?: BoxRef[];
 }
 
-function isMarked(box: Box, mark: PagePictureProps["mark"]) {
-  return Boolean(mark && box.value === mark.value && box.title?.startsWith(mark.label));
-}
 
-export function PagePicture({ preview, mark = null }: PagePictureProps) {
+
+export function PagePicture({ preview, mark = null, ignored = [] }: PagePictureProps) {
   if (!hasPicture(preview)) {
     return (
       <Empty className="h-full p-4">
@@ -60,17 +60,22 @@ export function PagePicture({ preview, mark = null }: PagePictureProps) {
         )}
         {preview.sensitive.map((box, index) => {
           const marked = isMarked(box, mark);
+          const quiet = !marked && isIgnoredBox(box, ignored);
           return (
             // The finding asked for opens with its tooltip showing, so the reader sees what and where at once.
             <Tooltip key={index} {...(marked && { defaultOpen: true })}>
               <TooltipTrigger asChild>
                 <span
                   tabIndex={0}
-                  aria-label={box.title ?? "Sensitive item"}
+                  aria-label={`${box.title ?? "Sensitive item"}${quiet ? " (ignored)" : ""}`}
                   data-finding={marked || undefined}
                   className={cn(
                     "absolute rounded-xs",
-                    marked ? "z-10 bg-primary/30 ring-2 ring-primary" : "bg-destructive/25 ring-1 ring-destructive",
+                    marked
+                      ? "z-10 bg-primary/30 ring-2 ring-primary"
+                      : quiet
+                        ? "outline-1 outline-muted-foreground/50 outline-dashed"
+                        : "bg-destructive/25 ring-1 ring-destructive",
                   )}
                   style={place(box)}
                 />

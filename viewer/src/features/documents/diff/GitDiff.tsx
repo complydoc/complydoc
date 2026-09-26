@@ -134,21 +134,54 @@ export default function GitDiff({
     onLaid: setTicks,
   });
 
+  // Where the reader is: the page at the top of the view, and how far past its first line.
+  const place = useRef<{ page: number; past: number } | null>(null);
   const onScroll = () => {
-    if (!onVisiblePage) return;
-    cancelAnimationFrame(frame.current);
-    frame.current = requestAnimationFrame(() => {
+    // A short wait rather than an animation frame: frames stop in a hidden tab, and the
+    // place has to be known whenever the text is redrawn.
+    window.clearTimeout(frame.current);
+    frame.current = window.setTimeout(() => {
       const container = scroller.current;
       if (!container) return;
       const edge = container.getBoundingClientRect().top + 48;
-      let current: number | null = null;
+      let current: { page: number; top: number } | null = null;
       for (const marker of markers(container)) {
-        if (marker.element.getBoundingClientRect().top <= edge) current = marker.page;
+        const top = marker.element.getBoundingClientRect().top;
+        if (top <= edge) current = { page: marker.page, top };
         else break;
       }
-      if (current !== null) onVisiblePage(current);
-    });
+      if (current === null) return;
+      place.current = { page: current.page, past: edge - current.top };
+      onVisiblePage?.(current.page);
+    }, 60);
   };
+
+  // New text, as when the values are shown or masked, is drawn afresh from the top.
+  // The reader stays where they were: the same page, as far into it as they had read.
+  const drawn = useRef(file);
+  useEffect(() => {
+    if (drawn.current === file) return;
+    drawn.current = file;
+    const kept = place.current;
+    if (!kept) return;
+    let attempts = 0;
+    let timer = 0;
+    const back = () => {
+      const container = scroller.current;
+      const marker = container ? markers(container).find((m) => m.page === kept.page) : undefined;
+      if (!container || !marker) {
+        attempts += 1;
+        if (attempts < 10) timer = window.setTimeout(back, 50);
+        else scrollTo(kept.page);
+        return;
+      }
+      const edge = container.getBoundingClientRect().top + 48;
+      const top = marker.element.getBoundingClientRect().top;
+      container.scrollTop += top - (edge - kept.past);
+    };
+    timer = window.setTimeout(back, 0);
+    return () => window.clearTimeout(timer);
+  }, [file, scrollTo]);
 
   return (
     // Fills the height it is given: the header keeps its line, and the diff scrolls in the rest.

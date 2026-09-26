@@ -2,6 +2,7 @@
  * A finding shown where it sits: which page, what to mark in the text, and
  * which box to mark on the page picture.
  */
+import type { BoxRef } from "./picture";
 import type { FindingRef } from "./route";
 import type { DocumentEntry, Evidence, SensitiveMatch, Severity } from "./types";
 
@@ -12,7 +13,7 @@ export interface Highlight {
   /** What to mark in the text: the masked value, or the start of a hidden passage. */
   needle: string;
   /** The box to mark on the page picture, found by its value and label. */
-  box: { value: string; label: string } | null;
+  box: BoxRef | null;
   label: string;
   severity: Severity;
   evidence: Evidence | null;
@@ -31,7 +32,7 @@ export function findingHighlight(document: DocumentEntry, ref: FindingRef): High
       kind: "identifier",
       page: match.page,
       needle: match.masked,
-      box: { value: match.masked, label: match.label },
+      box: { value: match.masked, label: match.label, revealed: match.revealed ?? null },
       label: match.label,
       severity: match.severity,
       evidence: match.evidence,

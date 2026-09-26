@@ -77,9 +77,9 @@ export function DocumentDetail({
     cancelClose();
     closing.current = window.setTimeout(() => setPicked(null), 300);
   };
-  // Ignored findings leave the text; the Security page still lists them.
+  // Ignored findings stay in the text, struck through and quiet, so they can be brought back.
   const marks = useMemo<InlineMark[]>(
-    () => findings.filter((f) => !isIgnored(f)).map((f) => ({ key: f.key, needle: f.needle, tone: f.severity })),
+    () => findings.map((f) => ({ key: f.key, needle: f.needle, tone: isIgnored(f) ? "ignored" : f.severity })),
     [findings, isIgnored],
   );
   // The findings to step through: those still open, in page order.
@@ -202,6 +202,9 @@ export function DocumentDetail({
                     name={fileName(document.relative_path)}
                     preview={preview}
                     mark={highlight && highlight.page === page.number ? highlight.box : null}
+                    ignored={findings
+                      .filter((f) => f.match && isIgnored(f))
+                      .map((f) => ({ value: f.match?.masked ?? "", label: f.label, revealed: f.match?.revealed ?? null }))}
                   />
                 ) : (
                   <div className="flex h-full items-center justify-center rounded-xl border border-dashed text-sm text-muted-foreground">
