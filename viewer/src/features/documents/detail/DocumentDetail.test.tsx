@@ -87,6 +87,23 @@ describe("DocumentDetail", () => {
     expect(within(side()).getByRole("figure", { name: "Page 3" })).toBeInTheDocument();
   });
 
+  it("folds the page away and back, and remembers it", async () => {
+    open(sampleAudit(), "master-services-agreement.pdf");
+    await userEvent.click(within(side()).getByRole("button", { name: "Hide the page" }));
+    expect(within(side()).queryByRole("figure")).not.toBeInTheDocument();
+    expect(localStorage.getItem("complydoc.page-collapsed")).toBe("1");
+    await userEvent.click(within(side()).getByRole("button", { name: "Show the page" }));
+    expect(within(side()).getByRole("figure", { name: "Page 1" })).toBeInTheDocument();
+  });
+
+  it("keeps the findings in their place on a page where nothing was found", async () => {
+    const report = sampleAudit();
+    const entry = required(report.documents.find((d) => d.relative_path === "master-services-agreement.pdf"));
+    const empty = required(entry.extracted_text.find((p) => !entry.sensitive.matches.some((m) => m.page === p.number)));
+    open(report, "master-services-agreement.pdf", { page: empty.number });
+    expect(within(checklist()).getByText("Nothing was found on this page.")).toBeInTheDocument();
+  });
+
   it("leaves the picture out of a report without pictures", () => {
     open(sampleReport(), "master-services-agreement.pdf");
     expect(screen.queryByRole("figure")).not.toBeInTheDocument();

@@ -16,7 +16,6 @@ interface FindingChecklistProps {
 export function FindingChecklist({ findings, active }: FindingChecklistProps) {
   const { editable, ignore, unignore } = useIgnores();
   const isIgnored = useIsIgnored();
-  if (findings.length === 0) return null;
   const open = findings.filter((f) => !isIgnored(f)).length;
 
   return (
@@ -24,6 +23,7 @@ export function FindingChecklist({ findings, active }: FindingChecklistProps) {
       <h3 className="text-sm font-medium">
         Found on this page <span className="font-normal text-muted-foreground">{open}</span>
       </h3>
+      {findings.length === 0 && <p className="text-sm text-muted-foreground">Nothing was found on this page.</p>}
       <ul className="flex flex-col gap-1">
         {findings.map((finding) => {
           const ignored = isIgnored(finding);

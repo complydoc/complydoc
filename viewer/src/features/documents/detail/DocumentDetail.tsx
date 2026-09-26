@@ -1,4 +1,4 @@
-import { EyeIcon, EyeOffIcon } from "lucide-react";
+import { ChevronDownIcon, EyeIcon, EyeOffIcon } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -63,6 +63,28 @@ function EyeToggle({ available, on, onChange }: { available: boolean; on: boolea
   );
 }
 
+const COLLAPSED_KEY = "complydoc.page-collapsed";
+
+/** Whether the page's picture is folded away, remembered in this browser across documents. */
+function usePageCollapsed(): [boolean, (collapsed: boolean) => void] {
+  const [collapsed, set] = useState(() => {
+    try {
+      return localStorage.getItem(COLLAPSED_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
+  const update = (next: boolean) => {
+    set(next);
+    try {
+      localStorage.setItem(COLLAPSED_KEY, next ? "1" : "0");
+    } catch {
+      // Storage refused, as in a private window: it is folded for this visit only.
+    }
+  };
+  return [collapsed, update];
+}
+
 /**
  * One document. Read more than one way, a diff of two readings; read one way,
  * its pages as read. Beside it, the page's picture when the report has one, and
@@ -90,6 +112,7 @@ export function DocumentDetail({
   );
   const revealable = canReveal(document);
   const [eye, setEye] = useState(false);
+  const [collapsed, setCollapsed] = usePageCollapsed();
   const unmasked = eye && revealable;
   const isIgnored = useIsIgnored();
   const { plan, models } = usePlan();
@@ -114,8 +137,9 @@ export function DocumentDetail({
   const pictured = hasPicture(preview);
   const checked = document.verification?.pages.find((p) => p.number === page.number);
   // The column is kept for every page once any page needs it, so the text does not jump sideways.
+  const pictures = (document.previews ?? []).some(hasPicture);
   const column =
-    (document.previews ?? []).some(hasPicture) ||
+    pictures ||
     document.sensitive.matches.length + document.content_findings.length + (document.ignored?.length ?? 0) > 0;
   const priced = models.length > 0 && pages.some((p) => p.tokens !== undefined);
   // The finding a link opened, as it reads in the text on screen.
@@ -190,22 +214,42 @@ export function DocumentDetail({
       </div>
 
       {column && (
-        // As tall as the text beside it: the page takes what the findings below it leave.
+        // Every part in a fixed place, whatever the page holds, so nothing moves when the page
+        // changes: the picture takes a set share of the height, and what was found the rest.
         <aside aria-label="Page" className="flex min-h-0 shrink-0 flex-col gap-4 lg:w-80 xl:w-[28rem]">
-          {pictured && (
-            <div className="h-96 min-h-64 shrink-0 lg:h-auto lg:flex-1">
-              <PagePane
-                number={page.number}
-                name={fileName(document.relative_path)}
-                preview={preview}
-                mark={highlight && highlight.page === page.number ? highlight.box : null}
-              />
-            </div>
-          )}
-          {checked && checked.status !== "agrees" && (
-            <VisionNote page={checked} model={document.verification?.model ?? ""} />
-          )}
-          <div className="shrink-0 overflow-y-auto lg:max-h-[40%]">
+          {pictures &&
+            (collapsed ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="shrink-0 justify-between"
+                onClick={() => setCollapsed(false)}
+                aria-label="Show the page"
+              >
+                Page {page.number}
+                <ChevronDownIcon />
+              </Button>
+            ) : (
+              <div className="h-96 shrink-0 lg:h-[58%]">
+                {pictured ? (
+                  <PagePane
+                    number={page.number}
+                    name={fileName(document.relative_path)}
+                    preview={preview}
+                    mark={highlight && highlight.page === page.number ? highlight.box : null}
+                    onCollapse={() => setCollapsed(true)}
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center rounded-xl border border-dashed text-sm text-muted-foreground">
+                    No picture of page {page.number}
+                  </div>
+                )}
+              </div>
+            ))}
+          <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
+            {checked && checked.status !== "agrees" && (
+              <VisionNote page={checked} model={document.verification?.model ?? ""} />
+            )}
             <FindingChecklist findings={found} active={active} />
           </div>
         </aside>

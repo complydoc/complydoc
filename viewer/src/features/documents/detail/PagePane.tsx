@@ -1,4 +1,4 @@
-import { Maximize2Icon } from "lucide-react";
+import { ChevronUpIcon, Maximize2Icon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,10 +14,12 @@ interface PagePaneProps {
   name: string;
   /** A finding's box to mark on the page. */
   mark: { value: string; label: string } | null;
+  /** Fold the page away, leaving its title. */
+  onCollapse?: () => void;
 }
 
 /** The page, on a card shaped like the reading panes beside it, and enlarged on request to read it. */
-export function PagePane({ number, preview, name, mark }: PagePaneProps) {
+export function PagePane({ number, preview, name, mark, onCollapse }: PagePaneProps) {
   const found = preview?.sensitive.length ?? 0;
   const identifiers = found > 0 && <Badge variant="destructive">{plural(found, "identifier")}</Badge>;
 
@@ -27,6 +29,17 @@ export function PagePane({ number, preview, name, mark }: PagePaneProps) {
         <CardTitle className="flex h-7 items-center">Page {number}</CardTitle>
         <CardAction className="flex items-center gap-2">
           {identifiers}
+          {onCollapse && (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Hide the page"
+              title="Hide the page"
+              onClick={onCollapse}
+            >
+              <ChevronUpIcon />
+            </Button>
+          )}
           {preview && (
             <Dialog>
               <DialogTrigger asChild>
