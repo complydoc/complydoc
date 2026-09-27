@@ -19,13 +19,13 @@ interface PagePaneProps {
   ignored?: BoxRef[];
 }
 
-/** The page, on a card shaped like the reading panes beside it, and enlarged on request to read it. */
+/** The page, in the panel beside the text, and enlarged on request to read it. */
 export function PagePane({ number, preview, name, mark, ignored = [] }: PagePaneProps) {
   const found = preview?.sensitive.filter((box) => !isIgnoredBox(box, ignored)).length ?? 0;
   const identifiers = found > 0 && <Badge variant="destructive">{plural(found, "identifier")}</Badge>;
 
   return (
-    <Card size="sm" className="h-full">
+    <Card size="sm" className="h-full bg-transparent py-1 shadow-none ring-0">
       <CardHeader className="items-center">
         <CardTitle className="flex h-7 items-center">Page {number}</CardTitle>
         <CardAction className="flex items-center gap-2">

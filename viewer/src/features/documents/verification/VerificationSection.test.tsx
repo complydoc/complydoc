@@ -1,4 +1,5 @@
 import { screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { renderPage } from "@/test/render";
 import { sampleAudit, sampleVerified } from "@/test/sample";
 import { wide } from "@/test/setup";
@@ -39,15 +40,16 @@ describe("the vision check on the Documents page", () => {
     expect(screen.queryByRole("columnheader", { name: /Vision check/ })).not.toBeInTheDocument();
   });
 
-  it("says beside the page what the check found", () => {
+  it("says beside the page what the check found", async () => {
     wide();
     renderPage(<DocumentsPage report={sampleVerified()} open="0" />);
-    const page = screen.getByRole("complementary", { name: "Page" });
+    await userEvent.click(screen.getByRole("radio", { name: "Page" }));
+    const page = screen.getByRole("complementary", { name: "Findings" });
     expect(within(page).getByRole("note")).toHaveTextContent("A line only the picture had");
   });
 
   it("prices the document on the model chosen", () => {
     renderPage(<DocumentsPage report={sampleVerified()} open="0" />);
-    expect(screen.getByTitle("The whole document, under the plan chosen above")).toHaveTextContent(/^\$\d/);
+    expect(screen.getByText(/ · \$\d/)).toBeInTheDocument();
   });
 });

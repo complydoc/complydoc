@@ -1,12 +1,14 @@
-import { lazy, Suspense, useState, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { InlineFindings } from "@/hooks/useInlineMarks";
-import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { defaultSides, readersOf, sideName, sideText, type Side } from "@/report/documentDiff";
 import type { Report } from "@/report/types";
 
 const GitDiff = lazy(() => import("./GitDiff"));
+
+/** The width, in pixels, below which two columns of text are too narrow to read side by side. */
+const SPLIT_WIDTH = 880;
 
 interface ReaderPickerProps {
   label: string;
@@ -74,11 +76,19 @@ export function DocumentDiff({
   notes = {},
 }: DocumentDiffProps) {
   const [[base, compare], setSides] = useState<[Side, Side]>(() => defaultSides(report, index));
-  // Side by side where there is room for two columns of text.
-  const split = useMediaQuery("(min-width: 80rem)");
+  // Side by side where the diff itself has room for two columns of text, whatever sits beside it.
+  const root = useRef<HTMLDivElement>(null);
+  const [split, setSplit] = useState(false);
+  useEffect(() => {
+    const element = root.current;
+    if (!element || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(([entry]) => setSplit((entry?.contentRect.width ?? 0) >= SPLIT_WIDTH));
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
 
   return (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3">
+    <div ref={root} className="flex min-h-0 min-w-0 flex-1 flex-col gap-3">
       <div className="flex shrink-0 flex-wrap items-center gap-2 text-sm">
         <ReaderPicker
           label="Base reader"

@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderPage } from "@/test/render";
 import { sampleAudit } from "@/test/sample";
@@ -38,7 +38,8 @@ describe("the diff view", () => {
     renderPage(<DocumentsPage report={report} open={String(index)} />);
     const scroller = await screen.findByTestId("diff-scroller", {}, { timeout: 5000 });
     const scrolled = vi.spyOn(scroller, "scrollTo");
-    await userEvent.click(screen.getByRole("button", { name: "Next page" }));
+    const pages = screen.getByRole("navigation", { name: "Pages" });
+    await userEvent.click(within(pages).getByRole("button", { name: /^Page 2/ }));
     await vi.waitFor(() => expect(scrolled).toHaveBeenCalled());
   });
 });

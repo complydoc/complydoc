@@ -246,3 +246,32 @@
 ::highlight(complydoc-chunk-flagged) {
   background-color: color-mix(in oklab, var(--warning) 30%, transparent);
 }
+
+/* A document read one way: each line numbered in a gutter the way the diff numbers them.
+   The numbers are drawn by CSS, so the text nodes hold the page's text and nothing else. */
+.doc-lines {
+  counter-reset: line;
+}
+.doc-line {
+  counter-increment: line;
+  position: relative;
+  min-height: 1.25rem;
+  padding-left: 4rem;
+  padding-right: 1.5rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.doc-line::before {
+  content: counter(line);
+  position: absolute;
+  left: 0;
+  width: 2.75rem;
+  text-align: right;
+  color: var(--muted-foreground);
+  opacity: 0.55;
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+}
+.doc-line:hover {
+  background-color: color-mix(in oklab, var(--muted) 60%, transparent);
+}

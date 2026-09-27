@@ -30,7 +30,14 @@ function open(report: Report, name: string, where: { page?: number; finding?: Fi
   return document;
 }
 
-const side = () => screen.getByRole("complementary", { name: "Page" });
+/** The panel beside the text, turned to the page's picture and vision check. */
+async function side() {
+  await userEvent.click(screen.getByRole("radio", { name: "Page" }));
+  return screen.getByRole("complementary", { name: "Findings" });
+}
+
+const pageNav = () => screen.getByRole("navigation", { name: "Pages" });
+const currentPage = () => within(pageNav()).getByRole("button", { current: "page" });
 
 /** The sample, as a run with --reveal writes it: the values in `text`, a masked copy beside them. */
 function revealed(): Report {
@@ -83,27 +90,41 @@ const marked = (registry: Map<string, { ranges: Range[] }>, name: string) =>
 describe("DocumentDetail", () => {
   it("diffs a document read more than one way, with what the document costs beside its name", async () => {
     open(sampleAudit(), "master-services-agreement.pdf");
-    expect(screen.getByRole("heading", { name: "master-services-agreement.pdf" })).toBeInTheDocument();
-    expect(screen.getByTitle("The whole document, under the plan chosen above")).toHaveTextContent(/^\$\d/);
-    // The pages sit at the end of the readers' row, right above the diff.
-    expect(screen.getByRole("group", { name: "Pages" })).toHaveTextContent("Page 1 of 8");
+    expect(screen.getByRole("heading", { name: /master-services-agreement\.pdf$/ })).toBeInTheDocument();
+    expect(screen.getByText(/^PDF · 8 pages · \$\d/)).toBeInTheDocument();
+    expect(currentPage()).toHaveTextContent("Page 1");
     expect(screen.getByRole("combobox", { name: "Base reader" })).toHaveTextContent("pdfplumber");
     expect(screen.getByRole("combobox", { name: "Compare reader" })).toHaveTextContent("pypdf");
     expect(await screen.findByLabelText("Lines changed", {}, { timeout: 5000 })).toBeInTheDocument();
   });
 
-  it("shows a document read one way as its page, with the page's cost on its first line", () => {
-    open(sampleAudit(), "supplier-invoices-scanned.pdf");
+  it("shows a document read one way as every page in turn, each with what it costs", () => {
+    const document = open(sampleAudit(), "supplier-invoices-scanned.pdf");
     expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
-    expect(screen.getByTestId("page-reading")).toHaveTextContent(/# Page 1 · \$\d/);
+    for (const page of document.extracted_text)
+      expect(screen.getByRole("region", { name: `Page ${page.number}` })).toHaveTextContent(
+        new RegExp(`^Page ${page.number}\\$\\d`),
+      );
   });
 
-  it("moves through the pages of a document read one way", async () => {
+  it("goes to a page picked down the side", async () => {
     open(sampleAudit(), "supplier-invoices-scanned.pdf");
-    const first = screen.getByTestId("page-reading").textContent;
-    await userEvent.click(screen.getByRole("button", { name: "Next page" }));
-    expect(screen.getByRole("group", { name: "Pages" })).toHaveTextContent(/Page 2 of/);
-    expect(screen.getByTestId("page-reading").textContent).not.toBe(first);
+    const scrolled = vi.spyOn(screen.getByTestId("page-reading"), "scrollTo");
+    await userEvent.click(within(pageNav()).getByRole("button", { name: /^Page 2/ }));
+    expect(currentPage()).toHaveTextContent("Page 2");
+    expect(scrolled).toHaveBeenCalled();
+  });
+
+  it("lists what was found beside the text, and goes to one picked", async () => {
+    const registry = recordHighlights();
+    const document = open(sampleAudit(), "supplier-invoices-scanned.pdf");
+    const panel = screen.getByRole("complementary", { name: "Findings" });
+    const first = required(document.sensitive.matches[0]);
+    const item = required(within(panel).getAllByRole("button", { name: new RegExp(first.label) })[0]);
+    await userEvent.click(item);
+    expect(item).toHaveAttribute("aria-current", "true");
+    await vi.waitFor(() => expect(marked(registry, "active").length).toBeGreaterThan(0));
+    stopRecording();
   });
 
   it("marks what was found in the text itself, by severity", async () => {
@@ -164,32 +185,28 @@ describe("DocumentDetail", () => {
     const index = entry.sensitive.matches.findIndex((m) => m.category === "iban");
     const match = required(entry.sensitive.matches[index]);
     open(report, "master-services-agreement.pdf", { finding: { kind: "identifier", index } });
-    expect(screen.getByRole("group", { name: "Pages" })).toHaveTextContent(`Page ${match.page} of`);
+    expect(currentPage()).toHaveTextContent(`Page ${match.page}`);
     await vi.waitFor(() => expect(marked(registry, "active").length).toBeGreaterThan(0), { timeout: 5000 });
     expect(required(marked(registry, "active")[0]).replace(/\s+/g, "")).toBe(match.masked.replace(/\s+/g, ""));
     stopRecording();
   });
 
-  it("shows the page's picture beside the text, and puts it away to give the text the width", async () => {
+  it("shows the page's picture beside the text in place of the findings, on request", async () => {
     open(sampleAudit(), "master-services-agreement.pdf", { page: 3 });
-    expect(within(side()).getByRole("figure", { name: "Page 3" })).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "Hide the page" }));
-    expect(screen.queryByRole("complementary", { name: "Page" })).not.toBeInTheDocument();
-    expect(localStorage.getItem("complydoc.page-collapsed")).toBe("1");
-    await userEvent.click(screen.getByRole("button", { name: "Show the page" }));
-    expect(within(side()).getByRole("figure", { name: "Page 3" })).toBeInTheDocument();
+    expect(within(await side()).getByRole("figure", { name: "Page 3" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("radio", { name: "Findings" }));
+    expect(screen.queryByRole("figure", { name: "Page 3" })).not.toBeInTheDocument();
   });
 
-  it("has no column beside the text when there is no picture and no vision check", () => {
+  it("offers no page beside the text when there is no picture and no vision check", () => {
     open(sampleReport(), "master-services-agreement.pdf");
-    expect(screen.queryByRole("complementary", { name: "Page" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Hide the page" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("radio", { name: "Page" })).not.toBeInTheDocument();
   });
 
-  it("says beside the page what a vision check made of it", () => {
+  it("says beside the page what a vision check made of it", async () => {
     const report = sampleVerified();
     open(report, required(report.documents[0]).relative_path);
-    expect(within(side()).getByRole("note")).toBeInTheDocument();
+    expect(within(await side()).getByRole("note")).toBeInTheDocument();
   });
 
   it("cannot show values a report does not hold", () => {
@@ -226,8 +243,7 @@ describe("DocumentDetail with the folder's chunks", () => {
     expect(screen.getByRole("combobox", { name: "Base reader" })).toBeInTheDocument();
     await userEvent.click(screen.getByRole("combobox", { name: "Chunks" }));
     await userEvent.click(screen.getByRole("option", { name: "recursive 400" }));
-    const reading = screen.getByTestId("page-reading");
-    expect(reading).toHaveTextContent("2 chunks on this page, 1 flagged in amber.");
+    expect(screen.getByRole("region", { name: `Page ${page.number}` })).toHaveTextContent("2 chunks, 1 flagged");
     expect(screen.queryByRole("combobox", { name: "Base reader" })).not.toBeInTheDocument();
   });
 });

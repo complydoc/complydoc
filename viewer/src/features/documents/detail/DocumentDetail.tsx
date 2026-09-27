@@ -1,25 +1,26 @@
-import { PanelLeftCloseIcon, PanelLeftOpenIcon } from "lucide-react";
 import { useContext, useMemo, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
 import { DocumentDiff } from "@/features/documents/diff/DocumentDiff";
 import { useIsIgnored } from "@/hooks/useIgnores";
 import type { InlineFindings, InlineMark } from "@/hooks/useInlineMarks";
-import { usePageCollapsed } from "@/hooks/usePageCollapsed";
 import { FolderRunsContext } from "@/hooks/useFolderRuns";
 import { usePlan } from "@/hooks/usePlan";
 import { chunkLayers } from "@/report/chunkPlaces";
 import { KEPT, canReveal, pageText, readersOf } from "@/report/documentDiff";
 import { fileName, formatPageUsd, formatSeconds } from "@/report/format";
+import { measured } from "@/report/measured";
 import { findingHighlight } from "@/report/highlight";
 import { documentFindings, findingFor } from "@/report/pageFindings";
 import { hasPicture } from "@/report/picture";
 import { documentTotals, pageEstimate } from "@/report/plan";
 import type { FindingRef } from "@/report/route";
 import type { DocumentEntry, Report } from "@/report/types";
-import { ChunkPicker, EyeToggle, PageStepper } from "./DocumentControls";
+import { ChunkPicker, EyeToggle } from "./DocumentControls";
+import { DocumentHeader } from "./DocumentHeader";
+import { DocumentText } from "./DocumentText";
+import { FindingsPanel, type PanelView } from "./FindingsPanel";
+import { PageNav } from "./PageNav";
 import { FindingPopover } from "./FindingPopover";
 import { PagePane } from "./PagePane";
-import { PageReading } from "./PageReading";
 import { VisionNote } from "./VisionNote";
 
 interface DocumentDetailProps {
@@ -34,11 +35,10 @@ interface DocumentDetailProps {
 }
 
 /**
- * One document. Read more than one way, a diff of two readings; read one way,
- * its pages as read. What was found is marked in the text itself: rest on a
- * mark for what it is and to ignore it, or pick one from the rail beside it. To
- * the left of the text, the page's picture when the report has one, which can
- * be put away to give the text the whole width.
+ * One document. Read more than one way, a diff of two readings; read one way, every
+ * page of it one after the other, lines numbered. What was found is marked in the text
+ * itself, listed beside it page by page, and dotted on the pages down the side: rest on
+ * a mark for what it is and to ignore it, or pick one from the list to go to it.
  */
 export function DocumentDetail({
   report,
@@ -56,6 +56,7 @@ export function DocumentDetail({
       pages.findIndex((p) => p.number === number),
     );
   const [pageIndex, setPageIndex] = useState(() => (opening === null ? 0 : pageAt(opening)));
+  const [view, setView] = useState<PanelView>("findings");
   // A page the diff should scroll to. A new object each time, so asking again still scrolls.
   const [jump, setJump] = useState<{ page: number } | null>(() =>
     opening !== null && !finding ? { page: opening } : null,
@@ -63,7 +64,6 @@ export function DocumentDetail({
   const revealable = canReveal(document);
   const [eye, setEye] = useState(false);
   const unmasked = eye && revealable;
-  const [collapsed, setCollapsed] = usePageCollapsed();
   const isIgnored = useIsIgnored();
   const { plan, models } = usePlan();
   // The folder's chunks of this document, when a chunks run made some; none drawn until asked.
@@ -89,8 +89,6 @@ export function DocumentDetail({
     () => findings.map((f) => ({ key: f.key, needle: f.needle, tone: isIgnored(f) ? "ignored" : f.severity })),
     [findings, isIgnored],
   );
-  // The findings to step through: those still open, in page order.
-
   const page = pages[pageIndex];
   if (!page) {
     return (
@@ -104,16 +102,17 @@ export function DocumentDetail({
   }
 
   // Chunks are placed in the kept text, so drawing them shows that text alone, not the diff.
-  const compared = readersOf(report, document).length > 1 && layer === null;
+  const readers = readersOf(report, document);
+  const compared = readers.length > 1 && layer === null;
   const preview = document.previews?.find((p) => p.number === page.number);
   const pictures = (document.previews ?? []).some(hasPicture);
   const verified = document.verification !== null && document.verification !== undefined;
   const checked = document.verification?.pages.find((p) => p.number === page.number);
-  const side = pictures || verified;
-  const showSide = side && !collapsed;
   const priced = models.length > 0 && pages.some((p) => p.tokens !== undefined);
+  const scanned = measured(report, "sensitive");
+  const open = findings.filter((f) => !isIgnored(f));
 
-  // What each page costs and takes to read under the plan, written on its first line.
+  // What each page costs and takes to read under the plan, beside its number.
   const notes: Record<number, string> = {};
   if (priced)
     for (const each of pages) {
@@ -126,10 +125,9 @@ export function DocumentDetail({
     }
   const totals = priced ? documentTotals(report, document, plan) : null;
 
-  const pick = (next: number) => {
-    setPageIndex(next);
-    const target = pages[next];
-    if (target) setJump({ page: target.number });
+  const goTo = (number: number) => {
+    setPageIndex(pageAt(number));
+    setJump({ page: number });
   };
   const onPick = (key: string, rect: DOMRect) => {
     cancelClose();
@@ -159,80 +157,59 @@ export function DocumentDetail({
   };
 
   const eyeToggle = <EyeToggle available={revealable} on={unmasked} onChange={setEye} />;
-  const pager = <PageStepper number={page.number} index={pageIndex} count={pages.length} onPick={pick} />;
+  const pagePanel =
+    pictures || verified ? (
+      <>
+        {pictures && (
+          <div className="min-h-0 flex-1">
+            {hasPicture(preview) ? (
+              <PagePane
+                number={page.number}
+                name={fileName(document.relative_path)}
+                preview={preview}
+                mark={highlight && highlight.page === page.number ? highlight.box : null}
+                ignored={findings
+                  .filter((f) => f.match && isIgnored(f))
+                  .map((f) => ({ value: f.match?.masked ?? "", label: f.label, revealed: f.match?.revealed ?? null }))}
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">
+                No picture of page {page.number}
+              </div>
+            )}
+          </div>
+        )}
+        {verified &&
+          (checked ? (
+            <VisionNote page={checked} model={document.verification?.model ?? ""} />
+          ) : (
+            <p className="px-1 text-sm text-muted-foreground">The vision check did not read page {page.number}.</p>
+          ))}
+      </>
+    ) : undefined;
 
   return (
-    <div className="flex flex-col gap-3 lg:h-[calc(100svh-6rem)]">
-      <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1">
-        {side && (
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label={showSide ? "Hide the page" : "Show the page"}
-            title={showSide ? "Hide the page" : "Show the page"}
-            onClick={() => setCollapsed(showSide)}
-          >
-            {showSide ? <PanelLeftCloseIcon /> : <PanelLeftOpenIcon />}
-          </Button>
-        )}
-        <h2 className="min-w-0 truncate font-heading text-lg font-semibold tracking-tight">
-          {fileName(document.relative_path)}
-        </h2>
-        {totals && totals.usd !== null && (
-          <span
-            className="text-sm text-muted-foreground tabular-nums"
-            title="The whole document, under the plan chosen above"
-          >
-            {formatPageUsd(totals.usd)}
-            {totals.seconds !== null && totals.untimed === 0 && ` · ${formatSeconds(totals.seconds)}`}
-          </span>
-        )}
-        {/* Read one way, there is no readers' row: the eye and the pages sit here, right above the text. */}
-        <span className="ml-auto flex items-center gap-3">
-          {layers.length > 0 && <ChunkPicker layers={layers} value={chunkBy} onChange={setChunkBy} />}
-          {!compared && eyeToggle}
-          {!compared && pager}
-        </span>
-      </div>
+    <div className="flex flex-col gap-4 lg:h-[calc(100svh-6rem)]">
+      <DocumentHeader
+        document={document}
+        reader={compared ? null : (readers[0]?.label.replace(/ \(kept\)$/, "") ?? null)}
+        usd={totals?.usd ?? null}
+        seconds={totals && totals.untimed === 0 ? totals.seconds : null}
+        scanned={scanned}
+        identifiers={open.filter((f) => f.kind === "identifier").reduce((sum, f) => sum + f.count, 0)}
+        high={open.filter((f) => f.kind === "identifier" && f.severity === "high").reduce((sum, f) => sum + f.count, 0)}
+        hidden={open.filter((f) => f.kind === "hidden").length}
+        controls={
+          <>
+            {layers.length > 0 && <ChunkPicker layers={layers} value={chunkBy} onChange={setChunkBy} />}
+            {!compared && eyeToggle}
+          </>
+        }
+      />
 
-      {/* The page on the left and the text on the right, each as tall as the space below the title. */}
-      <div className="flex min-h-0 flex-1 flex-col gap-6 lg:flex-row">
-        {showSide && (
-          // The page takes the column's full height; a vision check, when there was one, has a
-          // fixed place beneath it, so nothing moves when the page changes.
-          <aside aria-label="Page" className="flex min-h-0 shrink-0 flex-col gap-4 lg:w-80 xl:w-[28rem]">
-            {pictures && (
-              <div className="h-96 min-h-0 shrink-0 lg:h-auto lg:flex-1">
-                {hasPicture(preview) ? (
-                  <PagePane
-                    number={page.number}
-                    name={fileName(document.relative_path)}
-                    preview={preview}
-                    mark={highlight && highlight.page === page.number ? highlight.box : null}
-                    ignored={findings
-                      .filter((f) => f.match && isIgnored(f))
-                      .map((f) => ({ value: f.match?.masked ?? "", label: f.label, revealed: f.match?.revealed ?? null }))}
-                  />
-                ) : (
-                  <div className="flex h-full items-center justify-center rounded-xl border border-dashed text-sm text-muted-foreground">
-                    No picture of page {page.number}
-                  </div>
-                )}
-              </div>
-            )}
-            {verified && (
-              <div className="shrink-0">
-                {checked ? (
-                  <VisionNote page={checked} model={document.verification?.model ?? ""} />
-                ) : (
-                  <p className="text-sm text-muted-foreground">The vision check did not read this page.</p>
-                )}
-              </div>
-            )}
-          </aside>
-        )}
-
-        <div className="flex h-[80svh] min-h-0 min-w-0 flex-col gap-3 lg:h-auto lg:flex-1">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row">
+        <PageNav pages={pages.map((p) => p.number)} current={page.number} findings={open} onPick={goTo} />
+        <div className="flex h-[80svh] min-h-0 min-w-0 flex-col lg:h-auto lg:flex-1">
           {compared ? (
             <DocumentDiff
               report={report}
@@ -242,19 +219,33 @@ export function DocumentDetail({
               notes={notes}
               inline={inline}
               controls={eyeToggle}
-              end={pager}
               onVisiblePage={(number) => setPageIndex(pageAt(number))}
             />
           ) : (
-            <PageReading
-              key={page.number}
-              heading={notes[page.number] ? `# Page ${page.number} · ${notes[page.number]}` : `# Page ${page.number}`}
-              text={pageText(page, KEPT, unmasked)}
+            <DocumentText
+              pages={pages.map((p) => ({
+                number: p.number,
+                text: pageText(p, KEPT, unmasked),
+                ...(notes[p.number] && { note: notes[p.number] }),
+              }))}
               inline={inline}
-              chunks={layer ? (layer.pages.get(page.number) ?? []) : null}
+              chunks={layer ? layer.pages : null}
+              jump={jump}
+              onVisiblePage={(number) => setPageIndex(pageAt(number))}
             />
           )}
         </div>
+        <FindingsPanel
+          findings={findings}
+          active={active}
+          isIgnored={isIgnored}
+          onPick={inline.onRail}
+          scanned={scanned}
+          current={page.number}
+          page={pagePanel}
+          view={view}
+          onView={setView}
+        />
       </div>
 
       <FindingPopover

@@ -1,4 +1,4 @@
-import { ChevronLeftIcon, ChevronRightIcon, EyeIcon, EyeOffIcon, ScissorsIcon } from "lucide-react";
+import { EyeIcon, EyeOffIcon, ScissorsIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -43,46 +43,6 @@ export function EyeToggle({
           : "Values are masked. Audit with --reveal to keep them and show them here."}
       </TooltipContent>
     </Tooltip>
-  );
-}
-
-/** Which page the text is on, and the pages either side: small enough to sit beside the text's controls. */
-export function PageStepper({
-  number,
-  index,
-  count,
-  onPick,
-}: {
-  number: number;
-  index: number;
-  count: number;
-  onPick: (index: number) => void;
-}) {
-  if (count < 2) return null;
-  return (
-    <span className="flex items-center text-sm text-muted-foreground" role="group" aria-label="Pages">
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        aria-label="Previous page"
-        disabled={index === 0}
-        onClick={() => onPick(index - 1)}
-      >
-        <ChevronLeftIcon />
-      </Button>
-      <span className="tabular-nums">
-        Page {number} of {count}
-      </span>
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        aria-label="Next page"
-        disabled={index === count - 1}
-        onClick={() => onPick(index + 1)}
-      >
-        <ChevronRightIcon />
-      </Button>
-    </span>
   );
 }
 

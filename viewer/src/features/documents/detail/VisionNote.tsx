@@ -16,8 +16,8 @@ export function VisionNote({ page, model }: { page: PageVerification; model: str
   return (
     <Alert role="note">
       <EyeIcon />
-      <AlertTitle>{TITLE[page.status]}</AlertTitle>
-      <AlertDescription>
+      <AlertTitle className="line-clamp-none">{TITLE[page.status]}</AlertTitle>
+      <AlertDescription className="[overflow-wrap:anywhere]">
         {page.missing && <p>“{page.missing}”</p>}
         {page.error && <p>{page.error}</p>}
         <p>
