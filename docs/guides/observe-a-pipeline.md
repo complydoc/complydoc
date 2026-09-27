@@ -1,0 +1,72 @@
+# Observing a pipeline
+
+`cd.observe` records an ingestion pipeline as it runs. Wrap the code that loads,
+cleans, splits and embeds your documents in the block, and each call becomes a
+step of a trace: what went in and came out, the component's settings, the time it
+took, the identifiers in what it passed on, and the hosts it sent text to.
+
+```python title="observe_a_pipeline.py"
+--8<-- "examples/observe_a_pipeline.py"
+```
+
+Nothing in your pipeline changes. Outside the block, nothing is touched.
+
+## What is observed
+
+| Library | Observed |
+| --- | --- |
+| LangChain | document loaders (`load`, `lazy_load`, `aload`, `alazy_load`), document transformers, text splitters (`split_documents`, `create_documents`) and embedding models (`embed_documents`, `aembed_documents`) |
+| complydoc | its pipeline steps, such as `MaskIdentifiers` and `StripPathMetadata` |
+| Your code | any function marked `@cd.stage` |
+
+Classes are observed if they were imported before the block opened. A call made
+inside another observed call is part of it: `load` calling `lazy_load` is one step.
+
+```python
+@cd.stage("dedupe")
+def dedupe(documents):
+    ...
+```
+
+The first argument of a marked function, when it is a list, is what the step was
+given, and a list it returns is what it passed on.
+
+## When the block ends
+
+- The documents loaded in the block are audited as `cd.inspect_documents` audits a
+  loader's output, so the viewer's Security, Documents and Cost pages work on the run.
+- Each splitter's chunks are inspected as `cd.inspect_chunks` inspects them, and
+  drawn over the documents in the viewer.
+- Every step's output is scanned for identifiers, so one value can be followed from
+  the loader to what the embedding model was sent.
+- The report is written to `.complydoc/<name>-<time>.json`. Each run is its own file;
+  `complydoc ui` groups runs by the pipeline's name.
+
+`run.report` is the report, `run.path` where it was written, and `run.summary()` a
+line per step. Scanning happens after the pipeline has run, so the step timings are
+the pipeline's own; the time observing took is reported apart.
+
+## The network
+
+The pipeline may need the network, for an embedding API say. Inside the block,
+connections go through and each one is recorded against the step that made it. The
+report names the hosts each step reached, and its first limitation says what the
+step that reached one sent there: how many texts, and the identifiers they held.
+Text is never sent anywhere by complydoc itself, and vectors are not kept.
+
+## How much is scanned
+
+| `scan` | Scans | For |
+| --- | --- | --- |
+| `"patterns"` (the default) | Identifier patterns and hidden text at every step; the name model on the documents loaded and on the last step | Everyday use |
+| `"full"` | Everything at every step | Tracking down where a value leaks |
+| `"off"` | Counts, settings, timings and connections only | Production, where only the shape is wanted |
+
+A step read by patterns alone cannot see a name only the name model finds, so the
+viewer shows such a name as not looked for at that step, never as removed by it.
+
+## If something fails
+
+What the pipeline raises is raised as usual, after the trace is written with the
+step that raised it. If complydoc fails to record the pipeline, the pipeline's
+result stands: complydoc warns, and `run.error` says why.

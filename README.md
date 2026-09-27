@@ -72,6 +72,20 @@ with the framework and library it came from. Moving off `langchain-community`, w
 archived in June 2026? [Replacing a langchain-community loader](https://complydoc.github.io/complydoc/docs/guides/replace-langchain-community/)
 compares a retired loader with its replacement.
 
+Or observe a whole ingestion pipeline as it runs. Each loader, splitter and embedding call
+becomes a step, with its settings, what it passed on, the identifiers in it, and the hosts it
+sent text to:
+
+```python
+with cd.observe("contracts-ingest"):
+    documents = PyMuPDF4LLMLoader("contract.pdf").load()
+    chunks = splitter.split_documents(documents)
+    vectors = embeddings.embed_documents([c.page_content for c in chunks])
+```
+
+The run is written to `.complydoc`, and `complydoc ui` shows it step by step: see
+[Observing a pipeline](https://complydoc.github.io/complydoc/docs/guides/observe-a-pipeline/).
+
 The same from the command line, for CI:
 
 ```bash

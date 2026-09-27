@@ -107,6 +107,7 @@ nav:
       - Comparing loaders: guides/compare-loaders.md
       - Replacing a langchain-community loader: guides/replace-langchain-community.md
       - Inspecting chunks: guides/inspect-chunks.md
+      - Observing a pipeline: guides/observe-a-pipeline.md
       - Report tables: guides/report-tables.md
       - Baselines and tests: guides/baselines-and-tests.md
       - Policy files: guides/policy.md

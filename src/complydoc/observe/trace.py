@@ -416,29 +416,50 @@ def write_trace(report: AuditReport, out: Path, name: str, started_at: dt.dateti
     return write_json(report, path)
 
 
+def _steps(stages: list[TraceStage]) -> list[list[TraceStage]]:
+    """Stages one after another of the same component and method, as one step each, the
+    way a loader called once a file reads."""
+    groups: list[list[TraceStage]] = []
+    for stage in stages:
+        last = groups[-1][-1] if groups else None
+        same = last is not None and (last.kind, last.component, last.method) == (
+            stage.kind,
+            stage.component,
+            stage.method,
+        )
+        if same:
+            groups[-1].append(stage)
+        else:
+            groups.append([stage])
+    return groups
+
+
 def summary_lines(observation: Observation) -> list[str]:
     report = observation.report
     if report is None or report.trace is None:
         return [f"{observation.name}: not recorded ({observation.error or 'the block is open'})"]
     trace = report.trace
     lines = [
-        f"{trace.name}: {count(len(trace.stages), 'stage')} in {trace.seconds:.2f} s; "
+        f"{trace.name}: {count(len(_steps(trace.stages)), 'step')} in {trace.seconds:.2f} s; "
         f"observing took {trace.overhead_seconds:.2f} s"
     ]
-    for stage in trace.stages:
+    for number, group in enumerate(_steps(trace.stages), start=1):
+        first = group[0]
         parts = []
-        if stage.kind == "embed":
-            parts.append(f"{count(stage.documents_in or 0, 'text')} embedded")
-        elif stage.documents_out is not None:
-            parts.append(count(stage.documents_out, "document"))
-        if stage.scanned != "off":
-            parts.append(count(len(stage.identifiers), "identifier"))
-        if stage.hosts:
-            parts.append("sent to " + ", ".join(stage.hosts))
-        if stage.error:
-            parts.append(f"raised {stage.error}")
+        if first.kind == "embed":
+            parts.append(f"{count(sum(s.documents_in or 0 for s in group), 'text')} embedded")
+        elif first.documents_out is not None:
+            parts.append(count(sum(s.documents_out or 0 for s in group), "document"))
+        if first.scanned != "off":
+            found = {i.fingerprint for s in group for i in s.identifiers}
+            parts.append(count(len(found), "identifier"))
+        hosts = list(dict.fromkeys(h for s in group for h in s.hosts))
+        if hosts:
+            parts.append("sent to " + ", ".join(hosts))
+        parts.extend(f"raised {s.error}" for s in group if s.error)
+        calls = f" ({len(group)} calls)" if len(group) > 1 else ""
         lines.append(
-            f"  {stage.index + 1}. {stage.kind:<9} {stage.component:<28} {', '.join(parts)}"
+            f"  {number}. {first.kind:<9} {first.component + calls:<34} {', '.join(parts)}"
         )
     if observation.path is not None:
         lines.append(f"Written to {observation.path}")
