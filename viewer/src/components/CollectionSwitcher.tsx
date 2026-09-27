@@ -40,12 +40,12 @@ export function CollectionSwitcher({ collections, selection, onSelect, onAdd, on
       <SidebarMenuItem>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <SidebarMenuButton size="lg" tooltip={current?.name ?? "All collections"} aria-label="Switch collection">
+            <SidebarMenuButton size="lg" tooltip={current?.name ?? "All folders"} aria-label="Switch folder">
               <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-sidebar-accent">
                 {current ? <FolderIcon className="size-4" /> : <LayoutGridIcon className="size-4" />}
               </span>
               <span className="grid min-w-0 flex-1 text-left leading-tight">
-                <span className="truncate font-medium">{current?.name ?? "All collections"}</span>
+                <span className="truncate font-medium">{current?.name ?? "All folders"}</span>
                 <span className="truncate text-xs text-muted-foreground">
                   {current && run
                     ? `${runKind(run.report)} · ${runLabel(run.report)}`
@@ -59,7 +59,7 @@ export function CollectionSwitcher({ collections, selection, onSelect, onAdd, on
             {collections.length > 1 && (
               <DropdownMenuItem onSelect={() => onSelect({ collection: null, run: null })}>
                 <LayoutGridIcon />
-                All collections
+                All folders
                 {!current && <CheckIcon className="ml-auto" />}
               </DropdownMenuItem>
             )}

@@ -23,34 +23,43 @@ const columns: Columns<FindingRow> = [
     cell: (c) => <SeverityIcon severity={c.getValue()} />,
     meta: { narrow: true },
   }),
-  column.accessor("label", {
-    header: "Identifier",
+  // What was found and its masked value in one column, and where in another, so the table
+  // fits beside the sidebar without scrolling sideways. Each still searches on both parts.
+  column.accessor((row) => `${row.label} ${row.masked}`, {
+    id: "finding",
+    header: "Finding",
+    sortingFn: (a, b) => a.original.label.localeCompare(b.original.label),
     // Opens the document on the finding's page with the finding marked.
-    cell: ({ row, getValue }) => (
-      <Button variant="link" className="h-auto p-0 font-medium" asChild>
-        <a href={documentHref(row.original.document, row.original.page, { kind: "identifier", index: row.original.match })}>
-          {getValue()}
+    cell: ({ row }) => (
+      <span className="flex min-w-0 flex-col items-start gap-0.5">
+        <Button variant="link" className="h-auto p-0 font-medium" asChild>
+          <a href={documentHref(row.original.document, row.original.page, { kind: "identifier", index: row.original.match })}>
+            {row.original.label}
+          </a>
+        </Button>
+        <code className="font-mono text-xs text-muted-foreground">{row.original.masked}</code>
+      </span>
+    ),
+  }),
+  column.accessor((row) => `${fileName(row.path)} ${row.page ?? ""}`, {
+    id: "where",
+    header: "Where",
+    sortingFn: (a, b) =>
+      a.original.path.localeCompare(b.original.path) || (a.original.page ?? 0) - (b.original.page ?? 0),
+    cell: ({ row }) => (
+      <span className="flex min-w-0 flex-col gap-0.5">
+        <a
+          href={documentHref(row.original.document)}
+          className="truncate underline-offset-4 hover:underline"
+          title={row.original.path}
+        >
+          {fileName(row.original.path)}
         </a>
-      </Button>
+        {row.original.page !== null && (
+          <span className="text-xs text-muted-foreground">page {row.original.page}</span>
+        )}
+      </span>
     ),
-  }),
-  column.accessor("masked", {
-    header: "Value",
-    cell: (c) => <code className="font-mono text-xs">{c.getValue()}</code>,
-  }),
-  column.accessor((row) => fileName(row.path), {
-    id: "document",
-    header: "Document",
-    cell: ({ row, getValue }) => (
-      <a href={documentHref(row.original.document)} className="text-muted-foreground underline-offset-4 hover:underline">
-        {getValue()}
-      </a>
-    ),
-  }),
-  column.accessor("page", {
-    header: "Page",
-    cell: (c) => c.getValue() ?? "–",
-    meta: { numeric: true, narrow: true },
   }),
   column.accessor("evidence", {
     header: "Confidence",

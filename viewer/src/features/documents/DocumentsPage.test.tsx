@@ -16,8 +16,7 @@ describe("DocumentsPage", () => {
       "href",
       expect.stringMatching(/^#documents\/\d+$/),
     );
-    expect(within(table).getByRole("columnheader", { name: /Cost/ })).toBeInTheDocument();
-    expect(within(table).getByRole("columnheader", { name: /Time to read/ })).toBeInTheDocument();
+    expect(within(table).getByRole("columnheader", { name: /Cost · time/ })).toBeInTheDocument();
     expect(rows[1]).toHaveTextContent(/\$\d/);
     expect(rows[2]).toHaveTextContent(/\$\d/);
   });

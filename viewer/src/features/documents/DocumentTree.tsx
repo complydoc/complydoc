@@ -98,7 +98,7 @@ function columnsFor(vision: boolean, thresholds: Thresholds): Columns<TreeNode> 
       ...numeric,
     }),
     column.accessor("findings", {
-      header: "Sensitive",
+      header: "Identifiers",
       cell: ({ row, getValue }) =>
         row.original.highest ? <ToneBadge tone={severityTone(row.original.highest)}>{formatCount(getValue())}</ToneBadge> : "–",
       ...numeric,
@@ -123,18 +123,17 @@ function columnsFor(vision: boolean, thresholds: Thresholds): Columns<TreeNode> 
     );
   }
   columns.push(
+    // One column for both, the time beneath the price: two narrow figures side by side
+    // pushed the table past the width beside the sidebar.
     column.accessor((node) => node.totals.usd ?? undefined, {
       id: "cost",
-      header: "Cost",
-      cell: (c) => <span className="tabular-nums">{formatPageUsd(c.getValue() ?? null)}</span>,
-      ...numeric,
-    }),
-    column.accessor((node) => node.totals.seconds ?? undefined, {
-      id: "time",
-      header: "Time to read",
-      cell: ({ row }) => (
-        <span className="tabular-nums">
-          <Time totals={row.original.totals} />
+      header: "Cost · time",
+      cell: ({ row, getValue }) => (
+        <span className="flex flex-col items-end tabular-nums">
+          <span>{formatPageUsd(getValue() ?? null)}</span>
+          <span className="text-xs text-muted-foreground">
+            <Time totals={row.original.totals} />
+          </span>
         </span>
       ),
       ...numeric,

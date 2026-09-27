@@ -102,7 +102,7 @@ export function ReportView({
             <Breadcrumb className="min-w-0 flex-1">
               <BreadcrumbList>
                 <BreadcrumbItem>
-                  <BreadcrumbPage>All collections</BreadcrumbPage>
+                  <BreadcrumbPage>All folders</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>

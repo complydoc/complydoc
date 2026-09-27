@@ -115,8 +115,18 @@ function columnsFor(onOpen: (id: string) => void): Columns<Row> {
         </span>
       ),
     }),
-    column.accessor((row) => row.totals.documents, { id: "documents", header: "Documents", cell: (c) => formatCount(c.getValue()), ...numeric }),
-    column.accessor((row) => row.totals.pages, { id: "pages", header: "Pages", cell: (c) => formatCount(c.getValue()), ...numeric }),
+    // Pairs of figures share a column, the second beneath, so the table fits beside the sidebar.
+    column.accessor((row) => row.totals.documents, {
+      id: "documents",
+      header: "Documents",
+      cell: ({ row, getValue }) => (
+        <span className="flex flex-col items-end tabular-nums">
+          <span>{formatCount(getValue())}</span>
+          <span className="text-xs text-muted-foreground">{plural(row.original.totals.pages, "page")}</span>
+        </span>
+      ),
+      ...numeric,
+    }),
     column.accessor((row) => row.readiness ?? undefined, {
       id: "readiness",
       header: "Readiness",
@@ -136,7 +146,7 @@ function columnsFor(onOpen: (id: string) => void): Columns<Row> {
     }),
     column.accessor((row) => row.sensitive ?? undefined, {
       id: "sensitive",
-      header: "Sensitive",
+      header: "Identifiers",
       cell: ({ row }) =>
         row.original.sensitive === null ? (
           <NotMeasured />
@@ -156,16 +166,17 @@ function columnsFor(onOpen: (id: string) => void): Columns<Row> {
     }),
     column.accessor((row) => row.totals.usd ?? undefined, {
       id: "cost",
-      header: "Cost",
-      cell: (c) => <span className="tabular-nums">{formatPageUsd(c.getValue() ?? null)}</span>,
-      ...numeric,
-    }),
-    column.accessor((row) => row.totals.seconds ?? undefined, {
-      id: "time",
-      header: "Time to read",
-      cell: (c) => {
-        const seconds = c.getValue();
-        return <span className="tabular-nums">{seconds === undefined ? "not timed" : formatSeconds(seconds)}</span>;
+      header: "Cost · time",
+      cell: ({ row, getValue }) => {
+        const seconds = row.original.totals.seconds;
+        return (
+          <span className="flex flex-col items-end tabular-nums">
+            <span>{formatPageUsd(getValue() ?? null)}</span>
+            <span className="text-xs text-muted-foreground">
+              {seconds === null ? "not timed" : formatSeconds(seconds)}
+            </span>
+          </span>
+        );
       },
       ...numeric,
     }),
@@ -185,20 +196,19 @@ export function OverviewPage({ collections, onOpen }: { collections: Collection[
 
   return (
     <SectionStack>
-      <Section title="All collections">
+      <Section title="Across every folder">
         <StatGrid>
           <Stat label="Folders" value={formatCount(rows.length)} note={plural(all.documents, "document")} />
           <Stat label="Pages" value={formatCount(all.pages)} />
           <Stat
-            label="Sensitive items"
+            label="Identifiers"
             value={formatCount(sensitive)}
             {...(unscanned > 0 && { note: `${plural(unscanned, "folder")} not scanned` })}
           />
-          <Stat label="Cost to read" value={formatPageUsd(all.usd)} note="under the plan chosen for each" />
           <Stat
-            label="Time to read"
-            value={all.seconds === null ? "–" : formatSeconds(all.seconds)}
-            note="on the machines that ran the audits"
+            label="To read it all"
+            value={formatPageUsd(all.usd)}
+            note={`${all.seconds === null ? "not timed" : formatSeconds(all.seconds)}, under the plan chosen for each`}
           />
         </StatGrid>
       </Section>

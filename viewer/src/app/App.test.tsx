@@ -38,7 +38,7 @@ describe("App", () => {
   it("opens several reports of one folder as its runs, each named by its kind", async () => {
     render(<App />);
     await userEvent.click(screen.getByRole("button", { name: "Both, as two runs of one folder" }));
-    await userEvent.click(await screen.findByRole("button", { name: "Switch collection" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Switch folder" }));
     expect(await screen.findByRole("menuitem", { name: /^Audit/ })).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: /^Loader comparison/ })).toBeInTheDocument();
     // An audit and a loader comparison measure different things: neither is "the run before" the other.
@@ -75,7 +75,7 @@ describe("App", () => {
   it("goes back to the open screen", async () => {
     render(<App />);
     await userEvent.click(screen.getByRole("button", { name: "pypdf against pdfplumber" }));
-    await userEvent.click(await screen.findByRole("button", { name: "Switch collection" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Switch folder" }));
     await userEvent.click(await screen.findByRole("menuitem", { name: /Close all/ }));
     expect(screen.getByRole("heading", { name: "Open a report" })).toBeInTheDocument();
   });

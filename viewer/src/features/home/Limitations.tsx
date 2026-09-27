@@ -1,4 +1,7 @@
 import { InfoIcon, TriangleAlertIcon } from "lucide-react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Item, ItemContent, ItemDescription, ItemGroup, ItemMedia, ItemTitle } from "@/components/ui/item";
 import { fileName, formatCount, plural } from "@/report/format";
 import { documentHref } from "@/report/route";
@@ -32,7 +35,7 @@ function Affected({ report, affected }: { report: Report; affected: string[] }) 
 function LimitationItem({ report, limitation }: { report: Report; limitation: Limitation }) {
   const important = limitation.severity === "important";
   return (
-    <Item role="listitem" variant={important ? "outline" : "default"} size="sm">
+    <Item role="listitem" size="sm" className="rounded-none">
       <ItemMedia>
         {important ? (
           <TriangleAlertIcon className="size-4 text-warning" aria-label="Important" />
@@ -49,14 +52,27 @@ function LimitationItem({ report, limitation }: { report: Report; limitation: Li
   );
 }
 
+/** Limitations shown before the rest wait behind a button, so the findings stay in view. */
+const FIRST = 3;
+
 /** The limitations that change what a figure in this report means. */
 export function ImportantLimitations({ report, limitations }: { report: Report; limitations: Limitation[] }) {
+  const [all, setAll] = useState(false);
+  const shown = all ? limitations : limitations.slice(0, FIRST);
+  const hidden = limitations.length - shown.length;
   return (
-    <ItemGroup aria-label="Important limitations" className="gap-2">
-      {limitations.map((limitation, index) => (
-        <LimitationItem key={`${limitation.area}-${index}`} report={report} limitation={limitation} />
-      ))}
-    </ItemGroup>
+    <Card className="gap-0 py-0">
+      <ItemGroup aria-label="Important limitations" className="divide-y">
+        {shown.map((limitation, index) => (
+          <LimitationItem key={`${limitation.area}-${index}`} report={report} limitation={limitation} />
+        ))}
+      </ItemGroup>
+      {(hidden > 0 || all) && limitations.length > FIRST && (
+        <Button variant="ghost" size="sm" className="m-1 self-start" onClick={() => setAll((value) => !value)}>
+          {all ? "Show fewer" : `Show ${formatCount(hidden)} more`}
+        </Button>
+      )}
+    </Card>
   );
 }
 
