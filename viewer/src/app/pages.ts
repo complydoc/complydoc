@@ -8,6 +8,7 @@ import {
   ShieldAlertIcon,
   type LucideIcon,
 } from "lucide-react";
+import type { Content } from "@/report/measured";
 
 export const PAGES = ["home", "security", "cost", "documents", "loaders", "chunks", "settings"] as const;
 export type Page = (typeof PAGES)[number];
@@ -17,6 +18,15 @@ export type Page = (typeof PAGES)[number];
  * the run did not produce says so. Settings is about your setup, and sits apart from them.
  */
 export const REPORT_PAGES = ["home", "security", "cost", "documents", "loaders", "chunks"] as const satisfies readonly Page[];
+
+/** What each report page shows, as `measured` names it; Home shows whatever the run has. */
+export const PAGE_CONTENT: Partial<Record<Page, Content>> = {
+  security: "sensitive",
+  cost: "cost",
+  documents: "documents",
+  loaders: "loaders",
+  chunks: "chunks",
+};
 
 /** How each page is named and drawn in the navigation. */
 export const PAGE_INFO: Record<Page, { label: string; icon: LucideIcon }> = {

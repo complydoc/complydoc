@@ -14,7 +14,9 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import type { Report } from "@/report/types";
-import { PAGE_INFO, REPORT_PAGES, type Page } from "./pages";
+import { cn } from "@/lib/utils";
+import { measured } from "@/report/measured";
+import { PAGE_CONTENT, PAGE_INFO, REPORT_PAGES, type Page } from "./pages";
 
 interface AppSidebarProps {
   /** The run on screen; null on the overview of every folder. */
@@ -47,10 +49,24 @@ export function AppSidebar({ report, page, switcher }: AppSidebarProps) {
               <SidebarMenu>
                 {REPORT_PAGES.map((id) => {
                   const { label, icon: Icon } = PAGE_INFO[id];
+                  const content = PAGE_CONTENT[id];
+                  // Every page stays reachable, to say what would fill it; one this run has
+                  // nothing for is dimmed, so the pages worth opening stand out.
+                  const empty = content !== undefined && !measured(report, content);
                   return (
                     <SidebarMenuItem key={id}>
-                      <SidebarMenuButton asChild isActive={id === page} tooltip={label}>
-                        <a href={`#${id}`} aria-current={id === page ? "page" : undefined}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={id === page}
+                        tooltip={empty ? `${label}: not in this run` : label}
+                        className={cn(empty && "text-muted-foreground")}
+                      >
+                        <a
+                          href={`#${id}`}
+                          aria-current={id === page ? "page" : undefined}
+                          aria-description={empty ? "Not in this run" : undefined}
+                          title={empty ? "Not in this run" : undefined}
+                        >
                           <Icon />
                           <span>{label}</span>
                         </a>
