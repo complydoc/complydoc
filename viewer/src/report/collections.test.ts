@@ -1,5 +1,5 @@
 import { sampleAudit, sampleReport } from "@/test/sample";
-import { changeBetween, collectionsOf, leadRun, runKind, type Loaded } from "./collections";
+import { changeBetween, collectionsOf, leadRun, runKind, runTraits, type Loaded } from "./collections";
 import type { ChunkRun, Report } from "./types";
 
 function run(id: string, report: Report, started: string, target?: string): Loaded {
@@ -108,5 +108,14 @@ describe("collections", () => {
     ]);
     expect(folder?.runs[0]?.id).toBe("loaders");
     expect(folder && leadRun(folder)?.id).toBe("audit");
+  });
+
+  it("names what set a run apart, values shown in the clear first", () => {
+    const audit = sampleAudit();
+    expect(runTraits({ ...audit, run: { ...audit.run, reveal_used: true, page_images_used: true } })).toEqual([
+      "values revealed",
+      "page pictures",
+      ...runTraits(audit).filter((t) => t !== "page pictures"),
+    ]);
   });
 });

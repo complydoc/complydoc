@@ -184,6 +184,19 @@ export function runKind(report: Report): string {
   return kinds[parts] ?? "Audit";
 }
 
+/**
+ * What set a run apart from others of its kind, in a few words each: values shown in the
+ * clear first, since a report that holds them is to be handled as the documents are.
+ */
+export function runTraits(report: Report): string[] {
+  return [
+    report.run.reveal_used && "values revealed",
+    report.run.page_images_used && "page pictures",
+    report.run.ocr_compare_used && "OCR compared",
+    report.verification && "vision checked",
+  ].filter((trait): trait is string => Boolean(trait));
+}
+
 /** When a run started, as a person reads it. */
 export function runLabel(report: Report): string {
   const started = new Date(report.run.started_at);

@@ -107,6 +107,12 @@ the button is disabled.
 Every report of the same folder is one of its runs, whichever command wrote it.
 The folder switcher at the top of the sidebar names each by its kind (Audit, Cost,
 Loader comparison, Chunks and so on) and when it started, and opens any of them.
+The Runs page lists every run of the folder, newest first, with what each measured:
+documents, identifiers, hidden passages, readiness, cost and time, and what set it
+apart, such as values revealed or page pictures. It draws how identifiers and
+readiness moved across the folder's audits. Click a run to open it; tick two to
+compare them.
+
 A folder opens on, and the overview sums it up by, its newest audit; a folder with
 none, by its newest run that read documents. "Changed since the run before" on
 Home compares a run with the previous run of the same kind, and lists each

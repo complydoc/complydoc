@@ -18,6 +18,12 @@ This is a breaking change for anyone calling `cd.write_html`; see Removed.
 
 ### Added
 
+- A Runs page in the viewer, as an experiment tracker has: every run of the folder,
+  newest first, with the documents, identifiers, hidden passages, readiness, cost
+  and time each measured, what set it apart (values revealed, page pictures, OCR
+  compared, vision checked), and how identifiers and readiness moved across the
+  folder's audits. Click a run to open it; tick two to compare them.
+
 - A review queue in the viewer, as observability tools have for annotating runs:
   Security's "Review one by one" steps through every finding, the most serious
   first, each in the line of page text it sits in. Keep it (C), or ignore it with

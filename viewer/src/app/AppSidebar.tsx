@@ -31,6 +31,7 @@ interface AppSidebarProps {
 /** The navigation: which folder is open, and its pages. */
 export function AppSidebar({ report, page, switcher, search }: AppSidebarProps) {
   const Settings = PAGE_INFO.settings.icon;
+  const Runs = PAGE_INFO.runs.icon;
 
   return (
     <Sidebar collapsible="icon">
@@ -46,6 +47,22 @@ export function AppSidebar({ report, page, switcher, search }: AppSidebarProps) 
 
       {report && (
         <SidebarContent>
+          {/* The folder's runs, above the pages of the one on screen. */}
+          <SidebarGroup>
+            <SidebarGroupLabel>Folder</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={page === "runs"} tooltip={PAGE_INFO.runs.label}>
+                    <a href="#runs" aria-current={page === "runs" ? "page" : undefined}>
+                      <Runs />
+                      <span>{PAGE_INFO.runs.label}</span>
+                    </a>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
           <SidebarGroup>
             <SidebarGroupLabel>Report</SidebarGroupLabel>
             <SidebarGroupContent>

@@ -2,6 +2,7 @@ import {
   FileStackIcon,
   FileTextIcon,
   GaugeIcon,
+  HistoryIcon,
   HouseIcon,
   ScissorsIcon,
   Settings2Icon,
@@ -10,7 +11,7 @@ import {
 } from "lucide-react";
 import type { Content } from "@/report/measured";
 
-export const PAGES = ["home", "security", "cost", "documents", "loaders", "chunks", "settings"] as const;
+export const PAGES = ["home", "security", "cost", "documents", "loaders", "chunks", "runs", "settings"] as const;
 export type Page = (typeof PAGES)[number];
 
 /**
@@ -36,5 +37,6 @@ export const PAGE_INFO: Record<Page, { label: string; icon: LucideIcon }> = {
   documents: { label: "Documents", icon: FileTextIcon },
   loaders: { label: "Loaders", icon: FileStackIcon },
   chunks: { label: "Chunks", icon: ScissorsIcon },
+  runs: { label: "Runs", icon: HistoryIcon },
   settings: { label: "Settings", icon: Settings2Icon },
 };

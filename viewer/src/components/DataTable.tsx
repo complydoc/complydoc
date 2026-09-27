@@ -60,6 +60,8 @@ interface DataTableProps<T> {
    * links and buttons keep their clicks, and a keyboard reaches the row by its link.
    */
   rowHref?: (row: T) => string | undefined;
+  /** What a click anywhere on the row does, where it is not a place to go. */
+  onRowClick?: (row: T) => void;
 }
 
 const SORT_ICON = {
@@ -84,6 +86,7 @@ export function DataTable<T>({
   subRows,
   toolbar,
   rowHref,
+  onRowClick,
 }: DataTableProps<T>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [query, setQuery] = useState("");
@@ -178,13 +181,14 @@ export function DataTable<T>({
             {table.getRowModel().rows.map((row) => (
               <TableRow
                 key={row.id}
-                className={cn(rowHref?.(row.original) && "cursor-pointer")}
+                className={cn((onRowClick || rowHref?.(row.original)) && "cursor-pointer")}
                 onClick={(event) => {
                   const href = rowHref?.(row.original);
                   const target = event.target as HTMLElement;
-                  if (!href || target.closest("a, button, input, [role=menuitem]")) return;
+                  if ((!href && !onRowClick) || target.closest("a, button, input, [role=menuitem]")) return;
                   if (window.getSelection()?.toString()) return;
-                  window.location.hash = href.replace(/^#/, "");
+                  if (onRowClick) onRowClick(row.original);
+                  else if (href) window.location.hash = href.replace(/^#/, "");
                 }}
               >
                 {row.getVisibleCells().map((cell) => (
