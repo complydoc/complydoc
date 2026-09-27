@@ -92,6 +92,13 @@ class InspectedChunk:
     metadata_keys: list[str]
     preview: str
     """The start of the chunk with identifiers masked."""
+    start: int | None = None
+    """Schema 17: where the chunk starts in its page's text, in characters. None where the
+    splitter changed the text, so it cannot be found there, or no page text was given."""
+    end: int | None = None
+    page_characters: int | None = None
+    """How long the page's text was, so a reader of the report can tell whether a text it
+    holds for the page is the one these places are in."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -242,7 +249,8 @@ def inspect_chunks(
             _document_texts(source) if documents is not None else [text for text, _ in chunks]
         )
         spec = tokenizer_for(settings, model)
-        inspected = _inspect(chunks, settings, spec, min_tokens, max_tokens)
+        pages = _page_texts(source) if documents is not None else {}
+        inspected = _inspect(chunks, settings, spec, min_tokens, max_tokens, pages)
 
     counts = Counter(value for chunk in inspected for value in set(chunk.identifiers))
     tokens = sorted(chunk.tokens for chunk in inspected)
@@ -320,15 +328,37 @@ def _document_texts(documents: list[Any]) -> list[str]:
     return ["\n\n".join(texts) for texts in grouped.values()]
 
 
+def _page_texts(documents: list[Any]) -> dict[tuple[str | None, int | None], str]:
+    """Each page's text as the splitter was given it, by source and page."""
+    texts: dict[tuple[str | None, int | None], str] = {}
+    for item in documents:
+        text, metadata = document_content(item)
+        texts.setdefault((_source(metadata), _page(metadata)), text)
+    return texts
+
+
+def _placed(text: str, page: str | None, cursor: int) -> tuple[int, int] | None:
+    """Where `text` is in `page`, looking from `cursor` on: chunks come in order, and one
+    that overlaps the chunk before starts before that chunk ends, never before it starts."""
+    if page is None or not text:
+        return None
+    start = page.find(text, cursor)
+    if start < 0:
+        start = page.find(text)
+    return (start, start + len(text)) if start >= 0 else None
+
+
 def _inspect(
     chunks: Sequence[tuple[str, dict[str, Any]]],
     settings: Config,
     spec: Any,
     min_tokens: int,
     max_tokens: int | None,
+    pages: dict[tuple[str | None, int | None], str] | None = None,
 ) -> list[InspectedChunk]:
     seen: set[str] = set()
     inspected = []
+    cursors: dict[tuple[str | None, int | None], int] = {}
     for index, (text, metadata) in enumerate(chunks):
         document = _source(metadata)
         following = chunks[index + 1] if index + 1 < len(chunks) else None
@@ -355,6 +385,11 @@ def _inspect(
         if any(isinstance(v, str) and ABSOLUTE_PATH.match(v) for v in metadata.values()):
             flags.append("path_metadata")
         hidden = [f for f in find_hidden(text, config=settings) if f.severity in ("medium", "high")]
+        key = (document, _page(metadata))
+        page_text = (pages or {}).get(key)
+        place = _placed(text, page_text, cursors.get(key, 0))
+        if place is not None:
+            cursors[key] = place[0] + 1
         inspected.append(
             InspectedChunk(
                 index=index,
@@ -367,6 +402,9 @@ def _inspect(
                 flags=flags,
                 metadata_keys=sorted(metadata),
                 preview=_masked_preview(text, settings),
+                start=place[0] if place else None,
+                end=place[1] if place else None,
+                page_characters=len(page_text) if page_text is not None and place else None,
             )
         )
     return inspected

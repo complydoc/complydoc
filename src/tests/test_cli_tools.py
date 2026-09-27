@@ -83,6 +83,9 @@ def test_chunks_writes_a_masked_report(folder, tmp_path):
     assert report["stats"]["count"] == 3
     assert report["facts"][0]["status"] == "whole"
     assert EMAIL not in json.dumps(data)
+    # Pages count from 1, as the documents' pages do, and each chunk says where it sits.
+    assert {chunk["page"] for chunk in report["chunks"]} == {1}
+    assert all(chunk["start"] is not None for chunk in report["chunks"])
 
 
 def test_chunks_compares_several_splitters(folder, tmp_path):

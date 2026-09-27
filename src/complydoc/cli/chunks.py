@@ -168,7 +168,8 @@ def chunks(
         for reason in reasons[:10]:
             errors.print(f"  {reason}", markup=False)
         raise typer.Exit(code=2)
-    documents = [_Page(c.text, {"source": c.document, "page": c.page}) for c in text.chunks]
+    # page_number, not page: LangChain's `page` counts from 0, and these pages count from 1.
+    documents = [_Page(c.text, {"source": c.document, "page_number": c.page}) for c in text.chunks]
     if not quiet and not text.complete:
         console.print(
             f"[yellow]{count(sum(w.hides_content for w in text.warnings), 'file or page')} "

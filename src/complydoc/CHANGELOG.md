@@ -18,6 +18,11 @@ This is a breaking change for anyone calling `cd.write_html`; see Removed.
 
 ### Added
 
+- Each inspected chunk records where it sits in its page's text, as `start` and
+  `end`, and how long that text was, as `page_characters`, so the viewer can draw
+  chunks over a document. A chunk the splitter rewrote, such as into Markdown,
+  records no place rather than a wrong one.
+
 - A Runs page in the viewer, as an experiment tracker has: every run of the folder,
   newest first, with the documents, identifiers, hidden passages, readiness, cost
   and time each measured, what set it apart (values revealed, page pictures, OCR
@@ -241,6 +246,10 @@ This is a breaking change for anyone calling `cd.write_html`; see Removed.
   still sends no page picture or page text.
 
 ### Fixed
+
+- `complydoc chunks` reported every chunk one page later than the page it came
+  from: the pages were passed to the splitter under LangChain's `page`, which counts
+  from 0, while they count from 1.
 
 - A name or other identifier found in one reading of a page is now masked in
   every reading of it. Each reading (the text layer, OCR, another extractor or

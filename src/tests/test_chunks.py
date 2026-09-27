@@ -161,3 +161,34 @@ def test_tables_as_dataframes(report):
     assert len(report.to_pandas()) == 7
     comparison = cd.compare_chunkers({"a": paragraphs, "b": paragraphs}, documents())
     assert list(comparison.to_pandas()["chunker"]) == ["a", "b"]
+
+
+def test_each_chunk_says_where_it_sits_in_its_page(report):
+    """The same paragraph twice lands at its own place each time, not at the first."""
+    for chunk, paragraph in zip(report.chunks, TEXT.split("\n\n"), strict=True):
+        assert chunk.start is not None and chunk.end is not None
+        assert TEXT[chunk.start : chunk.end] == paragraph
+        assert chunk.page_characters == len(TEXT)
+    first, last = report.chunks[0], report.chunks[-1]
+    assert TEXT[first.start : first.end] == TEXT[last.start : last.end]
+    assert last.start > first.start
+
+
+def test_overlapping_chunks_are_each_placed_where_they_start():
+    def overlapping(documents):
+        text = documents[0].page_content
+        return [
+            Doc(text[i : i + 40], dict(documents[0].metadata)) for i in range(0, len(text) - 20, 30)
+        ]
+
+    report = cd.inspect_chunks(overlapping, documents())
+    starts = [chunk.start for chunk in report.chunks]
+    assert starts == list(range(0, len(TEXT) - 20, 30))
+
+
+def test_a_chunk_the_splitter_rewrote_has_no_place():
+    def rewritten(documents):
+        return [Doc(documents[0].page_content.upper(), dict(documents[0].metadata))]
+
+    [chunk] = cd.inspect_chunks(rewritten, documents()).chunks
+    assert chunk.start is None and chunk.end is None and chunk.page_characters is None
