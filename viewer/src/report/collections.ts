@@ -98,6 +98,41 @@ export interface RunChange {
   /** Documents in the newer run that the older did not have, and the other way round. */
   added: string[];
   removed: string[];
+  /** Documents in both runs whose figures moved, the largest change first. */
+  documents: DocumentChange[];
+}
+
+/** One document's figures in two runs, each null where the two cannot be compared. */
+export interface DocumentChange {
+  path: string;
+  identifiers: { before: number; after: number } | null;
+  readiness: { before: number; after: number } | null;
+}
+
+/** Documents whose identifiers or readiness changed between two runs that measured them alike. */
+function documentChanges(newer: Report, older: Report, scanned: boolean, sameScoring: boolean): DocumentChange[] {
+  const before = new Map(older.documents.map((d) => [d.relative_path, d]));
+  const changes: DocumentChange[] = [];
+  for (const document of newer.documents) {
+    const then = before.get(document.relative_path);
+    if (!then) continue;
+    const identifiers = scanned
+      ? { before: then.sensitive.matches.length, after: document.sensitive.matches.length }
+      : null;
+    const scoreThen = older.overall.by_document[document.relative_path];
+    const scoreNow = newer.overall.by_document[document.relative_path];
+    const readiness =
+      sameScoring && scoreThen !== undefined && scoreNow !== undefined ? { before: scoreThen, after: scoreNow } : null;
+    // A point of readiness either way is noise in how a score rounds, not a change to act on.
+    const moved =
+      (identifiers && identifiers.after !== identifiers.before) ||
+      (readiness && Math.abs(readiness.after - readiness.before) >= 1);
+    if (moved) changes.push({ path: document.relative_path, identifiers, readiness });
+  }
+  const size = (c: DocumentChange) =>
+    Math.abs((c.identifiers?.after ?? 0) - (c.identifiers?.before ?? 0)) * 100 +
+    Math.abs((c.readiness?.after ?? 0) - (c.readiness?.before ?? 0));
+  return changes.sort((a, b) => size(b) - size(a) || a.path.localeCompare(b.path));
 }
 
 /** What changed from one run of a folder to a later one. */
@@ -120,6 +155,7 @@ export function changeBetween(newer: Report, older: Report): RunChange {
       : null,
     added: [...now].filter((p) => !then.has(p)).sort(),
     removed: [...then].filter((p) => !now.has(p)).sort(),
+    documents: documentChanges(newer, older, scanned, sameScoring),
   };
 }
 

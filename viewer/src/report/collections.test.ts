@@ -83,4 +83,21 @@ describe("collections", () => {
     const chunks = { ...audit, documents: [], run: { ...audit.run, components_run: [] } };
     expect(runKind({ ...chunks, chunks: [{} as ChunkRun] })).toBe("Chunks");
   });
+
+  it("says which documents' figures moved, the largest change first", () => {
+    const older = sampleAudit();
+    const newer = sampleAudit();
+    const [first, second] = newer.documents;
+    if (!first || !second) throw new Error("the sample has two documents");
+    // The first lost two identifiers; the second is five points more ready.
+    first.sensitive = { ...first.sensitive, matches: first.sensitive.matches.slice(2) };
+    newer.overall.by_document[second.relative_path] = (older.overall.by_document[second.relative_path] ?? 0) + 5;
+    const change = changeBetween(newer, older);
+    expect(change.documents.map((d) => d.path)).toEqual([first.relative_path, second.relative_path]);
+    expect(change.documents[0]?.identifiers).toEqual({
+      before: first.sensitive.matches.length + 2,
+      after: first.sensitive.matches.length,
+    });
+    expect(changeBetween(older, sampleAudit()).documents).toEqual([]);
+  });
 });
