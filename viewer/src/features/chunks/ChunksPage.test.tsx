@@ -44,34 +44,31 @@ describe("ChunksPage", () => {
     expect(screen.getByText(/^complydoc chunks .* -s langchain_text_splitters:RecursiveCharacterTextSplitter$/)).toBeInTheDocument();
   });
 
-  it("shows one splitter's sizes, flags, facts and chunks", () => {
-    renderPage(<ChunksPage report={chunksRun(splitter("recursive", true))} />);
-    expect(screen.queryByRole("region", { name: "Splitters" })).not.toBeInTheDocument();
-    const facts = screen.getByRole("region", { name: "Expected facts" });
-    expect(within(facts).getByText("split")).toBeInTheDocument();
-    const chunks = screen.getByRole("table", { name: "Chunks" });
-    expect(within(chunks).getByText("msa.pdf")).toBeInTheDocument();
-    expect(within(chunks).getByText("split_sentence")).toBeInTheDocument();
+  it("shows a splitter's size, its cuts, and the documents it cut worst", () => {
+    renderPage(<ChunksPage report={chunksRun(splitter("recursive chunk_size=400", true))} />);
+    const card = screen.getByRole("group", { name: "recursive chunk_size=400" });
+    expect(card).toHaveTextContent("chunk_size 400");
+    expect(card).toHaveTextContent("cut mid-sentence1");
+    expect(card).toHaveTextContent("100%");
+    const documents = screen.getByRole("list", { name: "Documents, the worst cut first" });
+    expect(within(documents).getByText("msa.pdf")).toBeInTheDocument();
+    expect(documents).toHaveTextContent("1 of 1 chunk cut badly");
   });
 
-  it("compares several splitters, and opens each", async () => {
+  it("sets each splitter beside the others, and each expected fact against each", async () => {
     renderPage(<ChunksPage report={chunksRun(splitter("recursive", true), splitter("character", false))} />);
-    const table = screen.getByRole("table", { name: "Splitters" });
-    expect(within(table).getAllByRole("row")).toHaveLength(3);
-
+    expect(screen.getByRole("group", { name: "recursive" })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "character" })).toBeInTheDocument();
+    const checks = screen.getByRole("table", { name: "Checks" });
+    const [, fact] = within(checks).getAllByRole("row");
+    expect(fact).toHaveTextContent("split");
+    expect(fact).toHaveTextContent("whole");
     await userEvent.click(screen.getByRole("radio", { name: "character" }));
-    expect(within(screen.getByRole("region", { name: "Expected facts" })).getByText("whole")).toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "Documents, the worst cut first" })).toHaveTextContent("0 of 1 chunk");
   });
 
-  it("words each flag as the report does", () => {
-    const worded = { ...splitter("recursive", true), flag_meanings: { split_sentence: "stops half way", tiny: "too small" } };
-    renderPage(<ChunksPage report={chunksRun(worded)} />);
-    expect(screen.getByText("stops half way")).toBeInTheDocument();
-    expect(screen.getByText("too small")).toBeInTheDocument();
-  });
-
-  it("names the flags of a report written before it worded them", () => {
-    renderPage(<ChunksPage report={chunksRun(splitter("recursive", true))} />);
-    expect(screen.getByText("split sentence")).toBeInTheDocument();
+  it("leaves out the flags no chunk carries", () => {
+    renderPage(<ChunksPage report={chunksRun(splitter("character", false))} />);
+    expect(screen.queryByText("cut mid-sentence")).not.toBeInTheDocument();
   });
 });

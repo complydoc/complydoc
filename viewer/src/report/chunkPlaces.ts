@@ -19,7 +19,7 @@ export interface ChunkLayer {
 }
 
 /** Whether a chunk's source names this document: its path from the folder, or a path ending in it. */
-function sameDocument(source: string | null, path: string): boolean {
+export function sameDocument(source: string | null, path: string): boolean {
   if (!source) return false;
   const normal = source.replaceAll("\\", "/");
   return normal === path || normal.endsWith(`/${path}`);

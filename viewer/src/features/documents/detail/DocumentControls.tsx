@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { ChunkLayer } from "@/report/chunkPlaces";
+import { splitterName } from "@/report/chunkView";
 
 /**
  * Whether the text shows the values. Only a report written with --reveal holds
@@ -68,8 +69,8 @@ export function ChunkPicker({
       <SelectContent align="end">
         <SelectItem value={NONE}>No chunks</SelectItem>
         {layers.map((layer) => (
-          <SelectItem key={layer.splitter} value={layer.splitter}>
-            {layer.splitter}
+          <SelectItem key={layer.splitter} value={layer.splitter} title={layer.splitter}>
+            {splitterName(layer.splitter).settings.join(" · ") || layer.splitter}
           </SelectItem>
         ))}
       </SelectContent>

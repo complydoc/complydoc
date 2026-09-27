@@ -1,5 +1,6 @@
 import { useContext, useMemo, useRef, useState } from "react";
 import { DocumentDiff } from "@/features/documents/diff/DocumentDiff";
+import { useHashParam } from "@/hooks/useHashRoute";
 import { useIsIgnored } from "@/hooks/useIgnores";
 import type { InlineFindings, InlineMark } from "@/hooks/useInlineMarks";
 import { FolderRunsContext } from "@/hooks/useFolderRuns";
@@ -69,7 +70,8 @@ export function DocumentDetail({
   // The folder's chunks of this document, when a chunks run made some; none drawn until asked.
   const { runs } = useContext(FolderRunsContext);
   const layers = useMemo(() => chunkLayers(runs, document), [runs, document]);
-  const [chunkBy, setChunkBy] = useState<string | null>(null);
+  // In the address, so a link from the Chunks page opens the document with its cuts drawn.
+  const [chunkBy, setChunkBy] = useHashParam("chunks");
   const layer = layers.find((l) => l.splitter === chunkBy) ?? null;
 
   const findings = useMemo(() => documentFindings(document, unmasked), [document, unmasked]);
