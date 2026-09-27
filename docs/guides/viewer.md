@@ -65,10 +65,16 @@ more than one way, a picker beside the method chooses which loader's text is pri
 and Cost & time adds a row for each other loader so they can be weighed side by side.
 The choice is kept in the browser.
 
-A page the run did not produce says so, what it would hold, and the command that
-fills it for the same folder, with a button to copy it. Home does the same card
-by card, so a `complydoc cost` run shows its prices and says the identifier scan
-was not part of it.
+A page the run did not produce says so and what it would hold. Where another run
+of the folder has it, the page offers to open that run; otherwise it gives the
+command that fills it for the same folder, with a button to copy it. The sidebar
+dims such pages. Home does the same card by card, so a `complydoc cost` run shows
+its prices and says the identifier scan was not part of it.
+
+Home leads with what the run could not do or vouch for: the important limitations,
+each linking the documents it applies to, before the findings. The rest, on how
+the figures were got, fold away at the foot of the page. The Security page says
+which identifier categories nothing was looked for, and why.
 
 A document read more than one way opens as a diff of two readers' text: the kept
 reading against another library, OCR or a vision model. A document read one way
@@ -88,13 +94,45 @@ away to give the text the whole width.
 Page pictures need a report written with them:
 
 ```bash
-complydoc audit ./documents --page-images --detail full
+complydoc audit ./documents --page-images
 ```
 
 The text is masked, as the report is. A report written with `--reveal` holds the
 values as well as a masked copy of every page. The viewer opens it masked, and
 the eye button shows the values until you mask them again. On any other report,
 the button is disabled.
+
+## Runs of a folder
+
+Every report of the same folder is one of its runs, whichever command wrote it.
+The folder switcher at the top of the sidebar names each by its kind (Audit, Cost,
+Loader comparison, Chunks and so on) and when it started, and opens any of them.
+"Changed since the run before" on Home compares a run with the previous run of the
+same kind.
+
+## Reviewing findings
+
+"Review one by one" on the Security page steps through every finding, the most
+serious first, each in the line of page text it sits in:
+
+| Key | Does |
+| --- | --- |
+| `C` | Keep it: a real finding |
+| `I`, then `Enter` | Ignore it, with the reason typed |
+| `J`, `K` | Next, previous |
+| `N` | The next one not yet reviewed |
+| `Esc` | Back to the Security page |
+
+Ignoring writes the audited folder's ignore file under `complydoc ui`, as ticking
+a finding off in a document does. What was kept is remembered in the browser, per
+folder, by the finding's fingerprint, so a review carries on across runs of the
+folder, and the queue reopens at the first finding not yet reviewed.
+
+## Getting around
+
+`⌘K`, or `Ctrl+K`, opens a list to jump to any page, any document by part of its
+path, or another run of the folder. A click anywhere on a finding's row opens its
+page with the finding marked, and anywhere on a document's row opens the document.
 
 ## Settings
 
