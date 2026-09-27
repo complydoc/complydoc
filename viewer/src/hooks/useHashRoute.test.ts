@@ -1,5 +1,5 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
-import { useHashRoute } from "./useHashRoute";
+import { useHashParam, useHashRoute } from "./useHashRoute";
 
 const pages = ["summary", "documents"] as const;
 
@@ -22,5 +22,18 @@ describe("useHashRoute", () => {
     await waitFor(() => expect(result.current[0]).toEqual({ page: "documents", detail: "4" }));
     act(() => result.current[1]("summary"));
     await waitFor(() => expect(window.location.hash).toBe("#summary"));
+  });
+
+  it("keeps a page's setting after a ? in the address, and the page before it", () => {
+    window.location.hash = "#security?severity=high";
+    const { result } = renderHook(
+      () => [useHashRoute(["home", "security"] as const)[0], useHashParam("severity")] as const,
+    );
+    expect(result.current[0].page).toBe("security");
+    expect(result.current[1][0]).toBe("high");
+    act(() => result.current[1][1]("low"));
+    expect(window.location.hash).toBe("#security?severity=low");
+    act(() => result.current[1][1](null));
+    expect(window.location.hash).toBe("#security");
   });
 });

@@ -103,4 +103,12 @@ describe("concepts a model found", () => {
     expect(text.split("\r\n")[0]).toBe("severity,identifier,value,document,page,confidence,fingerprint");
     expect(text).toContain(report.documents.find((d) => d.sensitive.matches.length)?.sensitive.matches[0]?.masked ?? "");
   });
+
+  it("opens the findings filtered as a link asks", () => {
+    window.location.hash = "#security?severity=high";
+    render(<SecurityPage report={sampleAudit()} />);
+    const high = screen.getByRole("radio", { name: /High/ });
+    expect(high).toHaveAttribute("data-state", "on");
+    window.location.hash = "";
+  });
 });

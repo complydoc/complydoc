@@ -1,5 +1,4 @@
 import { createColumnHelper } from "@tanstack/react-table";
-import { useState } from "react";
 import { DataTable, type Columns } from "@/components/DataTable";
 import { EvidenceBadge } from "@/components/EvidenceBadge";
 import { SeverityIcon } from "@/components/LevelIcons";
@@ -12,6 +11,7 @@ import { documentHref } from "@/report/route";
 import type { FindingRow } from "@/report/security";
 import { EVIDENCE, SEVERITIES } from "@/report/select";
 import type { Severity } from "@/report/types";
+import { useHashParam } from "@/hooks/useHashRoute";
 import { IgnoreButton } from "./IgnoreButton";
 
 const column = createColumnHelper<FindingRow>();
@@ -107,7 +107,10 @@ function findingsCsv(rows: FindingRow[]): string {
  * complydoc is. Searchable, filtered by severity, and a page of rows at a time.
  */
 export function FindingTable({ rows }: { rows: FindingRow[] }) {
-  const [severity, setSeverity] = useState<Severity | "all">("all");
+  // In the address, so a view of one severity can be linked and reopened.
+  const [param, setParam] = useHashParam("severity");
+  const severity: Severity | "all" = SEVERITIES.includes(param as Severity) ? (param as Severity) : "all";
+  const setSeverity = (value: Severity | "all") => setParam(value === "all" ? null : value);
   const shown = severity === "all" ? rows : rows.filter((row) => row.severity === severity);
   const count = (s: Severity) => rows.filter((row) => row.severity === s).length;
   return (

@@ -117,7 +117,7 @@ export function HomePage({ report, previous = null }: { report: Report; previous
             <CardTitle>Needs attention</CardTitle>
             <CardDescription>High-severity identifiers, the surest first</CardDescription>
             <CardAction>
-              <SeeAll href="#security">All findings</SeeAll>
+              <SeeAll href="#security?severity=high">All high-severity</SeeAll>
             </CardAction>
           </CardHeader>
           <CardContent>
