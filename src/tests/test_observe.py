@@ -188,9 +188,8 @@ def test_a_llamaindex_ingestion_pipeline_is_observed(tmp_path: Path) -> None:
             path = str(tmp_path / "contract.pdf")
             return [LlamaDocument(text=text, metadata={"file_path": path})]
 
-    pipeline = IngestionPipeline(
-        transformations=[SentenceSplitter(chunk_size=128, chunk_overlap=0), MockEmbedding(embed_dim=8)]
-    )
+    splitter = SentenceSplitter(chunk_size=128, chunk_overlap=0)
+    pipeline = IngestionPipeline(transformations=[splitter, MockEmbedding(embed_dim=8)])
     with cd.observe(out=None) as observation:
         pipeline.run(documents=Reader().load_data())
     stages = observation.report.trace.stages
