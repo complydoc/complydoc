@@ -21,6 +21,7 @@ import { ModeToggle } from "@/components/ModeToggle";
 import { PlanBar } from "@/components/PlanBar";
 import { PlanProvider } from "@/components/PlanProvider";
 import { IgnoreProvider } from "@/components/IgnoreProvider";
+import { PageErrorBoundary } from "@/components/PageErrorBoundary";
 import { cn } from "@/lib/utils";
 import { CollectionSwitcher, type Selection } from "@/components/CollectionSwitcher";
 import { OverviewPage } from "@/features/collections/OverviewPage";
@@ -111,12 +112,14 @@ export function ReportView({
             </div>
           </header>
           <main className="mx-auto w-full max-w-none p-4 md:p-6">
-            <OverviewPage
-              collections={collections}
-              onOpen={(id) =>
-                onSelect({ collection: id, run: leadIdOf(collections.find((c) => c.id === id)) })
-              }
-            />
+            <PageErrorBoundary>
+              <OverviewPage
+                collections={collections}
+                onOpen={(id) =>
+                  onSelect({ collection: id, run: leadIdOf(collections.find((c) => c.id === id)) })
+                }
+              />
+            </PageErrorBoundary>
           </main>
         </SidebarInset>
       </SidebarProvider>
@@ -173,6 +176,8 @@ export function ReportView({
               </div>
             </header>
             <main className={cn("mx-auto w-full p-4 md:p-6", page === "documents" ? "max-w-none" : "max-w-7xl")}>
+              {/* Keyed by page and run, so moving on from a page that failed shows the next one. */}
+            <PageErrorBoundary key={`${run.id}:${page}:${detail ?? ""}`}>
               <IgnoreProvider report={report} {...(run.source ? { source: run.source } : {})}>
                 {page === "home" && <HomePage report={report} previous={previous?.report ?? null} />}
                 {page === "security" && <SecurityPage report={report} />}
@@ -182,6 +187,7 @@ export function ReportView({
                 {page === "chunks" && <ChunksPage report={report} />}
                 {page === "settings" && <SettingsPage report={report} {...(run.source ? { source: run.source } : {})} />}
               </IgnoreProvider>
+            </PageErrorBoundary>
             </main>
           </SidebarInset>
         </SidebarProvider>
