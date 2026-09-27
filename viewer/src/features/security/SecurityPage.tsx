@@ -2,6 +2,7 @@ import { BarList } from "@/components/BarList";
 import { NotInRun } from "@/components/NotInRun";
 import { Section, SectionStack } from "@/components/Section";
 import { Stat, StatGrid } from "@/components/Stat";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { ChartConfig } from "@/components/ui/chart";
 import { fileName, formatCount, humanise } from "@/report/format";
@@ -25,6 +26,20 @@ const BY_SEVERITY = {
   medium: { label: "Medium", color: "var(--warning)" },
   low: { label: "Low", color: "var(--chart-2)" },
 } satisfies ChartConfig;
+
+/** Bars a chart shows before it counts the rest, which the table below lists in full. */
+const TOP = 10;
+
+function More({ count, noun }: { count: number; noun: string }) {
+  if (count <= 0) return null;
+  const toTable = () =>
+    document.querySelector('section[aria-label="Every finding"]')?.scrollIntoView({ behavior: "smooth" });
+  return (
+    <Button variant="link" size="sm" className="h-auto self-start p-0 text-xs text-muted-foreground" onClick={toTable}>
+      and {formatCount(count)} more {count === 1 ? noun : `${noun}s`}, in every finding below
+    </Button>
+  );
+}
 
 /** What the documents carry that should not leave: how much, what, where, and every finding. */
 export function SecurityPage({ report }: { report: Report }) {
@@ -64,25 +79,27 @@ export function SecurityPage({ report }: { report: Report }) {
             <CardHeader>
               <CardTitle>By kind</CardTitle>
             </CardHeader>
-            <CardContent>
-              <BarList series={BY_KIND} data={kinds} category="label" />
+            <CardContent className="flex flex-col gap-2">
+              <BarList series={BY_KIND} data={kinds.slice(0, TOP)} category="label" />
+              <More count={kinds.length - TOP} noun="kind" />
             </CardContent>
           </Card>
           <div className="flex flex-col gap-4">
-            <Card className="flex-1">
+            <Card>
               <CardHeader>
                 <CardTitle>By document</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="flex flex-col gap-2">
                 <BarList
                   series={BY_SEVERITY}
-                  data={byDocument}
+                  data={byDocument.slice(0, TOP)}
                   category="document"
                   onSelect={(row) => (window.location.hash = documentHref(row.index).slice(1))}
                 />
+                <More count={byDocument.length - TOP} noun="document" />
               </CardContent>
             </Card>
-            <Card className="flex-1">
+            <Card>
               <CardHeader>
                 <CardTitle>How sure</CardTitle>
               </CardHeader>

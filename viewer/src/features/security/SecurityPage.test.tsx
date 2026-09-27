@@ -79,4 +79,11 @@ describe("concepts a model found", () => {
     render(<SecurityPage report={sampleAudit()} />);
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
+
+  it("charts the ten most frequent kinds, and counts the rest", () => {
+    const report = sampleAudit();
+    const byCategory = Object.fromEntries(Array.from({ length: 12 }, (_, i) => [`kind_${i}`, 12 - i]));
+    render(<SecurityPage report={{ ...report, aggregate: { ...report.aggregate, sensitive_by_category: byCategory } }} />);
+    expect(screen.getByRole("button", { name: "and 2 more kinds, in every finding below" })).toBeInTheDocument();
+  });
 });

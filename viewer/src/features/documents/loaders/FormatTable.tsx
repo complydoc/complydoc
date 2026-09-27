@@ -44,7 +44,8 @@ function Choice({ type }: { type: FormatComparison }) {
  * it is meant for, so "skipped" is not a failure.
  */
 export function FormatTable({ comparison }: { comparison: LoaderComparison }) {
-  const types = comparison.formats ?? [];
+  // A type no loader was meant for is a row of "skipped"; the verdict above names such types.
+  const types = (comparison.formats ?? []).filter((type) => type.loaders.length > 0);
   const columns: Columns<FormatComparison> = [
     column.accessor("label", { header: "Type", cell: (c) => <span className="font-medium">{c.getValue()}</span> }),
     column.accessor("documents", { header: "Files", cell: (c) => formatCount(c.getValue()), meta: { numeric: true } }),

@@ -79,4 +79,16 @@ describe("reading plans", () => {
     expect(kept.seconds).toBe(page.seconds?.pdfplumber);
     expect(pypdf.seconds).toBe(page.seconds?.pypdf);
   });
+
+  it("does not offer vision where no page can be shown to a vision model", () => {
+    expect(planOptions(report).map((o) => o.id)).toContain("vision");
+    const unpictured: Report = {
+      ...report,
+      documents: report.documents.map((d) => ({
+        ...d,
+        extracted_text: d.extracted_text.map((p) => ({ ...p, image_tokens: {} })),
+      })),
+    };
+    expect(planOptions(unpictured).map((o) => o.id)).not.toContain("vision");
+  });
 });

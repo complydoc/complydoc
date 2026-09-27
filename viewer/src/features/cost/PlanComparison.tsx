@@ -132,10 +132,8 @@ export function PlanComparison({ report }: { report: Report }) {
             <TableRow>
               <TableHead className="pl-4">Read with</TableHead>
               <TableHead className="text-right">Pages read</TableHead>
-              <TableHead className="text-right">Cost here</TableHead>
-              <TableHead className="text-right">Time here</TableHead>
-              <TableHead className="text-right">Cost for {formatCount(documents)}</TableHead>
-              <TableHead className="pr-4 text-right">Time for {formatCount(documents)}</TableHead>
+              <TableHead className="text-right">Here</TableHead>
+              <TableHead className="pr-4 text-right">For {formatCount(documents)}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -166,22 +164,21 @@ export function PlanComparison({ report }: { report: Report }) {
                   >
                     {formatCount(totals.pagesRead)} of {formatCount(totals.pages)}
                   </TableCell>
+                  {/* Cost with its time beneath, here and projected, so the table fits beside the sidebar. */}
                   <TableCell className="text-right tabular-nums">
                     {formatPageUsd(totals.usd)}
-                    <span className="block text-xs whitespace-normal text-muted-foreground">
+                    <span className="block text-xs whitespace-normal text-muted-foreground" title={untimed || undefined}>
+                      {totals.seconds === null
+                        ? "not timed"
+                        : `${totals.averaged ? "~" : ""}${formatSeconds(totals.seconds)}${untimed ? "+" : ""}`}{" "}
                       on {modelsFor(way.plan.method, plan)}
                     </span>
                   </TableCell>
-                  <TableCell className="text-right tabular-nums" title={untimed || undefined}>
-                    {totals.seconds === null ? (
-                      <span className="text-muted-foreground">not timed</span>
-                    ) : (
-                      `${totals.averaged ? "~" : ""}${formatSeconds(totals.seconds)}${untimed ? "+" : ""}`
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">{formatPageUsd(scaled.usd)}</TableCell>
                   <TableCell className="pr-4 text-right tabular-nums">
-                    {scaled.seconds === null ? "–" : formatSeconds(scaled.seconds)}
+                    {formatPageUsd(scaled.usd)}
+                    <span className="block text-xs text-muted-foreground">
+                      {scaled.seconds === null ? "not timed" : formatSeconds(scaled.seconds)}
+                    </span>
                   </TableCell>
                 </TableRow>
               );

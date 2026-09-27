@@ -131,11 +131,16 @@ export function planOptions(report: Report, loaders: Record<string, string> = {}
       description: "Every page recognised from its picture. A file with no page picture, such as a spreadsheet, is read by its loader.",
     });
   }
-  options.push({
-    id: "vision",
-    label: "Vision on every page",
-    description: "Every page sent to the vision model as an image. A file with no page picture is read by its loader.",
-  });
+  // Only where some page can be shown to a vision model: otherwise every page would fall back
+  // to its loader, and the option would price the loader under another name.
+  if (report.documents.some((d) => d.extracted_text.some((page) => hasImage(d, page)))) {
+    options.push({
+      id: "vision",
+      label: "Vision on every page",
+      description:
+        "Every page sent to the vision model as an image. A file with no page picture is read by its loader.",
+    });
+  }
   if (report.documents.some((d) => d.routing?.pages.length)) {
     options.push({
       id: "router",

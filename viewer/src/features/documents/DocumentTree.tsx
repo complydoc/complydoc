@@ -1,5 +1,5 @@
 import { createColumnHelper } from "@tanstack/react-table";
-import { ChevronRightIcon, FileTextIcon, FolderIcon, FolderOpenIcon } from "lucide-react";
+import { ArrowDownUpIcon, ChevronRightIcon, FileTextIcon, FolderIcon, FolderOpenIcon } from "lucide-react";
 import { DataTable, type Columns } from "@/components/DataTable";
 import { ToneBadge } from "@/components/ToneBadge";
 import { cn } from "@/lib/utils";
@@ -39,7 +39,8 @@ function columnsFor(vision: boolean, thresholds: Thresholds): Columns<TreeNode> 
         const open = row.getIsExpanded();
         const Icon = node.kind === "file" ? FileTextIcon : open ? FolderOpenIcon : FolderIcon;
         return (
-          <span className="flex items-center gap-1.5" style={{ paddingLeft: `${row.depth * 1.25}rem` }}>
+          // A long name is cut short, whole on hover, so it does not push the figures off the table.
+          <span className="flex max-w-[15rem] min-w-0 items-center gap-1.5 xl:max-w-[24rem] 2xl:max-w-none" style={{ paddingLeft: `${row.depth * 1.25}rem` }}>
             {node.kind === "folder" ? (
               <button
                 type="button"
@@ -58,12 +59,14 @@ function columnsFor(vision: boolean, thresholds: Thresholds): Columns<TreeNode> 
               <a
                 href={`#documents/${node.document.index}`}
                 title={node.document.path}
-                className="font-medium underline-offset-4 hover:underline"
+                className="truncate font-medium underline-offset-4 hover:underline"
               >
                 {getValue()}
               </a>
             ) : (
-              <span className="font-medium">{getValue()}</span>
+              <span className="truncate font-medium" title={getValue()}>
+                {getValue()}
+              </span>
             )}
             {node.kind === "folder" && (
               <span className="text-xs text-muted-foreground">{formatCount(node.totals.documents)}</span>
@@ -84,14 +87,18 @@ function columnsFor(vision: boolean, thresholds: Thresholds): Columns<TreeNode> 
     }),
     column.accessor((node) => node.document?.agreement ?? undefined, {
       id: "agreement",
-      header: "Readers agree",
+      header: "Agreement",
       cell: ({ row, getValue }) => {
         const value = getValue();
         if (value === undefined) return "–";
         return (
           <ToneBadge tone={agreementTone(thresholds, value)}>
             {formatPercent(value)}
-            {row.original.document?.reordered && " · reordered"}
+            {row.original.document?.reordered && (
+              <span title="A reader held the same words in another order" className="inline-flex">
+                <ArrowDownUpIcon className="size-3" aria-label="reordered" />
+              </span>
+            )}
           </ToneBadge>
         );
       },

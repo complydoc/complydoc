@@ -79,13 +79,13 @@ describe("LoadersPage", () => {
     renderPage(<LoadersPage report={report} />);
     expect(screen.getByRole("status")).toHaveTextContent("A loader per file type");
     const table = screen.getByRole("table", { name: "Loaders by file type" });
-    const [, pdf, excel] = within(table).getAllByRole("row");
+    const [, pdf, ...rest] = within(table).getAllByRole("row");
     expect(pdf).toHaveTextContent("PDF");
     expect(pdf).toHaveTextContent("2 read · 80% alike");
     expect(pdf).toHaveTextContent("failed on 1");
     expect(within(pdf as HTMLElement).getByText("pypdf", { selector: "[data-slot=badge]" })).toBeInTheDocument();
-    expect(excel).toHaveTextContent("skipped");
-    expect(excel).toHaveTextContent("none meant for it");
+    // A type no loader was meant for would be a row of "skipped"; the verdict says it instead.
+    expect(rest).toHaveLength(0);
   });
 
   it("leaves the file-type table out of a comparison of one type", () => {

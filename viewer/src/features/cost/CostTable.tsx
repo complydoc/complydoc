@@ -14,7 +14,13 @@ const columns: Columns<CostRow> = [
   column.accessor((row) => row.vision ?? undefined, { id: "vision", header: "As images", cell: (c) => formatUsd(c.getValue() ?? null), ...numeric }),
 ];
 
-/** Every model priced, with what a thousand documents cost each way. */
+/**
+ * Every model priced, with what a thousand documents cost each way. A run that priced no
+ * page as an image leaves that column out rather than fill it with dashes.
+ */
 export function CostTable({ rows }: { rows: CostRow[] }) {
-  return <DataTable caption="Cost per 1,000 documents, by model" columns={columns} rows={rows} rowKey={(row) => row.id} sortable />;
+  const shown = rows.some((row) => row.vision !== null) ? columns : columns.filter((c) => c.id !== "vision");
+  return (
+    <DataTable caption="Cost per 1,000 documents, by model" columns={shown} rows={rows} rowKey={(row) => row.id} sortable />
+  );
 }

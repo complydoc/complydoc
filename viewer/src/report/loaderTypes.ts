@@ -58,6 +58,10 @@ export interface FactCheck {
 
 export interface IdentifierDifference {
   category: string;
+  /** The name complydoc gives the category, such as "IBAN". Absent from older reports. */
+  label?: string;
+  /** The document it was found in. Absent from older reports. */
+  document?: string;
   value: string;
   location: "text" | "metadata";
   found_by: string[];
