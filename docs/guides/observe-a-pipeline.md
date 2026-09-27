@@ -58,6 +58,27 @@ report names the hosts each step reached, and its first limitation says what the
 step that reached one sent there: how many texts, and the identifiers they held.
 Text is never sent anywhere by complydoc itself, and vectors are not kept.
 
+## In CI
+
+Two rules hold a recorded pipeline to what it may send, in a
+[policy file](policy.md) or in a test:
+
+```yaml title="policy.yaml"
+rules:
+  no_identifiers_sent:
+    severity: high
+  only_hosts:
+    hosts: [my-resource.openai.azure.com]
+```
+
+```bash
+complydoc check --report .complydoc/contracts-ingest-20260927-101500.json --policy policy.yaml
+```
+
+```python
+cd.expect(run.report).no_identifiers_sent(severity="high").only_hosts(["my-resource.openai.azure.com"])
+```
+
 ## How much is scanned
 
 | `scan` | Scans | For |

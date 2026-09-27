@@ -204,3 +204,25 @@ def test_a_llamaindex_ingestion_pipeline_is_observed(tmp_path: Path) -> None:
     # What the embedding model was sent holds the account number, found by its fingerprint.
     assert {i.label for i in embed.identifiers} >= {"IBAN"}
     assert observation.libraries.get("llama-index-core")
+
+
+def test_a_policy_holds_a_pipeline_to_what_it_may_send(pipeline, tmp_path: Path) -> None:
+    from complydoc.report.policy import check_policy, read_policy
+
+    report = pipeline().report
+    with pytest.raises(cd.ExpectationError, match="IBAN"):
+        cd.expect(report).no_identifiers_sent(severity="high")
+    cd.expect(report).only_hosts(["localhost"])
+
+    policy = tmp_path / "policy.yaml"
+    policy.write_text(
+        "rules:\n  no_identifiers_sent: true\n  only_hosts:\n    hosts: [api.example.com]\n"
+    )
+    result = check_policy(report, read_policy(policy))
+    assert [rule.rule for rule in result.failed] == ["no_identifiers_sent", "only_hosts"]
+
+
+def test_a_pipeline_rule_cannot_pass_a_report_without_a_pipeline(tmp_path: Path) -> None:
+    report = cd.inspect_documents([{"page_content": "no pipeline here"}])
+    with pytest.raises(ValueError, match="no pipeline"):
+        cd.expect(report).no_identifiers_sent()

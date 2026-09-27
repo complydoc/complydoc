@@ -14,6 +14,13 @@
       all_categories_scanned:
         level: warning
 
+For a report of a pipeline recorded with `cd.observe`:
+
+      no_identifiers_sent:
+        severity: high
+      only_hosts:
+        hosts: [my-resource.openai.azure.com]
+
 Every rule is one of the checks in `complydoc.report.expectations`, so a policy
 file and `cd.expect(...)` ask the same questions; the file exists so a team that
 does not write Python can still gate a pipeline.
@@ -63,6 +70,8 @@ RULES: dict[str, set[str]] = {
     "no_failures": set(),
     "all_categories_scanned": set(),
     "no_regressions": {"baseline", "score_tolerance"},
+    "no_identifiers_sent": {"severity"},
+    "only_hosts": {"hosts"},
 }
 """Every rule a policy can hold, with the parameters it takes."""
 

@@ -27,6 +27,8 @@ This is a breaking change for anyone calling `cd.write_html`; see Removed.
   ends, the documents loaded are audited, each splitter's chunks inspected, and the
   report written to `.complydoc/<name>-<time>.json` with a new `trace` section.
   `scan="patterns"` (the default), `"full"` or `"off"` sets what is looked for.
+  Two policy rules, and `cd.expect` checks, hold a recorded pipeline to what it may
+  send: `no_identifiers_sent` and `only_hosts`.
 
 - The viewer draws a splitter's chunks over a document's text, from the folder's
   `complydoc chunks` run: alternating bands, flagged chunks in amber, and a count

@@ -148,6 +148,42 @@ class Expectation:
         ]
         return self._check("no network connections", failures)
 
+    def no_identifiers_sent(self, *, severity: str | None = None) -> Expectation:
+        """No step of a pipeline observed with `cd.observe` sent text holding an identifier,
+        at or above `severity`, to a host.
+
+        Raises ValueError for a report with no pipeline: it cannot say what was sent.
+        """
+        floor = SEVERITY_WEIGHT.get(severity, 0) if severity else 0
+        failures = [
+            f"step {stage.index + 1}, {stage.component}, sent {i.label} {i.masked} "
+            f"to {', '.join(stage.hosts)}"
+            for stage in self._stages()
+            if stage.hosts
+            for i in stage.identifiers
+            if SEVERITY_WEIGHT.get(i.severity, 0) >= floor
+        ]
+        return self._check("no identifiers sent off the machine", failures)
+
+    def only_hosts(self, hosts: Iterable[str]) -> Expectation:
+        """No step of an observed pipeline reached a host other than `hosts`.
+
+        Raises ValueError for a report with no pipeline.
+        """
+        allowed = set(hosts)
+        failures = [
+            f"step {stage.index + 1}, {stage.component}, reached {host}"
+            for stage in self._stages()
+            for host in stage.hosts
+            if host not in allowed
+        ]
+        return self._check(f"no hosts but {', '.join(sorted(allowed)) or 'none'}", failures)
+
+    def _stages(self) -> list[Any]:
+        if self.report.trace is None:
+            raise ValueError("this report holds no pipeline; record one with cd.observe")
+        return list(self.report.trace.stages)
+
     def no_failures(self) -> Expectation:
         """No loader failed on a file, and no file was skipped."""
         failures = [f"{name}: {path}" for name, path in self._loader_values("failures")]
