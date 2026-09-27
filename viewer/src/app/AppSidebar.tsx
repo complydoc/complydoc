@@ -24,10 +24,12 @@ interface AppSidebarProps {
   page: Page;
   /** Which folder and run is on screen, and the way to open more. */
   switcher: ReactNode;
+  /** The way to jump to any page, document or run. */
+  search?: ReactNode;
 }
 
 /** The navigation: which folder is open, and its pages. */
-export function AppSidebar({ report, page, switcher }: AppSidebarProps) {
+export function AppSidebar({ report, page, switcher, search }: AppSidebarProps) {
   const Settings = PAGE_INFO.settings.icon;
 
   return (
@@ -39,6 +41,7 @@ export function AppSidebar({ report, page, switcher }: AppSidebarProps) {
           <span className="ml-2 text-base font-semibold tracking-tight group-data-[collapsible=icon]:hidden">complydoc</span>
         </div>
         {switcher}
+        {search}
       </SidebarHeader>
 
       {report && (

@@ -21,6 +21,7 @@ import { ModeToggle } from "@/components/ModeToggle";
 import { PlanBar } from "@/components/PlanBar";
 import { PlanProvider } from "@/components/PlanProvider";
 import { IgnoreProvider } from "@/components/IgnoreProvider";
+import { GoTo } from "@/components/GoTo";
 import { PageErrorBoundary } from "@/components/PageErrorBoundary";
 import { cn } from "@/lib/utils";
 import { CollectionSwitcher, type Selection } from "@/components/CollectionSwitcher";
@@ -141,7 +142,7 @@ export function ReportView({
         }}
       >
         <SidebarProvider>
-          <AppSidebar report={report} page={page} switcher={switcher} />
+          <AppSidebar report={report} page={page} switcher={switcher} search={<GoTo report={report} />} />
           {/* min-w-0 lets the page shrink to the space beside the sidebar instead of widening to its widest chart. */}
           <SidebarInset className="min-w-0">
             <header className="sticky top-0 z-10 flex h-12 shrink-0 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur">
