@@ -95,6 +95,16 @@ This is a breaking change for anyone calling `cd.write_html`; see Removed.
 
 ### Changed
 
+- The viewer tells a folder's runs apart by kind (Audit, Cost, Loader comparison,
+  Chunks and so on), not only by when they started; a page the run on screen
+  lacks offers the folder's newest run that has it; and "Changed since the run
+  before" compares a run with the previous run of the same kind. Tables fit
+  beside the sidebar: the findings table puts each value under its name and each
+  page under its document, and the document, folder and plan tables put time
+  under cost. Cost & time offers a vision plan only where a page can be shown to
+  a vision model. Long lists on Home, Security and Loaders show their first few
+  and count the rest, and the viewer says folders and identifiers throughout.
+
 - Audits are quicker, most of all in parallel. On a folder of 24 mixed
   documents: 7.0s instead of 14.7s with the default two workers, 45s instead of
   126s with `--ocr-compare`, and 91s instead of 199s with page images, OCR
@@ -215,6 +225,11 @@ This is a breaking change for anyone calling `cd.write_html`; see Removed.
   still sends no page picture or page text.
 
 ### Fixed
+
+- A loader comparison named each document from the folder that loader's own
+  files shared, so a loader given only `web/README.md` reported it as
+  `README.md`, beside other loaders' `web/...`. Every loader now names documents
+  from the folder all the compared files share.
 
 - The viewer's top bar no longer pushes the page sideways on a narrow window: the
   reading method, loader and model pickers shorten their labels instead.

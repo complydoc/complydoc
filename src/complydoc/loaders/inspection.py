@@ -88,6 +88,7 @@ __all__ = [
     "ABSOLUTE_PATH",
     "SOURCE_KEYS",
     "FolderSource",
+    "common_root",
     "document_content",
     "inspect_documents",
     "load_items",
@@ -191,11 +192,16 @@ def inspect_run(
     allow_network: bool,
     verify: bool = False,
     verify_scope: str = "flagged",
+    root: Path | None = None,
 ) -> Inspection:
     """Run the loader and build a report entry for each document it returned.
 
     With `verify`, each page is read again by the vision model registered in
     this process, rendered from the file the loader's metadata names.
+
+    Paths in the report are relative to `root`, or to the folder the loader's
+    documents share when none is given. A comparison passes one root for every
+    loader, so a loader given only some of the files names them as the others do.
     """
     from complydoc.report.models import ReadingCost
     from complydoc.verification.vision import model_name, registered_vision_model
@@ -215,7 +221,7 @@ def inspect_run(
             items, loader_run.name, settings, components, reveal
         )
 
-        root = _common_root([document.path for document in documents])
+        root = root or common_root([document.path for document in documents])
         vision = registered_vision_model() if verify else None
         work = Work(
             config=settings,
@@ -611,7 +617,8 @@ def _digest(path: Path, members: list[tuple[str, dict[str, Any]]]) -> str:
     return hashlib.sha256("\n".join(text for text, _ in members).encode("utf-8")).hexdigest()
 
 
-def _common_root(paths: list[Path]) -> Path | None:
+def common_root(paths: list[Path]) -> Path | None:
+    """The deepest folder every path is under, or None where a path is not absolute."""
     absolute = [p for p in paths if p.is_absolute()]
     if not absolute or len(absolute) != len(paths):
         return None

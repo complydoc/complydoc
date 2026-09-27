@@ -91,6 +91,20 @@ def by_type(report: cd.AuditReport) -> dict[str, object]:
     return {f.format: f for f in report.loader_comparison.formats}
 
 
+def test_every_loader_names_a_document_from_the_same_folder(tmp_path: Path):
+    """A loader given only the files in one subfolder still names them from the top.
+
+    Each loader's paths used to be relative to the folder its own files shared, so a
+    Word loader that saw only reports/list.docx called it list.docx.
+    """
+    (tmp_path / "scans").mkdir()
+    (tmp_path / "reports").mkdir()
+    (tmp_path / "scans" / "a.pdf").write_bytes(b"placeholder")
+    (tmp_path / "reports" / "list.docx").write_bytes(b"placeholder")
+    report = cd.compare_loaders({"pypdf": PyPDFLoader, "docx2txt": Docx2txtLoader}, paths=tmp_path)
+    assert sorted(d.relative_path for d in report.documents) == ["reports/list.docx", "scans/a.pdf"]
+
+
 def test_known_loaders_are_given_only_their_own_file_types(folder: Path):
     report = cd.compare_loaders({"pypdf": PyPDFLoader, "docx2txt": Docx2txtLoader}, paths=folder)
     rows = {row.name: row for row in report.loader_comparison.loaders}

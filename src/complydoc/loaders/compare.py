@@ -60,6 +60,7 @@ from complydoc.loaders.formats import (
 from complydoc.loaders.inspection import (
     FolderSource,
     Inspection,
+    common_root,
     finish_report,
     inspect_run,
     loader_name,
@@ -169,6 +170,8 @@ def compare_loaders(
     networks = [_network(name, value, allow_network) for name, value in named]
     fact_list = as_facts(facts or ())
     specs = {name: value for name, value in named if isinstance(value, LoaderSpec)}
+    # Every loader's paths relative to one folder, the one the compared files share.
+    shared_root = common_root([file.resolve() for file in files]) if files else None
     started = time.monotonic()
     vision_setup(verify_with, verify_scope)
     try:
@@ -188,6 +191,7 @@ def compare_loaders(
                 # reading of it can be set beside that one.
                 verify=verify_with is not None and index == 0,
                 verify_scope=verify_scope,
+                root=shared_root,
             )
             for index, ((name, _value), source, network) in enumerate(
                 zip(named, sources, networks, strict=True)
