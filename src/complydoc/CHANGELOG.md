@@ -18,6 +18,15 @@ This is a breaking change for anyone calling `cd.write_html`; see Removed.
 
 ### Added
 
+- `cd.observe(name)` records an ingestion pipeline as it runs. Inside the `with`
+  block, LangChain loaders, document transformers, text splitters and embedding
+  models, and complydoc's own steps, become stages of a trace: their settings, what
+  went in and out, timings, the identifiers in what each passed on, and the hosts
+  each reached. `@cd.stage` marks a function of your own as a stage. When the block
+  ends, the documents loaded are audited, each splitter's chunks inspected, and the
+  report written to `.complydoc/<name>-<time>.json` with a new `trace` section.
+  `scan="patterns"` (the default), `"full"` or `"off"` sets what is looked for.
+
 - The viewer draws a splitter's chunks over a document's text, from the folder's
   `complydoc chunks` run: alternating bands, flagged chunks in amber, and a count
   per page, so where a chunk size cuts a sentence, a table or a name shows in the
@@ -120,6 +129,13 @@ This is a breaking change for anyone calling `cd.write_html`; see Removed.
   their library, as `langchain-community`'s were.
 
 ### Changed
+
+- The viewer's document view, for a document read one way, shows every page in turn
+  with numbered lines, the pages down the side and the findings listed beside the
+  text. The Loaders page is one decision per file type, with the files the loaders
+  read differently linked to their diffs. The Chunks page sets splitters side by side
+  and links each document to its cuts. Runs are no longer compared with each other,
+  and Home no longer lists the run's limitations and notes.
 
 - The viewer tells a folder's runs apart by kind (Audit, Cost, Loader comparison,
   Chunks and so on), not only by when they started; a page the run on screen
