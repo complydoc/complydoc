@@ -70,6 +70,22 @@ describe("SettingsPage", () => {
   });
 });
 
+describe("SettingsPage on a run that read no ignore file", () => {
+  it("says the run did not read it, rather than that each entry is new", () => {
+    const report = withSetup();
+    const state = readOnly(report);
+    report.ignores = null;
+    renderPage(
+      <IgnoreContext.Provider value={state}>
+        <SettingsPage report={report} />
+      </IgnoreContext.Provider>,
+    );
+    const ignored = screen.getByRole("list", { name: "Ignored findings" });
+    expect(ignored).toHaveTextContent("Not read by this run");
+    expect(ignored).not.toHaveTextContent("Added since this run");
+  });
+});
+
 describe("ConceptForm", () => {
   it("tries a pattern on some text before it is saved", async () => {
     render(<ConceptForm taken={[]} onSave={async () => true} onCancel={() => {}} error={null} />);

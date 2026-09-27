@@ -21,7 +21,7 @@ export function SettingsPage({ report, source }: { report: Report; source?: stri
   return (
     <SectionStack>
       <Section title="Your concepts" aside={concepts.file ? fileName(concepts.file) : "No concepts file"}>
-        <ConceptsSection state={concepts} lastRun={report.concepts?.concepts ?? []} />
+        <ConceptsSection state={concepts} lastRun={report.concepts?.concepts ?? null} />
       </Section>
 
       <Section title="Preferred models" aside="This browser">
@@ -29,7 +29,7 @@ export function SettingsPage({ report, source }: { report: Report; source?: stri
       </Section>
 
       <Section title="Ignored findings" aside={ignores.file ? fileName(ignores.file) : "No ignore file"}>
-        <IgnoredSection lastRun={report.ignores?.rules ?? []} />
+        <IgnoredSection lastRun={report.ignores?.rules ?? null} />
       </Section>
     </SectionStack>
   );

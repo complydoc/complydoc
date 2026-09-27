@@ -10,11 +10,15 @@ import { ConceptForm } from "./ConceptForm";
 
 interface ConceptsSectionProps {
   state: ConceptsState;
-  /** The concepts as the run on screen looked for them, with how often each was found. */
-  lastRun: ConceptRule[];
+  /**
+   * The concepts as the run on screen looked for them, with how often each was found.
+   * Null when that run read no concepts file, as a loader comparison or a chunks run does not.
+   */
+  lastRun: ConceptRule[] | null;
 }
 
-function lastRunNote(id: string, lastRun: ConceptRule[]): string {
+function lastRunNote(id: string, lastRun: ConceptRule[] | null): string {
+  if (lastRun === null) return "Not looked for by this run";
   const seen = lastRun.find((c) => c.id === id);
   if (!seen) return "Added since this run";
   const byPattern = seen.found ? `found ${seen.found} ${seen.found === 1 ? "time" : "times"}` : null;

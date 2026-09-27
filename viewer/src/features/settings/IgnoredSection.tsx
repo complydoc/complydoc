@@ -13,10 +13,12 @@ const QUIET =
   "border-transparent bg-transparent px-1.5 shadow-none hover:border-input focus-visible:border-input dark:bg-transparent";
 
 /** What an entry did on the run on screen, in a few words. */
-function lastRunNote(entry: IgnoreRule, lastRun: IgnoreRule[]): { text: string; warn: boolean } {
-  const seen = lastRun.find((rule) => rule.finding === entry.finding);
+function lastRunNote(entry: IgnoreRule, lastRun: IgnoreRule[] | null): { text: string; warn: boolean } {
   const today = new Date().toISOString().slice(0, 10);
   if (entry.until && entry.until < today) return { text: "Expired: counted again", warn: true };
+  // A run that read no ignore file, such as a loader comparison, set nothing aside to compare with.
+  if (lastRun === null) return { text: "Not read by this run", warn: false };
+  const seen = lastRun.find((rule) => rule.finding === entry.finding);
   if (!seen) return { text: "Added since this run", warn: false };
   if (!seen.matched) return { text: "Matched nothing on this run", warn: true };
   return { text: `Set aside ${seen.matched} on this run`, warn: false };
@@ -26,7 +28,7 @@ function lastRunNote(entry: IgnoreRule, lastRun: IgnoreRule[]): { text: string; 
  * Every finding the ignore file sets aside, with the reason and the date it ends.
  * Under `complydoc ui` the reason and the date can be changed, and an entry removed.
  */
-export function IgnoredSection({ lastRun }: { lastRun: IgnoreRule[] }) {
+export function IgnoredSection({ lastRun }: { lastRun: IgnoreRule[] | null }) {
   const { editable, entries, ignore, unignore } = useIgnores();
 
   if (entries.length === 0) {
