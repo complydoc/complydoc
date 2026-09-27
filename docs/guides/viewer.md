@@ -88,6 +88,14 @@ as not a problem. Under `complydoc ui` the tick is saved to the audited folder's
 ignore file; otherwise it lasts while the page is open. Ignored findings leave
 the text, and the Security page lists them.
 
+Where the folder has a `complydoc chunks` run, the document view can draw a
+splitter's chunks over the text: pick the splitter beside the page stepper. Chunks
+alternate in colour so each boundary shows, and those cut mid-sentence, mid-table
+or on a heading are in amber, with a count above the text. Chunks are drawn only
+on pages whose text is the one they were cut from, the same length as the text
+the splitter was given, so a page read by another reader shows none rather than
+wrong ones.
+
 To the left of the text is the page's picture, when the report has one. Put it
 away to give the text the whole width.
 

@@ -14,6 +14,11 @@ export interface InspectedChunk {
   metadata_keys: string[];
   /** The start of the chunk, identifiers masked. */
   preview: string;
+  /** Schema 17: where the chunk sits in its page's text; null where it could not be placed. */
+  start?: number | null;
+  end?: number | null;
+  /** How long the page's text was, to tell whether a page text on hand is the same one. */
+  page_characters?: number | null;
 }
 
 export interface ChunkStats {

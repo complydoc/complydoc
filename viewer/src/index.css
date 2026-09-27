@@ -235,3 +235,14 @@
   background-color: color-mix(in oklab, var(--primary) 45%, transparent);
   color: var(--foreground);
 }
+
+/* A page's chunks, when shown: alternating tints so each boundary shows, flagged ones in amber. */
+::highlight(complydoc-chunk-a) {
+  background-color: color-mix(in oklab, var(--chart-1) 22%, transparent);
+}
+::highlight(complydoc-chunk-b) {
+  background-color: color-mix(in oklab, var(--chart-2) 22%, transparent);
+}
+::highlight(complydoc-chunk-flagged) {
+  background-color: color-mix(in oklab, var(--warning) 30%, transparent);
+}

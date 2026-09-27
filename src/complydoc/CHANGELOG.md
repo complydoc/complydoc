@@ -18,6 +18,11 @@ This is a breaking change for anyone calling `cd.write_html`; see Removed.
 
 ### Added
 
+- The viewer draws a splitter's chunks over a document's text, from the folder's
+  `complydoc chunks` run: alternating bands, flagged chunks in amber, and a count
+  per page, so where a chunk size cuts a sentence, a table or a name shows in the
+  text itself. Pick the splitter in the document view.
+
 - Each inspected chunk records where it sits in its page's text, as `start` and
   `end`, and how long that text was, as `page_characters`, so the viewer can draw
   chunks over a document. A chunk the splitter rewrote, such as into Markdown,

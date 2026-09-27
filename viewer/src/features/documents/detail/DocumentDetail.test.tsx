@@ -9,6 +9,8 @@ import type { FindingRef } from "@/report/route";
 import type { Report } from "@/report/types";
 import { DocumentDetail } from "./DocumentDetail";
 import { FindingPopover } from "./FindingPopover";
+import { FolderRunsContext } from "@/hooks/useFolderRuns";
+import { chunksRun, placedChunk } from "@/test/chunks";
 
 function open(report: Report, name: string, where: { page?: number; finding?: FindingRef } = {}) {
   const index = report.documents.findIndex((d) => d.relative_path.endsWith(name));
@@ -200,6 +202,33 @@ describe("DocumentDetail", () => {
     expect(screen.getByTestId("page-reading")).not.toHaveTextContent("REVEALED-VALUE");
     await userEvent.click(screen.getByRole("button", { name: "Show the values" }));
     expect(screen.getByTestId("page-reading")).toHaveTextContent("REVEALED-VALUE");
+  });
+});
+
+describe("DocumentDetail with the folder's chunks", () => {
+  it("draws a splitter's chunks over the kept text when asked", async () => {
+    const report = sampleAudit();
+    const index = report.documents.findIndex((d) => d.relative_path.endsWith("master-services-agreement.pdf"));
+    const document = required(report.documents[index]);
+    const page = required(document.extracted_text[0]);
+    const chunks = [
+      placedChunk(document, page.number, 0, 60, page.characters),
+      placedChunk(document, page.number, 60, 140, page.characters, ["split_sentence"]),
+    ];
+    renderPage(
+      <FolderRunsContext.Provider value={{ runs: [chunksRun(report, chunks)], current: null, open: () => {} }}>
+        <IgnoreProvider report={report}>
+          <DocumentDetail report={report} document={document} index={index} />
+        </IgnoreProvider>
+      </FolderRunsContext.Provider>,
+    );
+    // Read two ways, it opens as the diff, with no chunks drawn until asked.
+    expect(screen.getByRole("combobox", { name: "Base reader" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("combobox", { name: "Chunks" }));
+    await userEvent.click(screen.getByRole("option", { name: "recursive 400" }));
+    const reading = screen.getByTestId("page-reading");
+    expect(reading).toHaveTextContent("2 chunks on this page, 1 flagged in amber.");
+    expect(screen.queryByRole("combobox", { name: "Base reader" })).not.toBeInTheDocument();
   });
 });
 

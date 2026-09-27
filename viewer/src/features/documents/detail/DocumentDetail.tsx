@@ -1,11 +1,13 @@
 import { PanelLeftCloseIcon, PanelLeftOpenIcon } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useContext, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { DocumentDiff } from "@/features/documents/diff/DocumentDiff";
 import { useIsIgnored } from "@/hooks/useIgnores";
 import type { InlineFindings, InlineMark } from "@/hooks/useInlineMarks";
 import { usePageCollapsed } from "@/hooks/usePageCollapsed";
+import { FolderRunsContext } from "@/hooks/useFolderRuns";
 import { usePlan } from "@/hooks/usePlan";
+import { chunkLayers } from "@/report/chunkPlaces";
 import { KEPT, canReveal, pageText, readersOf } from "@/report/documentDiff";
 import { fileName, formatPageUsd, formatSeconds } from "@/report/format";
 import { findingHighlight } from "@/report/highlight";
@@ -14,7 +16,7 @@ import { hasPicture } from "@/report/picture";
 import { documentTotals, pageEstimate } from "@/report/plan";
 import type { FindingRef } from "@/report/route";
 import type { DocumentEntry, Report } from "@/report/types";
-import { EyeToggle, PageStepper } from "./DocumentControls";
+import { ChunkPicker, EyeToggle, PageStepper } from "./DocumentControls";
 import { FindingPopover } from "./FindingPopover";
 import { PagePane } from "./PagePane";
 import { PageReading } from "./PageReading";
@@ -64,6 +66,11 @@ export function DocumentDetail({
   const [collapsed, setCollapsed] = usePageCollapsed();
   const isIgnored = useIsIgnored();
   const { plan, models } = usePlan();
+  // The folder's chunks of this document, when a chunks run made some; none drawn until asked.
+  const { runs } = useContext(FolderRunsContext);
+  const layers = useMemo(() => chunkLayers(runs, document), [runs, document]);
+  const [chunkBy, setChunkBy] = useState<string | null>(null);
+  const layer = layers.find((l) => l.splitter === chunkBy) ?? null;
 
   const findings = useMemo(() => documentFindings(document, unmasked), [document, unmasked]);
   const linked = finding ? findingFor(findings, document, finding) : undefined;
@@ -96,7 +103,8 @@ export function DocumentDetail({
     );
   }
 
-  const compared = readersOf(report, document).length > 1;
+  // Chunks are placed in the kept text, so drawing them shows that text alone, not the diff.
+  const compared = readersOf(report, document).length > 1 && layer === null;
   const preview = document.previews?.find((p) => p.number === page.number);
   const pictures = (document.previews ?? []).some(hasPicture);
   const verified = document.verification !== null && document.verification !== undefined;
@@ -180,12 +188,11 @@ export function DocumentDetail({
           </span>
         )}
         {/* Read one way, there is no readers' row: the eye and the pages sit here, right above the text. */}
-        {!compared && (
-          <span className="ml-auto flex items-center gap-3">
-            {eyeToggle}
-            {pager}
-          </span>
-        )}
+        <span className="ml-auto flex items-center gap-3">
+          {layers.length > 0 && <ChunkPicker layers={layers} value={chunkBy} onChange={setChunkBy} />}
+          {!compared && eyeToggle}
+          {!compared && pager}
+        </span>
       </div>
 
       {/* The page on the left and the text on the right, each as tall as the space below the title. */}
@@ -244,6 +251,7 @@ export function DocumentDetail({
               heading={notes[page.number] ? `# Page ${page.number} · ${notes[page.number]}` : `# Page ${page.number}`}
               text={pageText(page, KEPT, unmasked)}
               inline={inline}
+              chunks={layer ? (layer.pages.get(page.number) ?? []) : null}
             />
           )}
         </div>

@@ -1,6 +1,8 @@
-import { ChevronLeftIcon, ChevronRightIcon, EyeIcon, EyeOffIcon } from "lucide-react";
+import { ChevronLeftIcon, ChevronRightIcon, EyeIcon, EyeOffIcon, ScissorsIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import type { ChunkLayer } from "@/report/chunkPlaces";
 
 /**
  * Whether the text shows the values. Only a report written with --reveal holds
@@ -83,3 +85,36 @@ export function PageStepper({
     </span>
   );
 }
+
+/**
+ * Which splitter's chunks to draw over the text, from the folder's chunks run; none by
+ * default. Shown only where that run chunked this document.
+ */
+export function ChunkPicker({
+  layers,
+  value,
+  onChange,
+}: {
+  layers: ChunkLayer[];
+  value: string | null;
+  onChange: (splitter: string | null) => void;
+}) {
+  return (
+    <Select value={value ?? NONE} onValueChange={(next) => onChange(next === NONE ? null : next)}>
+      <SelectTrigger size="sm" aria-label="Chunks" className="max-w-64 min-w-0">
+        <ScissorsIcon className="size-3.5 text-muted-foreground" />
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent align="end">
+        <SelectItem value={NONE}>No chunks</SelectItem>
+        {layers.map((layer) => (
+          <SelectItem key={layer.splitter} value={layer.splitter}>
+            {layer.splitter}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+const NONE = "__none__";
