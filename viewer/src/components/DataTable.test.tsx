@@ -43,4 +43,25 @@ describe("DataTable", () => {
     await userEvent.type(screen.getByRole("searchbox", { name: "Search files" }), "invoice");
     expect(screen.getByText("Nothing matches “invoice”.")).toBeInTheDocument();
   });
+
+  it("opens a row from anywhere on it, and leaves the row's own buttons their clicks", async () => {
+    const withButton: Columns<Row> = [
+      column.accessor("name", { header: "Name" }),
+      column.display({ id: "act", header: "Act", cell: () => <button type="button">Ignore</button> }),
+    ];
+    window.location.hash = "";
+    render(
+      <DataTable
+        caption="Files"
+        columns={withButton}
+        rows={rows.slice(0, 2)}
+        rowKey={(row) => row.name}
+        rowHref={(row) => `#documents/${row.name}`}
+      />,
+    );
+    await userEvent.click(screen.getAllByRole("button", { name: "Ignore" })[0] as HTMLElement);
+    expect(window.location.hash).toBe("");
+    await userEvent.click(screen.getByText("contract-2.pdf"));
+    expect(window.location.hash).toBe("#documents/contract-2.pdf");
+  });
 });

@@ -55,6 +55,11 @@ interface DataTableProps<T> {
   subRows?: (row: T) => T[] | undefined;
   /** More controls on the search box's row, at its end, such as a filter. */
   toolbar?: ReactNode;
+  /**
+   * Where a click anywhere on the row goes, as a table of traces opens one. The row's own
+   * links and buttons keep their clicks, and a keyboard reaches the row by its link.
+   */
+  rowHref?: (row: T) => string | undefined;
 }
 
 const SORT_ICON = {
@@ -78,6 +83,7 @@ export function DataTable<T>({
   pageSize,
   subRows,
   toolbar,
+  rowHref,
 }: DataTableProps<T>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [query, setQuery] = useState("");
@@ -170,7 +176,17 @@ export function DataTable<T>({
           </TableHeader>
           <TableBody>
             {table.getRowModel().rows.map((row) => (
-              <TableRow key={row.id}>
+              <TableRow
+                key={row.id}
+                className={cn(rowHref?.(row.original) && "cursor-pointer")}
+                onClick={(event) => {
+                  const href = rowHref?.(row.original);
+                  const target = event.target as HTMLElement;
+                  if (!href || target.closest("a, button, input, [role=menuitem]")) return;
+                  if (window.getSelection()?.toString()) return;
+                  window.location.hash = href.replace(/^#/, "");
+                }}
+              >
                 {row.getVisibleCells().map((cell) => (
                   <TableCell
                     key={cell.id}

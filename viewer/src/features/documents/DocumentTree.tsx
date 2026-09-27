@@ -169,6 +169,7 @@ export function DocumentTree({
       rows={nodes}
       rowKey={(node) => node.id}
       subRows={(node) => node.children}
+      rowHref={(node) => (node.document ? `#documents/${node.document.index}` : undefined)}
       sortable
       search="Search documents"
       pageSize={ROWS_PER_PAGE}

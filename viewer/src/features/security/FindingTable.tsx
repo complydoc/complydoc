@@ -101,6 +101,7 @@ export function FindingTable({ rows }: { rows: FindingRow[] }) {
       sortable
       search="Search findings or documents"
       pageSize={25}
+      rowHref={(row) => documentHref(row.document, row.page, { kind: "identifier", index: row.match })}
       toolbar={
         <ToggleGroup
           type="single"
