@@ -1,6 +1,6 @@
 import { sampleAudit, sampleReport } from "@/test/sample";
-import { changeBetween, collectionsOf, leadRun, type Loaded } from "./collections";
-import type { Report } from "./types";
+import { changeBetween, collectionsOf, leadRun, runKind, type Loaded } from "./collections";
+import type { ChunkRun, Report } from "./types";
 
 function run(id: string, report: Report, started: string, target?: string): Loaded {
   return { id, name: `${id}.json`, report: { ...report, run: { ...report.run, started_at: started, target: target ?? report.run.target } } };
@@ -71,5 +71,16 @@ describe("collections", () => {
     expect(folder && leadRun(folder)?.id).toBe("audit");
     const [only] = collectionsOf([run("chunks", chunks, "2026-09-02", "/data/contracts")]);
     expect(only && leadRun(only)?.id).toBe("chunks");
+  });
+
+  it("names each kind of run, so runs of one folder are told apart by more than their time", () => {
+    const audit = sampleAudit();
+    expect(runKind(audit)).toBe("Audit");
+    expect(runKind(sampleReport())).toBe("Loader comparison");
+    expect(runKind({ ...audit, run: { ...audit.run, components_run: ["cost"] } })).toBe("Cost");
+    expect(runKind({ ...audit, run: { ...audit.run, components_run: ["sensitive"] } })).toBe("Identifiers");
+    expect(runKind({ ...audit, documents: [], chunks: [] })).toBe("Audit");
+    const chunks = { ...audit, documents: [], run: { ...audit.run, components_run: [] } };
+    expect(runKind({ ...chunks, chunks: [{} as ChunkRun] })).toBe("Chunks");
   });
 });

@@ -123,6 +123,25 @@ export function changeBetween(newer: Report, older: Report): RunChange {
   };
 }
 
+/**
+ * What kind of run a report is, from what it holds: "Audit", "Cost", "Chunks" and so
+ * on. Several runs of one folder are otherwise told apart only by when they started.
+ */
+export function runKind(report: Report): string {
+  if (report.chunks?.length && report.documents.length === 0) return "Chunks";
+  if (report.loader_comparison) return "Loader comparison";
+  if (report.loader) return "Loader inspection";
+  const parts = [...(report.run.components_run ?? [])].sort().join(",");
+  const kinds: Record<string, string> = {
+    "cost,readiness,sensitive": "Audit",
+    cost: "Cost",
+    sensitive: "Identifiers",
+    readiness: "Readiness",
+    "cost,readiness": "Routing",
+  };
+  return kinds[parts] ?? "Audit";
+}
+
 /** When a run started, as a person reads it. */
 export function runLabel(report: Report): string {
   const started = new Date(report.run.started_at);

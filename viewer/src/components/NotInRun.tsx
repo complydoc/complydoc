@@ -12,6 +12,8 @@ import {
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
+import { useRunWith } from "@/hooks/useFolderRuns";
+import { runKind, runLabel } from "@/report/collections";
 import { commandFor, type Content } from "@/report/measured";
 import type { Report } from "@/report/types";
 
@@ -101,12 +103,19 @@ interface NotInRunProps {
 export function NotInRun({ report, content, size = "page" }: NotInRunProps) {
   const { icon: Icon, title, shows, note } = COPY[content];
   const command = commandFor(report, content);
+  // Another run of this folder may already hold it; opening that beats running a command.
+  const other = useRunWith(content);
+  const openOther = other && (
+    <Button variant={size === "page" ? "default" : "outline"} size="sm" onClick={other.open} className="self-start">
+      Open the {runKind(other.run.report).toLowerCase()} run of {runLabel(other.run.report)}
+    </Button>
+  );
 
   if (size === "section") {
     return (
       <div className="flex flex-col gap-2 text-sm">
         <p className="font-medium">{title}</p>
-        <Command command={command} />
+        {openOther ?? <Command command={command} />}
       </div>
     );
   }
@@ -121,6 +130,12 @@ export function NotInRun({ report, content, size = "page" }: NotInRunProps) {
         <EmptyDescription>{shows}</EmptyDescription>
       </EmptyHeader>
       <EmptyContent className="max-w-md">
+        {openOther && (
+          <>
+            {openOther}
+            <p className="text-xs text-muted-foreground">Or run it again:</p>
+          </>
+        )}
         <Command command={command} />
         {note && <p className="text-xs text-muted-foreground">{note}</p>}
       </EmptyContent>

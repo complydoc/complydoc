@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
-import { leadRun, runLabel, type Collection } from "@/report/collections";
+import { leadRun, runKind, runLabel, type Collection } from "@/report/collections";
 import { plural } from "@/report/format";
 
 export interface Selection {
@@ -48,7 +48,7 @@ export function CollectionSwitcher({ collections, selection, onSelect, onAdd, on
                 <span className="truncate font-medium">{current?.name ?? "All collections"}</span>
                 <span className="truncate text-xs text-muted-foreground">
                   {current && run
-                    ? `${plural(run.report.documents.length, "document")} · ${runLabel(run.report)}`
+                    ? `${runKind(run.report)} · ${runLabel(run.report)}`
                     : `${plural(collections.length, "folder")} · ${plural(documents, "document")}`}
                 </span>
               </span>
@@ -88,8 +88,14 @@ export function CollectionSwitcher({ collections, selection, onSelect, onAdd, on
                   {current.runs.map((item, index) => (
                     <DropdownMenuItem key={item.id} onSelect={() => onSelect({ collection: current.id, run: item.id })}>
                       <HistoryIcon />
-                      {runLabel(item.report)}
-                      {index === 0 && <span className="text-xs text-muted-foreground">latest</span>}
+                      <span className="grid min-w-0 leading-tight">
+                        <span className="truncate">{runKind(item.report)}</span>
+                        <span className="truncate text-xs text-muted-foreground">
+                          {runLabel(item.report)}
+                          {item.report.documents.length > 0 && ` · ${plural(item.report.documents.length, "document")}`}
+                          {index === 0 && " · latest"}
+                        </span>
+                      </span>
                       {item.id === run?.id && <CheckIcon className="ml-auto" />}
                     </DropdownMenuItem>
                   ))}

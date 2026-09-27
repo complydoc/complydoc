@@ -37,6 +37,8 @@ export interface Report {
   limitations: Limitation[];
   documents: DocumentEntry[];
   loader_comparison: LoaderComparison | null;
+  /** Set when the documents came from a loader rather than complydoc's own readers. */
+  loader?: LoaderRun | null;
   cost: Cost | null;
   /** Schema 16: pages read again by a vision model. Null or absent without --verify. */
   verification?: VerificationSummary | null;
@@ -55,6 +57,13 @@ export interface Thresholds {
   bands: Record<Band, number>;
   /** Below this, two readings of a page tell different stories. */
   similar_enough: number;
+}
+
+export interface LoaderRun {
+  name: string;
+  tags: string[];
+  network_allowed: boolean;
+  error: string | null;
 }
 
 export interface RunMetadata {

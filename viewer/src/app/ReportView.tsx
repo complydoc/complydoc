@@ -24,7 +24,8 @@ import { IgnoreProvider } from "@/components/IgnoreProvider";
 import { cn } from "@/lib/utils";
 import { CollectionSwitcher, type Selection } from "@/components/CollectionSwitcher";
 import { OverviewPage } from "@/features/collections/OverviewPage";
-import { leadRun, type Collection, type Loaded } from "@/report/collections";
+import { FolderRunsContext } from "@/hooks/useFolderRuns";
+import { leadRun, runKind, type Collection, type Loaded } from "@/report/collections";
 import { fileName } from "@/report/format";
 import { AppSidebar } from "./AppSidebar";
 import { PAGES, PAGE_INFO } from "./pages";
@@ -52,7 +53,13 @@ function selected(collections: Collection[], selection: Selection): { run: Loade
     0,
     collection.runs.findIndex((r) => r.id === selection.run),
   );
-  return { run: collection.runs[index] ?? null, previous: collection.runs[index + 1] ?? null };
+  const run = collection.runs[index] ?? null;
+  // What changed is only worth saying against a run of the same kind: an audit against the
+  // audit before it, not against a loader comparison or a chunks run in between.
+  const previous = run
+    ? (collection.runs.slice(index + 1).find((r) => runKind(r.report) === runKind(run.report)) ?? null)
+    : null;
+  return { run, previous };
 }
 
 /**
@@ -123,54 +130,62 @@ export function ReportView({
   return (
     // A fresh plan for each run: the models it lists are its own.
     <PlanProvider key={run.id} report={report}>
-      <SidebarProvider>
-        <AppSidebar report={report} page={page} switcher={switcher} />
-        {/* min-w-0 lets the page shrink to the space beside the sidebar instead of widening to its widest chart. */}
-        <SidebarInset className="min-w-0">
-          <header className="sticky top-0 z-10 flex h-12 shrink-0 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur">
-            <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
-            {/* One line that gives way to the plan controls: it truncates rather than wraps under the bar. */}
-            <Breadcrumb className="min-w-0 flex-1">
-              <BreadcrumbList className="flex-nowrap overflow-hidden whitespace-nowrap [&>li]:min-w-0 [&>li]:truncate">
-                <BreadcrumbItem className="hidden xl:block">{name}</BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden xl:block" />
-                <BreadcrumbItem>
-                  {open ? (
-                    <BreadcrumbLink href={`#${page}`}>{PAGE_INFO[page].label}</BreadcrumbLink>
-                  ) : (
-                    <BreadcrumbPage>{PAGE_INFO[page].label}</BreadcrumbPage>
+      <FolderRunsContext.Provider
+        value={{
+          runs: collections.find((c) => c.id === selection.collection)?.runs ?? [],
+          current: run.id,
+          open: (id) => onSelect({ collection: selection.collection, run: id }),
+        }}
+      >
+        <SidebarProvider>
+          <AppSidebar report={report} page={page} switcher={switcher} />
+          {/* min-w-0 lets the page shrink to the space beside the sidebar instead of widening to its widest chart. */}
+          <SidebarInset className="min-w-0">
+            <header className="sticky top-0 z-10 flex h-12 shrink-0 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur">
+              <SidebarTrigger className="-ml-1" />
+              <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
+              {/* One line that gives way to the plan controls: it truncates rather than wraps under the bar. */}
+              <Breadcrumb className="min-w-0 flex-1">
+                <BreadcrumbList className="flex-nowrap overflow-hidden whitespace-nowrap [&>li]:min-w-0 [&>li]:truncate">
+                  <BreadcrumbItem className="hidden xl:block">{name}</BreadcrumbItem>
+                  <BreadcrumbSeparator className="hidden xl:block" />
+                  <BreadcrumbItem>
+                    {open ? (
+                      <BreadcrumbLink href={`#${page}`}>{PAGE_INFO[page].label}</BreadcrumbLink>
+                    ) : (
+                      <BreadcrumbPage>{PAGE_INFO[page].label}</BreadcrumbPage>
+                    )}
+                  </BreadcrumbItem>
+                  {open && (
+                    <>
+                      <BreadcrumbSeparator />
+                      <BreadcrumbItem>
+                        <BreadcrumbPage>{fileName(open.relative_path)}</BreadcrumbPage>
+                      </BreadcrumbItem>
+                    </>
                   )}
-                </BreadcrumbItem>
-                {open && (
-                  <>
-                    <BreadcrumbSeparator />
-                    <BreadcrumbItem>
-                      <BreadcrumbPage>{fileName(open.relative_path)}</BreadcrumbPage>
-                    </BreadcrumbItem>
-                  </>
-                )}
-              </BreadcrumbList>
-            </Breadcrumb>
-            {/* The plan's pickers give up width before the page scrolls sideways. */}
-            <div className="ml-auto flex min-w-0 items-center gap-2">
-              <PlanBar />
-              <ModeToggle dark={dark} onToggle={onToggleTheme} />
-            </div>
-          </header>
-          <main className={cn("mx-auto w-full p-4 md:p-6", page === "documents" ? "max-w-none" : "max-w-7xl")}>
-            <IgnoreProvider report={report} {...(run.source ? { source: run.source } : {})}>
-              {page === "home" && <HomePage report={report} previous={previous?.report ?? null} />}
-              {page === "security" && <SecurityPage report={report} />}
-              {page === "cost" && <CostPage report={report} />}
-              {page === "documents" && <DocumentsPage report={report} open={detail} />}
-              {page === "loaders" && <LoadersPage report={report} />}
-              {page === "chunks" && <ChunksPage report={report} />}
-              {page === "settings" && <SettingsPage report={report} {...(run.source ? { source: run.source } : {})} />}
-            </IgnoreProvider>
-          </main>
-        </SidebarInset>
-      </SidebarProvider>
+                </BreadcrumbList>
+              </Breadcrumb>
+              {/* The plan's pickers give up width before the page scrolls sideways. */}
+              <div className="ml-auto flex min-w-0 items-center gap-2">
+                <PlanBar />
+                <ModeToggle dark={dark} onToggle={onToggleTheme} />
+              </div>
+            </header>
+            <main className={cn("mx-auto w-full p-4 md:p-6", page === "documents" ? "max-w-none" : "max-w-7xl")}>
+              <IgnoreProvider report={report} {...(run.source ? { source: run.source } : {})}>
+                {page === "home" && <HomePage report={report} previous={previous?.report ?? null} />}
+                {page === "security" && <SecurityPage report={report} />}
+                {page === "cost" && <CostPage report={report} />}
+                {page === "documents" && <DocumentsPage report={report} open={detail} />}
+                {page === "loaders" && <LoadersPage report={report} />}
+                {page === "chunks" && <ChunksPage report={report} />}
+                {page === "settings" && <SettingsPage report={report} {...(run.source ? { source: run.source } : {})} />}
+              </IgnoreProvider>
+            </main>
+          </SidebarInset>
+        </SidebarProvider>
+      </FolderRunsContext.Provider>
     </PlanProvider>
   );
 }

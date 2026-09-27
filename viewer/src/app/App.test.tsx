@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { sampleText } from "@/test/sample";
+import { auditText, sampleText } from "@/test/sample";
 import { App } from "./App";
 
 describe("App", () => {
@@ -35,9 +35,24 @@ describe("App", () => {
     expect((await screen.findAllByText("documents")).length).toBeGreaterThan(0);
   });
 
-  it("opens several reports of one folder as its runs, and says what changed", async () => {
+  it("opens several reports of one folder as its runs, each named by its kind", async () => {
     render(<App />);
     await userEvent.click(screen.getByRole("button", { name: "Both, as two runs of one folder" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Switch collection" }));
+    expect(await screen.findByRole("menuitem", { name: /^Audit/ })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: /^Loader comparison/ })).toBeInTheDocument();
+    // An audit and a loader comparison measure different things: neither is "the run before" the other.
+    expect(screen.queryByRole("region", { name: "Changed since the run before" })).not.toBeInTheDocument();
+  });
+
+  it("says what changed since the run before of the same kind", async () => {
+    render(<App />);
+    const runs = ["2026-09-01T10:00:00+00:00", "2026-09-02T10:00:00+00:00"].map((started, index) => {
+      const data = JSON.parse(auditText);
+      data.run.started_at = started;
+      return new File([JSON.stringify(data)], `audit-${index}.json`, { type: "application/json" });
+    });
+    await userEvent.upload(screen.getByLabelText("Report files"), runs);
     expect(await screen.findByRole("region", { name: "Changed since the run before" })).toBeInTheDocument();
   });
 
