@@ -89,6 +89,7 @@ def report_shape() -> dict[str, object]:
             "ignores",
             "concepts",
             "chunks",
+            "trace",
             "limitations",
             "staleness_warnings",
             "signal_weights",
@@ -221,7 +222,18 @@ def report_shape() -> dict[str, object]:
             "tokens_p95, tokens_max), flag_counts, repeated_identifiers, facts[] (fact, "
             "status: whole | split | missing, chunks[]), retrieval[] (question, fact, "
             "status, rank, answer_chunks[], top_chunks[]), top_k, and chunks[] (index, "
-            "document, page, tokens, identifiers[], hidden, flags[], preview, all masked)"
+            "document, page, tokens, identifiers[], hidden, flags[], preview, all masked, "
+            "and start, end, page_characters: where it sits in its page's text)"
+        ),
+        "trace": (
+            "null unless a pipeline ran inside cd.observe: name, scan (patterns | full | "
+            "off), seconds, overhead_seconds, libraries, error, connections_outside[], and "
+            "stages[] in the order they started (index, kind: load | transform | split | "
+            "embed | custom, component, module, method, tags[], parameters, documents_in, "
+            "documents_out, characters_in, characters_out, sources[], scanned, "
+            "identifiers[] (fingerprint, label, masked, severity, occurrences, evidence), hidden, "
+            "metadata_keys[], metadata_keys_added[], path_keys[], connections[], hosts[], "
+            "vectors, dimensions, chunks (index into chunks), finished, error, seconds)"
         ),
         "aggregate": (
             "folder totals: cost, signal_distribution, sensitive_by_category, "
@@ -1000,6 +1012,88 @@ class Aggregate:
 
 
 @dataclass(frozen=True, slots=True)
+class StageIdentifier:
+    """An identifier in what a stage passed on, or, for an embedding stage, sent."""
+
+    fingerprint: str
+    label: str
+    masked: str
+    severity: str
+    occurrences: int
+    evidence: str = "pattern"
+    """As a match's: `model` where the name model found it, which a stage scanned by
+    patterns alone could not have, so it is not missing from such a stage."""
+
+
+@dataclass(frozen=True, slots=True)
+class TraceStage:
+    """One step of an observed ingestion pipeline: a loader, a splitter, a transformer, an
+    embedding call, or a function of the caller's own marked with `@cd.stage`."""
+
+    index: int
+    kind: str
+    """`load`, `transform`, `split`, `embed` or `custom`."""
+    component: str
+    """The class, or the function's name."""
+    module: str
+    method: str
+    seconds: float
+    """Time spent inside the stage, not counting what the caller did between items of a
+    stage read lazily."""
+    tags: list[str] = field(default_factory=list)
+    parameters: dict[str, Any] = field(default_factory=dict)
+    """The component's settings, such as a splitter's `chunk_size`, read from its
+    attributes. Values that look like secrets are left out and long text is cut."""
+    documents_in: int | None = None
+    documents_out: int | None = None
+    """For an embedding stage, the texts it was given are its input, and it has none out."""
+    characters_in: int | None = None
+    characters_out: int | None = None
+    sources: list[str] = field(default_factory=list)
+    """The documents named in what the stage passed on, as the report names them."""
+    scanned: str = "off"
+    """How the output was scanned: `full`, with the name model, `patterns`, or `off`."""
+    identifiers: list[StageIdentifier] = field(default_factory=list)
+    """Identifiers in the output, or in the texts sent for an embedding stage."""
+    hidden: int | None = None
+    """Hidden or instruction-like passages of medium severity or above. None unscanned."""
+    metadata_keys: list[str] = field(default_factory=list)
+    metadata_keys_added: list[str] = field(default_factory=list)
+    path_keys: list[str] = field(default_factory=list)
+    """Metadata keys whose values are absolute file paths."""
+    connections: list[str] = field(default_factory=list)
+    """Lookups and connections made while the stage ran."""
+    hosts: list[str] = field(default_factory=list)
+    vectors: int | None = None
+    dimensions: int | None = None
+    chunks: int | None = None
+    """For a split stage, its place in the report's `chunks`."""
+    finished: bool = True
+    """False for a stage read lazily whose items were not all taken before the block ended."""
+    error: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class Trace:
+    """Schema 17: an ingestion pipeline observed with `cd.observe`, stage by stage."""
+
+    name: str
+    scan: str
+    """`patterns`, `full` or `off`."""
+    seconds: float
+    """The block's wall time."""
+    overhead_seconds: float
+    """What observing cost: reading settings as stages ran, and scanning at the end."""
+    stages: list[TraceStage] = field(default_factory=list)
+    connections_outside: list[str] = field(default_factory=list)
+    """Lookups and connections made in the block but outside any stage."""
+    libraries: dict[str, str] = field(default_factory=dict)
+    """The libraries whose classes were observed, with their versions."""
+    error: str | None = None
+    """What the block raised, if it did."""
+
+
+@dataclass(frozen=True, slots=True)
 class Thresholds:
     """The lines complydoc draws, written into the report so a reader of it draws the same ones.
 
@@ -1053,6 +1147,8 @@ class AuditReport:
 
     None for a run that split nothing. A chunks run has no per-document entries.
     """
+    trace: Trace | None = None
+    """Schema 17: set for a pipeline observed with `cd.observe`."""
     thresholds: Thresholds = field(default_factory=Thresholds)
     """Schema 17: the bands and the similarity line this report was judged by."""
 

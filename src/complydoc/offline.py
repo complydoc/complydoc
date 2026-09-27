@@ -21,7 +21,16 @@ import socket
 from collections.abc import Iterator
 from typing import Any, Final
 
-__all__ = ["NetworkAccessError", "arm", "guard_status", "guarded", "is_armed", "permitted"]
+__all__ = [
+    "NetworkAccessError",
+    "arm",
+    "connections_mark",
+    "connections_since",
+    "guard_status",
+    "guarded",
+    "is_armed",
+    "permitted",
+]
 
 _ORIGINAL_CONNECT: Final = socket.socket.connect
 _ORIGINAL_CONNECT_EX: Final = socket.socket.connect_ex
@@ -127,6 +136,9 @@ def guarded(active: bool = True) -> Iterator[list[str]]:
 
     start = len(_attempts)
     already_armed = _armed
+    # What was installed before, which inside `permitted()` is the recording
+    # entry points rather than the standard library's.
+    saved = _installed()
     if not already_armed:
         arm()
     try:
@@ -137,7 +149,7 @@ def guarded(active: bool = True) -> Iterator[list[str]]:
         # refusal and continued.
         seen.extend(_attempts[start:])
         if not already_armed:
-            disarm()
+            _install(saved, armed=False)
 
 
 _connections: list[str] = []
@@ -176,33 +188,56 @@ def permitted() -> Iterator[list[str]]:
     Yields a list that holds, once the block exits, every lookup and connection
     made inside it, without repeats.
     """
-    global _armed
-    saved = (
+    saved = _installed()
+    was_armed = _armed
+    start = len(_connections)
+    seen: list[str] = []
+
+    recording = (
+        _recorded_connect,
+        _recorded_connect_ex,
+        _ORIGINAL_CREATE_CONNECTION,
+        _recorded_getaddrinfo,
+    )
+    _install(recording, armed=False)
+    try:
+        yield seen
+    finally:
+        seen.extend(dict.fromkeys(_connections[start:]))
+        _install(saved, armed=was_armed)
+
+
+def connections_mark() -> int:
+    """A point in the record of connections made inside `permitted()`, to read from later."""
+    return len(_connections)
+
+
+def connections_since(mark: int) -> list[str]:
+    """The connections recorded after `mark`, without repeats."""
+    return list(dict.fromkeys(_connections[mark:]))
+
+
+_Entry = tuple[Any, Any, Any, Any]
+
+
+def _installed() -> _Entry:
+    return (
         socket.socket.connect,
         socket.socket.connect_ex,
         socket.create_connection,
         socket.getaddrinfo,
     )
-    was_armed = _armed
-    start = len(_connections)
-    seen: list[str] = []
 
-    socket.socket.connect = _recorded_connect  # type: ignore[method-assign, assignment]
-    socket.socket.connect_ex = _recorded_connect_ex  # type: ignore[method-assign, assignment]
-    socket.create_connection = _ORIGINAL_CREATE_CONNECTION
-    socket.getaddrinfo = _recorded_getaddrinfo
-    _armed = False
-    try:
-        yield seen
-    finally:
-        seen.extend(dict.fromkeys(_connections[start:]))
-        (
-            socket.socket.connect,  # type: ignore[method-assign]
-            socket.socket.connect_ex,  # type: ignore[method-assign]
-            socket.create_connection,
-            socket.getaddrinfo,
-        ) = saved
-        _armed = was_armed
+
+def _install(entry: _Entry, *, armed: bool) -> None:
+    global _armed
+    (
+        socket.socket.connect,  # type: ignore[method-assign]
+        socket.socket.connect_ex,  # type: ignore[method-assign]
+        socket.create_connection,
+        socket.getaddrinfo,
+    ) = entry
+    _armed = armed
 
 
 def is_armed() -> bool:

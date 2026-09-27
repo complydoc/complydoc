@@ -1,6 +1,6 @@
 # Design note: tracing an ingestion pipeline
 
-Status: proposal, for discussion before any code. 27 September 2026.
+Status: agreed 27 September 2026; the questions at the end are settled. Being built.
 
 ## What and why
 
@@ -37,7 +37,7 @@ Two forms, sharing one engine.
 ```python
 import complydoc as cd
 
-with cd.trace("contracts-ingest") as trace:          # writes .complydoc/<name>.json on exit
+with cd.observe("contracts-ingest") as trace:        # writes .complydoc/<name>-<time>.json on exit
     docs = PyPDFLoader("contract.pdf").load()          # captured: a load stage
     docs = cd.MaskIdentifiers().transform(docs)        # captured: complydoc's own step
     chunks = splitter.split_documents(docs)            # captured: a split stage
@@ -46,7 +46,7 @@ with cd.trace("contracts-ingest") as trace:          # writes .complydoc/<name>.
 print(trace.summary())
 ```
 
-- `cd.trace(name)` is a context manager. Inside the block, supported library
+- `cd.observe(name)` is a context manager. Inside the block, supported library
   classes are observed; outside it, nothing is touched. This is the documented form.
 - `@cd.stage("clean")` marks a function of the user's own as a stage, for
   steps no library provides, such as a regex scrub or a dedupe.
@@ -143,18 +143,32 @@ tracing cost them.
 4. `cd.autolog()`, and `complydoc check` rules on a trace, such as "no
    identifier reaches the embed stage".
 
-## Questions to settle
+## Decisions
 
-1. **Where a trace is written:** the working directory's `.complydoc`, or a folder
-   named in `cd.trace(out=...)`? And which folder does it belong to on the Runs
-   page, given a pipeline can read files from several?
-2. **One trace per block, or per document?** A block that loads 1,000 files is
-   one trace; the viewer groups by document within it.
-3. **The embed stage by default?** It is the compliance headline, but patching
-   embedding classes touches code that makes network calls. It could be on by
-   default, or opt-in with `cd.trace(embeddings=True)`.
-4. **Async and streaming:** `alazy_load` and generators yield documents lazily.
-   A stage could end when its generator is exhausted, which is the proposal, or
-   when the block ends.
-5. **Naming:** `cd.trace` fits what the tools call it. `cd.observe` avoids
-   "trace" meaning a model call to people who use LangSmith.
+1. **Where a trace goes, as MLflow does it.** MLflow writes runs to a tracking
+   folder in the working directory and groups them under an experiment. A trace
+   is written to `.complydoc/` in the working directory, the folder `complydoc ui`
+   reads by default, or to `cd.observe(out=...)`. Each run is its own file,
+   `<name>-<time>.json`, so runs are never overwritten. The pipeline's name plays
+   the experiment's part: the viewer groups traces by name, not by the folder the
+   documents came from, since one pipeline can read several.
+2. **One trace per block.** The viewer groups by document inside it.
+3. **Embedding is observed by default.** It is the compliance headline.
+4. **Generators:** a stage read lazily ends when its generator is exhausted, or
+   when the block ends if it never is, and the trace says it was not read to the end.
+5. **The name is `cd.observe`.** "Trace" means a model call to LangSmith users,
+   and complydoc observes documents, not models. The report section is still
+   called `trace`, as MLflow's is.
+
+## Built so far, and how
+
+- Library classes are observed by wrapping the methods each loaded subclass
+  defines, since `Embeddings.embed_documents` and most loaders' `lazy_load` are
+  overridden. A class imported after the block starts is not observed; import
+  first.
+- A stage keeps references to what it returned while the block runs, and all
+  scanning happens when the block ends, so the pipeline's timings are its own.
+- The block runs in record mode: connections are let through and noted, with
+  each one attributed to the stage it happened in.
+- A `@cd.stage` function is one stage; library calls inside it are not recorded
+  separately.

@@ -40,6 +40,13 @@ def test_the_public_surface_is_exactly_what_was_promised():
         "security_audit",
         "cost_audit",
         "readiness_audit",
+        # a pipeline observed as it runs
+        "observe",
+        "stage",
+        "Observation",
+        "Trace",
+        "TraceStage",
+        "StageIdentifier",
         # text out, with the identifiers covered over
         "extract_text",
         "inspect_documents",

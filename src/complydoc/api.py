@@ -114,6 +114,7 @@ from complydoc.loaders import parsers
 from complydoc.loaders.compare import compare_loaders
 from complydoc.loaders.inspection import inspect_documents
 from complydoc.loaders.parsers import LoaderSpec
+from complydoc.observe import Observation, observe, stage
 from complydoc.offline import NetworkAccessError
 from complydoc.pipeline.steps import (
     DropHiddenPassages,
@@ -138,6 +139,9 @@ from complydoc.report.models import (
     LoaderRun,
     LoaderSummary,
     MetadataFinding,
+    StageIdentifier,
+    Trace,
+    TraceStage,
 )
 from complydoc.sensitive.base import Detector, DetectorContext, Finding
 from complydoc.sensitive.registry import register as register_detector
@@ -188,6 +192,7 @@ __all__ = [
     "Measurement",
     "MetadataFinding",
     "NetworkAccessError",
+    "Observation",
     "Page",
     "PageSource",
     "Question",
@@ -197,12 +202,15 @@ __all__ = [
     "ReportDiff",
     "Signal",
     "SkipRecord",
+    "StageIdentifier",
     "Step",
     "StepChange",
     "StripPathMetadata",
     "TextBlock",
     "TextResult",
     "TextScan",
+    "Trace",
+    "TraceStage",
     "UnknownModelError",
     "VisionModel",
     "VisionPage",
@@ -228,6 +236,7 @@ __all__ = [
     "load_config",
     "load_report",
     "mask_text",
+    "observe",
     "parsers",
     "readiness_audit",
     "register_detector",
@@ -239,6 +248,7 @@ __all__ = [
     "scan_text",
     "security_audit",
     "sha256_of",
+    "stage",
     "supported_extensions",
     "write_json",
 ]
