@@ -78,12 +78,18 @@ export function collectionsOf(loaded: Loaded[]): Collection[] {
 }
 
 /**
- * The run a folder opens on and is summed up by: the newest that read its documents.
- * A later run of another kind, such as `complydoc chunks`, is one of its runs, but
- * holds no documents to show; only a folder with no other run opens on it.
+ * The run a folder opens on and is summed up by: its newest audit, which measures
+ * everything; failing that, its newest run that read documents. A later run of another
+ * kind, such as a loader comparison or `complydoc chunks`, is one of its runs, but
+ * measures part of the folder or holds no documents to show; only a folder with no
+ * other run opens on it.
  */
 export function leadRun(collection: Collection): Loaded | undefined {
-  return collection.runs.find((run) => run.report.documents.length > 0) ?? collection.runs[0];
+  return (
+    collection.runs.find((run) => runKind(run.report) === "Audit" && run.report.documents.length > 0) ??
+    collection.runs.find((run) => run.report.documents.length > 0) ??
+    collection.runs[0]
+  );
 }
 
 export interface RunChange {

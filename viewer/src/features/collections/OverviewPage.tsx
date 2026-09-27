@@ -5,7 +5,8 @@ import { Section, SectionStack } from "@/components/Section";
 import { Stat, StatGrid } from "@/components/Stat";
 import { ToneBadge } from "@/components/ToneBadge";
 import { measured } from "@/report/measured";
-import { changeBetween, leadRun, runLabel, type Collection } from "@/report/collections";
+import { changeBetween, leadRun, runKind, runLabel, type Collection } from "@/report/collections";
+import { Sparkline } from "@/components/Sparkline";
 import { formatCount, formatPageUsd, formatScore, formatSeconds, plural } from "@/report/format";
 import { EMPTY, combine, reportTotals, type Totals } from "@/report/plan";
 import { planFor } from "@/report/planChoice";
@@ -27,8 +28,12 @@ interface Row {
   sensitive: number | null;
   sensitiveChange: number | null;
   hidden: number | null;
+  sensitiveTrend: number[];
   totals: Totals;
 }
+
+/** Runs a trend goes back over. */
+const TREND_RUNS = 10;
 
 function rowsOf(collections: Collection[]): Row[] {
   return collections.flatMap((collection) => {
@@ -36,9 +41,10 @@ function rowsOf(collections: Collection[]): Row[] {
     // one of those before it; a chunks run holds none to count.
     const latest = leadRun(collection);
     if (!latest) return [];
-    const previous = collection.runs
-      .slice(collection.runs.indexOf(latest) + 1)
-      .find((run) => run.report.documents.length > 0);
+    // Compared with the run before of the same kind, as Home compares it.
+    const kind = runKind(latest.report);
+    const sameKind = collection.runs.filter((run) => runKind(run.report) === kind);
+    const previous = sameKind[sameKind.indexOf(latest) + 1];
     const report = latest.report;
     const change = previous ? changeBetween(report, previous.report) : null;
     const before = change?.readiness?.before;
@@ -59,6 +65,12 @@ function rowsOf(collections: Collection[]): Row[] {
         sensitive: scanned ? report.aggregate.sensitive_total : null,
         sensitiveChange: change?.sensitive ? change.sensitive.after - change.sensitive.before : null,
         hidden: scanned ? report.aggregate.content_findings_total : null,
+        // Oldest first, the runs of this kind that scanned: how the folder's exposure has moved.
+        sensitiveTrend: sameKind
+          .filter((run) => measured(run.report, "sensitive"))
+          .slice(0, TREND_RUNS)
+          .reverse()
+          .map((run) => run.report.aggregate.sensitive_total),
         totals: reportTotals(report, planFor(report)),
       },
     ];
@@ -76,7 +88,8 @@ function NotMeasured() {
 
 /** A change since the last run, coloured by whether it is better: more readiness is, more findings are not. */
 function Change({ value, better }: { value: number | null; better: "up" | "down" }) {
-  if (value === null || value === 0) return null;
+  // A change that rounds to nothing is not shown as one.
+  if (value === null || Math.round(value) === 0) return null;
   const good = better === "up" ? value > 0 : value < 0;
   return (
     <span className={good ? "text-success" : "text-destructive"} title="since the run before">
@@ -151,9 +164,14 @@ function columnsFor(onOpen: (id: string) => void): Columns<Row> {
         row.original.sensitive === null ? (
           <NotMeasured />
         ) : (
-          <span className="tabular-nums">
-            {formatCount(row.original.sensitive)}
-            <Change value={row.original.sensitiveChange} better="down" />
+          <span className="inline-flex items-center gap-2 tabular-nums">
+            {row.original.sensitiveTrend.length > 2 && (
+              <Sparkline values={row.original.sensitiveTrend} label="Identifiers found" />
+            )}
+            <span>
+              {formatCount(row.original.sensitive)}
+              <Change value={row.original.sensitiveChange} better="down" />
+            </span>
           </span>
         ),
       ...numeric,

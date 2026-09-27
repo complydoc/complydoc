@@ -107,8 +107,11 @@ the button is disabled.
 Every report of the same folder is one of its runs, whichever command wrote it.
 The folder switcher at the top of the sidebar names each by its kind (Audit, Cost,
 Loader comparison, Chunks and so on) and when it started, and opens any of them.
-"Changed since the run before" on Home compares a run with the previous run of the
-same kind.
+A folder opens on, and the overview sums it up by, its newest audit; a folder with
+none, by its newest run that read documents. "Changed since the run before" on
+Home compares a run with the previous run of the same kind, and lists each
+document whose identifiers or readiness moved. The overview draws how many
+identifiers each folder's recent runs found, beside the latest count.
 
 ## Reviewing findings
 

@@ -100,4 +100,13 @@ describe("collections", () => {
     });
     expect(changeBetween(older, sampleAudit()).documents).toEqual([]);
   });
+
+  it("sums a folder up by its newest audit, over a newer run that measured part of it", () => {
+    const [folder] = collectionsOf([
+      run("audit", sampleAudit(), "2026-09-01", "/data/contracts"),
+      run("loaders", { ...sampleReport(), run: { ...sampleReport().run, target: "/data/contracts" } }, "2026-09-02"),
+    ]);
+    expect(folder?.runs[0]?.id).toBe("loaders");
+    expect(folder && leadRun(folder)?.id).toBe("audit");
+  });
 });
