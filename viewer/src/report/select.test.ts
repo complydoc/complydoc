@@ -1,4 +1,4 @@
-import { required, sampleAudit, sampleReport, sampleWithComparison } from "@/test/sample";
+import { required, sampleAudit, sampleReport } from "@/test/sample";
 import {
   bandCounts,
   bandOf,
@@ -6,8 +6,6 @@ import {
   bandTone,
   categoriesByCount,
   documentRows,
-  rankedLoaders,
-  returnedBySomeOnly,
   severityTone,
 } from "./select";
 
@@ -53,22 +51,6 @@ describe("select", () => {
     expect(rows).toHaveLength(6);
     expect(rows[0]?.path).toContain("master-services-agreement.pdf");
     expect(rows[0]?.highest).toBe("high");
-  });
-
-  it("orders loaders by the comparison's ranking", () => {
-    const comparison = sampleWithComparison().loader_comparison;
-    comparison.ranked = ["pdfplumber", "pypdf"];
-    expect(rankedLoaders(comparison).map((l) => l.name)).toEqual(["pdfplumber", "pypdf"]);
-  });
-
-  it("merges documents and metadata keys only some loaders returned", () => {
-    const comparison = sampleWithComparison().loader_comparison;
-    comparison.documents = { "a.pdf": ["pypdf"] };
-    expect(returnedBySomeOnly(comparison)).toEqual([
-      { kind: "Document", name: "a.pdf", loaders: ["pypdf"] },
-      { kind: "Metadata key", name: "file_path", loaders: ["pdfplumber"] },
-      { kind: "Metadata key", name: "page_label", loaders: ["pypdf"] },
-    ]);
   });
 
   it("says how far the readers of each document agree, and whether one reordered it", () => {

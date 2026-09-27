@@ -9,7 +9,6 @@ import type {
   Band,
   DocumentEntry,
   Evidence,
-  LoaderComparison,
   PageVerification,
   Report,
   Severity,
@@ -214,33 +213,4 @@ export function documentRows(report: Report): DocumentRow[] {
       vision: documentVision(document),
     }))
     .sort((a, b) => (a.score ?? -1) - (b.score ?? -1) || a.path.localeCompare(b.path));
-}
-
-/** Loader names in the order the comparison ranked them, best first. */
-export function rankedLoaders(comparison: LoaderComparison) {
-  const order = new Map(comparison.ranked.map((name, index) => [name, index]));
-  return [...comparison.loaders].sort(
-    (a, b) => (order.get(a.name) ?? Infinity) - (order.get(b.name) ?? Infinity),
-  );
-}
-
-export interface OnlySome {
-  kind: "Document" | "Metadata key";
-  name: string;
-  loaders: string[];
-}
-
-/** Documents and metadata keys that some loaders returned and others did not. */
-export function returnedBySomeOnly(comparison: LoaderComparison): OnlySome[] {
-  const documents = Object.entries(comparison.documents).map(([name, loaders]) => ({
-    kind: "Document" as const,
-    name,
-    loaders,
-  }));
-  const keys = Object.entries(comparison.metadata_keys).map(([name, loaders]) => ({
-    kind: "Metadata key" as const,
-    name,
-    loaders,
-  }));
-  return [...documents, ...keys];
 }

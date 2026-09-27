@@ -63,6 +63,8 @@ export interface IdentifierDifference {
   /** The document it was found in. Absent from older reports. */
   document?: string;
   value: string;
+  /** Absent from older reports. */
+  severity?: string;
   location: "text" | "metadata";
   found_by: string[];
   missed_by: string[];
