@@ -20,7 +20,8 @@ This is a breaking change for anyone calling `cd.write_html`; see Removed.
 
 - `cd.observe(name)` records an ingestion pipeline as it runs. Inside the `with`
   block, LangChain loaders, document transformers, text splitters and embedding
-  models, and complydoc's own steps, become stages of a trace: their settings, what
+  models, LlamaIndex readers, node parsers, embedding models and ingestion
+  transforms, and complydoc's own steps, become stages of a trace: their settings, what
   went in and out, timings, the identifiers in what each passed on, and the hosts
   each reached. `@cd.stage` marks a function of your own as a stage. When the block
   ends, the documents loaded are audited, each splitter's chunks inspected, and the
@@ -129,6 +130,10 @@ This is a breaking change for anyone calling `cd.write_html`; see Removed.
   their library, as `langchain-community`'s were.
 
 ### Changed
+
+- The viewer has a Pipeline page for a run recorded with `cd.observe`: what left
+  the machine, the steps left to right with what changed between them, and where
+  each identifier went. A pipeline's runs are grouped under its name.
 
 - The viewer's document view, for a document read one way, shows every page in turn
   with numbered lines, the pages down the side and the findings listed beside the

@@ -173,3 +173,35 @@ def test_the_guard_inside_record_mode_keeps_recording() -> None:
             pass
         socket.getaddrinfo("localhost", 80)
     assert made == ["DNS lookup of 'localhost'"]
+
+
+def test_a_llamaindex_ingestion_pipeline_is_observed(tmp_path: Path) -> None:
+    from llama_index.core import Document as LlamaDocument
+    from llama_index.core.embeddings import MockEmbedding
+    from llama_index.core.ingestion import IngestionPipeline
+    from llama_index.core.node_parser import SentenceSplitter
+    from llama_index.core.readers.base import BaseReader
+
+    class Reader(BaseReader):
+        def load_data(self):  # type: ignore[no-untyped-def]
+            text = f"Payments go to account {IBAN} every month. " * 20
+            path = str(tmp_path / "contract.pdf")
+            return [LlamaDocument(text=text, metadata={"file_path": path})]
+
+    pipeline = IngestionPipeline(
+        transformations=[SentenceSplitter(chunk_size=128, chunk_overlap=0), MockEmbedding(embed_dim=8)]
+    )
+    with cd.observe(out=None) as observation:
+        pipeline.run(documents=Reader().load_data())
+    stages = observation.report.trace.stages
+    assert [(s.kind, s.component) for s in stages] == [
+        ("load", "Reader"),
+        ("split", "SentenceSplitter"),
+        ("embed", "MockEmbedding"),
+    ]
+    split, embed = stages[1], stages[2]
+    assert split.parameters["chunk_size"] == 128
+    assert embed.documents_in == split.documents_out and embed.dimensions == 8
+    # What the embedding model was sent holds the account number, found by its fingerprint.
+    assert {i.label for i in embed.identifiers} >= {"IBAN"}
+    assert observation.libraries.get("llama-index-core")

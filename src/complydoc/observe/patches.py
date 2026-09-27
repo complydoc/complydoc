@@ -23,7 +23,7 @@ __all__ = ["install", "uninstall"]
 
 _OBSERVED: Final = "__complydoc_observed__"
 
-_LAZY: Final = frozenset({"lazy_load"})
+_LAZY: Final = frozenset({"lazy_load", "lazy_load_data"})
 """Methods returning an iterator, whose stage lasts until the iterator is exhausted."""
 
 _INPUT: Final = {
@@ -33,6 +33,12 @@ _INPUT: Final = {
     "create_documents": "texts",
     "embed_documents": "texts",
     "aembed_documents": "texts",
+    "get_nodes_from_documents": "documents",
+    "aget_nodes_from_documents": "documents",
+    "get_text_embedding_batch": "texts",
+    "aget_text_embedding_batch": "texts",
+    "__call__": "nodes",
+    "acall": "nodes",
 }
 """The argument holding what a method is given, by method."""
 
@@ -46,6 +52,8 @@ class _Target:
     methods: tuple[str, ...]
     kind: str
     distribution: str | None
+    exclude: tuple[tuple[str, str], ...] = ()
+    """Subclasses observed by another target, and so left alone by this one."""
 
 
 _TARGETS: Final = (
@@ -78,6 +86,41 @@ _TARGETS: Final = (
         "langchain-core",
     ),
     _Target("complydoc.pipeline.steps", "Step", ("transform_documents",), "transform", None),
+    _Target(
+        "llama_index.core.readers.base",
+        "BaseReader",
+        ("load_data", "lazy_load_data", "aload_data", "alazy_load_data"),
+        "load",
+        "llama-index-core",
+    ),
+    _Target(
+        "llama_index.core.node_parser.interface",
+        "NodeParser",
+        ("get_nodes_from_documents", "aget_nodes_from_documents"),
+        "split",
+        "llama-index-core",
+    ),
+    # The texts a LlamaIndex embedding model is sent are each node's text with its metadata,
+    # built inside `__call__`: they are seen where the batch is embedded.
+    _Target(
+        "llama_index.core.base.embeddings.base",
+        "BaseEmbedding",
+        ("get_text_embedding_batch", "aget_text_embedding_batch"),
+        "embed",
+        "llama-index-core",
+    ),
+    # Any other step of an ingestion pipeline, such as a metadata extractor.
+    _Target(
+        "llama_index.core.schema",
+        "TransformComponent",
+        ("__call__", "acall"),
+        "transform",
+        "llama-index-core",
+        exclude=(
+            ("llama_index.core.node_parser.interface", "NodeParser"),
+            ("llama_index.core.base.embeddings.base", "BaseEmbedding"),
+        ),
+    ),
 )
 
 _installed: list[tuple[type, str, Any]] = []
@@ -100,7 +143,10 @@ def install() -> dict[str, str]:
                 return "split"
             return kind
 
+        excluded = tuple(b for b in (_base(m, n) for m, n in target.exclude) if b is not None)
         for cls in (base, *_subclasses(base)):
+            if excluded and issubclass(cls, excluded):
+                continue
             for method in target.methods:
                 original = cls.__dict__.get(method)
                 if not _wrappable(original):

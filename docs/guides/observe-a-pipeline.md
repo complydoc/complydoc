@@ -16,8 +16,12 @@ Nothing in your pipeline changes. Outside the block, nothing is touched.
 | Library | Observed |
 | --- | --- |
 | LangChain | document loaders (`load`, `lazy_load`, `aload`, `alazy_load`), document transformers, text splitters (`split_documents`, `create_documents`) and embedding models (`embed_documents`, `aembed_documents`) |
+| LlamaIndex | readers (`load_data`, `lazy_load_data` and their async forms), node parsers (`get_nodes_from_documents`), embedding models (`get_text_embedding_batch`), and any other transform component an `IngestionPipeline` runs |
 | complydoc | its pipeline steps, such as `MaskIdentifiers` and `StripPathMetadata` |
 | Your code | any function marked `@cd.stage` |
+
+A LlamaIndex embedding model is sent each node's text together with its metadata, so
+its step is recorded where the batch is embedded, and scanned as sent.
 
 Classes are observed if they were imported before the block opened. A call made
 inside another observed call is part of it: `load` calling `lazy_load` is one step.
