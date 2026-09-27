@@ -132,3 +132,7 @@ nav:
 
 not_in_nav: |
   examples/
+
+# Design notes are proposals for discussion, kept beside the docs but not published.
+exclude_docs: |
+  design/
