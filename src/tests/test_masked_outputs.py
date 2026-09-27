@@ -4,10 +4,10 @@ The findings table always masked its values, while the page text beside it, and
 a picture of each page, carried the same values in full. These tests read every
 file a default run writes and look for the values themselves.
 
-Only checksum-confirmed values are looked for. A name is found by a model, and
-each reading of a page is scanned on its own, so a name one reading yields and
-another does not can survive in the second; that is the best-effort masking the
-documentation describes, not a regression this could pin down.
+Only checksum-confirmed values are looked for in a real run. A name is found by
+a model, and a model misses. What a model found in one reading of a page is
+covered in every reading of it, though, which the tests at the end pin down with
+a pattern that finds a name in one wording and not the other.
 """
 
 from __future__ import annotations
@@ -128,3 +128,75 @@ def test_a_default_audit_keeps_no_second_copy(tmp_path, folder):
     _audit(folder, out)
     (document,) = json.loads((out / "complydoc.json").read_text())["documents"]
     assert all(p.get("masked_text") is None for p in document["extracted_text"])
+
+
+# --- A value found in one reading is covered in every reading ----------------
+
+
+class _Doc:
+    def __init__(self, page_content: str, metadata: dict) -> None:
+        self.page_content = page_content
+        self.metadata = metadata
+
+
+def _labelled(path: str) -> list[_Doc]:
+    return [_Doc("Finance lead: Chloe Adeyemi", {"source": path, "page": 0})]
+
+
+def _bare(path: str) -> list[_Doc]:
+    return [_Doc("Finance Chloe Adeyemi", {"source": path, "page": 0})]
+
+
+def _found_after_a_label(config):
+    """A detector that sees the name only where a label comes before it, as a model might."""
+    from complydoc.concepts import Concept, ConceptFile, with_concepts
+
+    concept = Concept(
+        id="lead", label="Lead", description="A named lead.", pattern="(?<=lead: )Chloe Adeyemi"
+    )
+    # The name model would see it in both wordings; the pattern alone decides here.
+    quiet = config.override(
+        {
+            "sensitive.categories.person_name.enabled": False,
+            "sensitive.categories.organisation_name.enabled": False,
+        }
+    )
+    return with_concepts(quiet, ConceptFile(concepts=[concept]))
+
+
+@pytest.mark.parametrize("baseline", ["labelled", "bare"])
+def test_a_name_one_loader_yielded_is_covered_in_every_loaders_reading(tmp_path, config, baseline):
+    import complydoc as cd
+
+    (tmp_path / "a.pdf").write_bytes(b"%PDF-1.4 placeholder")
+    loaders = {"labelled": _labelled, "bare": _bare}
+    order = [baseline, *(name for name in loaders if name != baseline)]
+    report = cd.compare_loaders(
+        {name: loaders[name] for name in order},
+        paths=tmp_path,
+        config=_found_after_a_label(config),
+        components=["sensitive"],
+    )
+    page = report.documents[0].extracted_text[0]
+    for text in [page.text, *page.readings.values()]:
+        assert "Chloe Adeyemi" not in text, text
+
+
+def test_a_name_one_extractor_yielded_is_covered_in_the_kept_text_and_the_ocr(tmp_path, config):
+    """The same on an audit: the text layer, OCR and another extractor read one page."""
+    from complydoc.audit.run import _page_text, plan_audit
+    from complydoc.ingest.base import Page
+
+    page = Page(
+        number=1,
+        width_pt=595,
+        height_pt=842,
+        text="Finance Chloe Adeyemi",
+        text_source="native",
+        ocr_text="Finance Chloe Adeyemi",
+        readings={"pypdf": "Finance lead: Chloe Adeyemi"},
+    )
+    work = plan_audit(tmp_path, _found_after_a_label(config), ("sensitive",)).work
+    written = _page_text(page, None, work)
+    for text in [written.text, written.ocr_text, *written.readings.values()]:
+        assert "Chloe Adeyemi" not in text, text

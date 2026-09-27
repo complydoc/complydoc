@@ -48,6 +48,7 @@ from complydoc.audit.run import COMPONENTS, reading_tokens, tokenizers_of, visio
 from complydoc.config.loader import load_config
 from complydoc.config.schema import Config, ParserPricing, TokenizerSpec
 from complydoc.cost.estimator import resolve_models
+from complydoc.extraction.extract import mask_matches
 from complydoc.extraction.facts import FUZZY_THRESHOLD, Fact, as_facts, evaluate_facts
 from complydoc.loaders.cache import LoaderCache
 from complydoc.loaders.formats import (
@@ -87,7 +88,8 @@ from complydoc.report.models import (
     ReadingCost,
 )
 from complydoc.report.quickwins import quick_wins
-from complydoc.sensitive.base import SEVERITY_WEIGHT
+from complydoc.sensitive.base import SEVERITY_WEIGHT, SensitiveMatch
+from complydoc.sensitive.masking import carried_matches, found_values
 from complydoc.utils.text import MAX_WORDS, count, reading_similarity, same_words, words
 from complydoc.verification.vision import VisionModel, register_vision_model
 
@@ -459,6 +461,7 @@ def _readings(
     """
     own = _pages(entry)
     readings = [_reading(baseline.loader.name, entry, 1.0, False, _file_seconds(seconds, entry))]
+    found = _found(baseline, entry, baseline.page_text.get(str(entry.path)) or own)
     for inspection, entries, their_seconds in others:
         other = entries.get(str(entry.path))
         if other is None:
@@ -483,7 +486,50 @@ def _readings(
         readings.append(
             _reading(name, other, similarity, reordered, _file_seconds(their_seconds, other))
         )
+        found.extend(_found(inspection, other, theirs_raw))
+    _cover_found_elsewhere(entry, found)
     return readings
+
+
+def _found(
+    inspection: Inspection, entry: DocumentReport, raw: dict[int, str]
+) -> list[tuple[int, str, SensitiveMatch]]:
+    """Each value a loader's reading of a document was found to hold, by page."""
+    matches = entry.sensitive.matches if entry.sensitive else []
+    return [
+        (number, value, match)
+        for number, text in raw.items()
+        for value, match in found_values(text, [m for m in matches if m.page == number])
+    ]
+
+
+def _cover_found_elsewhere(
+    entry: DocumentReport, found: list[tuple[int, str, SensitiveMatch]]
+) -> None:
+    """Mask, in every loader's reading of a page, what any loader's reading of it was found to hold.
+
+    Each reading was masked for what was found in it. A name one loader's wording let
+    the model recognise, and another's did not, would otherwise stand in the clear in
+    the second reading, beside the first where it is covered.
+    """
+    reveal = entry.sensitive.reveal_used if entry.sensitive else False
+    for index, page in enumerate(entry.extracted_text):
+        here = [
+            (value, match)
+            for number, value, match in found
+            if number == page.number and not (reveal and match.revealed is not None)
+        ]
+        if not here:
+            continue
+
+        def covered(text: str, here: list[tuple[str, SensitiveMatch]] = here) -> str:
+            return mask_matches(text, carried_matches(text, here))[0]
+
+        entry.extracted_text[index] = dataclasses.replace(
+            page,
+            text=covered(page.text),
+            readings={name: covered(text) for name, text in page.readings.items()},
+        )
 
 
 def _file_seconds(seconds: dict[str, float] | None, entry: DocumentReport) -> float:

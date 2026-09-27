@@ -9,9 +9,16 @@ under `masking.never_reveal`, and any report produced with it is stamped.
 
 from __future__ import annotations
 
+import dataclasses
+from collections.abc import Iterable
+from typing import TYPE_CHECKING
+
 from complydoc.config.schema import MaskingConfig
 
-__all__ = ["mask_value", "render", "reveal_allowed"]
+if TYPE_CHECKING:  # pragma: no cover - typing only
+    from complydoc.sensitive.base import SensitiveMatch
+
+__all__ = ["carried_matches", "found_values", "mask_value", "render", "reveal_allowed"]
 
 
 def reveal_allowed(category: str, config: MaskingConfig) -> bool:
@@ -56,3 +63,39 @@ def render(
         # Collapse whitespace so a revealed value is still a single line.
         return masked, " ".join(value.split())
     return masked, None
+
+
+_SHORTEST_CARRIED = 3
+"""Values shorter than this are not looked for in other text: two characters match anywhere."""
+
+
+def found_values(text: str, matches: Iterable[SensitiveMatch]) -> list[tuple[str, SensitiveMatch]]:
+    """Each value found in `text`, read off it at the match's place, with the match."""
+    lines = text.split("\n")
+    found: list[tuple[str, SensitiveMatch]] = []
+    for match in matches:
+        if not 0 < match.line <= len(lines):
+            continue
+        value = lines[match.line - 1][match.column : match.column + match.length]
+        if len(value.strip()) >= _SHORTEST_CARRIED:
+            found.append((value, match))
+    return found
+
+
+def carried_matches(text: str, found: Iterable[tuple[str, SensitiveMatch]]) -> list[SensitiveMatch]:
+    """Every place in `text` that holds a value found in another reading of the same page.
+
+    Two readers of one page read the same name, and a model may recognise it in one
+    reading's wording and not the other's. The value is then an identifier complydoc
+    knows about, and is covered wherever it appears, not only where it was found.
+    """
+    lines = text.split("\n")
+    carried: list[SensitiveMatch] = []
+    for value, match in found:
+        for index, line in enumerate(lines):
+            start = line.find(value)
+            while start >= 0:
+                here = dataclasses.replace(match, line=index + 1, column=start)
+                carried.append(dataclasses.replace(here, length=len(value)))
+                start = line.find(value, start + 1)
+    return carried

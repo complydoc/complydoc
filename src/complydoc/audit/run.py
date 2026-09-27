@@ -100,6 +100,7 @@ from complydoc.report.verification import summarise_verification
 from complydoc.sensitive.base import SensitiveMatch
 from complydoc.sensitive.detectors.model_server import ModelServer, ServerAddress
 from complydoc.sensitive.detectors.model_server import connect as connect_models
+from complydoc.sensitive.masking import carried_matches, found_values
 from complydoc.sensitive.scanner import ScanResult, scan, scan_text
 from complydoc.utils.files import relative_to_root
 from complydoc.verification.check import verify_document
@@ -505,34 +506,61 @@ def _page_text(
     if scanned is not None:
         matches = [m for m in scanned.matches if m.page == page.number]
 
-    def masked(text: str, located: list[SensitiveMatch] | None = None) -> str:
-        return _mask(text, work, located)
+    # Every reading of the page scanned for itself, then each masked for what any of them
+    # was found to hold: a name the model recognised in one reader's wording and missed
+    # in another's is still a name, and is covered in both.
+    def scanned_text(text: str) -> list[SensitiveMatch]:
+        if not text.strip():
+            return []
+        return scan_text(text, work.config.sensitive, reveal=work.reveal)[0]
 
-    text = masked(page.text, matches)
+    own = matches if matches is not None else scanned_text(page.text)
+    readings = {
+        name: own if reading == page.text else scanned_text(reading)
+        for name, reading in page.readings.items()
+    }
+    ocr_found = scanned_text(page.ocr_text)
+    found = [
+        *found_values(page.text, own),
+        *found_values(page.ocr_text, ocr_found),
+        *(
+            v
+            for name, reading in page.readings.items()
+            for v in found_values(reading, readings[name])
+        ),
+    ]
+
+    def located(text: str, of_its_own: list[SensitiveMatch]) -> list[SensitiveMatch]:
+        return [*of_its_own, *carried_matches(text, found)]
+
+    at = {
+        "text": located(page.text, own),
+        "ocr": located(page.ocr_text, ocr_found),
+        **{name: located(reading, readings[name]) for name, reading in page.readings.items()},
+    }
+
+    def masked(text: str, key: str, *, fully: bool = False) -> str:
+        return _mask(text, work, at[key], fully=fully)[:_MAX_TEXT_CHARS]
+
+    text = masked(page.text, "text")
     kept = _kept_by(page, work, verification, fmt)
     # On a revealing run, the same readings with every value covered too, so a
     # viewer can open masked and show the values only when asked.
     masked_text = masked_ocr = masked_readings = None
     if work.reveal:
-        masked_text = _mask(page.text, work, matches, fully=True)[:_MAX_TEXT_CHARS]
-        masked_ocr = _mask(page.ocr_text, work, fully=True)[:_MAX_TEXT_CHARS]
+        masked_text = masked(page.text, "text", fully=True)
+        masked_ocr = masked(page.ocr_text, "ocr", fully=True)
         masked_readings = {
-            name: (masked_text if reading == page.text else _mask(reading, work, fully=True))[
-                :_MAX_TEXT_CHARS
-            ]
-            for name, reading in page.readings.items()
+            name: masked(reading, name, fully=True) for name, reading in page.readings.items()
         }
     return PageText(
         number=page.number,
         source=page.text_source,
         characters=len(page.text),
-        text=text[:_MAX_TEXT_CHARS],
-        ocr_text=masked(page.ocr_text)[:_MAX_TEXT_CHARS],
+        text=text,
+        ocr_text=masked(page.ocr_text, "ocr"),
         truncated=len(page.text) > _MAX_TEXT_CHARS,
-        readings={
-            name: (text if reading == page.text else masked(reading))[:_MAX_TEXT_CHARS]
-            for name, reading in page.readings.items()
-        },
+        readings={name: masked(reading, name) for name, reading in page.readings.items()},
         kept=kept,
         costs=_reading_costs(page, kept, verification),
         seconds=_page_seconds(page, kept, verification),

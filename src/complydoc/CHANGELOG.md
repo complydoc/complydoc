@@ -226,6 +226,12 @@ This is a breaking change for anyone calling `cd.write_html`; see Removed.
 
 ### Fixed
 
+- A name or other identifier found in one reading of a page is now masked in
+  every reading of it. Each reading (the text layer, OCR, another extractor or
+  loader) was masked only for what was found in its own text, so a name the model
+  recognised in one reader's wording and missed in another's stood in the clear
+  in the second, in a report that showed both side by side.
+
 - A loader comparison named each document from the folder that loader's own
   files shared, so a loader given only `web/README.md` reported it as
   `README.md`, beside other loaders' `web/...`. Every loader now names documents

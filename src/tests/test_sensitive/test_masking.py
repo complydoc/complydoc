@@ -5,7 +5,15 @@ from __future__ import annotations
 import pytest
 
 from complydoc.config.schema import MaskingConfig
-from complydoc.sensitive.masking import mask_value, render, reveal_allowed
+from complydoc.extraction.extract import mask_matches
+from complydoc.sensitive.base import SensitiveMatch
+from complydoc.sensitive.masking import (
+    carried_matches,
+    found_values,
+    mask_value,
+    render,
+    reveal_allowed,
+)
 
 CONFIG = MaskingConfig(reveal_tail_chars=4, mask_char="*", never_reveal=["card_number"])
 
@@ -67,3 +75,35 @@ def test_tail_length_is_honoured(tail):
     config = MaskingConfig(reveal_tail_chars=tail, mask_char="*")
     masked = mask_value("ABCDEFGHIJ", config)
     assert masked.count("*") == 10 - tail
+
+
+def _name(line: int, column: int, length: int) -> SensitiveMatch:
+    return SensitiveMatch(
+        category="person_name",
+        label="Person name",
+        severity="medium",
+        page=1,
+        line=line,
+        column=column,
+        length=length,
+        masked="••••• •••yemi",
+        evidence="model",
+    )
+
+
+def test_a_value_found_in_one_reading_is_covered_in_another():
+    """A model recognised the name in one reader's wording and not in the other's."""
+    found_in = "Finance lead: Chloe Adeyemi"
+    missed_in = "Contacts\nFinance Chloe Adeyemi, Chloe Adeyemi again"
+    found = found_values(found_in, [_name(1, 14, 13)])
+    assert [value for value, _ in found] == ["Chloe Adeyemi"]
+
+    carried = carried_matches(missed_in, found)
+    assert [(m.line, m.column, m.length) for m in carried] == [(2, 8, 13), (2, 23, 13)]
+    covered = mask_matches(missed_in, carried)[0]
+    assert "Chloe" not in covered and "Adeyemi" not in covered
+    assert covered.startswith("Contacts\nFinance ")
+
+
+def test_a_value_too_short_to_mean_anything_is_not_carried():
+    assert found_values("Mr Li", [_name(1, 3, 2)]) == []
