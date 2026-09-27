@@ -13,6 +13,7 @@ import { ChunksPage } from "@/features/chunks/ChunksPage";
 import { CostPage } from "@/features/cost/CostPage";
 import { DocumentsPage } from "@/features/documents/DocumentsPage";
 import { LoadersPage } from "@/features/loaders/LoadersPage";
+import { PipelinePage } from "@/features/pipeline/PipelinePage";
 import { RunsPage } from "@/features/runs/RunsPage";
 import { ReviewQueue } from "@/features/security/ReviewQueue";
 import { SecurityPage } from "@/features/security/SecurityPage";
@@ -173,6 +174,7 @@ export function ReportView({
             <PageErrorBoundary key={`${run.id}:${page}:${detail ?? ""}`}>
               <IgnoreProvider report={report} {...(run.source ? { source: run.source } : {})}>
                 {page === "home" && <HomePage report={report} />}
+                {page === "pipeline" && <PipelinePage report={report} />}
                 {page === "security" &&
                   (detail?.startsWith("review") ? (
                     <ReviewQueue report={report} at={Number(detail.split("/")[1] ?? 0) || 0} />

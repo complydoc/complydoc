@@ -181,14 +181,19 @@ def _documents_report(
     return report
 
 
+_SHAPING = ("chunk_size", "chunk_overlap")
+"""Settings named with a splitter's chunks, as `complydoc chunks` names them, so two runs'
+splitters are told apart."""
+
+
 def _chunks(recording: Recording, config: Config) -> ChunkReport:
     outputs = list(recording.outputs or [])
+    settings = [f"{k}={recording.parameters[k]}" for k in _SHAPING if k in recording.parameters]
+    name = " ".join([recording.component, *settings])
     if recording.inputs is None or all(isinstance(item, str) for item in recording.inputs):
-        return inspect_chunks(outputs, name=recording.component, config=config)
+        return inspect_chunks(outputs, name=name, config=config)
     # The splitter has run: the report is of what it returned, not of a second run.
-    return inspect_chunks(
-        lambda _documents: outputs, recording.inputs, name=recording.component, config=config
-    )
+    return inspect_chunks(lambda _documents: outputs, recording.inputs, name=name, config=config)
 
 
 def _stage(

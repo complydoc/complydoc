@@ -1,4 +1,5 @@
 import { sampleAudit, sampleReport } from "@/test/sample";
+import { traceReport } from "@/test/trace";
 import { collectionsOf, leadRun, runKind, runTraits, type Loaded } from "./collections";
 import type { ChunkRun, Report } from "./types";
 
@@ -76,5 +77,15 @@ describe("collections", () => {
       "page pictures",
       ...runTraits(audit).filter((t) => t !== "page pictures"),
     ]);
+  });
+
+  it("puts a pipeline's runs together under its name, whatever folders they read", () => {
+    const first = { ...traceReport(), run: { ...traceReport().run, target: "/data/contracts" } };
+    const second = { ...traceReport(), run: { ...traceReport().run, target: "/data/finance" } };
+    const collections = collectionsOf([run("a", first, "2026-09-01"), run("b", second, "2026-09-02")]);
+    expect(collections).toHaveLength(1);
+    expect(collections[0]?.name).toBe("contracts-ingest");
+    expect(runKind(first)).toBe("Pipeline");
+    expect(runTraits(first)).toContain("identifiers sent");
   });
 });

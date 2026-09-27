@@ -6,6 +6,7 @@
  * viewer can say what changed between one run and the one before.
  */
 import { fileName } from "./format";
+import { identifiersSent } from "./traceView";
 import type { Report } from "./types";
 
 export interface Loaded {
@@ -53,6 +54,9 @@ function normalised(path: string): string {
  * its baseline loader instead, so there it is the folder its documents share.
  */
 function folderOf(report: Report): string {
+  // A pipeline's runs go together under its name, as an experiment's runs do: one pipeline
+  // can read from several folders, and a folder can feed several pipelines.
+  if (report.trace) return `pipeline:${report.trace.name}`;
   const target = normalised(report.run.target || "");
   if (report.loader_comparison && target === report.loader_comparison.baseline) {
     return commonFolder(report.documents.map((d) => d.relative_path)) || target;
@@ -70,7 +74,7 @@ export function collectionsOf(loaded: Loaded[]): Collection[] {
   return [...byFolder]
     .map(([folder, runs]) => ({
       id: folder,
-      name: fileName(folder) || folder,
+      name: folder.startsWith("pipeline:") ? folder.slice("pipeline:".length) : fileName(folder) || folder,
       runs: [...runs].sort((a, b) => b.report.run.started_at.localeCompare(a.report.run.started_at)),
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
@@ -96,6 +100,7 @@ export function leadRun(collection: Collection): Loaded | undefined {
  * on. Several runs of one folder are otherwise told apart only by when they started.
  */
 export function runKind(report: Report): string {
+  if (report.trace) return "Pipeline";
   if (report.chunks?.length && report.documents.length === 0) return "Chunks";
   if (report.loader_comparison) return "Loader comparison";
   if (report.loader) return "Loader inspection";
@@ -117,6 +122,7 @@ export function runKind(report: Report): string {
 export function runTraits(report: Report): string[] {
   return [
     report.run.reveal_used && "values revealed",
+    report.trace && (identifiersSent(report.trace) ?? 0) > 0 && "identifiers sent",
     report.run.page_images_used && "page pictures",
     report.run.ocr_compare_used && "OCR compared",
     report.verification && "vision checked",

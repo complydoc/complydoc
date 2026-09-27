@@ -18,11 +18,14 @@ export interface ChunkLayer {
   pages: Map<number, PageChunk[]>;
 }
 
-/** Whether a chunk's source names this document: its path from the folder, or a path ending in it. */
+/**
+ * Whether a chunk's source names this document: its path from the folder, a path ending in
+ * it, or its file name alone, as a pipeline that strips paths from metadata leaves it.
+ */
 export function sameDocument(source: string | null, path: string): boolean {
   if (!source) return false;
   const normal = source.replaceAll("\\", "/");
-  return normal === path || normal.endsWith(`/${path}`);
+  return normal === path || normal.endsWith(`/${path}`) || (!normal.includes("/") && path.endsWith(`/${normal}`));
 }
 
 /**

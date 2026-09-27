@@ -99,6 +99,8 @@ def test_the_report_is_written_and_reads_back(pipeline, tmp_path: Path) -> None:
     assert report.trace is not None and len(report.trace.stages) == 3
     assert report.documents[0].relative_path == "contract.pdf"
     assert report.chunks and all(c.start is not None for c in report.chunks[0].chunks)
+    splitter = "RecursiveCharacterTextSplitter chunk_size=120 chunk_overlap=0"
+    assert report.chunks[0].chunker == splitter
 
 
 def test_scan_off_records_the_shape_only(pipeline) -> None:  # type: ignore[no-untyped-def]

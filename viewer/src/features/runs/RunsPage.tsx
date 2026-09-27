@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { FolderRunsContext } from "@/hooks/useFolderRuns";
 import { runKind, runLabel, runTraits, type Loaded } from "@/report/collections";
 import { formatCount, plural } from "@/report/format";
+import { pipelineShape } from "@/report/traceView";
 import type { Report } from "@/report/types";
 
 interface RunRow {
@@ -21,6 +22,7 @@ interface RunRow {
 
 /** What a run holds, in a few words: what there is to open in it. */
 function holdings(report: Report): string {
+  if (report.trace) return pipelineShape(report.trace);
   if (report.chunks?.length && report.documents.length === 0) return plural(report.chunks.length, "splitter");
   if (report.loader_comparison) return plural(report.loader_comparison.loaders.length, "loader");
   const parts: Record<string, string> = { sensitive: "identifiers", cost: "cost", readiness: "readiness" };
@@ -64,7 +66,10 @@ const COLUMNS: Columns<RunRow> = [
       <span className="flex flex-wrap items-center gap-1.5">
         <span className="text-muted-foreground">{row.original.holds}</span>
         {row.original.traits.map((trait) => (
-          <Badge key={trait} variant={trait === "values revealed" ? "destructive" : "secondary"}>
+          <Badge
+            key={trait}
+            variant={trait === "values revealed" || trait === "identifiers sent" ? "destructive" : "secondary"}
+          >
             {trait}
           </Badge>
         ))}
@@ -85,8 +90,9 @@ const COLUMNS: Columns<RunRow> = [
  */
 export function RunsPage() {
   const { runs, current, open } = useContext(FolderRunsContext);
+  const pipeline = runs.some((run) => run.report.trace);
   return (
-    <Section title="Runs of this folder">
+    <Section title={pipeline ? "Runs of this pipeline" : "Runs of this folder"}>
       <DataTable
         caption="Runs"
         columns={COLUMNS}
@@ -94,9 +100,9 @@ export function RunsPage() {
         rowKey={(row) => row.id}
         sortable
         onRowClick={(row) => {
-          // Opening a run shows its Home, where what it found starts.
+          // Opening a run shows where what it found starts: a pipeline's steps, or Home.
           if (row.id !== current) open(row.id);
-          window.location.assign("#home");
+          window.location.assign(row.run.report.trace ? "#pipeline" : "#home");
         }}
       />
     </Section>

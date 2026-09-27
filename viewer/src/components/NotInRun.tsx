@@ -7,6 +7,7 @@ import {
   GaugeIcon,
   ScissorsIcon,
   ShieldAlertIcon,
+  WorkflowIcon,
   type LucideIcon,
 } from "lucide-react";
 import { useState } from "react";
@@ -50,6 +51,13 @@ const COPY: Record<Content, Copy> = {
     shows:
       "This page puts document loaders side by side on the same files: the text each returns, the identifiers and facts it keeps, its load time, and which to use for each file type.",
     note: "loaders.yaml names the loaders and the documents. See Comparing loaders in the docs.",
+  },
+  trace: {
+    icon: WorkflowIcon,
+    title: "No pipeline in this run",
+    shows:
+      "This page follows an ingestion pipeline stage by stage: what each loader, splitter and embedding model was given and passed on, its settings, the identifiers in its output, and the hosts it sent text to.",
+    note: "Wrap your ingestion code in the block, in Python, with complydoc imported as cd. The run is written to .complydoc when the block ends.",
   },
   chunks: {
     icon: ScissorsIcon,

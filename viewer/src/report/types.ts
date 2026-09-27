@@ -10,8 +10,10 @@ import type { ConceptFinding, ConceptSummary, IgnoreSummary, IgnoredFinding } fr
 
 import type { ChunkRun } from "./chunkTypes";
 import type { LoaderComparison } from "./loaderTypes";
+import type { Trace } from "./traceTypes";
 
 export type { ChunkRun, InspectedChunk, QuestionResult } from "./chunkTypes";
+export type { StageIdentifier, Trace, TraceStage } from "./traceTypes";
 
 export type {
   FactCheck,
@@ -44,6 +46,8 @@ export interface Report {
   verification?: VerificationSummary | null;
   /** Schema 17: each text splitter a `complydoc chunks` run inspected. Null or absent otherwise. */
   chunks?: ChunkRun[] | null;
+  /** Schema 17: set for a pipeline observed with `cd.observe`. */
+  trace?: Trace | null;
   /** Schema 17: the ignore file the run read, and what each entry did. Null or absent without one. */
   ignores?: IgnoreSummary | null;
   /** Schema 17: the custom concepts the run looked for. Null or absent without a concepts file. */

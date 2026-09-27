@@ -67,9 +67,13 @@ export function DocumentDetail({
   const unmasked = eye && revealable;
   const isIgnored = useIsIgnored();
   const { plan, models } = usePlan();
-  // The folder's chunks of this document, when a chunks run made some; none drawn until asked.
+  // This run's chunks of the document, as a pipeline's run holds; or else the folder's, when
+  // a chunks run made some. None drawn until asked.
   const { runs } = useContext(FolderRunsContext);
-  const layers = useMemo(() => chunkLayers(runs, document), [runs, document]);
+  const layers = useMemo(
+    () => chunkLayers(report.chunks?.length ? [{ id: "on-screen", name: "", report }] : runs, document),
+    [report, runs, document],
+  );
   // In the address, so a link from the Chunks page opens the document with its cuts drawn.
   const [chunkBy, setChunkBy] = useHashParam("chunks");
   const layer = layers.find((l) => l.splitter === chunkBy) ?? null;
