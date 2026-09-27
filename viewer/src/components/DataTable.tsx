@@ -60,6 +60,8 @@ interface DataTableProps<T> {
    * links and buttons keep their clicks, and a keyboard reaches the row by its link.
    */
   rowHref?: (row: T) => string | undefined;
+  /** Things to do with the table, such as exporting it, at the toolbar's end. */
+  actions?: ReactNode;
   /** What a click anywhere on the row does, where it is not a place to go. */
   onRowClick?: (row: T) => void;
 }
@@ -87,6 +89,7 @@ export function DataTable<T>({
   toolbar,
   rowHref,
   onRowClick,
+  actions,
 }: DataTableProps<T>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [query, setQuery] = useState("");
@@ -124,7 +127,7 @@ export function DataTable<T>({
 
   return (
     <div className="flex flex-col gap-3">
-      {(search !== undefined || toolbar) && (
+      {(search !== undefined || toolbar || actions) && (
         <div className="flex flex-wrap items-center justify-between gap-3">
           {search !== undefined && (
             <div className="relative w-full max-w-sm">
@@ -140,6 +143,7 @@ export function DataTable<T>({
             </div>
           )}
           {toolbar}
+          {actions && <div className="ml-auto flex items-center gap-2">{actions}</div>}
         </div>
       )}
       <Card className="py-0">

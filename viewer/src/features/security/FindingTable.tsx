@@ -5,6 +5,8 @@ import { EvidenceBadge } from "@/components/EvidenceBadge";
 import { SeverityIcon } from "@/components/LevelIcons";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { DownloadIcon } from "lucide-react";
+import { toCsv, saveText } from "@/report/csv";
 import { fileName, humanise } from "@/report/format";
 import { documentHref } from "@/report/route";
 import type { FindingRow } from "@/report/security";
@@ -84,6 +86,22 @@ const columns: Columns<FindingRow> = [
   }),
 ];
 
+/** The findings as a spreadsheet has them: masked, as the report holds them, with their fingerprints. */
+function findingsCsv(rows: FindingRow[]): string {
+  return toCsv(
+    ["severity", "identifier", "value", "document", "page", "confidence", "fingerprint"],
+    rows.map((row) => [
+      row.severity,
+      row.label,
+      row.masked,
+      row.path,
+      row.page,
+      row.evidence,
+      row.source.fingerprint,
+    ]),
+  );
+}
+
 /**
  * Every identifier found: what it is, its masked value, where it is and how sure
  * complydoc is. Searchable, filtered by severity, and a page of rows at a time.
@@ -119,6 +137,12 @@ export function FindingTable({ rows }: { rows: FindingRow[] }) {
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
+      }
+      actions={
+        <Button variant="outline" size="sm" onClick={() => saveText("complydoc-findings.csv", findingsCsv(shown))}>
+          <DownloadIcon />
+          Download {severity === "all" ? "all" : `${humanise(severity).toLowerCase()} severity`} as CSV
+        </Button>
       }
     />
   );

@@ -1,4 +1,5 @@
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { sampleAudit } from "@/test/sample";
 import { SecurityPage } from "./SecurityPage";
 
@@ -85,5 +86,21 @@ describe("concepts a model found", () => {
     const byCategory = Object.fromEntries(Array.from({ length: 12 }, (_, i) => [`kind_${i}`, 12 - i]));
     render(<SecurityPage report={{ ...report, aggregate: { ...report.aggregate, sensitive_by_category: byCategory } }} />);
     expect(screen.getByRole("button", { name: "and 2 more kinds, in every finding below" })).toBeInTheDocument();
+  });
+
+  it("downloads the findings as CSV, masked as the table shows them", async () => {
+    const report = sampleAudit();
+    const made: Blob[] = [];
+    const create = vi.spyOn(URL, "createObjectURL").mockImplementation((blob) => {
+      made.push(blob as Blob);
+      return "blob:findings";
+    });
+    vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
+    render(<SecurityPage report={report} />);
+    await userEvent.click(screen.getByRole("button", { name: /Download all as CSV/ }));
+    expect(create).toHaveBeenCalled();
+    const text = await (made[0] as Blob).text();
+    expect(text.split("\r\n")[0]).toBe("severity,identifier,value,document,page,confidence,fingerprint");
+    expect(text).toContain(report.documents.find((d) => d.sensitive.matches.length)?.sensitive.matches[0]?.masked ?? "");
   });
 });
