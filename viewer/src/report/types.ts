@@ -157,6 +157,10 @@ export interface SensitiveMatch {
   confidence?: number | null;
   /** Schema 17: the same for this value in every document and run; what an ignore names. */
   fingerprint?: string;
+  /** Where on the page's text it sits: 1-based line, 0-based column, and its length. */
+  line?: number;
+  column?: number;
+  length?: number;
 }
 
 /** A passage that reads as an instruction to a model and is hidden from a person. */

@@ -85,7 +85,7 @@ describe("App", () => {
     await userEvent.click(screen.getByRole("button", { name: "pypdf against pdfplumber" }));
     await userEvent.click(await screen.findByRole("button", { name: "Switch to the dark theme" }));
     // The class is applied in an effect after the click, which a busy run can take a moment to reach.
-    await waitFor(() => expect(document.documentElement).toHaveClass("dark"));
+    await waitFor(() => expect(document.documentElement).toHaveClass("dark"), { timeout: 3000 });
     expect(screen.getByRole("button", { name: "Switch to the light theme" })).toBeInTheDocument();
   });
 

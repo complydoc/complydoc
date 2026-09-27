@@ -16,7 +16,9 @@ import { HiddenInstructions } from "./HiddenInstructions";
 import { IgnoredFindings } from "./IgnoredFindings";
 import { JudgedConcepts } from "./JudgedConcepts";
 import { judgedRows } from "@/report/judged";
+import { activeEntry, useIgnores } from "@/hooks/useIgnores";
 import { notLookedFor } from "@/report/limitations";
+import { nextUnreviewed, progressOf, readKept, reviewId, reviewKey } from "@/report/review";
 import { NotLookedFor } from "./NotLookedFor";
 
 const BY_KIND = { count: { label: "Found", color: "var(--chart-5)" } } satisfies ChartConfig;
@@ -37,6 +39,30 @@ function More({ count, noun }: { count: number; noun: string }) {
   return (
     <Button variant="link" size="sm" className="h-auto self-start p-0 text-xs text-muted-foreground" onClick={toTable}>
       and {formatCount(count)} more {count === 1 ? noun : `${noun}s`}, in every finding below
+    </Button>
+  );
+}
+
+/** Into the review queue, with how far through it this browser has got. */
+function ReviewLink({ report }: { report: Report }) {
+  const { entries } = useIgnores();
+  const rows = findingRows(report);
+  if (rows.length === 0) return null;
+  const kept = readKept(reviewKey(report));
+  const isIgnored = (f: string) => activeEntry(entries, f) !== undefined;
+  const progress = progressOf(rows, kept, isIgnored);
+  // Opens where the review left off: the first finding not yet kept or ignored.
+  const done = (row: (typeof rows)[number]) =>
+    kept.has(reviewId(row)) || (row.source.fingerprint !== undefined && isIgnored(row.source.fingerprint));
+  const start = nextUnreviewed(rows, rows.length - 1, done) ?? 0;
+  return (
+    <Button variant="outline" size="sm" asChild>
+      <a href={`#security/review/${start}`}>
+        Review one by one
+        <span className="text-xs text-muted-foreground tabular-nums">
+          {formatCount(progress.reviewed)} of {formatCount(progress.total)} done
+        </span>
+      </a>
     </Button>
   );
 }
@@ -123,7 +149,7 @@ export function SecurityPage({ report }: { report: Report }) {
         </Section>
       )}
 
-      <Section title="Every finding">
+      <Section title="Every finding" aside={<ReviewLink report={report} />}>
         <FindingTable rows={findingRows(report)} />
       </Section>
 

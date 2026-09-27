@@ -18,6 +18,16 @@ This is a breaking change for anyone calling `cd.write_html`; see Removed.
 
 ### Added
 
+- A review queue in the viewer, as observability tools have for annotating runs:
+  Security's "Review one by one" steps through every finding, the most serious
+  first, each in the line of page text it sits in. Keep it (C), or ignore it with
+  a reason (I, then Enter), which writes the ignore file under `complydoc ui`;
+  J and K move, N skips to the next one not reviewed, Esc goes back. What was
+  kept is remembered in the browser per folder, so the review carries across runs,
+  and the queue reopens where it left off.
+- ⌘K (or Ctrl+K) jumps to any page, document or run of the folder, and a click
+  anywhere on a finding's or a document's row opens it.
+
 - The viewer shows the run's limitations, which only the retired HTML page did. The
   important ones, which change what a figure means, sit on Home before the findings,
   each naming and linking the documents it applies to. The rest, on how the figures
