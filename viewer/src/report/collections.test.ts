@@ -1,5 +1,5 @@
 import { sampleAudit, sampleReport } from "@/test/sample";
-import { changeBetween, collectionsOf, leadRun, runKind, runTraits, type Loaded } from "./collections";
+import { collectionsOf, leadRun, runKind, runTraits, type Loaded } from "./collections";
 import type { ChunkRun, Report } from "./types";
 
 function run(id: string, report: Report, started: string, target?: string): Loaded {
@@ -18,30 +18,6 @@ describe("collections", () => {
       ["contracts", ["new", "old"]],
       ["invoices", ["other"]],
     ]);
-  });
-
-  it("says what changed between two runs of a folder", () => {
-    const newer = sampleAudit();
-    const older = { ...newer, documents: newer.documents.slice(1), aggregate: { ...newer.aggregate, sensitive_total: 10 } };
-    const change = changeBetween(newer, older);
-    expect(change.added).toEqual([newer.documents[0]?.relative_path]);
-    expect(change.removed).toEqual([]);
-    expect(change.sensitive).toEqual({ before: 10, after: newer.aggregate.sensitive_total });
-  });
-
-  it("compares only what both runs measured", () => {
-    const full = sampleAudit();
-    const costOnly = sampleAudit();
-    costOnly.run.components_run = ["cost"];
-    costOnly.aggregate.sensitive_total = 0;
-    costOnly.aggregate.content_findings_total = 0;
-    const change = changeBetween(costOnly, full);
-    // A run that did not look for identifiers found none; that is not a drop to nought.
-    expect(change.sensitive).toBeNull();
-    expect(change.hidden).toBeNull();
-    // Scored from other parts, the two readiness figures are of different things.
-    expect(change.readiness).toBeNull();
-    expect(changeBetween(full, sampleAudit()).readiness).not.toBeNull();
   });
 
   it("puts a loader comparison under the folder its documents share, not its loader's name", () => {
@@ -82,23 +58,6 @@ describe("collections", () => {
     expect(runKind({ ...audit, documents: [], chunks: [] })).toBe("Audit");
     const chunks = { ...audit, documents: [], run: { ...audit.run, components_run: [] } };
     expect(runKind({ ...chunks, chunks: [{} as ChunkRun] })).toBe("Chunks");
-  });
-
-  it("says which documents' figures moved, the largest change first", () => {
-    const older = sampleAudit();
-    const newer = sampleAudit();
-    const [first, second] = newer.documents;
-    if (!first || !second) throw new Error("the sample has two documents");
-    // The first lost two identifiers; the second is five points more ready.
-    first.sensitive = { ...first.sensitive, matches: first.sensitive.matches.slice(2) };
-    newer.overall.by_document[second.relative_path] = (older.overall.by_document[second.relative_path] ?? 0) + 5;
-    const change = changeBetween(newer, older);
-    expect(change.documents.map((d) => d.path)).toEqual([first.relative_path, second.relative_path]);
-    expect(change.documents[0]?.identifiers).toEqual({
-      before: first.sensitive.matches.length + 2,
-      after: first.sensitive.matches.length,
-    });
-    expect(changeBetween(older, sampleAudit()).documents).toEqual([]);
   });
 
   it("sums a folder up by its newest audit, over a newer run that measured part of it", () => {

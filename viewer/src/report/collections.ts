@@ -5,7 +5,6 @@
  * covers. Reports of the same folder are its runs, newest first, so the
  * viewer can say what changed between one run and the one before.
  */
-import { measured } from "./measured";
 import { fileName } from "./format";
 import type { Report } from "./types";
 
@@ -90,79 +89,6 @@ export function leadRun(collection: Collection): Loaded | undefined {
     collection.runs.find((run) => run.report.documents.length > 0) ??
     collection.runs[0]
   );
-}
-
-export interface RunChange {
-  /**
-   * Each figure before and after, or null where the two runs cannot be compared:
-   * one did not measure it, or, for readiness, the two were scored from different
-   * parts. A figure a run did not measure is not zero, and a drop to it is not news.
-   */
-  readiness: { before: number | null; after: number | null } | null;
-  sensitive: { before: number; after: number } | null;
-  hidden: { before: number; after: number } | null;
-  /** Documents in the newer run that the older did not have, and the other way round. */
-  added: string[];
-  removed: string[];
-  /** Documents in both runs whose figures moved, the largest change first. */
-  documents: DocumentChange[];
-}
-
-/** One document's figures in two runs, each null where the two cannot be compared. */
-export interface DocumentChange {
-  path: string;
-  identifiers: { before: number; after: number } | null;
-  readiness: { before: number; after: number } | null;
-}
-
-/** Documents whose identifiers or readiness changed between two runs that measured them alike. */
-function documentChanges(newer: Report, older: Report, scanned: boolean, sameScoring: boolean): DocumentChange[] {
-  const before = new Map(older.documents.map((d) => [d.relative_path, d]));
-  const changes: DocumentChange[] = [];
-  for (const document of newer.documents) {
-    const then = before.get(document.relative_path);
-    if (!then) continue;
-    const identifiers = scanned
-      ? { before: then.sensitive.matches.length, after: document.sensitive.matches.length }
-      : null;
-    const scoreThen = older.overall.by_document[document.relative_path];
-    const scoreNow = newer.overall.by_document[document.relative_path];
-    const readiness =
-      sameScoring && scoreThen !== undefined && scoreNow !== undefined ? { before: scoreThen, after: scoreNow } : null;
-    // A point of readiness either way is noise in how a score rounds, not a change to act on.
-    const moved =
-      (identifiers && identifiers.after !== identifiers.before) ||
-      (readiness && Math.abs(readiness.after - readiness.before) >= 1);
-    if (moved) changes.push({ path: document.relative_path, identifiers, readiness });
-  }
-  const size = (c: DocumentChange) =>
-    Math.abs((c.identifiers?.after ?? 0) - (c.identifiers?.before ?? 0)) * 100 +
-    Math.abs((c.readiness?.after ?? 0) - (c.readiness?.before ?? 0));
-  return changes.sort((a, b) => size(b) - size(a) || a.path.localeCompare(b.path));
-}
-
-/** What changed from one run of a folder to a later one. */
-export function changeBetween(newer: Report, older: Report): RunChange {
-  const paths = (report: Report) => new Set(report.documents.map((d) => d.relative_path));
-  const now = paths(newer);
-  const then = paths(older);
-  const scanned = measured(newer, "sensitive") && measured(older, "sensitive");
-  // Readiness is scored from the parts a run measured, so two runs of different parts give
-  // scores of different things.
-  const parts = (report: Report) => [...(report.run.components_run ?? [])].sort().join(",");
-  const sameScoring = parts(newer) === parts(older) && measured(newer, "readiness");
-  return {
-    readiness: sameScoring ? { before: older.overall.score, after: newer.overall.score } : null,
-    sensitive: scanned
-      ? { before: older.aggregate.sensitive_total, after: newer.aggregate.sensitive_total }
-      : null,
-    hidden: scanned
-      ? { before: older.aggregate.content_findings_total, after: newer.aggregate.content_findings_total }
-      : null,
-    added: [...now].filter((p) => !then.has(p)).sort(),
-    removed: [...then].filter((p) => !now.has(p)).sort(),
-    documents: documentChanges(newer, older, scanned, sameScoring),
-  };
 }
 
 /**

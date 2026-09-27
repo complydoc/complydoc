@@ -1,5 +1,4 @@
 import { screen, within } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { renderPage } from "@/test/render";
 import { sampleAudit, sampleRunOf, sampleVerified } from "@/test/sample";
 import { attentionDocuments, topFindings } from "@/report/home";
@@ -73,32 +72,5 @@ describe("what Home points at", () => {
     expect(high).toBeGreaterThan(0);
     expect(confirmedHigh).toBeLessThanOrEqual(high);
     expect(rows.every((row) => row.severity === "high")).toBe(true);
-  });
-
-  it("says what the figures cannot be trusted for, before anything else is read", () => {
-    const report = sampleAudit();
-    renderPage(<HomePage report={report} />);
-    const important = screen.getByRole("list", { name: "Important limitations" });
-    const expected = report.limitations.filter((l) => l.severity === "important").length;
-    expect(within(important).getAllByRole("listitem")).toHaveLength(expected);
-    // A limitation on a document opens that document.
-    expect(within(important).getAllByRole("link")[0]).toHaveAttribute("href", expect.stringMatching(/^#documents\/\d+$/));
-    // The rest say how the figures were got, and wait to be opened.
-    expect(screen.getByText(/notes on how the figures were got/)).toBeInTheDocument();
-  });
-
-  it("keeps the findings in view when a run has many limitations", async () => {
-    const report = sampleAudit();
-    const many = Array.from({ length: 5 }, (_, i) => ({
-      area: `Area ${i}`,
-      statement: `Limitation ${i}.`,
-      severity: "important" as const,
-      affected: [],
-    }));
-    renderPage(<HomePage report={{ ...report, limitations: many }} />);
-    const important = screen.getByRole("list", { name: "Important limitations" });
-    expect(within(important).getAllByRole("listitem")).toHaveLength(3);
-    await userEvent.click(screen.getByRole("button", { name: "Show 2 more" }));
-    expect(within(important).getAllByRole("listitem")).toHaveLength(5);
   });
 });

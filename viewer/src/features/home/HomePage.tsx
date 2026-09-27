@@ -11,14 +11,11 @@ import type { ChartConfig } from "@/components/ui/chart";
 import { usePlan } from "@/hooks/usePlan";
 import { fileName, formatCount, formatPageUsd, formatSeconds, plural } from "@/report/format";
 import { attentionDocuments, topFindings } from "@/report/home";
-import { limitationsOf } from "@/report/limitations";
 import { measured } from "@/report/measured";
 import { documentTotals, reportTotals } from "@/report/plan";
 import { documentHref } from "@/report/route";
 import type { Report } from "@/report/types";
-import { ImportantLimitations, LimitationNotes } from "./Limitations";
 import { ReadinessCard } from "./ReadinessCard";
-import { RunChanges } from "./RunChanges";
 
 /** A headline figure that is also the way to what it counts. */
 function LinkStat({ href, label, value, note }: { href: string; label: string; value: ReactNode; note?: string }) {
@@ -55,7 +52,7 @@ const COST = { usd: { label: "Cost", color: "var(--primary)" } } satisfies Chart
  * documents to open first, and what reading the folder costs and takes under
  * the plan chosen. Every block leads somewhere.
  */
-export function HomePage({ report, previous = null }: { report: Report; previous?: Report | null }) {
+export function HomePage({ report }: { report: Report }) {
   const { plan } = usePlan();
   const totals = reportTotals(report, plan);
   const findings = topFindings(report);
@@ -65,7 +62,6 @@ export function HomePage({ report, previous = null }: { report: Report; previous
   const priced = measured(report, "cost");
   const hasDocuments = measured(report, "documents");
   const NOT_IN_RUN = "not in this run";
-  const limitations = limitationsOf(report);
   const byCost = report.documents
     .map((document) => ({ name: fileName(document.relative_path), usd: documentTotals(report, document, plan).usd ?? 0 }))
     .filter((row) => row.usd > 0)
@@ -104,12 +100,6 @@ export function HomePage({ report, previous = null }: { report: Report; previous
           }
         />
       </div>
-
-      {limitations.important.length > 0 && (
-        <Section title="Before you draw conclusions">
-          <ImportantLimitations report={report} limitations={limitations.important} />
-        </Section>
-      )}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
@@ -193,12 +183,6 @@ export function HomePage({ report, previous = null }: { report: Report; previous
         </Section>
       )}
 
-      {previous && (
-        <Section title="Changed since the run before">
-          <RunChanges report={report} previous={previous} />
-        </Section>
-      )}
-
       <div className="grid gap-4 lg:grid-cols-2">
         <Section title="Readiness">
           {measured(report, "readiness") ? (
@@ -225,8 +209,6 @@ export function HomePage({ report, previous = null }: { report: Report; previous
           </Card>
         </Section>
       </div>
-
-      {limitations.notes.length > 0 && <LimitationNotes report={report} limitations={limitations.notes} />}
     </SectionStack>
   );
 }

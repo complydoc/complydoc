@@ -17,7 +17,7 @@ const runs: Loaded[] = [
 ];
 
 describe("RunsPage", () => {
-  it("lists every run of the folder by kind, and compares the two ticked", async () => {
+  it("lists every run of the folder by kind, with what each holds", () => {
     render(
       <FolderRunsContext.Provider value={{ runs, current: "new", open: () => {} }}>
         <RunsPage />
@@ -26,16 +26,7 @@ describe("RunsPage", () => {
     const table = screen.getByRole("table", { name: "Runs" });
     expect(within(table).getAllByRole("row")).toHaveLength(4);
     expect(within(table).getByText("Loader comparison")).toBeInTheDocument();
-    expect(screen.queryByRole("region", { name: "Compared" })).not.toBeInTheDocument();
-
-    // Asked for afresh each time: ticking one draws the rows again.
-    const box = (index: number) => within(table).getAllByRole("checkbox")[index] as HTMLElement;
-    await userEvent.click(box(2));
-    await userEvent.click(box(0));
-    // A third cannot be ticked while two are.
-    expect(box(1)).toBeDisabled();
-    const compared = screen.getByRole("region", { name: "Compared" });
-    expect(within(compared).getByText(/^Since 1 Sept 2026/)).toBeInTheDocument();
+    expect(within(table).queryByRole("checkbox")).not.toBeInTheDocument();
   });
 
   it("opens a run on its Home from a click on its row", async () => {

@@ -29,7 +29,7 @@ import { cn } from "@/lib/utils";
 import { CollectionSwitcher, type Selection } from "@/components/CollectionSwitcher";
 import { OverviewPage } from "@/features/collections/OverviewPage";
 import { FolderRunsContext } from "@/hooks/useFolderRuns";
-import { leadRun, runKind, type Collection, type Loaded } from "@/report/collections";
+import { leadRun, type Collection, type Loaded } from "@/report/collections";
 import { fileName } from "@/report/format";
 import { AppSidebar } from "./AppSidebar";
 import { PAGES, PAGE_INFO } from "./pages";
@@ -49,21 +49,11 @@ interface ReportViewProps {
   onToggleTheme: () => void;
 }
 
-/** The run a selection points at, and the run of the same folder before it. */
-function selected(collections: Collection[], selection: Selection): { run: Loaded | null; previous: Loaded | null } {
+/** The run a selection points at. */
+function selected(collections: Collection[], selection: Selection): Loaded | null {
   const collection = collections.find((c) => c.id === selection.collection);
-  if (!collection) return { run: null, previous: null };
-  const index = Math.max(
-    0,
-    collection.runs.findIndex((r) => r.id === selection.run),
-  );
-  const run = collection.runs[index] ?? null;
-  // What changed is only worth saying against a run of the same kind: an audit against the
-  // audit before it, not against a loader comparison or a chunks run in between.
-  const previous = run
-    ? (collection.runs.slice(index + 1).find((r) => runKind(r.report) === runKind(run.report)) ?? null)
-    : null;
-  return { run, previous };
+  if (!collection) return null;
+  return collection.runs.find((r) => r.id === selection.run) ?? collection.runs[0] ?? null;
 }
 
 /**
@@ -84,7 +74,7 @@ export function ReportView({
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [page, detail]);
-  const { run, previous } = selected(collections, selection);
+  const run = selected(collections, selection);
   const switcher = (
     <CollectionSwitcher
       collections={collections}
@@ -182,7 +172,7 @@ export function ReportView({
               {/* Keyed by page and run, so moving on from a page that failed shows the next one. */}
             <PageErrorBoundary key={`${run.id}:${page}:${detail ?? ""}`}>
               <IgnoreProvider report={report} {...(run.source ? { source: run.source } : {})}>
-                {page === "home" && <HomePage report={report} previous={previous?.report ?? null} />}
+                {page === "home" && <HomePage report={report} />}
                 {page === "security" &&
                   (detail?.startsWith("review") ? (
                     <ReviewQueue report={report} at={Number(detail.split("/")[1] ?? 0) || 0} />

@@ -5,8 +5,7 @@ import { Section, SectionStack } from "@/components/Section";
 import { Stat, StatGrid } from "@/components/Stat";
 import { ToneBadge } from "@/components/ToneBadge";
 import { measured } from "@/report/measured";
-import { changeBetween, leadRun, runKind, runLabel, type Collection } from "@/report/collections";
-import { Sparkline } from "@/components/Sparkline";
+import { leadRun, runLabel, type Collection } from "@/report/collections";
 import { formatCount, formatPageUsd, formatScore, formatSeconds, plural } from "@/report/format";
 import { EMPTY, combine, reportTotals, type Totals } from "@/report/plan";
 import { planFor } from "@/report/planChoice";
@@ -23,31 +22,17 @@ interface Row {
   readiness: number | null;
   /** The band complydoc put that score in. */
   band: Band | null;
-  /** Change since the run before, where the two can be compared. */
-  readinessChange: number | null;
   sensitive: number | null;
-  sensitiveChange: number | null;
   hidden: number | null;
-  sensitiveTrend: number[];
   totals: Totals;
 }
 
-/** Runs a trend goes back over. */
-const TREND_RUNS = 10;
-
 function rowsOf(collections: Collection[]): Row[] {
   return collections.flatMap((collection) => {
-    // The folder is summed up by its newest run that read documents, and compared with the
-    // one of those before it; a chunks run holds none to count.
+    // The folder is summed up by its newest run that read documents; a chunks run holds none.
     const latest = leadRun(collection);
     if (!latest) return [];
-    // Compared with the run before of the same kind, as Home compares it.
-    const kind = runKind(latest.report);
-    const sameKind = collection.runs.filter((run) => runKind(run.report) === kind);
-    const previous = sameKind[sameKind.indexOf(latest) + 1];
     const report = latest.report;
-    const change = previous ? changeBetween(report, previous.report) : null;
-    const before = change?.readiness?.before;
     const scanned = measured(report, "sensitive");
     return [
       {
@@ -58,19 +43,8 @@ function rowsOf(collections: Collection[]): Row[] {
         lastRun: runLabel(collection.runs[0]?.report ?? report),
         readiness: measured(report, "readiness") ? report.overall.score : null,
         band: report.overall.label,
-        readinessChange:
-          before !== null && before !== undefined && report.overall.score !== null
-            ? report.overall.score - before
-            : null,
         sensitive: scanned ? report.aggregate.sensitive_total : null,
-        sensitiveChange: change?.sensitive ? change.sensitive.after - change.sensitive.before : null,
         hidden: scanned ? report.aggregate.content_findings_total : null,
-        // Oldest first, the runs of this kind that scanned: how the folder's exposure has moved.
-        sensitiveTrend: sameKind
-          .filter((run) => measured(run.report, "sensitive"))
-          .slice(0, TREND_RUNS)
-          .reverse()
-          .map((run) => run.report.aggregate.sensitive_total),
         totals: reportTotals(report, planFor(report)),
       },
     ];
@@ -82,20 +56,6 @@ function NotMeasured() {
   return (
     <span className="text-xs text-muted-foreground" title="The last run did not measure this">
       not measured
-    </span>
-  );
-}
-
-/** A change since the last run, coloured by whether it is better: more readiness is, more findings are not. */
-function Change({ value, better }: { value: number | null; better: "up" | "down" }) {
-  // A change that rounds to nothing is not shown as one.
-  if (value === null || Math.round(value) === 0) return null;
-  const good = better === "up" ? value > 0 : value < 0;
-  return (
-    <span className={good ? "text-success" : "text-destructive"} title="since the run before">
-      {" "}
-      {value > 0 ? "▲" : "▼"}
-      {formatCount(Math.abs(Math.round(value)))}
     </span>
   );
 }
@@ -148,10 +108,7 @@ function columnsFor(onOpen: (id: string) => void): Columns<Row> {
           {row.original.readiness === null ? (
             <NotMeasured />
           ) : (
-            <>
-              <ToneBadge tone={bandTone(row.original.band)}>{formatScore(row.original.readiness)}</ToneBadge>
-              <Change value={row.original.readinessChange} better="up" />
-            </>
+            <ToneBadge tone={bandTone(row.original.band)}>{formatScore(row.original.readiness)}</ToneBadge>
           )}
         </span>
       ),
@@ -164,15 +121,7 @@ function columnsFor(onOpen: (id: string) => void): Columns<Row> {
         row.original.sensitive === null ? (
           <NotMeasured />
         ) : (
-          <span className="inline-flex items-center gap-2 tabular-nums">
-            {row.original.sensitiveTrend.length > 2 && (
-              <Sparkline values={row.original.sensitiveTrend} label="Identifiers found" />
-            )}
-            <span>
-              {formatCount(row.original.sensitive)}
-              <Change value={row.original.sensitiveChange} better="down" />
-            </span>
-          </span>
+          <span className="tabular-nums">{formatCount(row.original.sensitive)}</span>
         ),
       ...numeric,
     }),
@@ -203,8 +152,7 @@ function columnsFor(onOpen: (id: string) => void): Columns<Row> {
 
 /**
  * Every folder open, side by side: what each holds, how ready and how exposed
- * it is, what reading it costs and takes under the plan chosen, and what
- * changed since the run before.
+ * it is, and what reading it costs and takes under the plan chosen.
  */
 export function OverviewPage({ collections, onOpen }: { collections: Collection[]; onOpen: (id: string) => void }) {
   const rows = rowsOf(collections);
