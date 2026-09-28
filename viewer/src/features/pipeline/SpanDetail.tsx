@@ -1,10 +1,19 @@
-import { ArrowDownIcon, CircleDollarSignIcon, ClockIcon, CoinsIcon, GlobeIcon, ShieldAlertIcon } from "lucide-react";
+import {
+  ArrowDownIcon,
+  CircleDollarSignIcon,
+  ClockIcon,
+  CoinsIcon,
+  FileTextIcon,
+  GlobeIcon,
+  ShieldAlertIcon,
+} from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { CodeBlock } from "@/components/CodeBlock";
 import { SeverityIcon } from "@/components/LevelIcons";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { formatCount, formatSeconds, formatUsd } from "@/report/format";
+import { documentHref } from "@/report/route";
 import type { Span } from "@/report/traceTree";
 import type { TraceStage } from "@/report/traceTypes";
 import type { Change } from "@/report/traceView";
@@ -61,8 +70,11 @@ export function SpanDetail({
   from,
   change,
   onNext,
+  document = null,
 }: {
   span: Span;
+  /** The report's document this call read, where it read one, to open it. */
+  document?: number | null;
   /** The run's length, which the call's time is judged against. */
   total: number;
   /** The step before, whose output this step was given, where it follows one. */
@@ -114,6 +126,14 @@ export function SpanDetail({
           </span>
           <h2 className="min-w-0 truncate font-heading text-2xl font-semibold tracking-tight">{stage.component}</h2>
           {span.label && <span className="min-w-0 truncate text-muted-foreground">{span.label}</span>}
+          {document !== null && (
+            <Button variant="outline" size="sm" className="ml-auto shrink-0" asChild>
+              <a href={documentHref(document)}>
+                <FileTextIcon />
+                Open the document
+              </a>
+            </Button>
+          )}
         </div>
         <div className="flex flex-wrap gap-1.5">
           <Pill icon={<ClockIcon />} className={durationTone(stage.seconds, total)}>

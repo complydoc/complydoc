@@ -57,7 +57,19 @@ export function BarList<T>({ series, data, category, format, colour, onSelect, l
       <g transform={`translate(${Number(x)},${Number(y)})`}>
         <foreignObject x={-LABEL_WIDTH} y={-10} width={LABEL_WIDTH - 6} height={20}>
           <div className="flex h-5 items-center justify-end gap-1.5 text-xs text-muted-foreground">
-            <span className="truncate">{shorten(payload?.value ?? "")}</span>
+            {row && onSelect ? (
+              // A label opens what its bar stands for, as the bar does.
+              <button
+                type="button"
+                onClick={() => onSelect(row)}
+                className="truncate underline-offset-4 hover:text-foreground hover:underline"
+                title={payload?.value}
+              >
+                {shorten(payload?.value ?? "")}
+              </button>
+            ) : (
+              <span className="truncate">{shorten(payload?.value ?? "")}</span>
+            )}
             {row && logo && (
               <span className="inline-flex" style={{ color: colour?.(row) }}>
                 <ProviderLogo provider={logo(row)} className="size-3.5" />
@@ -82,7 +94,7 @@ export function BarList<T>({ series, data, category, format, colour, onSelect, l
           tickLine={false}
           axisLine={false}
           width={LABEL_WIDTH}
-          {...(logo ? { tick } : { tickFormatter: shorten })}
+          {...(logo || onSelect ? { tick } : { tickFormatter: shorten })}
           interval={0}
         />
         <XAxis type="number" hide />

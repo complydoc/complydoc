@@ -63,7 +63,11 @@ export function HomePage({ report }: { report: Report }) {
   const hasDocuments = measured(report, "documents");
   const NOT_IN_RUN = "not in this run";
   const byCost = report.documents
-    .map((document) => ({ name: fileName(document.relative_path), usd: documentTotals(report, document, plan).usd ?? 0 }))
+    .map((document, index) => ({
+      name: fileName(document.relative_path),
+      index,
+      usd: documentTotals(report, document, plan).usd ?? 0,
+    }))
     .filter((row) => row.usd > 0)
     .sort((a, b) => b.usd - a.usd)
     .slice(0, 8);
@@ -95,7 +99,9 @@ export function HomePage({ report }: { report: Report }) {
           value={priced ? formatPageUsd(totals.usd) : "—"}
           note={
             priced
-              ? [plan.text?.name, totals.seconds !== null ? formatSeconds(totals.seconds) : null].filter(Boolean).join(" · ")
+              ? [plan.text?.name, totals.seconds !== null ? formatSeconds(totals.seconds) : null]
+                  .filter(Boolean)
+                  .join(" · ")
               : NOT_IN_RUN
           }
         />
@@ -203,7 +209,13 @@ export function HomePage({ report }: { report: Report }) {
               ) : byCost.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No document could be priced on the model chosen.</p>
               ) : (
-                <BarList series={COST} data={byCost} category="name" format={formatPageUsd} />
+                <BarList
+                  series={COST}
+                  data={byCost}
+                  category="name"
+                  format={formatPageUsd}
+                  onSelect={(row) => window.location.assign(documentHref(row.index))}
+                />
               )}
             </CardContent>
           </Card>

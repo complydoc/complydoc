@@ -120,7 +120,7 @@ export function SecurityPage({ report }: { report: Report }) {
                   series={BY_SEVERITY}
                   data={byDocument.slice(0, TOP)}
                   category="document"
-                  onSelect={(row) => (window.location.hash = documentHref(row.index).slice(1))}
+                  onSelect={(row) => window.location.assign(documentHref(row.index))}
                 />
                 <More count={byDocument.length - TOP} noun="document" />
               </CardContent>

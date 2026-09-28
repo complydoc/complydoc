@@ -6,6 +6,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useHashParam } from "@/hooks/useHashRoute";
 import { cn } from "@/lib/utils";
 import { formatCount, formatDate, formatSeconds, formatUsd, plural } from "@/report/format";
+import { sameDocument } from "@/report/chunkPlaces";
 import { measured } from "@/report/measured";
 import { spansOf, traceSpan, traceTotals, visibleSpans, type Span } from "@/report/traceTree";
 import { changeBetween, stepsOf } from "@/report/traceView";
@@ -22,6 +23,15 @@ function Figure({ label, children, tone }: { label: string; children: ReactNode;
       <span className={cn("text-sm font-medium tabular-nums", tone)}>{children}</span>
     </div>
   );
+}
+
+/** The report's document a call read: the one file it names, where the report holds it. */
+function documentOf(report: Report, span: Span): number | null {
+  const named = span.stage.kind === "document" ? (span.stage.sources[0] ?? null) : span.label || null;
+  const source = named ?? (span.stage.sources.length === 1 ? (span.stage.sources[0] ?? null) : null);
+  if (!source) return null;
+  const index = report.documents.findIndex((d) => sameDocument(source, d.relative_path));
+  return index >= 0 ? index : null;
 }
 
 function find(roots: Span[], index: number): Span | undefined {
@@ -130,6 +140,7 @@ export function PipelinePage({ report }: { report: Report }) {
             from={at > 0 && before && span.stage.parent == null ? before.component : null}
             change={change}
             onNext={next === undefined ? null : () => setSpan(String(next))}
+            document={documentOf(report, span)}
           />
         </div>
       )}

@@ -1,4 +1,13 @@
-import { CheckIcon, ChevronsUpDownIcon, FolderIcon, FolderPlusIcon, HistoryIcon, LayoutGridIcon, XIcon } from "lucide-react";
+import {
+  CheckIcon,
+  ChevronsUpDownIcon,
+  FolderIcon,
+  FolderPlusIcon,
+  HistoryIcon,
+  LayoutGridIcon,
+  WorkflowIcon,
+  XIcon,
+} from "lucide-react";
 import { useRef } from "react";
 import {
   DropdownMenu,
@@ -42,7 +51,13 @@ export function CollectionSwitcher({ collections, selection, onSelect, onAdd, on
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton size="lg" tooltip={current?.name ?? "All folders"} aria-label="Switch folder">
               <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-sidebar-accent">
-                {current ? <FolderIcon className="size-4" /> : <LayoutGridIcon className="size-4" />}
+                {!current ? (
+                  <LayoutGridIcon className="size-4" />
+                ) : current.id.startsWith("pipeline:") ? (
+                  <WorkflowIcon className="size-4" />
+                ) : (
+                  <FolderIcon className="size-4" />
+                )}
               </span>
               <span className="grid min-w-0 flex-1 text-left leading-tight">
                 <span className="truncate font-medium">{current?.name ?? "All folders"}</span>
