@@ -7,6 +7,10 @@ import socket
 from pathlib import Path
 
 import pytest
+
+# The base test jobs install no framework; cd.observe needs one to observe.
+pytest.importorskip("langchain_text_splitters")
+
 from langchain_core.document_loaders import BaseLoader
 from langchain_core.documents import Document
 from langchain_core.embeddings import DeterministicFakeEmbedding
@@ -182,6 +186,7 @@ def test_the_guard_inside_record_mode_keeps_recording() -> None:
 
 
 def test_a_llamaindex_ingestion_pipeline_is_observed(tmp_path: Path) -> None:
+    pytest.importorskip("llama_index.core")
     from llama_index.core import Document as LlamaDocument
     from llama_index.core.embeddings import MockEmbedding
     from llama_index.core.ingestion import IngestionPipeline

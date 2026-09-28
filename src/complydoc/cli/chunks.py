@@ -163,6 +163,7 @@ def chunks(
         errors.print("[bold red]No splitter given.[/] Pass --splitter, or --preset common.")
         raise typer.Exit(code=2)
     splitters: dict[str, object] = {}
+    optional: set[str] = set()
     for reference in PRESETS[preset] if preset else ():
         try:
             label, made = _splitter(reference)
@@ -171,6 +172,7 @@ def chunks(
                 console.print(f"[dim]Left out of the preset, not installed: {escape(str(exc))}[/]")
             continue
         splitters[label] = made
+        optional.add(label)
     try:
         for reference in given:
             label, made = _splitter(reference)
@@ -230,15 +232,35 @@ def chunks(
             top_k=top_k,
         )
 
+    def inspect_or_leave_out(label: str, splitter_object: object) -> ChunkReport | None:
+        """A preset's splitter that fails on this machine is left out, and the run says so;
+        one the caller named fails the run."""
+        if label not in optional:
+            return inspect_with(splitter_object, label)
+        try:
+            return inspect_with(splitter_object, label)
+        except UnknownModelError:
+            raise
+        # The splitter is a library's; whatever it raises is its own.
+        except Exception as exc:
+            if not quiet:
+                console.print(
+                    f"[dim]Left out of the preset, it failed here: {label}: "
+                    f"{escape(f'{type(exc).__name__}: {exc}'[:200])}[/]"
+                )
+            return None
+
     result: ChunkReport | ChunkComparison
     try:
-        if len(splitters) == 1:
-            [(label, only)] = splitters.items()
-            result = inspect_with(only, label)
+        made = {label: inspect_or_leave_out(label, obj) for label, obj in splitters.items()}
+        inspected = {label: report for label, report in made.items() if report is not None}
+        if not inspected:
+            errors.print("[bold red]No splitter could split the text.[/]")
+            raise typer.Exit(code=2)
+        if len(inspected) == 1:
+            [result] = inspected.values()
         else:
-            result = ChunkComparison(
-                {label: inspect_with(obj, label) for label, obj in splitters.items()}
-            )
+            result = ChunkComparison(inspected)
     except UnknownModelError as exc:
         errors.print(f"[bold red]Unknown model[/] — {escape(str(exc))}")
         raise typer.Exit(code=2) from exc

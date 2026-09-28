@@ -12,6 +12,9 @@ concurrency:
 
 env:
   UV_FROZEN: "1"
+  # Copied, not hardlinked: NLTK, which LlamaIndex's sentence splitter uses, refuses to
+  # open data files with more than one link.
+  UV_LINK_MODE: copy
 
 jobs:
   viewer:

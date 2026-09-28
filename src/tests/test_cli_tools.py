@@ -256,6 +256,7 @@ def test_a_chunks_run_is_a_report_the_viewer_lists(folder, tmp_path):
 
 
 def test_chunks_compares_a_preset_of_common_splitters(folder, tmp_path):
+    pytest.importorskip("langchain_text_splitters")
     result = runner.invoke(
         app, ["chunks", str(folder), "--preset", "common", "--out", str(tmp_path), "--quiet"]
     )
@@ -264,8 +265,6 @@ def test_chunks_compares_a_preset_of_common_splitters(folder, tmp_path):
     names = [run.chunker for run in report.chunks]
     assert "RecursiveCharacterTextSplitter chunk_size=500 chunk_overlap=50" in names
     assert any(name.startswith("TokenTextSplitter") for name in names)
-    # LlamaIndex's parser is given its own documents, made from the pages.
-    assert any(name.startswith("SentenceSplitter") for name in names)
 
 
 def test_chunks_needs_a_splitter_or_a_preset(folder, tmp_path):

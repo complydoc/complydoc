@@ -183,6 +183,12 @@ module = [
     "langchain.*",
     "langchain_core.*",
     "langchain_openai.*",
+    "langchain_typesafe",
+    "langchain_typesafe.*",
+    "langsmith",
+    "langsmith.*",
+    "httpx2",
+    "httpx2.*",
     "llama_index.*",
 ]
 ignore_missing_imports = true
