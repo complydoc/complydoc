@@ -222,7 +222,8 @@ loader that cannot be imported, exits with status 2.
 ## Which one to use
 
 The comparison ends with a recommendation, on the command line and at the top of
-the viewer's Loaders page. Three things can decide it:
+the viewer's Documents page for the run, where each file the loaders read
+differently opens its diff. Three things can decide it:
 
 | What decided it | Example |
 | --- | --- |

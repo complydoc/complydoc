@@ -39,11 +39,31 @@ Every run opens on the same pages, whichever command wrote it:
 | Page | Holds | Written by |
 | --- | --- | --- |
 | Home | The headline figures, the findings and documents to look at first | every run |
+| Trace | Every call a pipeline made, or every document an audit read, in a tree with each one's time, input and output | `cd.observe`, `audit` |
 | Security | Identifiers and hidden instructions, per document and page | `audit`, `sensitive` |
+| Documents | Each document's pages, text and readings; for a loader comparison, which loader to use for each file type | every run that reads documents |
+| Chunks | How each text splitter cut the text, and the documents it cut worst | `chunks` |
 | Cost & time | Each model's price for the folder, and reading time | `audit`, `cost` |
-| Documents | Each document's pages, text and readings | every run that reads documents |
-| Loaders | Loaders side by side, per file type | `compare-loaders` |
-| Chunks | How each text splitter cut the text | `chunks` |
+
+The sidebar groups them by what they are for, with a figure beside each where one
+says something, such as the high-severity identifiers beside Security. Pages the
+run has nothing for are folded together at the end. Documentation, at the foot,
+opens the guide for the page on screen.
+
+### The trace
+
+A run recorded with [`cd.observe`](observe-a-pipeline.md) is a tree of every call
+the pipeline made, the calls made inside each beneath it: a directory loader holds a
+row for each file. Each row has the call's kind, and pills for its time, coloured by
+its share of the run, its tokens, its cost and the identifiers in it. The call picked
+shows its input and output as YAML, its settings, and its figures. Up and down, or J
+and K, move through the calls; left and right fold and unfold one. The header says
+what the run took, cost and sent where, and where its time went by kind of work.
+A second view follows each identifier through the steps.
+
+An audit is shown the same way, from the times it recorded: its folders, each
+document in them, and inside each document its readers, OCR, the analysis and the
+identifier scan. A large run opens folded, a line a folder.
 
 ### How pages are read
 
@@ -67,37 +87,37 @@ The choice is kept in the browser.
 
 A page the run did not produce says so and what it would hold. Where another run
 of the folder has it, the page offers to open that run; otherwise it gives the
-command that fills it for the same folder, with a button to copy it. The sidebar
-dims such pages. Home does the same card by card, so a `complydoc cost` run shows
-its prices and says the identifier scan was not part of it.
+command that fills it for the same folder, with a button to copy it, and a link to
+the guide. Home does the same card by card, so a `complydoc cost` run shows its
+prices and says the identifier scan was not part of it. The Security page says
+which identifier categories nothing was looked for, and why. Wherever a document is
+named, it is a link to it.
 
-Home leads with what the run could not do or vouch for: the important limitations,
-each linking the documents it applies to, before the findings. The rest, on how
-the figures were got, fold away at the foot of the page. The Security page says
-which identifier categories nothing was looked for, and why.
+### A document
+
+A document read one way shows every page in turn, its lines numbered, with a header
+per page saying what it costs to read. The pages run down the left, a dot on each
+that holds findings. What was found is underlined in the text: red for high
+severity, amber for medium, dotted for low; a rail at the text's edge marks where
+in the whole document. The findings are listed beside the text, page by page, only
+when there are some: open one to see the line it sits in, how sure complydoc is,
+and a box to tick it off as not a problem. Under `complydoc ui` the tick is saved to
+the audited folder's ignore file; otherwise it lasts while the page is open.
 
 A document read more than one way opens as a diff of two readers' text: the kept
-reading against another library, OCR or a vision model. A document read one way
-shows each page's text. Each page's first line says what it costs to read.
+reading against another library, OCR or a vision model. The diff shows the two
+readings and nothing else; switch to Text to see what was found in it.
 
-What was found is underlined in the text itself: red for high severity, amber
-for medium, dotted for low. A rail at the text's edge has a tick where each
-finding sits in the whole document; click one to go there. Rest the pointer on
-an underlined value to see what it is and how sure complydoc is, and tick it off
-as not a problem. Under `complydoc ui` the tick is saved to the audited folder's
-ignore file; otherwise it lasts while the page is open. Ignored findings leave
-the text, and the Security page lists them.
+Where the run or the folder has a splitter's chunks, the document view can draw them
+over the text: pick the splitter beside the title. Chunks alternate in colour so
+each boundary shows, and those cut mid-sentence, mid-table or on a heading are in
+amber, with a count in each page's header. Chunks are drawn only on pages whose text
+is the one they were cut from, so a page read by another reader shows none rather
+than wrong ones. The Chunks page links each document it lists to this view, with the
+splitter's cuts drawn.
 
-Where the folder has a `complydoc chunks` run, the document view can draw a
-splitter's chunks over the text: pick the splitter beside the page stepper. Chunks
-alternate in colour so each boundary shows, and those cut mid-sentence, mid-table
-or on a heading are in amber, with a count above the text. Chunks are drawn only
-on pages whose text is the one they were cut from, the same length as the text
-the splitter was given, so a page read by another reader shows none rather than
-wrong ones.
-
-To the left of the text is the page's picture, when the report has one. Put it
-away to give the text the whole width.
+Beside the text, the Page tab shows the page's picture, when the report has one,
+and what a vision check made of it.
 
 Page pictures need a report written with them:
 
@@ -112,20 +132,21 @@ the button is disabled.
 
 ## Runs of a folder
 
-Every report of the same folder is one of its runs, whichever command wrote it.
-The folder switcher at the top of the sidebar names each by its kind (Audit, Cost,
-Loader comparison, Chunks and so on) and when it started, and opens any of them.
-The Runs page lists every run of the folder, newest first, with what each measured:
-documents, identifiers, hidden passages, readiness, cost and time, and what set it
-apart, such as values revealed or page pictures. It draws how identifiers and
-readiness moved across the folder's audits. Click a run to open it; tick two to
-compare them.
+Every report of the same folder is one of its runs, whichever command wrote it; the
+runs of a pipeline recorded with `cd.observe` are grouped under the pipeline's name.
+The switcher at the top of the sidebar names each run by its kind (Audit, Cost,
+Loader comparison, Chunks, Pipeline and so on) and when it started, and opens any of
+them. The Runs page lists them newest first with what each holds, and what set it
+apart, such as values revealed or identifiers sent. Click a run to open it.
+
+A folder's runs are not compared with each other: its documents come and go between
+runs, so a change in its totals says little about the documents. A pipeline's runs
+are, two at a time: tick two to see what each made and cost, and their steps lined
+up with the settings that changed between them, such as a chunk size or a masking
+step added.
 
 A folder opens on, and the overview sums it up by, its newest audit; a folder with
-none, by its newest run that read documents. "Changed since the run before" on
-Home compares a run with the previous run of the same kind, and lists each
-document whose identifiers or readiness moved. The overview draws how many
-identifiers each folder's recent runs found, beside the latest count.
+none, by its newest run that read documents.
 
 ## Reviewing findings
 
