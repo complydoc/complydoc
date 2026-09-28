@@ -1,7 +1,7 @@
 [project]
 name = "complydoc"
 dynamic = ["version"]
-description = "Check documents before they reach an LLM: token cost, extraction readiness, identifiers, hidden text and prompt injection."
+description = "Observability for AI ingestion pipelines: a trace of every loading, splitting and embedding step, with token cost, extraction readiness, identifiers and hidden text in your documents."
 readme = "README.md"
 requires-python = ">=3.11,<3.14"
 license = { text = "MIT" }

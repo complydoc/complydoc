@@ -7,6 +7,12 @@ separately.
 
 ## [Unreleased]
 
+## [0.6.1] — 2026-09-28
+
+complydoc becomes the observability layer for AI ingestion pipelines: `cd.observe`
+records a LangChain or LlamaIndex pipeline as it runs, and the viewer shows it as a
+trace. The static HTML report is retired.
+
 The report JSON moves to schema 17, which only adds fields; reports of schema 16 still
 load.
 

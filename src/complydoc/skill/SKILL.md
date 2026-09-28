@@ -1,6 +1,6 @@
 ---
 name: complydoc
-description: Check documents offline before they reach an LLM: what processing them would cost, how reliably their text can be read, which personal and financial identifiers they hold (national IDs across Europe, the Americas, India and Australia, payment cards, IBANs, bank details, names), and whether anything hidden in them is addressed to a model (white or invisible text, prompt injection). Use when asked what documents would cost to process with an LLM, how ready they are to extract from, whether a folder contains personal data or hidden instructions, which document loader or parser reads a folder best, to gate documents in CI with a policy, or to make masked copies before sending them anywhere. Runs locally; no document content leaves the machine unless a hosted classifier is explicitly requested.
+description: Observe AI ingestion pipelines and check documents offline before they reach an LLM: a trace of each loading, splitting and embedding step, what processing them would cost, how reliably their text can be read, which personal and financial identifiers they hold (national IDs across Europe, the Americas, India and Australia, payment cards, IBANs, bank details, names), and whether anything hidden in them is addressed to a model (white or invisible text, prompt injection). Use when asked what documents would cost to process with an LLM, how ready they are to extract from, whether a folder contains personal data or hidden instructions, which document loader or parser reads a folder best, what a LangChain or LlamaIndex ingestion pipeline did to the documents and sent to an embedding API, to gate documents in CI with a policy, or to make masked copies before sending them anywhere. Runs locally; no document content leaves the machine unless a hosted classifier is explicitly requested.
 ---
 
 # complydoc
@@ -41,6 +41,24 @@ take a path, so use `complydoc audit <path>` for anything else.
 | `complydoc models` | Which models can be priced against (`--new N` for the latest, `--all` for every one) |
 | `complydoc benchmark` | What identifier detection finds and wrongly flags, against a labelled corpus |
 | `complydoc schema` | The shape of the report JSON |
+
+`complydoc chunks <path> --preset common` compares six common splitters in one run.
+
+To trace an ingestion pipeline, wrap its code in Python:
+
+```python
+import complydoc as cd
+
+with cd.observe("ingest") as run:
+    ...  # the pipeline's own loading, splitting and embedding calls
+print(run.summary())
+```
+
+Each LangChain or LlamaIndex loader, splitter, transformer and embedding call becomes a
+step in `run.report.trace`, with its settings, timings, tokens, the identifiers it passed
+on and the hosts it reached; the report is written to `.complydoc/<name>-<time>.json`.
+`complydoc check --report <that file> --policy policy.yaml` with the rules
+`no_identifiers_sent` and `only_hosts` gates it in CI.
 
 Useful flags: `--monthly-volume N` extrapolates cost, `--model <id>` (repeatable)
 narrows the comparison, `--no-ocr` is faster, `--out <dir>` moves the reports,
