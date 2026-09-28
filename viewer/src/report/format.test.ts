@@ -33,6 +33,8 @@ describe("format", () => {
   it("writes dollars to the cent, or finer under a cent", () => {
     expect(formatUsd(8)).toBe("$8.00");
     expect(formatUsd(0.6180000001)).toBe("$0.62");
+    // An embedding call's few thousandths of a cent are not shown as nought.
+    expect(formatUsd(0.0000247)).toBe("$0.000025");
     expect(formatUsd(0.00559)).toBe("$0.0056");
     expect(formatUsd(null)).toBe("–");
   });

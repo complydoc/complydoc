@@ -1,8 +1,8 @@
 """Serve the report viewer and the reports in a folder, on this machine only.
 
-`complydoc ui` is to a folder of reports what `mlflow ui` is to a folder of runs:
-it starts a small web server, opens the viewer in the browser, and lists every
-report it finds, grouped by the folder each one audited, newest run first.
+`complydoc ui` starts a small web server, opens the viewer in the browser, and
+lists every report it finds, grouped by the folder each one audited or the
+pipeline it traced, newest run first.
 
 What the server does, and does not do:
 

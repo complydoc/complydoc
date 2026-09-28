@@ -40,9 +40,14 @@ export function humanise(key: string): string {
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
-/** Dollars, to the cent, or to four places when the sum is under a cent. */
+/**
+ * Dollars, to the cent, or to four places when the sum is under a cent. A sum too small to
+ * show at four places, such as an embedding call's, keeps two figures that are not nought.
+ */
 export function formatUsd(value: number | null): string {
   if (value === null) return "–";
+  if (value !== 0 && Math.abs(value) < 0.0001)
+    return `$${value.toLocaleString("en-GB", { maximumSignificantDigits: 2 })}`;
   const digits = value !== 0 && Math.abs(value) < 0.01 ? 4 : 2;
   return `$${value.toLocaleString("en-GB", { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
 }

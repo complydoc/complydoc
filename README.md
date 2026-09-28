@@ -4,7 +4,7 @@
     <img alt="complydoc" src="https://raw.githubusercontent.com/complydoc/complydoc/main/.github/images/logo-light.svg" width="42%">
   </picture>
 
-  <h3>Check documents before they reach an LLM.</h3>
+  <h3>Know your documents before they reach an LLM.</h3>
 
   <a href="https://pypi.org/project/complydoc/"><img src="https://img.shields.io/pypi/v/complydoc?color=1a7f4b&label=pypi" alt="PyPI"></a>
   <a href="https://github.com/complydoc/complydoc/actions/workflows/checks.yml"><img src="https://github.com/complydoc/complydoc/actions/workflows/checks.yml/badge.svg?branch=main" alt="Tests"></a>
@@ -23,10 +23,11 @@
 
 <br>
 
-complydoc inspects documents, and the output of document loaders, before they are sent to
-an LLM. It measures what processing them will cost, how reliably text can be read off each
-page, which personal and financial identifiers they contain, and whether anything hidden in
-a file is addressed to a model.
+complydoc is the observability layer for AI ingestion pipelines. It traces every step
+between your documents and your vector store (loading, cleaning, splitting, embedding) and
+measures what each one costs, how long it takes, what it extracts, and which personal and
+financial identifiers, or instructions hidden for a model, it lets through. It audits folders
+of documents and the output of any document loader the same way.
 
 It runs on your machine. Nothing leaves it unless you ask for that: see
 [How it works](#how-it-works). A hosted companion for teams, complydoc Cloud, is planned;

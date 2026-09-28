@@ -30,8 +30,8 @@ export function GetStarted() {
           className="w-full text-left"
         />
         <p className="text-sm text-muted-foreground">
-          <code className="font-mono">complydoc ui</code> opens every report in the folder in your browser, served from
-          your machine, the way <code className="font-mono">mlflow ui</code> does for runs.
+          <code className="font-mono">complydoc ui</code> opens every report and pipeline run in the folder in your
+          browser, served from your machine.
         </p>
         <div className="flex flex-wrap justify-center gap-2">
           <Button size="lg" asChild>

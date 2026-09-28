@@ -75,7 +75,7 @@ export function PipelinePage({ report }: { report: Report }) {
 
   return (
     <div className="flex flex-col gap-4 lg:h-[calc(100svh-6rem)]">
-      <header aria-label="The run" className="flex flex-wrap items-end gap-x-8 gap-y-3">
+      <header aria-label="The run" className="flex flex-wrap items-end gap-x-6 gap-y-3">
         <div className="flex min-w-0 flex-col">
           <h1 className="truncate font-heading text-xl font-semibold tracking-tight">{trace.name}</h1>
           <span className="text-sm text-muted-foreground">

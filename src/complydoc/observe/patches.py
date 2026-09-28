@@ -1,7 +1,7 @@
 """The library methods a `cd.observe` block wraps, and the wrapping.
 
-LangChain's callbacks do not reach loaders or splitters, so the methods are wrapped
-instead, as MLflow's autologging does for what it traces. Base classes leave most of
+LangChain's callbacks do not reach loaders or splitters, so the methods themselves are
+wrapped instead. Base classes leave most of
 these methods to their subclasses (`Embeddings.embed_documents` is abstract, and
 most loaders define their own `lazy_load`), so each method is wrapped on every
 loaded class that defines it. Wrapping is undone when the block ends.
