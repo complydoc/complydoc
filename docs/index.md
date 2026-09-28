@@ -1,59 +1,117 @@
-# complydoc
+---
+hide:
+  - navigation
+---
 
-complydoc reads documents, or the output of a document loader, and reports:
+<div class="cd-hero" markdown>
+<p class="cd-eyebrow">observability for AI ingestion · open source</p>
 
-- **Cost**: text and vision tokens per document, priced per model.
-- **Readiness**: measured extraction signals.
-- **Identifiers**: personal and financial identifiers, masked.
-- **Hidden content**: text a reader does not see and a model does, and text
-  that reads as an instruction to a model.
-- **Loaders**: what one or several loaders extracted, over a file or a folder,
-  with expected facts, failures and parser cost.
-- **Chunks**: what a text splitter produces, including cut sentences and facts
-  split across chunks.
+# The observability layer for AI ingestion pipelines
 
-The Python API also works on plain strings, compares and asserts on saved
-reports, streams audits, and provides pipeline steps for LangChain and
-LlamaIndex.
+<p class="cd-lead">Know your documents before they reach an LLM. complydoc traces every step between your documents and your vector store (loading, cleaning, splitting, embedding) and shows what each one cost, how long it took, what it extracted, and which identifiers it let through. It runs on your machine.</p>
 
-It produces a report. It does not modify documents.
+[Observe a pipeline](guides/observe-a-pipeline.md){ .md-button .md-button--primary }
+[Audit a folder](guides/audit-a-folder.md){ .md-button }
+</div>
 
-It runs on your machine, and makes no outbound connection of its own; see
-[Network isolation](explanation/offline.md). A hosted companion for teams, complydoc
-Cloud, is planned: history across runs, comparing runs, and the pages this repository's
-[viewer](https://github.com/complydoc/complydoc/tree/main/viewer) shows, shared instead of
-opened as a local file. [Say if your team would use it](https://github.com/complydoc/complydoc/discussions).
-
-## Install
+## Quickstart
 
 ```bash
 uv tool install complydoc
 ```
 
 OCR and name detection are optional extras. `complydoc doctor` reports which are
-installed and what their absence excludes from a run.
+installed and what their absence leaves out of a run.
 
-## Run
+=== "Trace a pipeline"
 
-```bash
-complydoc demo
-complydoc audit ~/contracts --ocr
-```
+    ```python
+    import complydoc as cd
 
-```python
-import complydoc as cd
+    with cd.observe("contracts-ingest"):
+        documents = PyMuPDF4LLMLoader("contract.pdf").load()
+        chunks = splitter.split_documents(documents)
+        vectors = embeddings.embed_documents([c.page_content for c in chunks])
+    ```
 
-report = cd.full_audit("~/contracts")
-cd.write_json(report, ".complydoc/report.json")
-cd.launch_ui()  # opens the viewer on .complydoc
-```
+    Each loader, splitter and embedding call becomes a step of a trace, written to
+    `.complydoc`. Open it with `complydoc ui`.
 
-## Output
+=== "Audit a folder"
 
-A JSON report, which `complydoc ui` opens in the [viewer](guides/viewer.md). It
-carries `schema_version`, currently 17. Identifiers are masked everywhere in it,
-including the page text, unless the run used `--reveal`; `--page-images` adds a
-picture of each page, which shows them.
+    ```bash
+    complydoc audit ~/contracts
+    complydoc ui
+    ```
+
+    Cost, extraction readiness, identifiers and hidden text, document by document.
+
+=== "Try it on the samples"
+
+    ```bash
+    complydoc demo
+    ```
+
+    A full report on the documents bundled with complydoc, opened in the viewer.
+
+## What you can do
+
+<div class="grid cards" markdown>
+
+-   :material-graph-outline:{ .lg } __Trace a pipeline__
+
+    Every call a LangChain or LlamaIndex pipeline makes, with its settings, time,
+    tokens, cost, and the identifiers it passed on.
+
+    [Observing a pipeline](guides/observe-a-pipeline.md)
+
+-   :material-file-compare:{ .lg } __Compare loaders__
+
+    Several loaders on the same files, one decision per file type, and a diff of
+    each document they read differently.
+
+    [Comparing loaders](guides/compare-loaders.md)
+
+-   :material-scissors-cutting:{ .lg } __Choose a chunk size__
+
+    Six splitters side by side, the chunks drawn over each document, and the
+    sentences and tables they cut.
+
+    [Inspecting chunks](guides/inspect-chunks.md)
+
+-   :material-shield-search:{ .lg } __Find what should not leave__
+
+    Personal and financial identifiers, and instructions hidden for a model,
+    masked in the report and in your pipeline.
+
+    [Identifiers](reference/identifiers.md)
+
+-   :material-cash-multiple:{ .lg } __Price the reading__
+
+    Text and vision tokens for every model, and which pages need OCR or a vision
+    model at all.
+
+    [Page routing](guides/routing.md)
+
+-   :material-source-pull:{ .lg } __Hold it in CI__
+
+    Rules in YAML: no identifier sent to a hosted model, only the hosts you allow,
+    no regression from a baseline.
+
+    [Policy files](guides/policy.md)
+
+</div>
+
+## The viewer and the report
+
+`complydoc ui` opens every report and pipeline run in a folder in your browser, served
+from your machine. A trace shows the calls in a tree with each one's input and output;
+a document shows every page with the chunks drawn over its text and each finding in
+place; two readers of a document show as a diff. See [The report viewer](guides/viewer.md).
+
+The report itself is JSON, carrying `schema_version`, currently 17. Identifiers are
+masked everywhere in it, including the page text, unless the run used `--reveal`;
+`--page-images` adds a picture of each page, which shows them.
 
 ## Network access
 
@@ -63,12 +121,14 @@ The process makes no outbound connections of its own. Before any file is opened,
 are permitted. Each report records whether the guard was active. Model prices
 are vendored as data files.
 
-Two things a caller can ask for send data out. An instruction classifier backed
-by a hosted service sends the passages it judges; the report names the hosts in
-`run.content_sent_to`, states it as an important limitation, and
-`expect(report).no_network()` fails. [`complydoc assist`](guides/assist.md)
-sends a finished report to a hosted chat model. Both need `allow_network=True`
-and neither runs as part of an audit. See
+A pipeline observed with `cd.observe` may need the network, for an embedding API
+say: inside the block, its connections go through and each is recorded against the
+step that made it. Two things a caller can ask for send data out themselves. An
+instruction classifier backed by a hosted service sends the passages it judges; the
+report names the hosts in `run.content_sent_to`, states it as an important
+limitation, and `expect(report).no_network()` fails.
+[`complydoc assist`](guides/assist.md) sends a finished report to a hosted chat
+model. Both need `allow_network=True` and neither runs as part of an audit. See
 [Network isolation](explanation/offline.md).
 
 ## Limits
@@ -81,31 +141,5 @@ and neither runs as part of an audit. See
 - **Hidden-content checks** cover PDF text layers and the markup of Word, Excel,
   PowerPoint, HTML, Markdown and email files, not text inside images.
 
-## Contents
-
-| | |
-| --- | --- |
-| [Audit a folder](guides/audit-a-folder.md) | Running it, and reading the report |
-| [The report viewer](guides/viewer.md) | `complydoc ui`: every report in a folder, in the browser, served from this machine |
-| [Page routing](guides/routing.md) | Which pages need OCR or a vision model, and what the mix costs |
-| [Policy files](guides/policy.md) | Rules in YAML, checked in CI, with Markdown and SARIF output |
-| [GitHub Action](guides/github-action.md) | The policy check on every pull request, with a comment and code scanning |
-| [Drafting quick wins](guides/assist.md) | `complydoc assist`, which sends a report to a hosted chat model |
-| [Safe copies](guides/clean.md) | Masked copies of documents, with their metadata removed |
-| [Python API](guides/python-api.md) | Conventions, strings, configuration in code, extending |
-| [Extracting masked text](guides/extract-masked-text.md) | Masked text, token counts, warnings |
-| [Inspecting a loader](guides/inspect-a-loader.md) | LangChain and LlamaIndex output, metadata, network attempts |
-| [Comparing loaders](guides/compare-loaders.md) | Several loaders on the same files |
-| [Replacing a langchain-community loader](guides/replace-langchain-community.md) | Where each loader went, and what to compare before switching |
-| [Inspecting chunks](guides/inspect-chunks.md) | Splitter output: sizes, cut sentences and tables, facts |
-| [Report tables](guides/report-tables.md) | Jupyter display and pandas tables |
-| [Baselines and tests](guides/baselines-and-tests.md) | Reading reports back, diffs and assertions |
-| [Streaming and steps](guides/streaming-and-steps.md) | Streaming audits, cached loader output, pipeline steps |
-| [Name detection models](guides/name-detection-models.md) | Your own spaCy or other models for names and organisations |
-| [Hidden content](explanation/hidden-content.md) | Visibility and instruction evidence |
-| [Detection accuracy](explanation/accuracy.md) | What detection finds and wrongly flags, measured |
-| [Command line](reference/cli.md) | Every command and flag |
-| [Python API](reference/api.md) | `import complydoc as cd` |
-| [Report JSON](reference/report.md) | The shape a run writes |
-| [Configuration](reference/configuration.md) | The YAML files |
-| [Identifiers](reference/identifiers.md) | Every identifier category and how it is found |
+A hosted companion for teams, complydoc Cloud, is planned.
+[Say if your team would use it](https://github.com/complydoc/complydoc/discussions).

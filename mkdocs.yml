@@ -13,7 +13,7 @@
 
 site_name: complydoc
 site_description: >-
-  Check documents before they reach an LLM.
+  The observability layer for AI ingestion pipelines.
 site_url: https://complydoc.github.io/complydoc/docs/
 repo_url: https://github.com/complydoc/complydoc
 repo_name: complydoc/complydoc
@@ -25,8 +25,8 @@ theme:
   logo: assets/mark.svg
   favicon: assets/favicon.svg
   font:
-    text: Inter
-    code: JetBrains Mono
+    text: Geist
+    code: Geist Mono
   icon:
     repo: fontawesome/brands/github
   palette:
@@ -45,13 +45,19 @@ theme:
         icon: material/weather-sunny
         name: Light
   features:
+    - navigation.tabs
+    - navigation.tabs.sticky
     - navigation.sections
+    - navigation.indexes
+    - navigation.footer
     - navigation.top
     - navigation.tracking
     - navigation.instant
     - content.code.copy
     - content.action.edit
     - search.suggest
+    - search.highlight
+    - content.tabs.link
     - toc.follow
 
 extra_css:
@@ -90,41 +96,49 @@ markdown_extensions:
   - pymdownx.highlight:
       anchor_linenums: true
   - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - pymdownx.snippets:
       base_path: [docs]
       check_paths: true
 
 nav:
-  - Overview: index.md
-  - Guides:
-      - Audit a folder: guides/audit-a-folder.md
+  - Home: index.md
+  - Observe:
+      - Observing a pipeline: guides/observe-a-pipeline.md
       - The report viewer: guides/viewer.md
-      - Page routing: guides/routing.md
-      - Verifying pages with a vision model: guides/verify-with-vision.md
-      - Python API: guides/python-api.md
-      - Extracting masked text: guides/extract-masked-text.md
       - Inspecting a loader: guides/inspect-a-loader.md
       - Comparing loaders: guides/compare-loaders.md
-      - Replacing a langchain-community loader: guides/replace-langchain-community.md
       - Inspecting chunks: guides/inspect-chunks.md
-      - Observing a pipeline: guides/observe-a-pipeline.md
+      - Replacing a langchain-community loader: guides/replace-langchain-community.md
+  - Audit:
+      - Audit a folder: guides/audit-a-folder.md
+      - Page routing: guides/routing.md
+      - Verifying pages with a vision model: guides/verify-with-vision.md
+      - Extracting masked text: guides/extract-masked-text.md
       - Report tables: guides/report-tables.md
-      - Baselines and tests: guides/baselines-and-tests.md
-      - Policy files: guides/policy.md
+      - Safe copies: guides/clean.md
+  - Security:
       - Ignoring findings: guides/ignore-findings.md
       - Your own concepts: guides/custom-concepts.md
-      - GitHub Action: guides/github-action.md
-      - Drafting quick wins: guides/assist.md
-      - Safe copies: guides/clean.md
-      - Streaming and steps: guides/streaming-and-steps.md
       - Name detection models: guides/name-detection-models.md
+      - Drafting quick wins: guides/assist.md
+  - CI and code:
+      - Python API: guides/python-api.md
+      - Streaming and steps: guides/streaming-and-steps.md
+      - Baselines and tests: guides/baselines-and-tests.md
+      - Policy files: guides/policy.md
+      - GitHub Action: guides/github-action.md
   - Reference:
       - Command line: reference/cli.md
       - Python API: reference/api.md
       - Report JSON: reference/report.md
       - Configuration: reference/configuration.md
       - Identifiers: reference/identifiers.md
-  - Design notes:
+  - How it works:
       - Network isolation: explanation/offline.md
       - Unmeasured values: explanation/not-measured.md
       - Evidence tiers: explanation/evidence.md
