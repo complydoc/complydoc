@@ -1,19 +1,22 @@
+import { ChevronDownIcon } from "lucide-react";
 import { useEffect, useRef, type ReactNode } from "react";
 import { EvidenceIcon, SeverityIcon } from "@/components/LevelIcons";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
-import type { PageFinding } from "@/report/pageFindings";
+import type { FindingContext, PageFinding } from "@/report/pageFindings";
+import { FindingBody } from "./FindingBody";
 
 export type PanelView = "findings" | "page";
 
 interface FindingsPanelProps {
   findings: PageFinding[];
-  /** The finding in hand, drawn out in the list as it is in the text. */
+  /** The finding in hand, open in the list and drawn out in the text. */
   active: string | null;
   isIgnored: (finding: PageFinding) => boolean;
-  onPick: (key: string) => void;
-  /** Whether identifiers were looked for at all, so an empty list is not read as a clean one. */
-  scanned: boolean;
+  /** Open a finding and go to it in the text; null closes the one open. */
+  onPick: (key: string | null) => void;
+  /** The line a finding sits in, where its page's text holds it. */
+  contextOf: (finding: PageFinding) => FindingContext | null;
   /** The page being read, whose findings the list keeps in view. */
   current: number;
   /** The page's picture and what a vision model made of it, when the report has either. */
@@ -36,24 +39,26 @@ function Group({ page, title, children }: { page: number | null; title: string; 
 
 function FindingItem({
   finding,
-  active,
+  expanded,
   ignored,
-  onPick,
+  context,
+  onToggle,
 }: {
   finding: PageFinding;
-  active: boolean;
+  expanded: boolean;
   ignored: boolean;
-  onPick: () => void;
+  context: FindingContext | null;
+  onToggle: () => void;
 }) {
   return (
-    <li>
+    <li data-finding={finding.key} className={cn(expanded && "bg-primary/5")}>
       <button
         type="button"
-        onClick={onPick}
-        aria-current={active || undefined}
+        onClick={onToggle}
+        aria-expanded={expanded}
         className={cn(
           "flex w-full items-start gap-2.5 px-3 py-2 text-left transition-colors hover:bg-muted/60",
-          active && "bg-primary/10 hover:bg-primary/15",
+          expanded && "hover:bg-primary/10",
           ignored && "opacity-55",
         )}
       >
@@ -64,27 +69,37 @@ function FindingItem({
             {finding.count > 1 && <span className="text-xs text-muted-foreground">×{finding.count}</span>}
             {ignored && <span className="text-xs text-muted-foreground">ignored</span>}
           </span>
-          <span className="truncate font-mono text-xs text-muted-foreground" title={finding.value}>
-            {finding.value}
-          </span>
+          {!expanded && (
+            <span className="truncate font-mono text-xs text-muted-foreground" title={finding.value}>
+              {finding.value}
+            </span>
+          )}
         </span>
-        {finding.evidence && <EvidenceIcon evidence={finding.evidence} className="mt-0.5 shrink-0" />}
+        {finding.evidence && !expanded && <EvidenceIcon evidence={finding.evidence} className="mt-0.5 shrink-0" />}
+        <ChevronDownIcon
+          className={cn("mt-0.5 size-4 shrink-0 text-muted-foreground transition-transform", expanded && "rotate-180")}
+        />
       </button>
+      {expanded && (
+        <div className="px-3 pt-1 pb-3 pl-9">
+          <FindingBody finding={finding} context={context} />
+        </div>
+      )}
     </li>
   );
 }
 
 /**
- * Beside the text: everything found in the document, page by page, the finding in hand
- * drawn out. A click goes to it in the text. Where the report holds the page's picture,
- * the panel can show that instead.
+ * Beside the text: everything found in the document, page by page. A finding opens in
+ * place, with the line it sits in and a box to ignore it, and the text goes to it. Where
+ * the report holds the page's picture, the panel can show that instead.
  */
 export function FindingsPanel({
   findings,
   active,
   isIgnored,
   onPick,
-  scanned,
+  contextOf,
   current,
   page,
   view,
@@ -93,7 +108,14 @@ export function FindingsPanel({
   const list = useRef<HTMLUListElement>(null);
   const groups = new Map<number | null, PageFinding[]>();
   for (const finding of findings) groups.set(finding.page, [...(groups.get(finding.page) ?? []), finding]);
-  const showing = page ? view : "findings";
+  // Findings are listed only where there are some; a page's picture alone takes the panel.
+  const showing = findings.length === 0 ? "page" : page ? view : "findings";
+
+  // A finding opened from the text is brought into view in the list.
+  useEffect(() => {
+    if (!active) return;
+    list.current?.querySelector(`[data-finding="${active}"]`)?.scrollIntoView?.({ block: "nearest" });
+  }, [active]);
 
   // The list follows the text: reading a page brings that page's findings into view.
   useEffect(() => {
@@ -104,11 +126,11 @@ export function FindingsPanel({
 
   return (
     <aside
-      aria-label="Findings"
+      aria-label={findings.length > 0 ? "Findings" : "Page"}
       className="hidden min-h-0 w-80 shrink-0 flex-col overflow-hidden rounded-xl border bg-card xl:flex"
     >
       <div className="flex h-10 shrink-0 items-center gap-2 border-b px-3">
-        {page ? (
+        {page && findings.length > 0 ? (
           <ToggleGroup
             type="single"
             size="sm"
@@ -120,16 +142,12 @@ export function FindingsPanel({
             <ToggleGroupItem value="page">Page</ToggleGroupItem>
           </ToggleGroup>
         ) : (
-          <span className="text-sm font-medium">Findings</span>
+          <span className="text-sm font-medium">{findings.length > 0 ? "Findings" : "Page"}</span>
         )}
       </div>
 
       {showing === "page" ? (
         <div className="flex min-h-0 flex-1 flex-col gap-3 p-2">{page}</div>
-      ) : findings.length === 0 ? (
-        <p className="p-4 text-sm text-muted-foreground">
-          {scanned ? "Nothing was found in this document." : "Identifiers were not looked for in this run."}
-        </p>
       ) : (
         <ul ref={list} className="relative min-h-0 flex-1 overflow-y-auto pb-2">
           {[...groups].map(([number, items]) => (
@@ -138,9 +156,10 @@ export function FindingsPanel({
                 <FindingItem
                   key={finding.key}
                   finding={finding}
-                  active={finding.key === active}
+                  expanded={finding.key === active}
                   ignored={isIgnored(finding)}
-                  onPick={() => onPick(finding.key)}
+                  context={finding.key === active ? contextOf(finding) : null}
+                  onToggle={() => onPick(finding.key === active ? null : finding.key)}
                 />
               ))}
             </Group>

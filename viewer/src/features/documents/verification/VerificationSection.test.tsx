@@ -1,5 +1,4 @@
 import { screen, within } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { renderPage } from "@/test/render";
 import { sampleAudit, sampleVerified } from "@/test/sample";
 import { wide } from "@/test/setup";
@@ -43,8 +42,8 @@ describe("the vision check on the Documents page", () => {
   it("says beside the page what the check found", async () => {
     wide();
     renderPage(<DocumentsPage report={sampleVerified()} open="0" />);
-    await userEvent.click(screen.getByRole("radio", { name: "Page" }));
-    const page = screen.getByRole("complementary", { name: "Findings" });
+    // Read two ways, it opens on the diff, which lists no findings: the panel is the page's.
+    const page = screen.getByRole("complementary", { name: "Page" });
     expect(within(page).getByRole("note")).toHaveTextContent("A line only the picture had");
   });
 

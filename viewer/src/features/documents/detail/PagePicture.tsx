@@ -23,8 +23,6 @@ interface PagePictureProps {
   ignored?: BoxRef[];
 }
 
-
-
 export function PagePicture({ preview, mark = null, ignored = [] }: PagePictureProps) {
   if (!hasPicture(preview)) {
     return (
@@ -55,7 +53,12 @@ export function PagePicture({ preview, mark = null, ignored = [] }: PagePictureP
           <img src={preview.image_data_uri} alt="" className="absolute inset-0 size-full" />
         ) : (
           preview.text_blocks.map((box, index) => (
-            <span key={index} aria-hidden="true" className="absolute rounded-xs bg-muted-foreground/25" style={place(box)} />
+            <span
+              key={index}
+              aria-hidden="true"
+              className="absolute rounded-xs bg-muted-foreground/25"
+              style={place(box)}
+            />
           ))
         )}
         {preview.sensitive.map((box, index) => {

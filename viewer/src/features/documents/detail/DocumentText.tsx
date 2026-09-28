@@ -82,12 +82,7 @@ export function DocumentText({ pages, inline, chunks, jump, onVisiblePage }: Doc
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border bg-card">
-      <div
-        ref={scroller}
-        onScroll={onScroll}
-        className="min-h-0 flex-1 overflow-y-auto"
-        data-testid="page-reading"
-      >
+      <div ref={scroller} onScroll={onScroll} className="min-h-0 flex-1 overflow-y-auto" data-testid="page-reading">
         {pages.map((page) => (
           <section key={page.number} data-page={page.number} aria-label={`Page ${page.number}`}>
             <header className="sticky top-0 z-10 flex items-center gap-3 border-b bg-muted/85 px-4 py-1.5 font-mono text-xs text-muted-foreground backdrop-blur-sm">

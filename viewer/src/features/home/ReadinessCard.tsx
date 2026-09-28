@@ -13,7 +13,7 @@ export function ReadinessCard({ report }: { report: Report }) {
 
   return (
     // Laid out by the card's own width, not the window's: on Home it shares a row.
-    <Card className="@container">
+    <Card className="@container flex-1">
       <CardContent className="grid items-center gap-8 @xl:grid-cols-[auto_1fr]">
         <ReadinessChart
           score={formatScore(overall.score)}

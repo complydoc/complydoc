@@ -4,8 +4,6 @@ import { BarList } from "@/components/BarList";
 import { EvidenceBadge } from "@/components/EvidenceBadge";
 import { NotInRun } from "@/components/NotInRun";
 import { SplitterTable } from "@/features/chunks/SplitterTable";
-import { Sent } from "@/features/pipeline/Sent";
-import { StepFlow } from "@/features/pipeline/StepFlow";
 import { Section, SectionStack } from "@/components/Section";
 import { ToneBadge } from "@/components/ToneBadge";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,7 +14,6 @@ import { attentionDocuments, topFindings } from "@/report/home";
 import { measured } from "@/report/measured";
 import { documentTotals, reportTotals } from "@/report/plan";
 import { documentHref } from "@/report/route";
-import { sendingStep, stepsOf } from "@/report/traceView";
 import type { Report } from "@/report/types";
 import { ReadinessCard } from "./ReadinessCard";
 
@@ -71,17 +68,8 @@ export function HomePage({ report }: { report: Report }) {
     .sort((a, b) => b.usd - a.usd)
     .slice(0, 8);
 
-  const steps = report.trace ? stepsOf(report.trace) : [];
-  const sending = sendingStep(steps);
-
   return (
     <SectionStack>
-      {steps.length > 0 && (
-        <Section title="Pipeline" aside={<SeeAll href="#pipeline">Every step</SeeAll>}>
-          {sending && <Sent step={sending} />}
-          <StepFlow steps={steps} selected={-1} onSelect={() => window.location.assign("#pipeline")} />
-        </Section>
-      )}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <LinkStat
           href="#documents"
@@ -200,7 +188,7 @@ export function HomePage({ report }: { report: Report }) {
           {measured(report, "readiness") ? (
             <ReadinessCard report={report} />
           ) : (
-            <Card>
+            <Card className="flex-1">
               <CardContent>
                 <NotInRun report={report} content="readiness" size="section" />
               </CardContent>
@@ -208,7 +196,7 @@ export function HomePage({ report }: { report: Report }) {
           )}
         </Section>
         <Section title="Where the cost goes" aside={<SeeAll href="#cost">Cost &amp; time</SeeAll>}>
-          <Card>
+          <Card className="flex-1">
             <CardContent>
               {!priced ? (
                 <NotInRun report={report} content="cost" size="section" />

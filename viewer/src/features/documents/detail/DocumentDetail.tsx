@@ -10,12 +10,12 @@ import { KEPT, canReveal, pageText, readersOf } from "@/report/documentDiff";
 import { fileName, formatPageUsd, formatSeconds } from "@/report/format";
 import { measured } from "@/report/measured";
 import { findingHighlight } from "@/report/highlight";
-import { documentFindings, findingFor } from "@/report/pageFindings";
+import { documentFindings, findingContext, findingFor } from "@/report/pageFindings";
 import { hasPicture } from "@/report/picture";
 import { documentTotals, pageEstimate } from "@/report/plan";
 import type { FindingRef } from "@/report/route";
 import type { DocumentEntry, Report } from "@/report/types";
-import { ChunkPicker, EyeToggle } from "./DocumentControls";
+import { ChunkPicker, EyeToggle, ModeToggle } from "./DocumentControls";
 import { DocumentHeader } from "./DocumentHeader";
 import { DocumentText } from "./DocumentText";
 import { FindingsPanel, type PanelView } from "./FindingsPanel";
@@ -77,6 +77,9 @@ export function DocumentDetail({
   // In the address, so a link from the Chunks page opens the document with its cuts drawn.
   const [chunkBy, setChunkBy] = useHashParam("chunks");
   const layer = layers.find((l) => l.splitter === chunkBy) ?? null;
+  // A document read more than one way opens on the diff, unless a finding or a splitter's
+  // cuts were asked for: those are shown in the text, and the diff shows neither.
+  const [mode, setMode] = useState<"text" | "diff">(() => (finding || chunkBy ? "text" : "diff"));
 
   const findings = useMemo(() => documentFindings(document, unmasked), [document, unmasked]);
   const linked = finding ? findingFor(findings, document, finding) : undefined;
@@ -90,11 +93,7 @@ export function DocumentDetail({
     cancelClose();
     closing.current = window.setTimeout(() => setPicked(null), 300);
   };
-  // Ignored findings stay in the text, struck through and quiet, so they can be brought back.
-  const marks = useMemo<InlineMark[]>(
-    () => findings.map((f) => ({ key: f.key, needle: f.needle, tone: isIgnored(f) ? "ignored" : f.severity })),
-    [findings, isIgnored],
-  );
+
   const page = pages[pageIndex];
   if (!page) {
     return (
@@ -109,7 +108,19 @@ export function DocumentDetail({
 
   // Chunks are placed in the kept text, so drawing them shows that text alone, not the diff.
   const readers = readersOf(report, document);
-  const compared = readers.length > 1 && layer === null;
+  const compared = readers.length > 1 && mode === "diff" && layer === null;
+  // The diff shows the two readings and nothing else: findings are marked and listed only
+  // in a single reading. Ignored ones stay in the text, struck through, to be brought back.
+  const shown = compared ? [] : findings;
+  const marks: InlineMark[] = shown.map((f) => ({
+    key: f.key,
+    needle: f.needle,
+    tone: isIgnored(f) ? "ignored" : f.severity,
+  }));
+  const contextOf = (f: (typeof findings)[number]) => {
+    const on = pages.find((p) => p.number === f.page);
+    return on ? findingContext(pageText(on, KEPT, unmasked), f.needle) : null;
+  };
   const preview = document.previews?.find((p) => p.number === page.number);
   const pictures = (document.previews ?? []).some(hasPicture);
   const verified = document.verification !== null && document.verification !== undefined;
@@ -207,6 +218,15 @@ export function DocumentDetail({
         hidden={open.filter((f) => f.kind === "hidden").length}
         controls={
           <>
+            {readers.length > 1 && (
+              <ModeToggle
+                value={compared ? "diff" : "text"}
+                onChange={(next) => {
+                  setMode(next);
+                  if (next === "diff") setChunkBy(null);
+                }}
+              />
+            )}
             {layers.length > 0 && <ChunkPicker layers={layers} value={chunkBy} onChange={setChunkBy} />}
             {!compared && eyeToggle}
           </>
@@ -241,17 +261,22 @@ export function DocumentDetail({
             />
           )}
         </div>
-        <FindingsPanel
-          findings={findings}
-          active={active}
-          isIgnored={isIgnored}
-          onPick={inline.onRail}
-          scanned={scanned}
-          current={page.number}
-          page={pagePanel}
-          view={view}
-          onView={setView}
-        />
+        {(shown.length > 0 || pagePanel) && (
+          <FindingsPanel
+            findings={shown}
+            active={active}
+            isIgnored={isIgnored}
+            onPick={(key) => {
+              if (key) inline.onRail(key);
+              else setActive(null);
+            }}
+            contextOf={contextOf}
+            current={page.number}
+            page={pagePanel}
+            view={view}
+            onView={setView}
+          />
+        )}
       </div>
 
       <FindingPopover

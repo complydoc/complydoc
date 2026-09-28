@@ -24,7 +24,11 @@ interface FindingRailProps {
 export function FindingRail({ ticks, active, onPick, label }: FindingRailProps) {
   if (ticks.length === 0) return null;
   return (
-    <div aria-label="Where the findings are" role="group" className="pointer-events-none absolute inset-y-1 right-1 w-2">
+    <div
+      aria-label="Where the findings are"
+      role="group"
+      className="pointer-events-none absolute inset-y-1 right-1 w-2"
+    >
       {ticks.map((tick) => (
         <button
           key={`${tick.key}-${tick.at.toFixed(3)}`}

@@ -125,3 +125,36 @@ export function ignoreDescription(finding: PageFinding): string {
   if (finding.match) return `${finding.label} ${finding.match.masked}`;
   return finding.page !== null ? `${finding.label} on page ${finding.page}` : finding.label;
 }
+
+export interface FindingContext {
+  before: string;
+  hit: string;
+  after: string;
+}
+
+/** Characters shown either side of a finding in its context line. */
+const AROUND = 70;
+
+/**
+ * The text around a finding on its page: what comes before and after it, cut at a line
+ * break or `AROUND` characters, whichever is nearer. Spacing in the value is not required
+ * to match, as a masked value's spacing need not be the page's. Null where it is not found.
+ */
+export function findingContext(pageText: string, needle: string): FindingContext | null {
+  const words = needle.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return null;
+  const pattern = new RegExp(words.map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("\\s*"));
+  const match = pattern.exec(pageText);
+  if (!match) return null;
+  const start = match.index;
+  const end = start + match[0].length;
+  const lineStart = pageText.lastIndexOf("\n", start - 1) + 1;
+  const lineEnd = pageText.indexOf("\n", end);
+  const from = Math.max(lineStart, start - AROUND);
+  const to = Math.min(lineEnd === -1 ? pageText.length : lineEnd, end + AROUND);
+  return {
+    before: (from > lineStart ? "…" : "") + pageText.slice(from, start),
+    hit: match[0],
+    after: pageText.slice(end, to) + (to < (lineEnd === -1 ? pageText.length : lineEnd) ? "…" : ""),
+  };
+}

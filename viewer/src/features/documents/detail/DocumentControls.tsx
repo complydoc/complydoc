@@ -1,6 +1,7 @@
 import { EyeIcon, EyeOffIcon, ScissorsIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { ChunkLayer } from "@/report/chunkPlaces";
 import { splitterName } from "@/report/chunkView";
@@ -79,3 +80,20 @@ export function ChunkPicker({
 }
 
 const NONE = "__none__";
+
+/** For a document read more than one way: its text, with what was found, or the diff of two readings. */
+export function ModeToggle({ value, onChange }: { value: "text" | "diff"; onChange: (mode: "text" | "diff") => void }) {
+  return (
+    <ToggleGroup
+      type="single"
+      variant="outline"
+      size="sm"
+      value={value}
+      onValueChange={(next) => next && onChange(next as "text" | "diff")}
+      aria-label="Show"
+    >
+      <ToggleGroupItem value="text">Text</ToggleGroupItem>
+      <ToggleGroupItem value="diff">Diff</ToggleGroupItem>
+    </ToggleGroup>
+  );
+}

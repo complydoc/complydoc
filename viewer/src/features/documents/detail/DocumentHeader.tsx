@@ -46,7 +46,10 @@ export function DocumentHeader({
   return (
     <header className="flex shrink-0 flex-col gap-1.5">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <h2 className="min-w-0 truncate font-heading text-xl font-semibold tracking-tight" title={document.relative_path}>
+        <h2
+          className="min-w-0 truncate font-heading text-xl font-semibold tracking-tight"
+          title={document.relative_path}
+        >
           {folder && <span className="font-normal text-muted-foreground">{folder}/</span>}
           {name}
         </h2>

@@ -32,8 +32,9 @@ function open(report: Report, name: string, where: { page?: number; finding?: Fi
 
 /** The panel beside the text, turned to the page's picture and vision check. */
 async function side() {
-  await userEvent.click(screen.getByRole("radio", { name: "Page" }));
-  return screen.getByRole("complementary", { name: "Findings" });
+  const toggle = screen.queryByRole("radio", { name: "Page" });
+  if (toggle) await userEvent.click(toggle);
+  return screen.getByRole("complementary", { name: /^(Findings|Page)$/ });
 }
 
 const pageNav = () => screen.getByRole("navigation", { name: "Pages" });
@@ -122,7 +123,9 @@ describe("DocumentDetail", () => {
     const first = required(document.sensitive.matches[0]);
     const item = required(within(panel).getAllByRole("button", { name: new RegExp(first.label) })[0]);
     await userEvent.click(item);
-    expect(item).toHaveAttribute("aria-current", "true");
+    expect(item).toHaveAttribute("aria-expanded", "true");
+    // Open, it says where the value sits and offers to ignore it.
+    expect(within(panel).getByRole("checkbox")).toBeInTheDocument();
     await vi.waitFor(() => expect(marked(registry, "active").length).toBeGreaterThan(0));
     stopRecording();
   });
@@ -193,6 +196,7 @@ describe("DocumentDetail", () => {
 
   it("shows the page's picture beside the text in place of the findings, on request", async () => {
     open(sampleAudit(), "master-services-agreement.pdf", { page: 3 });
+    await userEvent.click(screen.getByRole("radio", { name: "Text" }));
     expect(within(await side()).getByRole("figure", { name: "Page 3" })).toBeInTheDocument();
     await userEvent.click(screen.getByRole("radio", { name: "Findings" }));
     expect(screen.queryByRole("figure", { name: "Page 3" })).not.toBeInTheDocument();
