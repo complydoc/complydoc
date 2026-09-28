@@ -16,14 +16,14 @@ export function Hero() {
         <div className="grid items-center gap-12 *:min-w-0 lg:grid-cols-[1fr_auto]">
           <div className="flex max-w-2xl flex-col gap-6">
             <AsciiMark art={MARK_SMALL} className="text-[9px] lg:hidden" />
-            <p className="font-mono text-xs text-muted-foreground">document audit for AI pipelines · open source</p>
+            <p className="font-mono text-xs text-muted-foreground">observability for AI ingestion · open source</p>
             <h1 id="hero-title" className="text-4xl font-semibold tracking-tight text-balance md:text-6xl">
-              Know what your document loader extracted.
+              The observability layer for AI ingestion pipelines.
             </h1>
             <p className="text-lg text-pretty text-muted-foreground">
-              complydoc audits documents, and the output of LangChain, LlamaIndex, Docling or any other loader, before
-              they are embedded or sent to a model. It reports on security, cost, processing time and extracted content,
-              page by page.
+              See every step between your documents and your vector store: loading, cleaning, splitting and embedding.
+              complydoc traces your LangChain or LlamaIndex pipeline as it runs, and shows what each step cost, how long it
+              took, what it extracted, and which identifiers it let through.
             </p>
             <div className="flex flex-wrap items-center gap-3">
               <ButtonGroup>

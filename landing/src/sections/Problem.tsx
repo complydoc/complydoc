@@ -13,15 +13,15 @@ const ISSUES: Issue[] = [
   {
     area: "Content",
     icon: FileWarningIcon,
-    title: "What the loader extracted",
+    title: "What each step did to the text",
     detail:
-      "Two-column pages read across the columns, tables flattened into lines, headers repeated in every chunk. Loaders do not report any of this as an error.",
+      "Two-column pages read across the columns, tables flattened into lines, sentences cut between chunks. The trace shows it step by step, and the diff shows it line by line.",
   },
   {
     area: "Time",
     icon: TimerIcon,
-    title: "How long it takes",
-    detail: "Loaders differ in speed on the same files, and the slower one does not always extract more.",
+    title: "Where the time goes",
+    detail: "Every call is timed and placed in the run, so the slow loader, the slow file and the slow step stand out.",
   },
   {
     area: "Cost",
@@ -32,9 +32,9 @@ const ISSUES: Issue[] = [
   {
     area: "Security",
     icon: ShieldAlertIcon,
-    title: "What ends up in your index",
+    title: "What leaves the machine",
     detail:
-      "Personal and financial identifiers, and hidden text addressed to AI assistants, pass through loaders unchanged.",
+      "Each identifier is followed from the loader to the embedding call, so you see which ones reached a hosted model, and can fail CI when one does.",
   },
 ];
 
@@ -43,12 +43,12 @@ export function Problem() {
     <Section
       id="problem"
       eyebrow="The problem"
-      title="Loaders are usually chosen without checking what they extract."
+      title="Ingestion decides what your model will ever see, and nothing watches it."
       lead={
         <>
-          The choice is often made in a notebook: load a PDF, read the first page, move on. After that, the loader
-          decides which clauses reach the index, whether tables keep their structure, which identifiers get embedded,
-          and which pages go to a vision model. complydoc measures each of these on your own files.
+          A loader flattens a table, a splitter cuts a clause in half, an embedding call sends a customer's account
+          number to a hosted model. None of it raises an error. complydoc records each step of your pipeline as it runs,
+          and measures what it did to your own files.
         </>
       }
     >

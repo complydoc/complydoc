@@ -9,6 +9,7 @@ import { parseTarget } from "@/report/route";
 import type { Report } from "@/report/types";
 import { DocumentDetail } from "./detail/DocumentDetail";
 import { DocumentTree } from "./DocumentTree";
+import { LoadersSection } from "./loaders/LoadersSection";
 import { VerificationSection } from "./verification/VerificationSection";
 
 interface DocumentsPageProps {
@@ -39,6 +40,9 @@ export function DocumentsPage({ report, open }: DocumentsPageProps) {
 
   return (
     <SectionStack>
+      {/* Several loaders read these documents: which to use for each type, and the files they
+          read differently, each opening its diff below. */}
+      {report.loader_comparison && <LoadersSection report={report} comparison={report.loader_comparison} />}
       <Section title="Documents" aside={<FolderTotals report={report} />}>
         <DocumentTree
           nodes={documentTree(report, plan)}

@@ -15,6 +15,8 @@ import { Button } from "@/components/ui/button";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { useRunWith } from "@/hooks/useFolderRuns";
 import { runKind, runLabel } from "@/report/collections";
+import type { Page } from "@/app/pages";
+import { guideFor } from "@/report/docs";
 import { commandFor, type Content } from "@/report/measured";
 import type { Report } from "@/report/types";
 
@@ -87,15 +89,29 @@ function Command({ command }: { command: string }) {
   };
   return (
     <div className="flex w-full min-w-0 items-center gap-1 rounded-lg border bg-muted/40 py-1 pr-1 pl-3 text-left">
-      <code className="min-w-0 flex-1 font-mono text-xs break-all">
-        {command}
-      </code>
-      <Button variant="ghost" size="icon-sm" onClick={() => void copy()} aria-label={copied ? "Copied" : "Copy the command"}>
+      <code className="min-w-0 flex-1 font-mono text-xs break-all">{command}</code>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        onClick={() => void copy()}
+        aria-label={copied ? "Copied" : "Copy the command"}
+      >
         {copied ? <CheckIcon /> : <CopyIcon />}
       </Button>
     </div>
   );
 }
+
+/** The page whose guide explains how to fill each kind of content. */
+const GUIDE_PAGE: Record<Content, Page> = {
+  sensitive: "security",
+  cost: "cost",
+  readiness: "home",
+  loaders: "documents",
+  chunks: "chunks",
+  documents: "documents",
+  trace: "pipeline",
+};
 
 interface NotInRunProps {
   report: Report;
@@ -146,6 +162,14 @@ export function NotInRun({ report, content, size = "page" }: NotInRunProps) {
         )}
         <Command command={command} />
         {note && <p className="text-xs text-muted-foreground">{note}</p>}
+        <a
+          href={guideFor(GUIDE_PAGE[content])}
+          target="_blank"
+          rel="noreferrer"
+          className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+        >
+          How to, in the documentation
+        </a>
       </EmptyContent>
     </Empty>
   );

@@ -31,10 +31,9 @@ describe("AppSidebar", () => {
 
   it("folds away the pages the run has nothing for, and keeps them reachable", async () => {
     renderSidebar();
-    // The sample is an audit: no loader comparison, no chunks.
-    expect(screen.queryByRole("link", { name: "Loaders" })).not.toBeInTheDocument();
+    // The sample is an audit: no chunks.
+    expect(screen.queryByRole("link", { name: "Chunks" })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: /Not in this run/ }));
-    expect(screen.getByRole("link", { name: "Loaders" })).toHaveAttribute("title", "Not in this run");
     expect(screen.getByRole("link", { name: "Chunks" })).toHaveAttribute("title", "Not in this run");
     expect(screen.getByRole("link", { name: "Security" })).not.toHaveAttribute("title");
   });

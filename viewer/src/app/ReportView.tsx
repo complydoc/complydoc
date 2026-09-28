@@ -12,7 +12,6 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/s
 import { ChunksPage } from "@/features/chunks/ChunksPage";
 import { CostPage } from "@/features/cost/CostPage";
 import { DocumentsPage } from "@/features/documents/DocumentsPage";
-import { LoadersPage } from "@/features/loaders/LoadersPage";
 import { PipelinePage } from "@/features/pipeline/PipelinePage";
 import { RunsPage } from "@/features/runs/RunsPage";
 import { ReviewQueue } from "@/features/security/ReviewQueue";
@@ -109,9 +108,7 @@ export function ReportView({
             <PageErrorBoundary>
               <OverviewPage
                 collections={collections}
-                onOpen={(id) =>
-                  onSelect({ collection: id, run: leadIdOf(collections.find((c) => c.id === id)) })
-                }
+                onOpen={(id) => onSelect({ collection: id, run: leadIdOf(collections.find((c) => c.id === id)) })}
               />
             </PageErrorBoundary>
           </main>
@@ -169,26 +166,32 @@ export function ReportView({
                 <ModeToggle dark={dark} onToggle={onToggleTheme} />
               </div>
             </header>
-            <main className={cn("mx-auto w-full p-4 md:p-6", page === "documents" || page === "pipeline" ? "max-w-none" : "max-w-7xl")}>
+            <main
+              className={cn(
+                "mx-auto w-full p-4 md:p-6",
+                page === "documents" || page === "pipeline" ? "max-w-none" : "max-w-7xl",
+              )}
+            >
               {/* Keyed by page and run, so moving on from a page that failed shows the next one. */}
-            <PageErrorBoundary key={`${run.id}:${page}:${detail ?? ""}`}>
-              <IgnoreProvider report={report} {...(run.source ? { source: run.source } : {})}>
-                {page === "home" && <HomePage report={report} />}
-                {page === "pipeline" && <PipelinePage report={report} />}
-                {page === "security" &&
-                  (detail?.startsWith("review") ? (
-                    <ReviewQueue report={report} at={Number(detail.split("/")[1] ?? 0) || 0} />
-                  ) : (
-                    <SecurityPage report={report} />
-                  ))}
-                {page === "cost" && <CostPage report={report} />}
-                {page === "documents" && <DocumentsPage report={report} open={detail} />}
-                {page === "loaders" && <LoadersPage report={report} />}
-                {page === "chunks" && <ChunksPage report={report} />}
-                {page === "runs" && <RunsPage />}
-                {page === "settings" && <SettingsPage report={report} {...(run.source ? { source: run.source } : {})} />}
-              </IgnoreProvider>
-            </PageErrorBoundary>
+              <PageErrorBoundary key={`${run.id}:${page}:${detail ?? ""}`}>
+                <IgnoreProvider report={report} {...(run.source ? { source: run.source } : {})}>
+                  {page === "home" && <HomePage report={report} />}
+                  {page === "pipeline" && <PipelinePage report={report} />}
+                  {page === "security" &&
+                    (detail?.startsWith("review") ? (
+                      <ReviewQueue report={report} at={Number(detail.split("/")[1] ?? 0) || 0} />
+                    ) : (
+                      <SecurityPage report={report} />
+                    ))}
+                  {page === "cost" && <CostPage report={report} />}
+                  {page === "documents" && <DocumentsPage report={report} open={detail} />}
+                  {page === "chunks" && <ChunksPage report={report} />}
+                  {page === "runs" && <RunsPage />}
+                  {page === "settings" && (
+                    <SettingsPage report={report} {...(run.source ? { source: run.source } : {})} />
+                  )}
+                </IgnoreProvider>
+              </PageErrorBoundary>
             </main>
           </SidebarInset>
         </SidebarProvider>

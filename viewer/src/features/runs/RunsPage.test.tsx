@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { FolderRunsContext } from "@/hooks/useFolderRuns";
 import type { Loaded } from "@/report/collections";
 import { sampleAudit, sampleReport } from "@/test/sample";
+import { traceReport } from "@/test/trace";
 import { RunsPage } from "./RunsPage";
 
 function at(started: string) {
@@ -39,5 +40,26 @@ describe("RunsPage", () => {
     await userEvent.click(screen.getByText("Loader comparison"));
     expect(open).toHaveBeenCalledWith("loaders");
     expect(window.location.hash).toBe("#home");
+  });
+
+  it("compares two runs of a pipeline, step by step", async () => {
+    const pipeline = (id: string, started: string): Loaded => {
+      const report = traceReport();
+      return { id, name: `${id}.json`, report: { ...report, run: { ...report.run, started_at: started } } };
+    };
+    const runs = [pipeline("b", "2026-09-03T10:00:00+00:00"), pipeline("a", "2026-09-01T10:00:00+00:00")];
+    render(
+      <FolderRunsContext.Provider value={{ runs, current: "b", open: () => {} }}>
+        <RunsPage />
+      </FolderRunsContext.Provider>,
+    );
+    // Asked for afresh each time: ticking one draws the rows again.
+    const box = (index: number) =>
+      within(screen.getByRole("table", { name: "Runs" })).getAllByRole("checkbox")[index] as HTMLElement;
+    await userEvent.click(box(0));
+    await userEvent.click(box(1));
+    const steps = screen.getByRole("table", { name: "Steps compared" });
+    expect(within(steps).getAllByRole("row")).toHaveLength(5);
+    expect(screen.getByRole("table", { name: "The two runs" })).toHaveTextContent("Identifiers sent");
   });
 });

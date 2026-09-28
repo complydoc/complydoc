@@ -177,7 +177,7 @@ function TypeCard({ report, type }: { report: Report; type: TypeDecision }) {
 export function LoadersSection({ report, comparison }: { report: Report; comparison: LoaderComparison }) {
   const view = loaderView(report, comparison);
   return (
-    <Section title="Loaders">
+    <Section title="Which loader to use">
       <div className="flex flex-col gap-4">
         {view.decided.map((type) => (
           <TypeCard key={type.key} report={report} type={type} />

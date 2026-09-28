@@ -1,4 +1,5 @@
 import { nestedTrace, sampleTrace, stage } from "@/test/trace";
+import { pairSteps } from "./traceCompare";
 import { spansOf, timeByKind } from "./traceTree";
 import { changeBetween, pipelineShape, sendingStep, stepsOf, trailsOf } from "./traceView";
 
@@ -80,5 +81,41 @@ describe("spansOf for an audit", () => {
     ]);
     // From the first document's start to the last one's end.
     expect(contracts?.stage.seconds).toBe(3);
+  });
+});
+
+describe("pairSteps", () => {
+  it("lines up two runs' steps, a step one lacks against a gap, and names the settings that changed", () => {
+    const first = sampleTrace();
+    const second = sampleTrace();
+    const masking = stage(9, {
+      kind: "transform",
+      component: "MaskIdentifiers",
+      method: "transform_documents",
+      scanned: "patterns",
+    });
+    second.stages = [
+      ...second.stages.slice(0, 3),
+      masking,
+      ...second.stages
+        .slice(3)
+        .map((s) =>
+          s.component === "RecursiveCharacterTextSplitter"
+            ? { ...s, parameters: { chunk_size: 1200, chunk_overlap: 120 } }
+            : s,
+        ),
+    ];
+    const pairs = pairSteps(first, second);
+    expect(pairs.map((p) => [p.a?.component ?? null, p.b?.component ?? null])).toEqual([
+      ["PyPDFLoader", "PyPDFLoader"],
+      ["StripPathMetadata", "StripPathMetadata"],
+      [null, "MaskIdentifiers"],
+      ["RecursiveCharacterTextSplitter", "RecursiveCharacterTextSplitter"],
+      ["OpenAIEmbeddings", "OpenAIEmbeddings"],
+    ]);
+    expect(pairs[3]?.changed).toEqual([
+      { name: "chunk_overlap", a: 0, b: 120 },
+      { name: "chunk_size", a: 400, b: 1200 },
+    ]);
   });
 });

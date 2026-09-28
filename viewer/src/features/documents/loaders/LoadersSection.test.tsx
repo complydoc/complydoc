@@ -1,12 +1,12 @@
 import { screen, within } from "@testing-library/react";
 import { renderPage } from "@/test/render";
 import { sampleReport, sampleWithComparison } from "@/test/sample";
-import { LoadersPage } from "./LoadersPage";
+import { DocumentsPage } from "../DocumentsPage";
 
-describe("LoadersPage", () => {
+describe("Which loader to use, on the Documents page", () => {
   it("opens with the loaders and the one to use", () => {
-    renderPage(<LoadersPage report={sampleReport()} />);
-    const loaders = screen.getByRole("region", { name: "Loaders" });
+    renderPage(<DocumentsPage open={null} report={sampleReport()} />);
+    const loaders = screen.getByRole("region", { name: "Which loader to use" });
     expect(within(loaders).getByText("Use pypdf")).toBeInTheDocument();
     const table = within(loaders).getByRole("table", { name: "Loaders on Every file" });
     expect(within(table).getAllByRole("row")).toHaveLength(3);
@@ -15,31 +15,30 @@ describe("LoadersPage", () => {
 
   it("says which loader did not keep an expected fact", () => {
     const report = sampleReport();
-    renderPage(<LoadersPage report={report} />);
+    renderPage(<DocumentsPage open={null} report={report} />);
     const check = report.loader_comparison?.facts.find((f) => Object.values(f.found).some((m) => m !== "exact"));
     if (!check) throw new Error("the sample has a fact a loader missed");
     expect(screen.getByText(`“${check.fact}”`)).toBeInTheDocument();
   });
 
   it("lists the files the loaders read differently, each a way to its diff", () => {
-    renderPage(<LoadersPage report={sampleReport()} />);
+    renderPage(<DocumentsPage open={null} report={sampleReport()} />);
     const links = screen.getAllByRole("link").filter((link) => link.getAttribute("href")?.startsWith("#documents/"));
     expect(links.length).toBeGreaterThan(0);
   });
 
-  it("says a run that compared no loaders did not, and how to", () => {
+  it("leaves it out of a run that compared no loaders, which lists its documents alone", () => {
     const report = { ...sampleReport(), loader_comparison: null };
-    renderPage(<LoadersPage report={report} />);
-    expect(screen.queryByRole("region", { name: "Loaders" })).not.toBeInTheDocument();
-    expect(screen.getByText("No loader comparison in this run")).toBeInTheDocument();
-    expect(screen.getByText("complydoc compare-loaders loaders.yaml")).toBeInTheDocument();
+    renderPage(<DocumentsPage open={null} report={report} />);
+    expect(screen.queryByRole("region", { name: "Which loader to use" })).not.toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Documents" })).toBeInTheDocument();
   });
 
   it("says so when no loader can be recommended", () => {
     const report = sampleWithComparison();
     report.loader_comparison.recommended = null;
     report.loader_comparison.verdict = "They read the same documents differently.";
-    renderPage(<LoadersPage report={report} />);
+    renderPage(<DocumentsPage open={null} report={report} />);
     expect(screen.getByText("No clear pick")).toBeInTheDocument();
     expect(screen.getByText("They read the same documents differently.")).toBeInTheDocument();
     expect(screen.queryByText("use")).not.toBeInTheDocument();
@@ -95,7 +94,7 @@ describe("LoadersPage", () => {
       verdict: "docx2txt is the only loader meant for Word files",
       ranked: ["docx2txt"],
     });
-    renderPage(<LoadersPage report={report} />);
+    renderPage(<DocumentsPage open={null} report={report} />);
     const pdf = screen.getByRole("table", { name: "Loaders on PDF" });
     expect(within(pdf).getByText("failed on 1", { exact: false })).toBeInTheDocument();
     expect(screen.getByText("Use pypdf")).toBeInTheDocument();

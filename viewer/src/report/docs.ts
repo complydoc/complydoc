@@ -9,7 +9,6 @@ const GUIDES: Partial<Record<Page, string>> = {
   security: "reference/identifiers/",
   cost: "guides/audit-a-folder/",
   documents: "guides/viewer/",
-  loaders: "guides/compare-loaders/",
   chunks: "guides/inspect-chunks/",
   runs: "guides/viewer/",
   settings: "guides/ignore-findings/",
