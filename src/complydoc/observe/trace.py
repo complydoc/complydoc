@@ -88,7 +88,7 @@ def build_report(
         report.chunks = chunk_reports
 
     loads = [r for r in _outermost(recordings, "load") if r.outputs]
-    scans: dict[tuple[str, int], list[SensitiveMatch]] = {}
+    scans = _Scans()
     stages = []
     for recording in recordings:
         config = config_for(recording)
@@ -222,7 +222,7 @@ def _stage(
     config: Config | None,
     reveal: bool,
     root: Path | None,
-    scans: dict[tuple[str, int], list[SensitiveMatch]],
+    scans: _Scans,
     chunks: int | None,
     report: AuditReport | None,
     measurer: Measurer,
@@ -241,15 +241,9 @@ def _stage(
     else:
         matches = _report_matches(report) if report is not None else None
         if matches is None:
-            matches = [m for text in texts for m in _scan(text, config, reveal, scans)]
+            matches = [m for text in texts for m in scans.matches(text, config, reveal)]
         identifiers = _by_fingerprint(matches)
-        with offline.guarded():
-            hidden = sum(
-                1
-                for text in texts
-                for finding in find_hidden(text, config=config)
-                if finding.severity in ("medium", "high")
-            )
+        hidden = sum(scans.hidden(text, config) for text in texts)
 
     keys_out = sorted({key for _, metadata in passed for key in metadata}) if not embed else []
     keys_in = {key for _, metadata in given for key in metadata}
@@ -317,15 +311,35 @@ def _contents(items: list[Any] | None) -> list[tuple[str, dict[str, Any]]]:
     return contents
 
 
-def _scan(
-    text: str, config: Config, reveal: bool, scans: dict[tuple[str, int], list[SensitiveMatch]]
-) -> list[SensitiveMatch]:
-    """Matches in `text`, each distinct text scanned once per configuration."""
-    key = (text, id(config))
-    if key not in scans:
-        with offline.guarded():
-            scans[key] = scan_text(text, config.sensitive, reveal)[0]
-    return scans[key]
+class _Scans:
+    """Each distinct text scanned once per configuration, however many stages pass it on.
+
+    A stage that leaves the text alone, such as one that only rewrites metadata, passes on
+    exactly what it was given, so its scan is the previous stage's.
+    """
+
+    def __init__(self) -> None:
+        self._matches: dict[tuple[str, int], list[SensitiveMatch]] = {}
+        self._hidden: dict[tuple[str, int], int] = {}
+
+    def matches(self, text: str, config: Config, reveal: bool) -> list[SensitiveMatch]:
+        key = (text, id(config))
+        if key not in self._matches:
+            with offline.guarded():
+                self._matches[key] = scan_text(text, config.sensitive, reveal)[0]
+        return self._matches[key]
+
+    def hidden(self, text: str, config: Config) -> int:
+        """How many passages of `text` are hidden or instruction-like at medium or high."""
+        key = (text, id(config))
+        if key not in self._hidden:
+            with offline.guarded():
+                self._hidden[key] = sum(
+                    1
+                    for finding in find_hidden(text, config=config)
+                    if finding.severity in ("medium", "high")
+                )
+        return self._hidden[key]
 
 
 def _report_matches(report: AuditReport) -> list[SensitiveMatch] | None:

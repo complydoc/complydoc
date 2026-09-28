@@ -65,7 +65,7 @@ const COLUMNS: Columns<RunRow> = [
   column.accessor("holds", {
     header: "Holds",
     cell: ({ row }) => (
-      <span className="flex flex-wrap items-center gap-1.5">
+      <span className="flex flex-wrap items-center gap-1.5 whitespace-normal">
         <span className="text-muted-foreground">{row.original.holds}</span>
         {row.original.traits.map((trait) => (
           <Badge

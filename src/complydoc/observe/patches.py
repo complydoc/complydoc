@@ -13,6 +13,7 @@ import functools
 import importlib
 import importlib.metadata
 import inspect
+import sys
 from collections.abc import AsyncIterator, Callable, Iterator
 from dataclasses import dataclass
 from typing import Any, Final
@@ -164,6 +165,10 @@ def uninstall() -> None:
 
 
 def _base(module: str, name: str) -> type | None:
+    # A library the program has not imported has no classes to observe, and importing it
+    # here would cost the program the import (most of a second for LlamaIndex).
+    if module.partition(".")[0] not in sys.modules:
+        return None
     try:
         found = getattr(importlib.import_module(module), name, None)
     except ImportError:

@@ -68,15 +68,22 @@ export function PipelineCompare({ older, newer }: { older: Loaded; newer: Loaded
   const b = newer.report.trace;
   if (!a || !b) return null;
   const [fa, fb] = [runFigures(a), runFigures(b)];
-  const header = (run: Loaded): ReactNode => <span className="font-normal">{runLabel(run.report)}</span>;
+  // Runs made minutes apart share a label to the minute, so the seconds tell them apart.
+  const precise = runLabel(older.report) === runLabel(newer.report);
+  const header = (run: Loaded, which: string): ReactNode => (
+    <span className="flex flex-col font-normal">
+      <span className="font-medium text-foreground">{which}</span>
+      <span className="text-xs text-muted-foreground">{runLabel(run.report, precise)}</span>
+    </span>
+  );
   return (
     <div className="flex flex-col gap-4">
       <Table aria-label="The two runs">
         <TableHeader>
           <TableRow>
             <TableHead />
-            <TableHead className="text-right">{header(older)}</TableHead>
-            <TableHead className="text-right">{header(newer)}</TableHead>
+            <TableHead className="h-auto py-2 text-right">{header(older, "Earlier")}</TableHead>
+            <TableHead className="h-auto py-2 text-right">{header(newer, "Later")}</TableHead>
             <TableHead className="text-right">Change</TableHead>
           </TableRow>
         </TableHeader>
@@ -101,8 +108,8 @@ export function PipelineCompare({ older, newer }: { older: Loaded; newer: Loaded
         <TableHeader>
           <TableRow>
             <TableHead>Step</TableHead>
-            <TableHead>{header(older)}</TableHead>
-            <TableHead>{header(newer)}</TableHead>
+            <TableHead className="h-auto py-2">{header(older, "Earlier")}</TableHead>
+            <TableHead className="h-auto py-2">{header(newer, "Later")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

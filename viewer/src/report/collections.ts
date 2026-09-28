@@ -130,8 +130,8 @@ export function runTraits(report: Report): string[] {
 }
 
 /** When a run started, as a person reads it. */
-export function runLabel(report: Report): string {
+export function runLabel(report: Report, seconds = false): string {
   const started = new Date(report.run.started_at);
   if (Number.isNaN(started.getTime())) return report.run.started_at || "unknown time";
-  return started.toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" });
+  return started.toLocaleString("en-GB", { dateStyle: "medium", timeStyle: seconds ? "medium" : "short" });
 }
