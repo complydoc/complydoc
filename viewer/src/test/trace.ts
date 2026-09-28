@@ -2,7 +2,7 @@ import type { StageIdentifier, Trace, TraceStage } from "@/report/traceTypes";
 import type { Report } from "@/report/types";
 import { sampleAudit } from "./sample";
 
-export function identifier(fingerprint: string, overrides: Partial<StageIdentifier> = {}): StageIdentifier {
+function identifier(fingerprint: string, overrides: Partial<StageIdentifier> = {}): StageIdentifier {
   return {
     fingerprint,
     label: "IBAN",

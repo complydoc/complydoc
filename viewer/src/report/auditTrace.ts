@@ -57,11 +57,11 @@ function stage(fields: Partial<TraceStage> & Pick<TraceStage, "index" | "kind" |
 }
 
 /** Whether the run recorded enough to be read as a trace: documents, each timed. */
-export function hasAuditTrace(report: Report): boolean {
+function hasAuditTrace(report: Report): boolean {
   return report.documents.length > 0 && report.documents.every((d) => d.timing);
 }
 
-export function auditTrace(report: Report): Trace | null {
+function auditTrace(report: Report): Trace | null {
   if (!hasAuditTrace(report)) return null;
   const began = Math.min(...report.documents.map((d) => d.timing?.started_at ?? Number.POSITIVE_INFINITY));
   const scanned = measured(report, "sensitive");

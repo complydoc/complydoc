@@ -249,8 +249,8 @@ def registered_concept_judge() -> ConceptJudge | None:
 
 def resolve_concept_judge(spec: str) -> ConceptJudge:
     """The judge a run names: `jev`, which sends page text to TypeSafe."""
-    if spec != "jev":
-        raise ConceptError(f"no concept judge named {spec!r}; the one there is: jev")
+    if spec not in JUDGES:
+        raise ConceptError(f"no concept judge named {spec!r}; there is: {', '.join(JUDGES)}")
     from complydoc.integrations.typesafe import jev_concept_judge
 
     try:

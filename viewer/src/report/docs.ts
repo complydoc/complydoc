@@ -1,7 +1,7 @@
 /** Where the documentation is, and which guide explains each page of the viewer. */
 import type { Page } from "@/app/pages";
 
-export const DOCS = "https://complydoc.github.io/complydoc/docs";
+const DOCS = "https://complydoc.github.io/complydoc/docs";
 
 const GUIDES: Partial<Record<Page, string>> = {
   home: "guides/viewer/",

@@ -13,7 +13,6 @@ export function sampleReport(): Report {
 }
 
 export const sampleText = loadersRaw;
-export const auditText = auditRaw;
 
 /** The sample report with its loader comparison, which it always has. */
 export function sampleWithComparison(): Report & { loader_comparison: LoaderComparison } {

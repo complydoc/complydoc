@@ -5,12 +5,13 @@ import { Section, SectionStack } from "@/components/Section";
 import { Stat, StatGrid } from "@/components/Stat";
 import { ToneBadge } from "@/components/ToneBadge";
 import { measured } from "@/report/measured";
-import { leadRun, runLabel, type Collection } from "@/report/collections";
+import { isPipeline, leadRun, runLabel, type Collection } from "@/report/collections";
 import { formatCount, formatPageUsd, formatScore, formatSeconds, plural } from "@/report/format";
 import { EMPTY, combine, reportTotals, type Totals } from "@/report/plan";
 import { planFor } from "@/report/planChoice";
 import { bandTone } from "@/report/select";
 import type { Band } from "@/report/types";
+import { PipelinesTable } from "./PipelinesTable";
 
 interface Row {
   id: string;
@@ -152,10 +153,13 @@ function columnsFor(onOpen: (id: string) => void): Columns<Row> {
 
 /**
  * Every folder open, side by side: what each holds, how ready and how exposed
- * it is, and what reading it costs and takes under the plan chosen.
+ * it is, and what reading it costs and takes under the plan chosen. Pipelines follow on
+ * their own: they read documents a folder may also hold, so adding them in would count
+ * those documents twice.
  */
 export function OverviewPage({ collections, onOpen }: { collections: Collection[]; onOpen: (id: string) => void }) {
-  const rows = rowsOf(collections);
+  const pipelines = collections.filter(isPipeline);
+  const rows = rowsOf(collections.filter((c) => !isPipeline(c)));
   const all = rows.reduce((sum, row) => combine(sum, row.totals), EMPTY);
   const sensitive = rows.reduce((sum, row) => sum + (row.sensitive ?? 0), 0);
   const unscanned = rows.filter((row) => row.sensitive === null).length;
@@ -189,6 +193,11 @@ export function OverviewPage({ collections, onOpen }: { collections: Collection[
           pageSize={50}
         />
       </Section>
+      {pipelines.length > 0 && (
+        <Section title="Pipelines">
+          <PipelinesTable pipelines={pipelines} onOpen={onOpen} />
+        </Section>
+      )}
     </SectionStack>
   );
 }

@@ -125,28 +125,9 @@ export function stepsOf(trace: Trace): Step[] {
 }
 
 /** Whether a step could have seen an identifier: it looked, and looked the way that finds it. */
-export function couldSee(step: Step, identifier: StageIdentifier): boolean {
+function couldSee(step: Step, identifier: StageIdentifier): boolean {
   if (step.scanned === "off") return false;
   return step.scanned === "full" || identifier.evidence !== "model";
-}
-
-/** What a step received and passed on, in its own units. */
-export function flowOf(step: Step): { from: string | null; to: string | null } {
-  const n = (count: number | null, one: string, many: string) =>
-    count === null ? null : `${count.toLocaleString("en-GB")} ${count === 1 ? one : many}`;
-  switch (step.kind) {
-    case "load":
-      return {
-        from: step.stages.length > 1 ? n(step.stages.length, "file", "files") : null,
-        to: n(step.documentsOut, "page", "pages"),
-      };
-    case "split":
-      return { from: n(step.documentsIn, "page", "pages"), to: n(step.documentsOut, "chunk", "chunks") };
-    case "embed":
-      return { from: n(step.documentsIn, "text", "texts"), to: n(step.vectors, "vector", "vectors") };
-    default:
-      return { from: n(step.documentsIn, "document", "documents"), to: n(step.documentsOut, "document", "documents") };
-  }
 }
 
 export interface Change {

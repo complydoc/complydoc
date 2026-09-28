@@ -1,16 +1,5 @@
 import type { ChunkRun } from "./chunkTypes";
-import { humanise } from "./format";
 import type { Tone } from "./select";
-
-/**
- * Each flag a chunk can carry, and what sets it, in the order the report lists them.
- * The report words them; one written before it did gives each flag's name in words.
- */
-export function flagsOf(run: ChunkRun): { key: string; meaning: string }[] {
-  const meanings = run.flag_meanings ?? {};
-  const keys = [...new Set([...Object.keys(meanings), ...Object.keys(run.flag_counts)])];
-  return keys.map((key) => ({ key, meaning: meanings[key] ?? humanise(key).toLowerCase() }));
-}
 
 export function flaggedChunks(run: ChunkRun): number {
   return run.chunks.filter((chunk) => chunk.flags.length > 0).length;

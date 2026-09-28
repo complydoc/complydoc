@@ -64,6 +64,11 @@ function folderOf(report: Report): string {
   return target;
 }
 
+/** Whether a collection is a pipeline's runs rather than a folder's. */
+export function isPipeline(collection: Collection): boolean {
+  return collection.id.startsWith("pipeline:");
+}
+
 /** The open reports grouped by the folder each audited, folders by name, runs newest first. */
 export function collectionsOf(loaded: Loaded[]): Collection[] {
   const byFolder = new Map<string, Loaded[]>();

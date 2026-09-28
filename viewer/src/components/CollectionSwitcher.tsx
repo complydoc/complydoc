@@ -19,7 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
-import { leadRun, runKind, runLabel, type Collection } from "@/report/collections";
+import { isPipeline, leadRun, runKind, runLabel, type Collection } from "@/report/collections";
 import { plural } from "@/report/format";
 
 export interface Selection {
@@ -42,7 +42,14 @@ export function CollectionSwitcher({ collections, selection, onSelect, onAdd, on
   const input = useRef<HTMLInputElement>(null);
   const current = collections.find((c) => c.id === selection.collection) ?? null;
   const run = current?.runs.find((r) => r.id === selection.run) ?? (current && leadRun(current));
-  const documents = collections.reduce((sum, c) => sum + (leadRun(c)?.report.documents.length ?? 0), 0);
+  const folders = collections.filter((c) => !isPipeline(c));
+  const pipelines = collections.filter(isPipeline);
+  // A pipeline reads documents a folder may also hold, so only folders are counted.
+  const documents = folders.reduce((sum, c) => sum + (leadRun(c)?.report.documents.length ?? 0), 0);
+  const summary = [
+    folders.length > 0 && `${plural(folders.length, "folder")} · ${plural(documents, "document")}`,
+    pipelines.length > 0 && plural(pipelines.length, "pipeline"),
+  ].filter(Boolean);
 
   return (
     <SidebarMenu>
@@ -62,9 +69,7 @@ export function CollectionSwitcher({ collections, selection, onSelect, onAdd, on
               <span className="grid min-w-0 flex-1 text-left leading-tight">
                 <span className="truncate font-medium">{current?.name ?? "All folders"}</span>
                 <span className="truncate text-xs text-muted-foreground">
-                  {current && run
-                    ? `${runKind(run.report)} · ${runLabel(run.report)}`
-                    : `${plural(collections.length, "folder")} · ${plural(documents, "document")}`}
+                  {current && run ? `${runKind(run.report)} · ${runLabel(run.report)}` : summary.join(" · ")}
                 </span>
               </span>
               <ChevronsUpDownIcon className="ml-auto size-4 text-muted-foreground" />
@@ -78,23 +83,30 @@ export function CollectionSwitcher({ collections, selection, onSelect, onAdd, on
                 {!current && <CheckIcon className="ml-auto" />}
               </DropdownMenuItem>
             )}
-            <DropdownMenuLabel className="text-xs text-muted-foreground">Folders</DropdownMenuLabel>
-            <DropdownMenuGroup>
-              {collections.map((collection) => (
-                <DropdownMenuItem
-                  key={collection.id}
-                  onSelect={() => onSelect({ collection: collection.id, run: leadRun(collection)?.id ?? null })}
-                  title={collection.id}
-                >
-                  <FolderIcon />
-                  <span className="truncate">{collection.name}</span>
-                  {collection.runs.length > 1 && (
-                    <span className="text-xs text-muted-foreground">{plural(collection.runs.length, "run")}</span>
-                  )}
-                  {collection.id === current?.id && <CheckIcon className="ml-auto" />}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuGroup>
+            {[
+              { label: "Folders", group: folders, Icon: FolderIcon },
+              { label: "Pipelines", group: pipelines, Icon: WorkflowIcon },
+            ].map(({ label, group, Icon }) =>
+              group.length === 0 ? null : (
+                <DropdownMenuGroup key={label}>
+                  <DropdownMenuLabel className="text-xs text-muted-foreground">{label}</DropdownMenuLabel>
+                  {group.map((collection) => (
+                    <DropdownMenuItem
+                      key={collection.id}
+                      onSelect={() => onSelect({ collection: collection.id, run: leadRun(collection)?.id ?? null })}
+                      title={collection.id}
+                    >
+                      <Icon />
+                      <span className="truncate">{collection.name}</span>
+                      {collection.runs.length > 1 && (
+                        <span className="text-xs text-muted-foreground">{plural(collection.runs.length, "run")}</span>
+                      )}
+                      {collection.id === current?.id && <CheckIcon className="ml-auto" />}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuGroup>
+              ),
+            )}
             {current && current.runs.length > 1 && (
               <>
                 <DropdownMenuSeparator />
