@@ -34,6 +34,11 @@ This is a breaking change for anyone calling `cd.write_html`; see Removed.
   for an embedding call priced from the price table's new embedding models; and
   masked previews of the first items it passed on (`previews=20`).
 
+- `complydoc chunks --preset common` compares six splitters in one run: recursive
+  splitting at three sizes, character and token splitting, and LlamaIndex's sentence
+  splitter. `cd.inspect_chunks` gives a LlamaIndex node parser LlamaIndex documents,
+  made from whatever it was given.
+
 - The viewer draws a splitter's chunks over a document's text, from the folder's
   `complydoc chunks` run: alternating bands, flagged chunks in amber, and a count
   per page, so where a chunk size cuts a sentence, a table or a name shows in the

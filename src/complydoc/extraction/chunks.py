@@ -299,6 +299,11 @@ def _split(splitter: Any, documents: list[Any]) -> list[Any]:
     for method in ("split_documents", "get_nodes_from_documents"):
         call = getattr(splitter, method, None)
         if callable(call):
+            # A LlamaIndex parser reads its own documents; a look-alike gets them as given.
+            if method == "get_nodes_from_documents" and type(splitter).__module__.startswith(
+                "llama_index"
+            ):
+                documents = _as_llama_documents(documents)
             return list(call(documents))
     if callable(splitter):
         return list(splitter(documents))
@@ -306,6 +311,22 @@ def _split(splitter: Any, documents: list[Any]) -> list[Any]:
         f"cannot split with {type(splitter).__name__}: expected split_documents, "
         f"get_nodes_from_documents, or a callable"
     )
+
+
+def _as_llama_documents(documents: list[Any]) -> list[Any]:
+    """Documents a LlamaIndex node parser can take: its own, made from any other kind."""
+    if all(hasattr(document, "id_") for document in documents):
+        return documents
+    from llama_index.core import Document as LlamaDocument
+
+    made = []
+    for document in documents:
+        if hasattr(document, "id_"):
+            made.append(document)
+            continue
+        text, metadata = document_content(document)
+        made.append(LlamaDocument(text=text, metadata=metadata))
+    return made
 
 
 def _source(metadata: Mapping[str, Any]) -> str | None:

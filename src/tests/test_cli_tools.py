@@ -253,3 +253,24 @@ def test_a_chunks_run_is_a_report_the_viewer_lists(folder, tmp_path):
     assert report.chunks is not None
     assert report.chunks[0].chunker == "paragraphs"
     assert report.chunks[0].stats.count == 3
+
+
+def test_chunks_compares_a_preset_of_common_splitters(folder, tmp_path):
+    result = runner.invoke(
+        app, ["chunks", str(folder), "--preset", "common", "--out", str(tmp_path), "--quiet"]
+    )
+    assert result.exit_code == 0, result.output
+    report = cd.load_report(tmp_path / "complydoc-chunks.json")
+    names = [run.chunker for run in report.chunks]
+    assert "RecursiveCharacterTextSplitter chunk_size=500 chunk_overlap=50" in names
+    assert any(name.startswith("TokenTextSplitter") for name in names)
+    # LlamaIndex's parser is given its own documents, made from the pages.
+    assert any(name.startswith("SentenceSplitter") for name in names)
+
+
+def test_chunks_needs_a_splitter_or_a_preset(folder, tmp_path):
+    result = runner.invoke(app, ["chunks", str(folder), "--out", str(tmp_path)])
+    assert result.exit_code == 2
+    assert "--preset common" in result.output
+    result = runner.invoke(app, ["chunks", str(folder), "--preset", "all", "--out", str(tmp_path)])
+    assert result.exit_code == 2 and "No preset" in result.output

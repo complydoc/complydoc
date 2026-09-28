@@ -16,6 +16,9 @@ several splitters.
 | LlamaIndex node parser | `get_nodes_from_documents(documents)` |
 | Callable | `splitter(documents)` |
 
+A LlamaIndex node parser is given LlamaIndex documents, made from whatever
+`documents` holds.
+
 `documents` is anything `inspect_documents` accepts, including a loader. With
 `documents` omitted, `splitter` is taken to be chunks that were already made.
 
@@ -114,3 +117,11 @@ reads it back.
 - question: When are invoices payable?
   fact: Invoices are payable within
 ```
+
+## Several splitters at once
+
+`complydoc chunks --preset common` runs six splitters over a folder and compares
+them: LangChain's recursive splitter at 500, 1,000 and 2,000 characters, its
+character and token splitters, and LlamaIndex's sentence splitter. A splitter
+whose library is not installed is left out, and the run says so. Add your own
+with `--splitter`.

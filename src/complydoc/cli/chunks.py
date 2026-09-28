@@ -65,11 +65,27 @@ def _splitter(reference: str) -> tuple[str, object]:
     return label, splitter
 
 
+PRESETS: dict[str, tuple[str, ...]] = {
+    "common": (
+        "langchain_text_splitters:RecursiveCharacterTextSplitter chunk_size=500 chunk_overlap=50",
+        "langchain_text_splitters:RecursiveCharacterTextSplitter chunk_size=1000 chunk_overlap=100",
+        "langchain_text_splitters:RecursiveCharacterTextSplitter chunk_size=2000 chunk_overlap=200",
+        "langchain_text_splitters:CharacterTextSplitter chunk_size=1000 chunk_overlap=100",
+        # The encoding named, so it is the one complydoc ships rather than one fetched.
+        "langchain_text_splitters:TokenTextSplitter chunk_size=256 chunk_overlap=32 "
+        "encoding_name=o200k_base",
+        "llama_index.core.node_parser:SentenceSplitter chunk_size=512 chunk_overlap=50",
+    ),
+}
+"""Sets of splitters to compare in one run. A splitter whose library is not installed is
+left out of a preset, and the run says so."""
+
+
 @app.command(rich_help_panel="CI and pipelines")
 def chunks(
     target: TargetArg,
     splitter: Annotated[
-        list[str],
+        list[str] | None,
         typer.Option(
             "--splitter",
             "-s",
@@ -78,7 +94,15 @@ def chunks(
             "A class is created with the arguments; a function is called with the "
             "documents. Repeat to compare several.",
         ),
-    ],
+    ] = None,
+    preset: Annotated[
+        str | None,
+        typer.Option(
+            "--preset",
+            help="A set of splitters to compare: 'common' runs recursive splitting at three "
+            "sizes, character and token splitting, and LlamaIndex's sentence splitter.",
+        ),
+    ] = None,
     fact: Annotated[
         list[str] | None,
         typer.Option("--fact", help="Text a chunk should contain whole, repeatable."),
@@ -131,15 +155,31 @@ def chunks(
     started = time.monotonic()
     offline.arm()
     config = load_config_or_exit(config_dir)
+    if preset is not None and preset not in PRESETS:
+        errors.print(f"[bold red]No preset {preset!r}.[/] Presets: {', '.join(PRESETS)}")
+        raise typer.Exit(code=2)
+    given = list(splitter or [])
+    if not given and preset is None:
+        errors.print("[bold red]No splitter given.[/] Pass --splitter, or --preset common.")
+        raise typer.Exit(code=2)
+    splitters: dict[str, object] = {}
+    for reference in PRESETS[preset] if preset else ():
+        try:
+            label, made = _splitter(reference)
+        except ImportError as exc:
+            if not quiet:
+                console.print(f"[dim]Left out of the preset, not installed: {escape(str(exc))}[/]")
+            continue
+        splitters[label] = made
     try:
-        splitters = dict(_splitter(reference) for reference in splitter)
+        for reference in given:
+            label, made = _splitter(reference)
+            if label in splitters:
+                raise ValueError(f"the same splitter is given twice: {label}")
+            splitters[label] = made
     except (ImportError, ValueError) as exc:
         errors.print(f"[bold red]Cannot load the splitter[/] — {escape(str(exc))}")
         raise typer.Exit(code=2) from exc
-    if len(splitters) != len(splitter):
-        errors.print("[bold red]The same splitter is given twice.[/]")
-        raise typer.Exit(code=2)
-
     question_list: list[Question] = []
     if questions is not None:
         try:
