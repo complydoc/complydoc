@@ -2,9 +2,15 @@ import { toCsv } from "./csv";
 
 describe("toCsv", () => {
   it("quotes what a spreadsheet would split, and leaves the rest", () => {
-    expect(toCsv(["name", "value"], [["IBAN", "•••• 54 32"], ['Acme, "Ltd"', null]])).toBe(
-      'name,value\r\nIBAN,•••• 54 32\r\n"Acme, ""Ltd""",\r\n',
-    );
+    expect(
+      toCsv(
+        ["name", "value"],
+        [
+          ["IBAN", "•••• 54 32"],
+          ['Acme, "Ltd"', null],
+        ],
+      ),
+    ).toBe('name,value\r\nIBAN,•••• 54 32\r\n"Acme, ""Ltd""",\r\n');
   });
 
   it("keeps a value that starts like a formula as text", () => {

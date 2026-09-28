@@ -39,7 +39,10 @@ export function spansOf(trace: Trace): Span[] {
     label: where(stage),
     children: (byParent.get(stage.index) ?? []).map((child) => build(child, depth + 1)),
   });
-  return (byParent.get(null) ?? []).map((stage) => build(stage, 0));
+  // In the order they began: an audit reads several documents at once, and reports them in
+  // the order it finished them.
+  const roots = [...(byParent.get(null) ?? [])].sort((a, b) => (a.started ?? 0) - (b.started ?? 0));
+  return roots.map((stage) => build(stage, 0));
 }
 
 /** The spans in the order they are listed, skipping the children of those folded. */
@@ -88,4 +91,20 @@ export function traceTotals(trace: Trace): TraceTotals {
       : null,
     hosts: [...new Set(top.flatMap((s) => s.hosts))],
   };
+}
+
+/**
+ * Where the run's time went, by kind of work: the time of every call that made no call of
+ * its own, summed by its kind, largest first. A call's time already holds its children's,
+ * so only the innermost are counted.
+ */
+export function timeByKind(trace: Trace): { kind: TraceStage["kind"]; seconds: number; share: number }[] {
+  const parents = new Set(trace.stages.map((s) => s.parent).filter((p): p is number => p !== null && p !== undefined));
+  const sums = new Map<TraceStage["kind"], number>();
+  for (const stage of trace.stages)
+    if (!parents.has(stage.index)) sums.set(stage.kind, (sums.get(stage.kind) ?? 0) + stage.seconds);
+  const total = [...sums.values()].reduce((sum, seconds) => sum + seconds, 0) || 1;
+  return [...sums]
+    .map(([kind, seconds]) => ({ kind, seconds, share: seconds / total }))
+    .sort((a, b) => b.seconds - a.seconds);
 }

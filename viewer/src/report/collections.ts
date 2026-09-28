@@ -56,7 +56,7 @@ function normalised(path: string): string {
 function folderOf(report: Report): string {
   // A pipeline's runs go together under its name, as an experiment's runs do: one pipeline
   // can read from several folders, and a folder can feed several pipelines.
-  if (report.trace) return `pipeline:${report.trace.name}`;
+  if (report.trace && report.trace.kind !== "audit") return `pipeline:${report.trace.name}`;
   const target = normalised(report.run.target || "");
   if (report.loader_comparison && target === report.loader_comparison.baseline) {
     return commonFolder(report.documents.map((d) => d.relative_path)) || target;
@@ -100,7 +100,7 @@ export function leadRun(collection: Collection): Loaded | undefined {
  * on. Several runs of one folder are otherwise told apart only by when they started.
  */
 export function runKind(report: Report): string {
-  if (report.trace) return "Pipeline";
+  if (report.trace && report.trace.kind !== "audit") return "Pipeline";
   if (report.chunks?.length && report.documents.length === 0) return "Chunks";
   if (report.loader_comparison) return "Loader comparison";
   if (report.loader) return "Loader inspection";
@@ -122,7 +122,7 @@ export function runKind(report: Report): string {
 export function runTraits(report: Report): string[] {
   return [
     report.run.reveal_used && "values revealed",
-    report.trace && (identifiersSent(report.trace) ?? 0) > 0 && "identifiers sent",
+    report.trace?.kind !== "audit" && report.trace && (identifiersSent(report.trace) ?? 0) > 0 && "identifiers sent",
     report.run.page_images_used && "page pictures",
     report.run.ocr_compare_used && "OCR compared",
     report.verification && "vision checked",

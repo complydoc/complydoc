@@ -65,9 +65,7 @@ export function pricedOn(report: Report, path: CostPath, unit: CostUnit = "per_1
   return (report.cost?.models ?? [])
     .flatMap((model) => {
       const usd = costOf(model, path, unit);
-      return usd === null
-        ? []
-        : [{ id: model.model_id, name: model.display_name, provider: model.provider, usd }];
+      return usd === null ? [] : [{ id: model.model_id, name: model.display_name, provider: model.provider, usd }];
     })
     .sort((a, b) => a.usd - b.usd || a.name.localeCompare(b.name));
 }
@@ -98,7 +96,12 @@ export function costRows(report: Report): CostRow[] {
  * cheapest model, each provider's models cheapest first. With `provider`, that
  * provider's models only.
  */
-export function byProvider(report: Report, path: CostPath, unit: CostUnit, provider: string | null = null): PricedModel[] {
+export function byProvider(
+  report: Report,
+  path: CostPath,
+  unit: CostUnit,
+  provider: string | null = null,
+): PricedModel[] {
   const priced = pricedOn(report, path, unit).filter((m) => provider === null || m.provider === provider);
   const order = providersOf(priced);
   return [...priced].sort((a, b) => order.indexOf(a.provider) - order.indexOf(b.provider) || a.usd - b.usd);

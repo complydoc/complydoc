@@ -35,4 +35,9 @@ export function factCounts(run: ChunkRun): { whole: number; split: number; missi
 }
 
 export const FACT_TONE: Record<string, Tone> = { whole: "good", split: "warn", missing: "bad" };
-export const RETRIEVAL_TONE: Record<string, Tone> = { retrieved: "good", ranked_low: "warn", split: "warn", missing: "bad" };
+export const RETRIEVAL_TONE: Record<string, Tone> = {
+  retrieved: "good",
+  ranked_low: "warn",
+  split: "warn",
+  missing: "bad",
+};

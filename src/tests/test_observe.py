@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import itertools
 import socket
 from pathlib import Path
 
@@ -282,3 +283,19 @@ def test_a_directory_loader_holds_the_loader_it_runs_for_each_file(tmp_path: Pat
     # The files' pages are the directory loader's, and are audited once.
     assert len(observation.report.documents) == 2
     assert sum(d.page_count for d in observation.report.documents) == 4
+
+
+def test_an_audit_is_its_own_trace_each_document_and_its_steps(tmp_path: Path) -> None:
+    report = cd.full_audit("src/complydoc/sample", jobs=1)
+    trace = report.trace
+    assert trace is not None and trace.kind == "audit"
+    documents = [s for s in trace.stages if s.parent is None]
+    assert len(documents) == len(report.documents)
+    assert all(s.kind == "document" for s in documents)
+    first = documents[0]
+    steps = [s for s in trace.stages if s.parent == first.index]
+    assert [s.kind for s in steps][:1] == ["read"] and "scan" in [s.kind for s in steps]
+    # Each step is placed after the one before it, inside its document.
+    assert all(a.started <= b.started for a, b in itertools.pairwise(steps))
+    assert all(s.started >= first.started for s in steps)
+    assert cd.load_report(cd.write_json(report, tmp_path / "audit.json")).trace.kind == "audit"

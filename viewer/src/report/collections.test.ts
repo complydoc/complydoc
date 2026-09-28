@@ -1,10 +1,14 @@
-import { sampleAudit, sampleReport } from "@/test/sample";
+import { required, sampleAudit, sampleReport } from "@/test/sample";
 import { traceReport } from "@/test/trace";
 import { collectionsOf, leadRun, runKind, runTraits, type Loaded } from "./collections";
 import type { ChunkRun, Report } from "./types";
 
 function run(id: string, report: Report, started: string, target?: string): Loaded {
-  return { id, name: `${id}.json`, report: { ...report, run: { ...report.run, started_at: started, target: target ?? report.run.target } } };
+  return {
+    id,
+    name: `${id}.json`,
+    report: { ...report, run: { ...report.run, started_at: started, target: target ?? report.run.target } },
+  };
 }
 
 describe("collections", () => {
@@ -22,7 +26,10 @@ describe("collections", () => {
   });
 
   it("puts a loader comparison under the folder its documents share, not its loader's name", () => {
-    const collections = collectionsOf([run("audit", sampleAudit(), "2026-09-01"), run("loaders", sampleReport(), "2026-09-02")]);
+    const collections = collectionsOf([
+      run("audit", sampleAudit(), "2026-09-01"),
+      run("loaders", sampleReport(), "2026-09-02"),
+    ]);
     // Both samples read viewer/sample/documents, so they are two runs of one folder.
     expect(collections.map((c) => [c.id, c.runs.map((r) => r.id)])).toEqual([
       ["viewer/sample/documents", ["loaders", "audit"]],
@@ -87,5 +94,12 @@ describe("collections", () => {
     expect(collections[0]?.name).toBe("contracts-ingest");
     expect(runKind(first)).toBe("Pipeline");
     expect(runTraits(first)).toContain("identifiers sent");
+  });
+
+  it("keeps an audit with its folder, though it carries a trace of its own", () => {
+    const audit = sampleAudit();
+    audit.trace = { ...required(traceReport().trace), kind: "audit" };
+    expect(runKind(audit)).toBe("Audit");
+    expect(collectionsOf([run("a", audit, "2026-09-01")])[0]?.id).not.toMatch(/^pipeline:/);
   });
 });

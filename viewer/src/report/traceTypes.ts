@@ -22,7 +22,20 @@ export interface StagePreview {
 
 export interface TraceStage {
   index: number;
-  kind: "load" | "transform" | "split" | "embed" | "custom";
+  /** A pipeline's steps: load, transform, split, embed, custom. An audit's: a document, and
+   * inside it read, ocr, analyse, scan and verify. */
+  kind:
+    | "load"
+    | "transform"
+    | "split"
+    | "embed"
+    | "custom"
+    | "document"
+    | "read"
+    | "ocr"
+    | "analyse"
+    | "scan"
+    | "verify";
   component: string;
   module: string;
   method: string;
@@ -63,6 +76,8 @@ export interface TraceStage {
 
 export interface Trace {
   name: string;
+  /** `pipeline`, observed with `cd.observe`, or `audit`, complydoc's own run of a folder. */
+  kind?: "pipeline" | "audit";
   scan: "patterns" | "full" | "off";
   seconds: number;
   overhead_seconds: number;

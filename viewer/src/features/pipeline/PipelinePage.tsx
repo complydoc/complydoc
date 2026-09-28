@@ -12,6 +12,7 @@ import { changeBetween, stepsOf } from "@/report/traceView";
 import type { Report } from "@/report/types";
 import { SpanDetail } from "./SpanDetail";
 import { SpanTree } from "./SpanTree";
+import { TimeSplit } from "./TimeSplit";
 import { ValueTrail } from "./ValueTrail";
 
 function Figure({ label, children, tone }: { label: string; children: ReactNode; tone?: string }) {
@@ -45,6 +46,8 @@ export function PipelinePage({ report }: { report: Report }) {
   if (!trace || !measured(report, "trace")) return <NotInRun report={report} content="trace" />;
 
   const roots = spansOf(trace);
+  // complydoc's own run of a folder: its documents, not a pipeline's steps.
+  const audit = trace.kind === "audit";
   const steps = stepsOf(trace);
   const totals = traceTotals(trace);
   const sender = [...trace.stages].reverse().find((s) => s.hosts.length > 0);
@@ -65,10 +68,12 @@ export function PipelinePage({ report }: { report: Report }) {
         <div className="flex min-w-0 flex-col">
           <h1 className="truncate font-heading text-xl font-semibold tracking-tight">{trace.name}</h1>
           <span className="text-sm text-muted-foreground">
-            {formatDate(report.run.started_at)} · {plural(steps.length, "step")}
+            {formatDate(report.run.started_at)} ·{" "}
+            {audit ? plural(roots.length, "document") : plural(steps.length, "step")}
           </span>
         </div>
         <Figure label="Took">{formatSeconds(totals.seconds)}</Figure>
+        <TimeSplit trace={trace} />
         {totals.tokensEmbedded !== null && (
           <Figure label="Tokens embedded">{formatCount(totals.tokensEmbedded)}</Figure>
         )}
@@ -81,19 +86,21 @@ export function PipelinePage({ report }: { report: Report }) {
             {formatCount(totals.identifiersSent)}
           </Figure>
         )}
-        <Figure label="Observing took">{formatSeconds(trace.overhead_seconds)}</Figure>
-        <ToggleGroup
-          type="single"
-          variant="outline"
-          size="sm"
-          className="ml-auto"
-          value={view === "identifiers" ? "identifiers" : "trace"}
-          onValueChange={(next) => next && setView(next === "trace" ? null : next)}
-          aria-label="View"
-        >
-          <ToggleGroupItem value="trace">Trace</ToggleGroupItem>
-          <ToggleGroupItem value="identifiers">Identifiers</ToggleGroupItem>
-        </ToggleGroup>
+        {!audit && <Figure label="Observing took">{formatSeconds(trace.overhead_seconds)}</Figure>}
+        {!audit && (
+          <ToggleGroup
+            type="single"
+            variant="outline"
+            size="sm"
+            className="ml-auto"
+            value={view === "identifiers" ? "identifiers" : "trace"}
+            onValueChange={(next) => next && setView(next === "trace" ? null : next)}
+            aria-label="View"
+          >
+            <ToggleGroupItem value="trace">Trace</ToggleGroupItem>
+            <ToggleGroupItem value="identifiers">Identifiers</ToggleGroupItem>
+          </ToggleGroup>
+        )}
       </header>
 
       {trace.error && (
@@ -104,7 +111,7 @@ export function PipelinePage({ report }: { report: Report }) {
         </Alert>
       )}
 
-      {view === "identifiers" ? (
+      {view === "identifiers" && !audit ? (
         <ValueTrail steps={steps} selected={at} />
       ) : (
         <div className="flex min-h-[32rem] flex-1 flex-col overflow-hidden rounded-xl border bg-card lg:min-h-0 lg:flex-row">

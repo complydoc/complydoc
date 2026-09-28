@@ -5,15 +5,30 @@ import { required, sampleAudit } from "@/test/sample";
 import type { Report } from "./types";
 
 function withPaths(report: Report, paths: string[]): Report {
-  return { ...report, documents: report.documents.map((d, i) => ({ ...d, relative_path: paths[i] ?? d.relative_path })) };
+  return {
+    ...report,
+    documents: report.documents.map((d, i) => ({ ...d, relative_path: paths[i] ?? d.relative_path })),
+  };
 }
 
 const report = sampleAudit();
 const models = pricedModels(report);
-const plan: Plan = { method: "loader_ocr", loaders: {}, text: required(models[0]), vision: required(models.find((m) => m.vision)) };
+const plan: Plan = {
+  method: "loader_ocr",
+  loaders: {},
+  text: required(models[0]),
+  vision: required(models.find((m) => m.vision)),
+};
 
 describe("documentTree", () => {
-  const paths = ["contracts/2025/a.pdf", "contracts/2025/b.pdf", "contracts/2024/c.pdf", "invoices/d.pdf", "e.pdf", "f.pdf"];
+  const paths = [
+    "contracts/2025/a.pdf",
+    "contracts/2025/b.pdf",
+    "contracts/2024/c.pdf",
+    "invoices/d.pdf",
+    "e.pdf",
+    "f.pdf",
+  ];
   const tree = documentTree(withPaths(report, paths), plan);
 
   it("puts folders first, each holding its documents", () => {
@@ -24,7 +39,8 @@ describe("documentTree", () => {
 
   it("adds up a folder's documents", () => {
     const contracts = required(tree[0]);
-    const files = (node: TreeNode): TreeNode[] => (node.kind === "file" ? [node] : (node.children ?? []).flatMap(files));
+    const files = (node: TreeNode): TreeNode[] =>
+      node.kind === "file" ? [node] : (node.children ?? []).flatMap(files);
     const leaves = files(contracts);
     expect(contracts.totals.documents).toBe(3);
     expect(contracts.totals.pages).toBe(leaves.reduce((sum, n) => sum + n.totals.pages, 0));
@@ -32,7 +48,13 @@ describe("documentTree", () => {
   });
 
   it("shows a folder that holds only one folder as one row", () => {
-    const nested = documentTree(withPaths(report, paths.map((p) => `clients/acme/${p}`)), plan);
+    const nested = documentTree(
+      withPaths(
+        report,
+        paths.map((p) => `clients/acme/${p}`),
+      ),
+      plan,
+    );
     expect(nested.map((n) => n.name)).toEqual(["clients/acme"]);
   });
 });

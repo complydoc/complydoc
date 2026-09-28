@@ -128,7 +128,8 @@ export function planOptions(report: Report, loaders: Record<string, string> = {}
     options.push({
       id: "ocr",
       label: "OCR on every page",
-      description: "Every page recognised from its picture. A file with no page picture, such as a spreadsheet, is read by its loader.",
+      description:
+        "Every page recognised from its picture. A file with no page picture, such as a spreadsheet, is read by its loader.",
     });
   }
   // Only where some page can be shown to a vision model: otherwise every page would fall back
@@ -154,7 +155,9 @@ export function planOptions(report: Report, loaders: Record<string, string> = {}
 
 /** The way to read a report when nothing was chosen: the router where the run routed pages. */
 export function defaultMethod(options: PlanOption[]): Method {
-  return (options.find((o) => o.recommended) ?? options.find((o) => o.id === "loader_ocr") ?? options[0])?.id ?? "loader";
+  return (
+    (options.find((o) => o.recommended) ?? options.find((o) => o.id === "loader_ocr") ?? options[0])?.id ?? "loader"
+  );
 }
 
 export interface PageEstimate {

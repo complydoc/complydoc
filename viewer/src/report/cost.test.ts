@@ -48,6 +48,8 @@ describe("cost", () => {
       const prices = models.filter((m) => m.provider === provider).map((m) => m.usd);
       expect(prices).toEqual([...prices].sort((a, b) => a - b));
     }
-    expect(byProvider(sampleAudit(), "text_ocr", "per_1000", "openai").every((m) => m.provider === "openai")).toBe(true);
+    expect(byProvider(sampleAudit(), "text_ocr", "per_1000", "openai").every((m) => m.provider === "openai")).toBe(
+      true,
+    );
   });
 });

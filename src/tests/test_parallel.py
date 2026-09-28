@@ -32,6 +32,8 @@ def findings(report):
     ):
         data["run"].pop(key, None)
     data["limitations"] = [x for x in data["limitations"] if x["area"] != "Parallel workers"]
+    # The run's own trace is its timings, placed in time.
+    data.pop("trace", None)
     for document in data["documents"]:
         document.pop("timing", None)
         # How long an extractor took is wall clock, like the timings above it.

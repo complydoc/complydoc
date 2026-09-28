@@ -30,8 +30,14 @@ describe("pricing a page", () => {
   });
 
   it("prices the page as an image only on a model that takes images", () => {
-    const vision = required(models.find((m) => m.vision), "a vision model");
-    const text = required(models.find((m) => !m.vision), "a text-only model");
+    const vision = required(
+      models.find((m) => m.vision),
+      "a vision model",
+    );
+    const text = required(
+      models.find((m) => !m.vision),
+      "a text-only model",
+    );
     expect(imagePrice(page, vision)?.usd).toBeGreaterThan(0);
     expect(imagePrice(page, text)).toBeNull();
   });
@@ -46,7 +52,15 @@ describe("pricing a page", () => {
     if (!counted) throw new Error("no counted page");
     const priced = pricedModels(loaders);
     expect(textPrice(counted, "pypdf", required(priced[0], "a priced model"))).not.toBeNull();
-    expect(imagePrice(counted, required(priced.find((m) => m.vision), "a vision model"))).toBeNull();
+    expect(
+      imagePrice(
+        counted,
+        required(
+          priced.find((m) => m.vision),
+          "a vision model",
+        ),
+      ),
+    ).toBeNull();
   });
 });
 

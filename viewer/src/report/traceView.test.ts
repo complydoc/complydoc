@@ -1,4 +1,5 @@
-import { sampleTrace } from "@/test/trace";
+import { nestedTrace, sampleTrace } from "@/test/trace";
+import { timeByKind } from "./traceTree";
 import { changeBetween, pipelineShape, sendingStep, stepsOf, trailsOf } from "./traceView";
 
 describe("traceView", () => {
@@ -36,5 +37,15 @@ describe("traceView", () => {
     expect(pipelineShape(sampleTrace())).toBe(
       "PyPDFLoader → StripPathMetadata → RecursiveCharacterTextSplitter (chunk_size 400, chunk_overlap 0) → OpenAIEmbeddings",
     );
+  });
+});
+
+describe("timeByKind", () => {
+  it("sums the time of the innermost calls by their kind, largest first", () => {
+    const split = timeByKind(nestedTrace());
+    // The directory loader's time is its two files', counted once.
+    expect(split.map((part) => part.kind)).toEqual(["load", "embed", "split"]);
+    expect(split[0]?.seconds).toBeCloseTo(0.5);
+    expect(split.reduce((sum, part) => sum + part.share, 0)).toBeCloseTo(1);
   });
 });

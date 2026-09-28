@@ -57,7 +57,8 @@ export function loadersFor(report: Report, stored: string | null): Record<string
   const readers = readersByFormat(report);
   return Object.fromEntries(
     Object.entries(chosen).filter(
-      (entry): entry is [string, string] => typeof entry[1] === "string" && Boolean(readers.get(entry[0])?.includes(entry[1])),
+      (entry): entry is [string, string] =>
+        typeof entry[1] === "string" && Boolean(readers.get(entry[0])?.includes(entry[1])),
     ),
   );
 }

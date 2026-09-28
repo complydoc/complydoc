@@ -63,9 +63,11 @@ export function outputLines(stage: TraceStage): string[] {
       `vectors: ${scalar(stage.vectors)}`,
       ...(stage.dimensions !== null ? [`dimensions: ${stage.dimensions}`] : []),
     ];
-  const unit = stage.kind === "split" ? "chunks" : "documents";
+  const unit = stage.kind === "split" ? "chunks" : stage.kind === "document" ? "pages" : "documents";
   const head = [
-    `${unit}: ${scalar(stage.documents_out)}`,
+    ...(stage.documents_out !== null ? [`${unit}: ${scalar(stage.documents_out)}`] : []),
+    ...(stage.characters_out !== null ? [`characters: ${scalar(stage.characters_out)}`] : []),
+    ...(stage.kind === "scan" || stage.kind === "document" ? [`identifiers: ${stage.identifiers.length}`] : []),
     ...(typeof stage.tokens_out === "number" ? [`tokens: ${scalar(stage.tokens_out)}`] : []),
   ];
   const previews = stage.previews ?? [];

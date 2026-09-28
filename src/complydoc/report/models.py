@@ -597,6 +597,9 @@ class DocumentTiming:
     scan_seconds: float
     total_seconds: float
     seconds_per_page: float | None
+    started_at: float | None = None
+    """Schema 17: when reading the document began, in seconds since the epoch, so a run's
+    documents, read in several processes at once, can be placed in time."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -1114,6 +1117,8 @@ class Trace:
     overhead_seconds: float
     """What observing cost: reading settings as stages ran, and scanning at the end."""
     stages: list[TraceStage] = field(default_factory=list)
+    kind: str = "pipeline"
+    """`pipeline`, observed with `cd.observe`, or `audit`, complydoc's own run of a folder."""
     connections_outside: list[str] = field(default_factory=list)
     """Lookups and connections made in the block but outside any stage."""
     libraries: dict[str, str] = field(default_factory=dict)

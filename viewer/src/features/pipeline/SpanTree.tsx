@@ -6,6 +6,9 @@ import { visibleSpans, type Span } from "@/report/traceTree";
 import { KIND, durationTone } from "./kinds";
 import { Pill } from "./pills";
 
+/** Top-level calls beyond which the tree opens folded. */
+const FOLD_ABOVE = 12;
+
 interface SpanTreeProps {
   roots: Span[];
   selected: number;
@@ -36,7 +39,14 @@ function Row({
   // A call inside another that read one file is known by that file; any other by its component.
   const byFile = span.depth > 0 && Boolean(span.label);
   const name = byFile ? fileName(span.label) || span.label : stage.component;
-  const aside = byFile ? stage.component : span.label && (fileName(span.label) || span.label);
+  const labelName = span.label ? fileName(span.label) || span.label : "";
+  // Beside the name: the component for a file, or what the call read; for a document named by
+  // its file already, the folder it sits in.
+  const aside = byFile
+    ? stage.component
+    : labelName === name
+      ? span.label.slice(0, -name.length).replace(/[\\/]$/, "")
+      : labelName;
   return (
     <div
       role="treeitem"
@@ -103,7 +113,11 @@ function Row({
  * down, or J and K, move through the calls; left and right fold and unfold one.
  */
 export function SpanTree({ roots, selected, onSelect, total }: SpanTreeProps) {
-  const [folded, setFolded] = useState<Set<number>>(() => new Set());
+  // A long run opens folded, one line a call, so the calls can be seen at once.
+  const [folded, setFolded] = useState<Set<number>>(
+    () =>
+      new Set(roots.length > FOLD_ABOVE ? roots.filter((r) => r.children.length > 0).map((r) => r.stage.index) : []),
+  );
   const rows = visibleSpans(roots, folded);
   const tree = useRef<HTMLDivElement>(null);
 

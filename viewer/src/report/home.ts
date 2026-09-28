@@ -55,7 +55,10 @@ export function attentionDocuments(report: Report, limit = 6): AttentionRow[] {
     }
     const high = document?.sensitive.matches.filter((m) => m.severity === "high").length ?? 0;
     if (high) {
-      reasons.push({ label: high === 1 ? "1 high-severity identifier" : `${high} high-severity identifiers`, tone: "bad" });
+      reasons.push({
+        label: high === 1 ? "1 high-severity identifier" : `${high} high-severity identifiers`,
+        tone: "bad",
+      });
       weight += 1;
     }
     return { index: row.index, path: row.path, reasons, weight };

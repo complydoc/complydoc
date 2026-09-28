@@ -1,13 +1,5 @@
 import { required, sampleAudit, sampleReport } from "@/test/sample";
-import {
-  bandCounts,
-  bandOf,
-  agreementTone,
-  bandTone,
-  categoriesByCount,
-  documentRows,
-  severityTone,
-} from "./select";
+import { bandCounts, bandOf, agreementTone, bandTone, categoriesByCount, documentRows, severityTone } from "./select";
 
 describe("select", () => {
   it("counts only the bands that have documents, best first", () => {
@@ -68,7 +60,12 @@ describe("select", () => {
 
   it("colours agreement on the report's own line", () => {
     const { thresholds } = sampleAudit();
-    expect([1, 0.95, 0.8, 0.51].map((value) => agreementTone(thresholds, value))).toEqual(["good", "good", "warn", "bad"]);
+    expect([1, 0.95, 0.8, 0.51].map((value) => agreementTone(thresholds, value))).toEqual([
+      "good",
+      "good",
+      "warn",
+      "bad",
+    ]);
     expect(agreementTone({ ...thresholds, similar_enough: 0.99 }, 0.97)).toBe("warn");
   });
 

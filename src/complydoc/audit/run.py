@@ -96,6 +96,7 @@ from complydoc.report.overall import overall_readiness
 from complydoc.report.preview import build_previews
 from complydoc.report.quickwins import quick_wins
 from complydoc.report.routing import summarise_routes
+from complydoc.report.run_trace import audit_trace
 from complydoc.report.verification import summarise_verification
 from complydoc.sensitive.base import SensitiveMatch
 from complydoc.sensitive.detectors.model_server import ModelServer, ServerAddress
@@ -617,7 +618,11 @@ def _judge_concepts(entry: DocumentReport, document: Document, work: Work) -> No
 
 
 def build_entry(
-    document: Document, work: Work, read_seconds: float, relative_path: str
+    document: Document,
+    work: Work,
+    read_seconds: float,
+    relative_path: str,
+    started_at: float | None = None,
 ) -> DocumentReport:
     """A report entry for a document that has already been read.
 
@@ -699,6 +704,7 @@ def build_entry(
         seconds_per_page=(
             round(total_seconds / document.page_count, 3) if document.page_count else None
         ),
+        started_at=round(started_at, 3) if started_at is not None else None,
     )
     return entry
 
@@ -706,6 +712,7 @@ def build_entry(
 def _process(path: Path, work: Work) -> _Outcome:
     """Read one document and produce its report entry. Never raises."""
     ocr_before = ocr_module.stats()
+    began = time.time()
     read_started = time.perf_counter()
     try:
         document = load_document(path, work.options)
@@ -724,7 +731,9 @@ def _process(path: Path, work: Work) -> _Outcome:
         )
     read_seconds = time.perf_counter() - read_started
 
-    entry = build_entry(document, work, read_seconds, relative_to_root(document.path, work.target))
+    entry = build_entry(
+        document, work, read_seconds, relative_to_root(document.path, work.target), began
+    )
     ocr_after = ocr_module.stats()
     # Read and reset: whatever the classifier was asked during this document,
     # in whichever process this is.
@@ -1184,6 +1193,7 @@ def run_audit(
     """
     started = time.monotonic()
     started_at = dt.datetime.now().astimezone()
+    began = time.time()
     # Read before any document is, so a broken file stops the run at once.
     ignore_path = ignore_file or find_ignore_file(target)
     ignores = (ignore_path, load_ignores(ignore_path)) if ignore_path is not None else None
@@ -1307,7 +1317,7 @@ def run_audit(
         verify_scope=verify_scope if verify_name is not None else None,
     )
 
-    return assemble_report(
+    report = assemble_report(
         config,
         requested,
         documents,
@@ -1321,6 +1331,8 @@ def run_audit(
             None if not judging else judge_spec or getattr(judge_concepts, "__name__", "your own")
         ),
     )
+    report.trace = audit_trace(report, began)
+    return report
 
 
 def assemble_report(

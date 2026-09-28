@@ -137,9 +137,12 @@ This is a breaking change for anyone calling `cd.write_html`; see Removed.
 
 ### Changed
 
-- The viewer has a Pipeline page for a run recorded with `cd.observe`: what left
-  the machine, the steps left to right with what changed between them, and where
-  each identifier went. A pipeline's runs are grouped under its name.
+- The viewer has a Trace page. A run recorded with `cd.observe` is a tree of every
+  call, the calls made inside each beneath it, each with its time, tokens, cost and
+  the identifiers in it; the call picked shows its input and output as YAML, its
+  settings and its figures. A pipeline's runs are grouped under its name. An audit
+  is a trace too: each document, and inside it each reader, OCR, the analysis, the
+  scan and any vision check, with where the run's time went by kind of work.
 
 - The viewer's document view, for a document read one way, shows every page in turn
   with numbered lines, the pages down the side and the findings listed beside the
