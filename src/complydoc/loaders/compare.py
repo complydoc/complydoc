@@ -44,7 +44,8 @@ from pathlib import Path
 from typing import Any
 
 from complydoc.audit.discovery import discover
-from complydoc.audit.run import COMPONENTS, reading_tokens, tokenizers_of, vision_setup
+from complydoc.audit.entry import reading_tokens, tokenizers_of
+from complydoc.audit.run import COMPONENTS, vision_setup
 from complydoc.config.loader import load_config
 from complydoc.config.schema import Config, ParserPricing, TokenizerSpec
 from complydoc.cost.estimator import resolve_models

@@ -47,7 +47,7 @@ def test_the_text_is_not_truncated_the_way_the_report_truncates_it():
 
     `extract_text` loads documents directly, so its text is not truncated.
     """
-    from complydoc.audit.run import _MAX_TEXT_CHARS
+    from complydoc.audit.entry import _MAX_TEXT_CHARS
 
     long_page = FIXTURES / "dense_text.pdf"
     result = cd.extract_text(long_page, ocr=False, mask=False)

@@ -176,7 +176,7 @@ def test_a_worker_that_stops_is_recovered_in_the_main_process(config, serial, mo
     """A crashed worker breaks the pool; the documents it did not return are read here."""
     from concurrent.futures.process import BrokenProcessPool
 
-    from complydoc.audit import run as audit_run
+    from complydoc.audit import pool as audit_pool
 
     class StoppingPool:
         def __init__(self, jobs, work, models):
@@ -189,10 +189,10 @@ def test_a_worker_that_stops_is_recovered_in_the_main_process(config, serial, mo
             return False
 
         def map(self, function, files, chunksize=1):
-            yield audit_run._process(files[0], self.work)
+            yield audit_pool._process(files[0], self.work)
             raise BrokenProcessPool("a worker process stopped")
 
-    monkeypatch.setattr(audit_run, "_process_pool", StoppingPool)
+    monkeypatch.setattr(audit_pool, "_process_pool", StoppingPool)
     recovered = run_audit(FIXTURES, config, ocr=False, jobs=3)
 
     assert findings(recovered) == findings(serial)
@@ -218,7 +218,7 @@ def test_the_pool_forks_from_its_server_even_once_torch_is_loaded_here(
     the GPU there, and the first kernel it had not compiled aborted the worker.
     It no longer runs in a worker on the GPU, so the forkserver's preload is kept.
     """
-    from complydoc.audit.run import _pool_context
+    from complydoc.audit.pool import _pool_context
 
     monkeypatch.setitem(sys.modules, "torch", types.ModuleType("torch"))
     method = _pool_context(_work(tmp_path, config)).get_start_method()
@@ -231,7 +231,7 @@ def test_a_run_with_the_callers_own_model_code_starts_each_worker_afresh(tmp_pat
 
     A forked worker cannot, so each worker is spawned instead.
     """
-    from complydoc.audit.run import _pool_context
+    from complydoc.audit.pool import _pool_context
 
     work = _work(tmp_path, config, classifier_spec="mymodels:classifier")
     assert _pool_context(work).get_start_method() == "spawn"

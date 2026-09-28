@@ -10,7 +10,7 @@ the last test here and of the note at the top of `complydoc/audit/warm.py`.
 
 from __future__ import annotations
 
-from complydoc.audit.run import _pool_context
+from complydoc.audit.pool import _pool_context
 
 
 def test_warming_leaves_the_models_loaded():

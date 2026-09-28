@@ -184,7 +184,8 @@ def test_a_name_one_loader_yielded_is_covered_in_every_loaders_reading(tmp_path,
 
 def test_a_name_one_extractor_yielded_is_covered_in_the_kept_text_and_the_ocr(tmp_path, config):
     """The same on an audit: the text layer, OCR and another extractor read one page."""
-    from complydoc.audit.run import _page_text, plan_audit
+    from complydoc.audit.entry import _page_text
+    from complydoc.audit.run import plan_audit
     from complydoc.ingest.base import Page
 
     page = Page(

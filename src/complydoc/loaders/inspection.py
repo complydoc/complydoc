@@ -48,14 +48,8 @@ from pathlib import Path, PurePath
 from typing import TYPE_CHECKING, Any
 
 from complydoc import __version__, offline
-from complydoc.audit.run import (
-    COMPONENTS,
-    Work,
-    assemble_report,
-    build_entry,
-    ner_available,
-    verification_hosts,
-)
+from complydoc.audit.entry import Work, build_entry, ner_available
+from complydoc.audit.run import COMPONENTS, assemble_report, verification_hosts
 from complydoc.config.loader import load_config
 from complydoc.config.schema import Config
 from complydoc.cost.estimator import resolve_models

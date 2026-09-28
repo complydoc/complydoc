@@ -170,7 +170,7 @@ def test_extracted_text_records_how_each_page_was_read(config):
 
 def test_very_long_pages_are_truncated_not_dropped(config):
     """One enormous document must not make the report unopenable."""
-    from complydoc.audit.run import _MAX_TEXT_CHARS
+    from complydoc.audit.entry import _MAX_TEXT_CHARS
 
     with_text = run_audit(FIXTURES, config, COMPONENTS, extracted_text=True)
     for document in with_text.documents:

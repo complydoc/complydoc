@@ -208,6 +208,6 @@ def test_documents_the_pool_gave_back_were_not_missed():
 
 def test_a_host_is_recorded_by_name_rather_than_by_socket_noise():
     """The guard records a DNS lookup and a connection. A report wants the name."""
-    from complydoc.audit.run import _hosts_sent_content
+    from complydoc.audit.pool import _hosts_sent_content
 
     assert _hosts_sent_content() == [], "nothing has been sent in this process"

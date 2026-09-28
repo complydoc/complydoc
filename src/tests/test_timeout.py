@@ -7,7 +7,7 @@ from concurrent.futures import Future
 
 import pytest
 
-from complydoc.audit import run as audit_run
+from complydoc.audit import pool as audit_pool
 from complydoc.audit.run import run_audit
 from complydoc.ingest.base import TIMED_OUT, SkipRecord
 from tests.helpers import FIXTURES
@@ -34,7 +34,7 @@ class FakePool:
         self.submitted.append(path.name)
         future: Future = Future()
         if path.name not in self.hangs:
-            future.set_result(audit_run._Outcome(None, SkipRecord(path=path, reason="read")))
+            future.set_result(audit_pool._Outcome(None, SkipRecord(path=path, reason="read")))
         return future
 
     def shutdown(self, wait: bool = True, cancel_futures: bool = False) -> None:
@@ -51,13 +51,13 @@ def pools(monkeypatch):
         built.append(pool)
         return pool
 
-    monkeypatch.setattr(audit_run, "_process_pool", build)
+    monkeypatch.setattr(audit_pool, "_process_pool", build)
     return built
 
 
 def test_a_document_past_its_deadline_is_skipped_and_the_workers_killed(tmp_path, pools):
     files = [tmp_path / name for name in ("one.pdf", "two.pdf", "three.pdf")]
-    outcomes = list(audit_run._timed(files, work=None, jobs=2, timeout=0.01, models=None))
+    outcomes = list(audit_pool._timed(files, work=None, jobs=2, timeout=0.01, models=None))
 
     assert [o.skipped.path.name for o in outcomes] == ["one.pdf", "two.pdf", "three.pdf"]
     assert [o.skipped.reason for o in outcomes] == ["read", TIMED_OUT, "read"]
