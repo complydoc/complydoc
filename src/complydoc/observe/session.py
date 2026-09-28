@@ -43,9 +43,11 @@ R = TypeVar("R")
 _current: Observation | None = None
 _lock = threading.Lock()
 
-_inside: ContextVar[bool] = ContextVar("complydoc_inside_stage", default=False)
-"""Set while a stage runs, so a call it makes to another observed method (`load` calling
-`lazy_load`, `split_documents` calling `create_documents`) is not a second stage."""
+_inside: ContextVar[Recording | None] = ContextVar("complydoc_inside_stage", default=None)
+"""The stage running, so a call it makes is recorded inside it: a directory loader's
+loader for each file, say. A call the same component makes on itself (`load` calling
+`lazy_load`, `split_documents` calling `create_documents`) is part of the stage, not a
+stage of its own."""
 
 
 @dataclass(slots=True)
@@ -59,6 +61,12 @@ class Recording:
     method: str
     tags: list[str]
     parameters: dict[str, Any]
+    parent: int | None = None
+    """The stage this one ran inside, if it ran inside one."""
+    started: float = 0.0
+    """Seconds from the start of the block to when the stage was called."""
+    owner: int | None = None
+    """`id()` of the component, to tell a call it makes on itself from a call it makes out."""
     inputs: list[Any] | None = None
     outputs: list[Any] | None = None
     vectors: int | None = None
@@ -87,6 +95,7 @@ class Observation:
         config: Config | None,
         extracted_text: bool,
         models: Sequence[str] | None,
+        previews: int = 20,
     ) -> None:
         if scan not in SCANS:
             raise ValueError(f"scan is one of {', '.join(SCANS)}, not {scan!r}")
@@ -97,6 +106,7 @@ class Observation:
         self.config = config
         self.extracted_text = extracted_text
         self.models = models
+        self.previews = max(0, previews)
         self.recordings: list[Recording] = []
         self.report: AuditReport | None = None
         self.path: Path | None = None
@@ -183,6 +193,7 @@ def observe(
     config: Config | None = None,
     extracted_text: bool = True,
     models: Sequence[str] | None = None,
+    previews: int = 20,
 ) -> Observation:
     """Observe the ingestion pipeline run inside the `with` block.
 
@@ -196,8 +207,9 @@ def observe(
     at every stage; `off` records counts, settings, timings and connections only.
 
     `extracted_text` keeps each loaded page's text, masked, so the viewer can show it
-    with the chunks drawn over it. Library classes are observed if they were imported
-    before the block opened.
+    with the chunks drawn over it. `previews` keeps that many of each step's items,
+    masked, so the viewer can show what the step passed on; 0 keeps none. Library classes
+    are observed if they were imported before the block opened.
     """
     return Observation(
         name,
@@ -207,20 +219,25 @@ def observe(
         config=config,
         extracted_text=extracted_text,
         models=models,
+        previews=previews,
     )
 
 
 def idle() -> bool:
-    """True where a call should go straight through: no block open, or inside a stage."""
-    return _current is None or _inside.get()
+    """True where a call should go straight through: no block is open."""
+    return _current is None
 
 
 def begin(
     kind: str, component: Any, module: str, method: str, inputs: Any, *, label: str | None = None
 ) -> Recording | None:
-    """Open a stage in the current block, or return None if there is none."""
+    """Open a stage in the current block, or return None where the call is not one: no
+    block is open, or the component running is calling itself."""
     observation = _current
     if observation is None:
+        return None
+    within = _inside.get()
+    if within is not None and component is not None and within.owner == id(component):
         return None
     started = time.perf_counter()
     try:
@@ -236,6 +253,9 @@ def begin(
         method=method,
         tags=tags,
         parameters=parameters,
+        parent=within.index if within is not None else None,
+        started=round(started - observation._started, 4),
+        owner=id(component) if component is not None else None,
         inputs=list(inputs) if isinstance(inputs, list | tuple) else None,
     )
     with _lock:
@@ -254,7 +274,7 @@ def _tags(component: Any) -> list[str]:
 @contextlib.contextmanager
 def running(recording: Recording) -> Iterator[None]:
     """Mark the stage as running for the length of the block, and time it."""
-    token = _inside.set(True)
+    token = _inside.set(recording)
     mark = offline.connections_mark()
     started = time.perf_counter()
     try:

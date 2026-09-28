@@ -101,7 +101,41 @@ def _batch_prices(table: dict[str, Any]) -> dict[str, float]:
     return prices
 
 
-def build(catalogue: dict[str, Any], batch: dict[str, float]) -> dict[str, Any]:
+EMBEDDING_PROVIDERS = {
+    "openai": "openai",
+    "cohere": "cohere",
+    "voyage": "voyage",
+    "mistral": "mistral",
+    "gemini": "gemini",
+}
+"""First-party providers whose embedding models are kept, as litellm names them."""
+
+
+def _embedding_prices(table: dict[str, Any]) -> dict[str, Any]:
+    """Embedding models and their input price, from litellm, which marks them by mode.
+
+    Kept apart from the models a document is sent to be read: a trace prices what a
+    pipeline's embedding step sent with them.
+    """
+    prices: dict[str, Any] = {}
+    for name, entry in table.items():
+        if not isinstance(entry, dict) or entry.get("mode") != "embedding":
+            continue
+        provider = EMBEDDING_PROVIDERS.get(str(entry.get("litellm_provider")))
+        rate = entry.get("input_cost_per_token")
+        if provider is None or not isinstance(rate, int | float) or rate <= 0:
+            continue
+        prices[name.split("/")[-1]] = {
+            "provider": provider,
+            "input_per_mtok_usd": round(float(rate) * _PER_MTOK, 6),
+            "dimensions": entry.get("output_vector_size"),
+        }
+    return dict(sorted(prices.items()))
+
+
+def build(
+    catalogue: dict[str, Any], batch: dict[str, float], embeddings: dict[str, Any] | None = None
+) -> dict[str, Any]:
     models: dict[str, Any] = {}
     for source_provider, provider in PROVIDERS.items():
         entry = catalogue.get(source_provider)
@@ -145,6 +179,8 @@ def build(catalogue: dict[str, Any], batch: dict[str, float]) -> dict[str, Any]:
         "batch_source_url": "https://github.com/BerriAI/litellm",
         "imported": dt.date.today().isoformat(),
         "models": models,
+        "embeddings": embeddings or {},
+        "embeddings_source_url": "https://github.com/BerriAI/litellm",
     }
 
 
@@ -167,7 +203,8 @@ def main() -> int:
     )
 
     if arguments.batch:
-        batch = _batch_prices(json.loads(arguments.batch.read_text(encoding="utf-8")))
+        litellm = json.loads(arguments.batch.read_text(encoding="utf-8"))
+        batch, embeddings = _batch_prices(litellm), _embedding_prices(litellm)
     elif arguments.offline and arguments.out.exists():
         previous = json.loads(arguments.out.read_text(encoding="utf-8"))
         batch = {
@@ -175,10 +212,12 @@ def main() -> int:
             for name, entry in previous.get("models", {}).items()
             if entry.get("batch_input_per_mtok_usd")
         }
+        embeddings = previous.get("embeddings", {})
     else:
-        batch = _batch_prices(_fetch(BATCH_URL))
+        litellm = _fetch(BATCH_URL)
+        batch, embeddings = _batch_prices(litellm), _embedding_prices(litellm)
 
-    built = build(catalogue, batch)
+    built = build(catalogue, batch, embeddings)
     arguments.out.parent.mkdir(parents=True, exist_ok=True)
     arguments.out.write_text(json.dumps(built, indent=1, sort_keys=True) + "\n", encoding="utf-8")
 
@@ -192,7 +231,8 @@ def main() -> int:
     print(
         f"{arguments.out}: {len(entries)} models "
         f"({arguments.out.stat().st_size / 1024:.0f} KB), {images} take images, "
-        f"{batched} have a batch price, newest released {newest}"
+        f"{batched} have a batch price, newest released {newest}; "
+        f"{len(built['embeddings'])} embedding models"
     )
     for provider, count in sorted(providers.items()):
         print(f"  {provider:12s} {count}")

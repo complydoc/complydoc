@@ -233,7 +233,9 @@ def report_shape() -> dict[str, object]:
             "documents_out, characters_in, characters_out, sources[], scanned, "
             "identifiers[] (fingerprint, label, masked, severity, occurrences, evidence), hidden, "
             "metadata_keys[], metadata_keys_added[], path_keys[], connections[], hosts[], "
-            "vectors, dimensions, chunks (index into chunks), finished, error, seconds)"
+            "vectors, dimensions, chunks (index into chunks), parent, started, tokens_in, "
+            "tokens_out, usd, usd_basis, previews[] (source, page, characters, tokens, text, "
+            "metadata, all masked), finished, error, seconds)"
         ),
         "aggregate": (
             "folder totals: cost, signal_distribution, sensitive_by_category, "
@@ -1026,6 +1028,20 @@ class StageIdentifier:
 
 
 @dataclass(frozen=True, slots=True)
+class StagePreview:
+    """One item a stage passed on, or for an embedding stage sent, as the viewer shows it."""
+
+    source: str | None
+    page: int | None
+    characters: int
+    tokens: int | None
+    text: str
+    """The start of the item's text, identifiers masked unless the run revealed them."""
+    metadata: dict[str, str] = field(default_factory=dict)
+    """Its metadata values as text, masked likewise and cut short."""
+
+
+@dataclass(frozen=True, slots=True)
 class TraceStage:
     """One step of an observed ingestion pipeline: a loader, a splitter, a transformer, an
     embedding call, or a function of the caller's own marked with `@cd.stage`."""
@@ -1068,6 +1084,19 @@ class TraceStage:
     dimensions: int | None = None
     chunks: int | None = None
     """For a split stage, its place in the report's `chunks`."""
+    parent: int | None = None
+    """The stage this one ran inside: a directory loader's loader for one file, say."""
+    started: float = 0.0
+    """Seconds from the start of the block to when the stage was called."""
+    tokens_in: int | None = None
+    tokens_out: int | None = None
+    """Tokens in what the stage was given and passed on, counted with the headline model's
+    encoding; for an embedding stage, `tokens_in` is what it sent."""
+    usd: float | None = None
+    """What the stage cost, where it sent text to a priced model: an embedding call."""
+    usd_basis: str | None = None
+    """`estimated` from the price table, or `unpriced` for a model the table does not list."""
+    previews: list[StagePreview] = field(default_factory=list)
     finished: bool = True
     """False for a stage read lazily whose items were not all taken before the block ended."""
     error: str | None = None

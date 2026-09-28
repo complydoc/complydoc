@@ -29,6 +29,10 @@ This is a breaking change for anyone calling `cd.write_html`; see Removed.
   `scan="patterns"` (the default), `"full"` or `"off"` sets what is looked for.
   Two policy rules, and `cd.expect` checks, hold a recorded pipeline to what it may
   send: `no_identifiers_sent` and `only_hosts`.
+  Each step records when it started and the step it ran inside, so a directory
+  loader holds the loader it ran for each file; its tokens in and out; what it cost,
+  for an embedding call priced from the price table's new embedding models; and
+  masked previews of the first items it passed on (`previews=20`).
 
 - The viewer draws a splitter's chunks over a document's text, from the folder's
   `complydoc chunks` run: alternating bands, flagged chunks in amber, and a count

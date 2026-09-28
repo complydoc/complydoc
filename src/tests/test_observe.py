@@ -151,15 +151,21 @@ def test_a_function_of_your_own_is_a_stage(tmp_path: Path) -> None:
     @cd.stage("dedupe")
     def dedupe(documents: list[Document]) -> list[Document]:
         splitter = RecursiveCharacterTextSplitter(chunk_size=50, chunk_overlap=0)
-        splitter.split_documents(documents)  # inside the stage: not a stage of its own
+        splitter.split_documents(documents)  # inside the stage: recorded as its child
         return documents[:1]
 
     assert dedupe([Document(page_content="x")]) == [Document(page_content="x")]
     with cd.observe(out=None) as observation:
         dedupe(_Loader(str(tmp_path / "a.pdf")).load())
     stages = observation.report.trace.stages
-    assert [(s.kind, s.component) for s in stages] == [("load", "_Loader"), ("custom", "dedupe")]
+    assert [(s.kind, s.component, s.parent) for s in stages] == [
+        ("load", "_Loader", None),
+        ("custom", "dedupe", None),
+        ("split", "RecursiveCharacterTextSplitter", 1),
+    ]
     assert stages[1].documents_in == 2 and stages[1].documents_out == 1
+    # The split inside the step makes no chunks of the run's own: only outermost splits do.
+    assert observation.report.chunks is not None
 
 
 def test_blocks_do_not_nest() -> None:
@@ -226,3 +232,51 @@ def test_a_pipeline_rule_cannot_pass_a_report_without_a_pipeline(tmp_path: Path)
     report = cd.inspect_documents([{"page_content": "no pipeline here"}])
     with pytest.raises(ValueError, match="no pipeline"):
         cd.expect(report).no_identifiers_sent()
+
+
+def test_each_stage_says_when_it_started_what_it_weighed_and_cost(pipeline) -> None:  # type: ignore[no-untyped-def]
+    load, split, embed = pipeline().report.trace.stages
+    assert 0 <= load.started <= split.started <= embed.started
+    assert split.tokens_in and split.tokens_out and embed.tokens_in == split.tokens_out
+    # The fake model names no priced model, so what it sent is left unpriced, not guessed.
+    assert (embed.usd, embed.usd_basis) == (None, "unpriced")
+    assert load.usd is None
+
+
+def test_an_embedding_model_the_price_table_lists_is_priced(tmp_path: Path) -> None:
+    class Priced(_Embeddings):
+        model: str = "text-embedding-3-small"
+
+    with cd.observe(out=None) as observation:
+        Priced(size=4).embed_documents(["one two three"] * 1000)
+    (embed,) = observation.report.trace.stages
+    assert embed.usd_basis == "estimated"
+    assert embed.usd == pytest.approx(embed.tokens_in * 0.02 / 1_000_000)
+
+
+def test_what_a_stage_passed_on_is_previewed_masked(pipeline) -> None:  # type: ignore[no-untyped-def]
+    load, split, embed = pipeline().report.trace.stages
+    assert load.previews and load.previews[0].page == 1
+    assert load.previews[0].source == "contract.pdf"
+    assert IBAN not in load.previews[0].text and "Payments go to account" in load.previews[0].text
+    assert len(split.previews) <= 20 and embed.previews
+    assert not pipeline(previews=0).report.trace.stages[0].previews
+
+
+def test_a_directory_loader_holds_the_loader_it_runs_for_each_file(tmp_path: Path) -> None:
+    class Directory(BaseLoader):
+        def lazy_load(self):  # type: ignore[no-untyped-def]
+            for name in ("a.pdf", "b.pdf"):
+                yield from _Loader(str(tmp_path / name)).load()
+
+    with cd.observe(out=None) as observation:
+        Directory().load()
+    stages = observation.report.trace.stages
+    assert [(s.component, s.parent) for s in stages] == [
+        ("Directory", None),
+        ("_Loader", 0),
+        ("_Loader", 0),
+    ]
+    # The files' pages are the directory loader's, and are audited once.
+    assert len(observation.report.documents) == 2
+    assert sum(d.page_count for d in observation.report.documents) == 4

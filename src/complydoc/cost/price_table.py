@@ -27,6 +27,7 @@ from complydoc.config.schema import ModelPricing, TokenizerSpec
 
 __all__ = [
     "TABLE_PATH",
+    "embedding_price",
     "family_of",
     "imported_models",
     "line_of",
@@ -90,6 +91,22 @@ def table_provenance() -> tuple[str | None, dt.date | None, int]:
         dt.date.fromisoformat(imported) if imported else None,
         len(table.get("models", {})),
     )
+
+
+def embedding_price(model: str) -> float | None:
+    """USD per million input tokens for an embedding model, where the table lists it.
+
+    Tried as named, without a provider prefix (`openai/text-embedding-3-small`), and
+    without a release stamp. None for a model the table does not list: complydoc will not
+    guess a price.
+    """
+    table = _table().get("embeddings", {})
+    bare = model.rsplit("/", 1)[-1]
+    for name in (model, bare, re.sub(r"-\d{4}(-\d{2}){0,2}$", "", bare)):
+        entry = table.get(name)
+        if entry and isinstance(entry.get("input_per_mtok_usd"), int | float):
+            return float(entry["input_per_mtok_usd"])
+    return None
 
 
 _VERSION = re.compile(r"(?:^|-)(?:v?\d+(?:[.\-]\d+)*|k\d+(?:\.\d+)*)(?=-|$)")

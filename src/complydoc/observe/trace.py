@@ -31,6 +31,7 @@ from complydoc.loaders.inspection import (
     finish_report,
     inspect_run,
 )
+from complydoc.observe.measure import Measurer
 from complydoc.report.chunk_run import chunk_run_report
 from complydoc.report.json_writer import write_json
 from complydoc.report.models import (
@@ -61,7 +62,8 @@ def build_report(
     settings = observation.config or load_config()
     patterns = _patterns_only(settings)
     recordings = list(observation.recordings)
-    last = recordings[-1].index if recordings else -1
+    top = [r for r in recordings if r.parent is None]
+    last = top[-1].index if top else -1
 
     def config_for(recording: Recording) -> Config | None:
         """The name model reads the documents loaded and the last stage; patterns the rest."""
@@ -73,17 +75,19 @@ def build_report(
 
     report = _documents_report(observation, recordings, settings)
     root = Path(report.run.target) if Path(report.run.target).is_absolute() else None
+    previews = observation.previews if observation.scan != "off" else 0
+    measurer = Measurer(settings, reveal=observation.reveal, previews=previews, root=root)
 
     chunk_reports: list[ChunkReport] = []
     chunk_index: dict[int, int] = {}
-    for recording in recordings:
-        if recording.kind == "split" and recording.outputs:
+    for recording in _outermost(recordings, "split"):
+        if recording.outputs:
             chunk_index[recording.index] = len(chunk_reports)
             chunk_reports.append(_chunks(recording, config_for(recording) or patterns))
     if chunk_reports:
         report.chunks = chunk_reports
 
-    loads = [r for r in recordings if r.kind == "load" and r.outputs]
+    loads = [r for r in _outermost(recordings, "load") if r.outputs]
     scans: dict[tuple[str, int], list[SensitiveMatch]] = {}
     stages = []
     for recording in recordings:
@@ -98,6 +102,7 @@ def build_report(
                 scans,
                 chunk_index.get(recording.index),
                 report if from_report else None,
+                measurer,
             )
         )
 
@@ -127,6 +132,22 @@ def build_report(
     return report
 
 
+def _outermost(recordings: list[Recording], kind: str) -> list[Recording]:
+    """Stages of `kind` not inside another of the same kind: a directory loader, not the
+    loader it calls for each file, whose documents it returns as its own."""
+    by_index = {r.index: r for r in recordings}
+
+    def nested(recording: Recording) -> bool:
+        parent = by_index.get(recording.parent) if recording.parent is not None else None
+        while parent is not None:
+            if parent.kind == kind:
+                return True
+            parent = by_index.get(parent.parent) if parent.parent is not None else None
+        return False
+
+    return [r for r in recordings if r.kind == kind and not nested(r)]
+
+
 def _patterns_only(settings: Config) -> Config:
     """`settings` with the categories a model reads turned off."""
     categories = {
@@ -145,7 +166,7 @@ def _documents_report(
     Where nothing was loaded inside the block, what the first stage was given stands for
     the documents.
     """
-    loads = [r for r in recordings if r.kind == "load" and r.outputs]
+    loads = [r for r in _outermost(recordings, "load") if r.outputs]
     documents = [item for r in loads for item in r.outputs or []]
     if not documents:
         given = next((r.inputs for r in recordings if r.kind != "embed" and r.inputs), None)
@@ -204,11 +225,15 @@ def _stage(
     scans: dict[tuple[str, int], list[SensitiveMatch]],
     chunks: int | None,
     report: AuditReport | None,
+    measurer: Measurer,
 ) -> TraceStage:
     embed = recording.kind == "embed"
     given = _contents(recording.inputs)
     passed = _contents(recording.inputs if embed else recording.outputs)
     texts = [text for text, _ in passed]
+    tokens_in = measurer.tokens([t for t, _ in given]) if recording.inputs is not None else None
+    tokens_out = None if embed or recording.outputs is None else measurer.tokens(texts)
+    usd, basis = measurer.cost(recording, tokens_in)
 
     if config is None:
         identifiers: list[StageIdentifier] = []
@@ -260,6 +285,13 @@ def _stage(
         vectors=recording.vectors,
         dimensions=recording.dimensions,
         chunks=chunks,
+        parent=recording.parent,
+        started=recording.started,
+        tokens_in=tokens_in,
+        tokens_out=tokens_out,
+        usd=usd,
+        usd_basis=basis,
+        previews=measurer.preview(passed) if config is not None else [],
         finished=recording.finished,
         error=recording.error,
     )
@@ -341,9 +373,12 @@ def _hosts(connections: list[str]) -> list[str]:
 
 def _limitations(trace: Trace) -> list[Limitation]:
     limitations = []
+    # A stage's connections include those of the stages inside it; each is said once, by
+    # the innermost stage that made it.
+    sending_inside = {s.parent for s in trace.stages if s.hosts and s.parent is not None}
     for stage in trace.stages:
         what = f"Stage {stage.index + 1}, {stage.component}"
-        if stage.hosts:
+        if stage.hosts and stage.index not in sending_inside:
             subject = (
                 count(stage.documents_in or 0, "text")
                 if stage.kind == "embed"
@@ -420,7 +455,7 @@ def _steps(stages: list[TraceStage]) -> list[list[TraceStage]]:
     """Stages one after another of the same component and method, as one step each, the
     way a loader called once a file reads."""
     groups: list[list[TraceStage]] = []
-    for stage in stages:
+    for stage in (s for s in stages if s.parent is None):
         last = groups[-1][-1] if groups else None
         same = last is not None and (last.kind, last.component, last.method) == (
             stage.kind,
