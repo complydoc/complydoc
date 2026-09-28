@@ -153,13 +153,13 @@ def _cell(text: str) -> str:
 
 def command_page() -> None:
     """One section per command, from the Typer app itself."""
-    import click
     import typer.main
 
     from complydoc.cli import app
 
     root = typer.main.get_command(app)
-    context = click.Context(root, info_name="complydoc")
+    # Typer carries its own click, so the context comes from the command, not an import.
+    context = root.context_class(root, info_name="complydoc")
     lines = [
         "Generated from the commands themselves, so this page cannot describe a",
         "flag the tool does not have.",
