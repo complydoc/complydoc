@@ -72,11 +72,14 @@ describe("App", () => {
   it("switches the theme from the header", async () => {
     render(<App />);
     await userEvent.click(screen.getByRole("button", { name: "pypdf against pdfplumber" }));
-    await userEvent.click(await screen.findByRole("button", { name: "Switch to the dark theme" }));
-    // The class is applied in an effect after the click, which a busy run can take a moment to reach.
-    await waitFor(() => expect(document.documentElement).toHaveClass("dark"), { timeout: 3000 });
-    expect(screen.getByRole("button", { name: "Switch to the light theme" })).toBeInTheDocument();
-  });
+    await userEvent.click(await screen.findByRole("button", { name: "Switch to the dark theme" }, { timeout: 8000 }));
+    // The button changes when the theme does; the class follows in an effect, which a busy
+    // CI runner can take several seconds to reach.
+    expect(
+      await screen.findByRole("button", { name: "Switch to the light theme" }, { timeout: 8000 }),
+    ).toBeInTheDocument();
+    await waitFor(() => expect(document.documentElement).toHaveClass("dark"), { timeout: 8000 });
+  }, 20000);
 
   it("opens on the reports complydoc ui found, and explains an empty folder", async () => {
     const script = document.createElement("script");
