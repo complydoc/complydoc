@@ -17,7 +17,11 @@ export function measured(report: Report, content: Content): boolean {
   }
   if (content === "loaders") return report.loader_comparison !== null;
   if (content === "chunks") return (report.chunks?.length ?? 0) > 0;
-  if (content === "trace") return (report.trace?.stages.length ?? 0) > 0;
+  // A pipeline recorded with cd.observe carries its trace; an audit's is made from its timings.
+  if (content === "trace")
+    return (
+      (report.trace?.stages.length ?? 0) > 0 || (report.documents.length > 0 && report.documents.every((d) => d.timing))
+    );
   return report.documents.length > 0;
 }
 

@@ -1118,7 +1118,8 @@ class Trace:
     """What observing cost: reading settings as stages ran, and scanning at the end."""
     stages: list[TraceStage] = field(default_factory=list)
     kind: str = "pipeline"
-    """`pipeline`, observed with `cd.observe`, or `audit`, complydoc's own run of a folder."""
+    """`pipeline`, observed with `cd.observe`. The viewer makes an audit's own trace from
+    each document's timing, with the kind `audit`."""
     connections_outside: list[str] = field(default_factory=list)
     """Lookups and connections made in the block but outside any stage."""
     libraries: dict[str, str] = field(default_factory=dict)

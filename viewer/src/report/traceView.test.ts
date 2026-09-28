@@ -1,5 +1,5 @@
-import { nestedTrace, sampleTrace } from "@/test/trace";
-import { timeByKind } from "./traceTree";
+import { nestedTrace, sampleTrace, stage } from "@/test/trace";
+import { spansOf, timeByKind } from "./traceTree";
 import { changeBetween, pipelineShape, sendingStep, stepsOf, trailsOf } from "./traceView";
 
 describe("traceView", () => {
@@ -47,5 +47,38 @@ describe("timeByKind", () => {
     expect(split.map((part) => part.kind)).toEqual(["load", "embed", "split"]);
     expect(split[0]?.seconds).toBeCloseTo(0.5);
     expect(split.reduce((sum, part) => sum + part.share, 0)).toBeCloseTo(1);
+  });
+});
+
+describe("spansOf for an audit", () => {
+  it("groups the documents into the folders they sit in, each with its documents' figures", () => {
+    const document = (index: number, path: string) =>
+      stage(index, {
+        kind: "document",
+        component: path.split("/").pop() ?? path,
+        sources: [path],
+        started: index,
+        seconds: 1,
+      });
+    const trace = {
+      ...sampleTrace(),
+      kind: "audit" as const,
+      stages: [
+        document(0, "contracts/2025/a.pdf"),
+        document(1, "contracts/2025/b.pdf"),
+        document(2, "contracts/c.pdf"),
+        document(3, "top.pdf"),
+      ],
+    };
+    const roots = spansOf(trace);
+    expect(roots.map((span) => span.stage.component)).toEqual(["contracts/", "top.pdf"]);
+    const contracts = roots[0];
+    expect(contracts?.stage.documents_out).toBe(3);
+    expect(contracts?.children.map((span) => [span.stage.component, span.depth])).toEqual([
+      ["2025/", 1],
+      ["c.pdf", 1],
+    ]);
+    // From the first document's start to the last one's end.
+    expect(contracts?.stage.seconds).toBe(3);
   });
 });

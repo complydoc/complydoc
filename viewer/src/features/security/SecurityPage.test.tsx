@@ -84,7 +84,9 @@ describe("concepts a model found", () => {
   it("charts the ten most frequent kinds, and counts the rest", () => {
     const report = sampleAudit();
     const byCategory = Object.fromEntries(Array.from({ length: 12 }, (_, i) => [`kind_${i}`, 12 - i]));
-    render(<SecurityPage report={{ ...report, aggregate: { ...report.aggregate, sensitive_by_category: byCategory } }} />);
+    render(
+      <SecurityPage report={{ ...report, aggregate: { ...report.aggregate, sensitive_by_category: byCategory } }} />,
+    );
     expect(screen.getByRole("button", { name: "and 2 more kinds, in every finding below" })).toBeInTheDocument();
   });
 
@@ -101,7 +103,9 @@ describe("concepts a model found", () => {
     expect(create).toHaveBeenCalled();
     const text = await (made[0] as Blob).text();
     expect(text.split("\r\n")[0]).toBe("severity,identifier,value,document,page,confidence,fingerprint");
-    expect(text).toContain(report.documents.find((d) => d.sensitive.matches.length)?.sensitive.matches[0]?.masked ?? "");
+    expect(text).toContain(
+      report.documents.find((d) => d.sensitive.matches.length)?.sensitive.matches[0]?.masked ?? "",
+    );
   });
 
   it("opens the findings filtered as a link asks", () => {

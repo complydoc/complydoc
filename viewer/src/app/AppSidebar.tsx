@@ -56,6 +56,7 @@ function countFor(report: Report, page: Page): string | null {
     case "chunks":
       return report.chunks?.length ? formatCount(report.chunks.length) : null;
     case "pipeline":
+      // An audit's trace is its documents, counted beside Documents already.
       return report.trace ? formatCount(report.trace.stages.filter((s) => s.parent == null).length) : null;
     default:
       return null;

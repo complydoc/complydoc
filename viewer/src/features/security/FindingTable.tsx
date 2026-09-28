@@ -35,7 +35,12 @@ const columns: Columns<FindingRow> = [
     cell: ({ row }) => (
       <span className="flex min-w-0 flex-col items-start gap-0.5">
         <Button variant="link" className="h-auto p-0 font-medium" asChild>
-          <a href={documentHref(row.original.document, row.original.page, { kind: "identifier", index: row.original.match })}>
+          <a
+            href={documentHref(row.original.document, row.original.page, {
+              kind: "identifier",
+              index: row.original.match,
+            })}
+          >
             {row.original.label}
           </a>
         </Button>
@@ -57,16 +62,15 @@ const columns: Columns<FindingRow> = [
         >
           {fileName(row.original.path)}
         </a>
-        {row.original.page !== null && (
-          <span className="text-xs text-muted-foreground">page {row.original.page}</span>
-        )}
+        {row.original.page !== null && <span className="text-xs text-muted-foreground">page {row.original.page}</span>}
       </span>
     ),
   }),
   column.accessor("evidence", {
     header: "Confidence",
     sortingFn: (a, b) =>
-      EVIDENCE.findIndex((e) => e.key === a.original.evidence) - EVIDENCE.findIndex((e) => e.key === b.original.evidence),
+      EVIDENCE.findIndex((e) => e.key === a.original.evidence) -
+      EVIDENCE.findIndex((e) => e.key === b.original.evidence),
     cell: ({ row, getValue }) => (
       <div className="flex justify-center">
         <EvidenceBadge evidence={getValue()} match={row.original.source} icon />
@@ -79,7 +83,10 @@ const columns: Columns<FindingRow> = [
     header: () => <span className="sr-only">Ignore</span>,
     cell: ({ row }) => (
       <div className="flex justify-end">
-        <IgnoreButton fingerprint={row.original.source.fingerprint} what={`${row.original.label} ${row.original.masked}`} />
+        <IgnoreButton
+          fingerprint={row.original.source.fingerprint}
+          what={`${row.original.label} ${row.original.masked}`}
+        />
       </div>
     ),
     meta: { narrow: true },
@@ -90,15 +97,7 @@ const columns: Columns<FindingRow> = [
 function findingsCsv(rows: FindingRow[]): string {
   return toCsv(
     ["severity", "identifier", "value", "document", "page", "confidence", "fingerprint"],
-    rows.map((row) => [
-      row.severity,
-      row.label,
-      row.masked,
-      row.path,
-      row.page,
-      row.evidence,
-      row.source.fingerprint,
-    ]),
+    rows.map((row) => [row.severity, row.label, row.masked, row.path, row.page, row.evidence, row.source.fingerprint]),
   );
 }
 

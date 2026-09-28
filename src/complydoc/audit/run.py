@@ -96,7 +96,6 @@ from complydoc.report.overall import overall_readiness
 from complydoc.report.preview import build_previews
 from complydoc.report.quickwins import quick_wins
 from complydoc.report.routing import summarise_routes
-from complydoc.report.run_trace import audit_trace
 from complydoc.report.verification import summarise_verification
 from complydoc.sensitive.base import SensitiveMatch
 from complydoc.sensitive.detectors.model_server import ModelServer, ServerAddress
@@ -1193,7 +1192,6 @@ def run_audit(
     """
     started = time.monotonic()
     started_at = dt.datetime.now().astimezone()
-    began = time.time()
     # Read before any document is, so a broken file stops the run at once.
     ignore_path = ignore_file or find_ignore_file(target)
     ignores = (ignore_path, load_ignores(ignore_path)) if ignore_path is not None else None
@@ -1317,7 +1315,7 @@ def run_audit(
         verify_scope=verify_scope if verify_name is not None else None,
     )
 
-    report = assemble_report(
+    return assemble_report(
         config,
         requested,
         documents,
@@ -1331,8 +1329,6 @@ def run_audit(
             None if not judging else judge_spec or getattr(judge_concepts, "__name__", "your own")
         ),
     )
-    report.trace = audit_trace(report, began)
-    return report
 
 
 def assemble_report(

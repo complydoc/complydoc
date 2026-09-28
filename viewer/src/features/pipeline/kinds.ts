@@ -1,5 +1,6 @@
 import {
   BookOpenTextIcon,
+  FolderIcon,
   CodeIcon,
   EyeIcon,
   FileInputIcon,
@@ -53,6 +54,13 @@ export const KIND: Record<StepKind, { label: string; icon: LucideIcon; tone: str
     icon: CodeIcon,
     tone: "text-muted-foreground",
     pill: "bg-muted text-muted-foreground ring-border",
+  },
+  folder: {
+    bar: "bg-muted-foreground/60",
+    label: "Folder",
+    icon: FolderIcon,
+    tone: "text-muted-foreground",
+    pill: "bg-muted text-foreground ring-border",
   },
   document: {
     bar: "bg-sky-500",

@@ -23,7 +23,8 @@ export interface StagePreview {
 export interface TraceStage {
   index: number;
   /** A pipeline's steps: load, transform, split, embed, custom. An audit's: a document, and
-   * inside it read, ocr, analyse, scan and verify. */
+   * inside it read, ocr, analyse, scan and verify. A folder is the viewer's, holding an
+   * audit's documents as they sit on disk. */
   kind:
     | "load"
     | "transform"
@@ -35,7 +36,8 @@ export interface TraceStage {
     | "ocr"
     | "analyse"
     | "scan"
-    | "verify";
+    | "verify"
+    | "folder";
   component: string;
   module: string;
   method: string;

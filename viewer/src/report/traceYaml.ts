@@ -58,6 +58,8 @@ export function inputLines(stage: TraceStage, from: string | null): string[] {
 
 /** What the step passed on: its previews, or for an embedding step, the vectors' shape. */
 export function outputLines(stage: TraceStage): string[] {
+  if (stage.kind === "folder")
+    return [`documents: ${scalar(stage.documents_out)}`, `identifiers: ${stage.identifiers.length}`];
   if (stage.kind === "embed")
     return [
       `vectors: ${scalar(stage.vectors)}`,

@@ -42,7 +42,85 @@ export function spansOf(trace: Trace): Span[] {
   // In the order they began: an audit reads several documents at once, and reports them in
   // the order it finished them.
   const roots = [...(byParent.get(null) ?? [])].sort((a, b) => (a.started ?? 0) - (b.started ?? 0));
-  return roots.map((stage) => build(stage, 0));
+  const spans = roots.map((stage) => build(stage, 0));
+  // An audit's documents sit in folders, as they do on disk: a thousand of them read as the
+  // few folders they are in, each opening onto its own.
+  return trace.kind === "audit" ? byFolder(spans) : spans;
+}
+
+/** The folder a document span's file is in, as the path's parts. */
+function folderParts(span: Span): string[] {
+  const path = span.stage.sources[0] ?? String(span.stage.parameters.path ?? "");
+  return path.split(/[\\/]/).slice(0, -1).filter(Boolean);
+}
+
+/** A span standing for a folder: its documents' time from the first start to the last end. */
+function folderSpan(name: string, path: string, children: Span[], index: number): Span {
+  const stages = children.map((child) => child.stage);
+  const start = Math.min(...stages.map((s) => s.started ?? 0));
+  const end = Math.max(...stages.map((s) => (s.started ?? 0) + s.seconds));
+  const identifiers = new Map(stages.flatMap((s) => s.identifiers).map((i) => [i.fingerprint, i]));
+  const documents = (span: Span): number =>
+    span.stage.kind === "document" ? 1 : span.children.reduce((sum, child) => sum + documents(child), 0);
+  return {
+    depth: 0,
+    label: path,
+    children,
+    stage: {
+      index,
+      kind: "folder",
+      component: `${name}/`,
+      module: "complydoc.audit",
+      method: "folder",
+      seconds: Math.max(0, end - start),
+      tags: [],
+      parameters: { path, documents: children.reduce((sum, child) => sum + documents(child), 0) },
+      documents_in: null,
+      documents_out: children.reduce((sum, child) => sum + documents(child), 0),
+      characters_in: null,
+      characters_out: null,
+      sources: [],
+      scanned: stages.some((s) => s.scanned !== "off") ? "full" : "off",
+      identifiers: [...identifiers.values()],
+      hidden: stages.reduce((sum, s) => sum + (s.hidden ?? 0), 0),
+      metadata_keys: [],
+      metadata_keys_added: [],
+      path_keys: [],
+      connections: [],
+      hosts: [],
+      vectors: null,
+      dimensions: null,
+      chunks: null,
+      finished: true,
+      error: null,
+      started: start,
+    },
+  };
+}
+
+/** Document spans grouped into folder spans by their paths, a folder's depth set anew. */
+function byFolder(documents: Span[]): Span[] {
+  let next = -1;
+  const group = (spans: Span[], level: number, prefix: string[]): Span[] => {
+    const loose: Span[] = [];
+    const folders = new Map<string, Span[]>();
+    for (const span of spans) {
+      const parts = folderParts(span);
+      const name = parts[level];
+      if (name === undefined) loose.push(span);
+      else folders.set(name, [...(folders.get(name) ?? []), span]);
+    }
+    const made = [...folders].map(([name, inside]) =>
+      folderSpan(name, [...prefix, name].join("/"), group(inside, level + 1, [...prefix, name]), next--),
+    );
+    return [...made.sort((a, b) => a.stage.component.localeCompare(b.stage.component)), ...loose];
+  };
+  const deepen = (span: Span, depth: number): Span => ({
+    ...span,
+    depth,
+    children: span.children.map((child) => deepen(child, depth + 1)),
+  });
+  return group(documents, 0, []).map((span) => deepen(span, 0));
 }
 
 /** The spans in the order they are listed, skipping the children of those folded. */

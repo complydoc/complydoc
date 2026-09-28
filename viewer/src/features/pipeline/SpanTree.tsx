@@ -1,13 +1,16 @@
 import { ChevronRightIcon, CircleDollarSignIcon, ClockIcon, CoinsIcon, ShieldAlertIcon } from "lucide-react";
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
-import { fileName, formatCount, formatSeconds, formatUsd } from "@/report/format";
+import { fileName, formatCount, formatSeconds, formatUsd, plural } from "@/report/format";
 import { visibleSpans, type Span } from "@/report/traceTree";
 import { KIND, durationTone } from "./kinds";
 import { Pill } from "./pills";
 
-/** Top-level calls beyond which the tree opens folded. */
-const FOLD_ABOVE = 12;
+/** Spans beyond which the tree opens folded. */
+const FOLD_ABOVE = 60;
+
+/** Children drawn at first under one span, and how many more each asking adds. */
+const PAGE = 100;
 
 interface SpanTreeProps {
   roots: Span[];
@@ -42,11 +45,14 @@ function Row({
   const labelName = span.label ? fileName(span.label) || span.label : "";
   // Beside the name: the component for a file, or what the call read; for a document named by
   // its file already, the folder it sits in.
-  const aside = byFile
-    ? stage.component
-    : labelName === name
-      ? span.label.slice(0, -name.length).replace(/[\\/]$/, "")
-      : labelName;
+  const aside =
+    stage.kind === "folder"
+      ? plural(stage.documents_out ?? 0, "document")
+      : byFile
+        ? stage.component
+        : labelName === name
+          ? span.label.slice(0, -name.length).replace(/[\\/]$/, "")
+          : labelName;
   return (
     <div
       role="treeitem"
@@ -113,11 +119,19 @@ function Row({
  * down, or J and K, move through the calls; left and right fold and unfold one.
  */
 export function SpanTree({ roots, selected, onSelect, total }: SpanTreeProps) {
-  // A long run opens folded, one line a call, so the calls can be seen at once.
-  const [folded, setFolded] = useState<Set<number>>(
-    () =>
-      new Set(roots.length > FOLD_ABOVE ? roots.filter((r) => r.children.length > 0).map((r) => r.stage.index) : []),
-  );
+  // A large run opens folded, a line a folder or call, so its shape can be seen at once.
+  const [folded, setFolded] = useState<Set<number>>(() => {
+    const all: Span[] = [];
+    const walk = (span: Span) => {
+      all.push(span);
+      span.children.forEach(walk);
+    };
+    roots.forEach(walk);
+    if (all.length <= FOLD_ABOVE) return new Set();
+    return new Set(all.filter((span) => span.children.length > 0).map((span) => span.stage.index));
+  });
+  // How many of a span's children are drawn, by span: a folder of a thousand draws a page.
+  const [drawn, setDrawn] = useState<Map<number, number>>(() => new Map());
   const rows = visibleSpans(roots, folded);
   const tree = useRef<HTMLDivElement>(null);
 
@@ -159,7 +173,20 @@ export function SpanTree({ roots, selected, onSelect, total }: SpanTreeProps) {
       />
       {span.children.length > 0 && !folded.has(span.stage.index) && (
         <div role="group" className="ml-3 border-l pl-3">
-          {span.children.map(render)}
+          {span.children.slice(0, drawn.get(span.stage.index) ?? PAGE).map(render)}
+          {span.children.length > (drawn.get(span.stage.index) ?? PAGE) && (
+            <button
+              type="button"
+              onClick={() =>
+                setDrawn((current) =>
+                  new Map(current).set(span.stage.index, (current.get(span.stage.index) ?? PAGE) + PAGE),
+                )
+              }
+              className="px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground"
+            >
+              {span.children.length - (drawn.get(span.stage.index) ?? PAGE)} more
+            </button>
+          )}
         </div>
       )}
     </div>

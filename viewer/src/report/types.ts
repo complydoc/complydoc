@@ -181,6 +181,8 @@ export interface ContentFinding {
 export interface Extraction {
   extractor: string;
   characters: number;
+  /** How long the reader took over the whole document. */
+  seconds?: number;
   similarity: number;
   reordered: boolean;
 }
@@ -243,6 +245,16 @@ export interface PageVerification {
   error: string | null;
   /** How long the model took to answer for this page. */
   seconds?: number | null;
+}
+
+export interface DocumentTiming {
+  read_seconds: number;
+  analyse_seconds: number;
+  scan_seconds: number;
+  total_seconds: number;
+  seconds_per_page: number | null;
+  /** Schema 17: when reading began, in seconds since the epoch. */
+  started_at?: number | null;
 }
 
 export interface DocumentVerification {
@@ -311,6 +323,8 @@ export interface DocumentEntry {
   concept_findings?: ConceptFinding[];
   extractions: Extraction[];
   extracted_text: PageText[];
+  /** Wall clock spent on the document. */
+  timing?: DocumentTiming | null;
   /** Left out of a summary report. */
   previews?: PagePreview[];
   /** Schema 16: pages read again by a vision model. */

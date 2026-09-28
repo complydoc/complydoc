@@ -6,6 +6,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useHashParam } from "@/hooks/useHashRoute";
 import { cn } from "@/lib/utils";
 import { formatCount, formatDate, formatSeconds, formatUsd, plural } from "@/report/format";
+import { traceOf } from "@/report/auditTrace";
 import { sameDocument } from "@/report/chunkPlaces";
 import { measured } from "@/report/measured";
 import { spansOf, traceSpan, traceTotals, visibleSpans, type Span } from "@/report/traceTree";
@@ -52,7 +53,7 @@ function find(roots: Span[], index: number): Span | undefined {
 export function PipelinePage({ report }: { report: Report }) {
   const [spanParam, setSpan] = useHashParam("span");
   const [view, setView] = useHashParam("view");
-  const trace = report.trace;
+  const trace = traceOf(report);
   if (!trace || !measured(report, "trace")) return <NotInRun report={report} content="trace" />;
 
   const roots = spansOf(trace);
@@ -79,7 +80,7 @@ export function PipelinePage({ report }: { report: Report }) {
           <h1 className="truncate font-heading text-xl font-semibold tracking-tight">{trace.name}</h1>
           <span className="text-sm text-muted-foreground">
             {formatDate(report.run.started_at)} ·{" "}
-            {audit ? plural(roots.length, "document") : plural(steps.length, "step")}
+            {audit ? plural(report.documents.length, "document") : plural(steps.length, "step")}
           </span>
         </div>
         <Figure label="Took">{formatSeconds(totals.seconds)}</Figure>

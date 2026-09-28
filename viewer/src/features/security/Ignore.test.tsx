@@ -15,7 +15,15 @@ function withIgnored(): Report {
   const match = document?.sensitive.matches.shift();
   if (!document || !match) throw new Error("the sample has no identifier");
   document.ignored = [
-    { fingerprint: match.fingerprint ?? "", kind: "identifier", reason: "Our own account.", by: "Duarte", until: null, identifier: match, content: null },
+    {
+      fingerprint: match.fingerprint ?? "",
+      kind: "identifier",
+      reason: "Our own account.",
+      by: "Duarte",
+      until: null,
+      identifier: match,
+      content: null,
+    },
   ];
   report.aggregate.ignored_total = 1;
   return report;

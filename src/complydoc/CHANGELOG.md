@@ -141,8 +141,10 @@ This is a breaking change for anyone calling `cd.write_html`; see Removed.
   call, the calls made inside each beneath it, each with its time, tokens, cost and
   the identifiers in it; the call picked shows its input and output as YAML, its
   settings and its figures. A pipeline's runs are grouped under its name. An audit
-  is a trace too: each document, and inside it each reader, OCR, the analysis, the
-  scan and any vision check, with where the run's time went by kind of work.
+  is a trace too, made from its timings: its folders, each document, and inside it
+  each reader, OCR, the analysis, the scan and any vision check, with where the run's
+  time went by kind of work. Each document's timing records when it began
+  (`timing.started_at`), so documents read by several workers can be placed in time.
 
 - The viewer's document view, for a document read one way, shows every page in turn
   with numbered lines, the pages down the side and the findings listed beside the

@@ -68,8 +68,15 @@ describe("PipelinePage", () => {
     expect(screen.getByRole("table", { name: "Where each identifier went" })).toBeInTheDocument();
   });
 
-  it("says a run with no pipeline has none, and how to record one", () => {
-    renderPage(<PipelinePage report={sampleAudit()} />);
+  it("reads an audit as a trace of its documents, from the times it recorded", () => {
+    const report = sampleAudit();
+    renderPage(<PipelinePage report={report} />);
+    expect(screen.getByRole("banner", { name: "The run" })).toHaveTextContent(`${report.documents.length} documents`);
+    expect(screen.getByRole("group", { name: "Where the time went" })).toBeInTheDocument();
+  });
+
+  it("says a run with nothing to trace has none, and how to record one", () => {
+    renderPage(<PipelinePage report={{ ...sampleAudit(), documents: [] }} />);
     expect(screen.getByText("No pipeline in this run")).toBeInTheDocument();
   });
 });
