@@ -47,12 +47,12 @@ tool: ## Install (or update) complydoc on PATH, with OCR and name detection
 # ----------------------------------------------------------------- check ---
 
 .PHONY: docs
-docs: ## Serve the documentation site, rebuilding as you edit
-	$(UV) run --group docs mkdocs serve
+docs: ## Serve the documentation site; restart it to pick up edits to docs/
+	cd docs-site && npm install && npm run dev
 
 .PHONY: docs-build
 docs-build: ## Build the documentation site the way CI does
-	$(UV) run --group docs mkdocs build --strict
+	cd docs-site && npm ci && npm run build
 
 .PHONY: test
 test: ## Run the test suite

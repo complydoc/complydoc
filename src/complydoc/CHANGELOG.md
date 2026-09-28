@@ -7,6 +7,12 @@ separately.
 
 ## [Unreleased]
 
+### Changed
+
+- The documentation site is built with Starlight instead of MkDocs: search, a page
+  outline and light and dark themes. `docs/` stays the source; the reference pages are
+  still generated from the code, now by `src/scripts/build_docs.py`.
+
 ## [0.6.1] — 2026-09-28
 
 complydoc becomes the observability layer for AI ingestion pipelines: `cd.observe`

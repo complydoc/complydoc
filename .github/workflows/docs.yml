@@ -3,9 +3,9 @@
 # share it; src/scripts/assemble_site.py puts them together and leaves a
 # redirect at every address the documentation had when it was the root.
 #
-# Publishing happens from `main` only. Every pull request still builds the site
-# under `--strict`, so a broken link or a reference page that stops generating
-# fails the pull request.
+# Publishing happens from `main` only. Every pull request still builds the site,
+# so a page that stops converting or a reference page that stops generating fails
+# the pull request; src/tests/test_docs.py checks the links between pages.
 #
 # The reference pages are generated from the code at build time, so this
 # workflow installs the package as well as the documentation toolchain.
@@ -18,7 +18,8 @@ on:
       - "docs/**"
       - "landing/**"
       - "src/scripts/assemble_site.py"
-      - "mkdocs.yml"
+      - "docs-site/**"
+      - "src/scripts/build_docs.py"
       - "src/complydoc/**"
       - ".github/workflows/docs.yml"
   pull_request:
@@ -26,7 +27,8 @@ on:
       - "docs/**"
       - "landing/**"
       - "src/scripts/assemble_site.py"
-      - "mkdocs.yml"
+      - "docs-site/**"
+      - "src/scripts/build_docs.py"
       - "src/complydoc/**"
       - ".github/workflows/docs.yml"
   workflow_dispatch:
@@ -47,18 +49,21 @@ jobs:
         with:
           enable-cache: true
       - run: uv sync --group docs
-      - name: build the documentation
-        run: uv run mkdocs build --strict
       - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: landing/package-lock.json
+          cache-dependency-path: |
+            docs-site/package-lock.json
+            landing/package-lock.json
+      - name: build the documentation
+        working-directory: docs-site
+        run: npm ci && npm run build
       - name: build the landing page
         working-directory: landing
         run: npm ci && npm run build
       - name: assemble the site
-        run: uv run python src/scripts/assemble_site.py --docs site --landing landing/dist --out _site
+        run: uv run python src/scripts/assemble_site.py --docs docs-site/dist --landing landing/dist --out _site
       - uses: actions/upload-pages-artifact@v4
         if: github.ref == 'refs/heads/main'
         with:

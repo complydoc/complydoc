@@ -32,9 +32,8 @@ reports/
 *.report.json
 *.report.html
 
-# The built documentation site. `mkdocs build` writes it; Pages serves it
+# The built documentation site (docs-site/dist, ignored there). Pages serves it
 # from a workflow, so it is never committed.
-/site/
 
 # OS
 .DS_Store

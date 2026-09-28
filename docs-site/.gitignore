@@ -1,0 +1,5 @@
+node_modules/
+dist/
+.astro/
+# Made from docs/ by src/scripts/build_docs.py.
+src/content/docs/

@@ -83,13 +83,11 @@ integrations = [
     "docx2txt>=0.8",
     "llama-index-core>=0.12",
 ]
-# The documentation site. Separate from `dev` because building the docs needs
-# none of the test machinery and running the tests needs none of this.
+# What src/scripts/build_docs.py reads the code with to write the reference pages.
+# The site itself is built by Starlight, in docs-site/. Separate from `dev` because
+# building the docs needs none of the test machinery.
 docs = [
-    "mkdocs>=1.6",
-    "mkdocs-material>=9.5",
-    "mkdocstrings[python]>=0.26",
-    "mkdocs-gen-files>=0.5",
+    "griffe>=1.0",
 ]
 dev = [
     "pytest>=8.2",

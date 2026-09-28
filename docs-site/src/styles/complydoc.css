@@ -1,0 +1,99 @@
+/* The documentation in the landing page's look: paper and ink, one green, Geist type,
+   hairline borders instead of shadows. */
+
+:root {
+  --sl-font: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+  --sl-font-mono: "Geist Mono Variable", ui-monospace, monospace;
+  --sl-content-width: 46rem;
+  --sl-text-body: 0.95rem;
+}
+
+/* Dark: black paper, the landing page's greys and green. */
+:root,
+::backdrop {
+  --sl-color-accent-low: #0b2a1b;
+  --sl-color-accent: #4cc38a;
+  --sl-color-accent-high: #b7ecd2;
+  --sl-color-white: #ffffff;
+  --sl-color-gray-1: #e9e9e7;
+  --sl-color-gray-2: #c4c7ca;
+  --sl-color-gray-3: #9aa0a6;
+  --sl-color-gray-4: #6f757b;
+  --sl-color-gray-5: #2a2d31;
+  --sl-color-gray-6: #16171a;
+  --sl-color-black: #000000;
+  --sl-color-hairline: #222427;
+  --sl-color-hairline-light: #1a1c1f;
+  --sl-color-bg-nav: #000000;
+  --sl-color-bg-sidebar: #000000;
+}
+
+/* Light: paper and ink. */
+:root[data-theme="light"],
+[data-theme="light"] ::backdrop {
+  --sl-color-accent-low: #dff3e8;
+  --sl-color-accent: #1a7f4b;
+  --sl-color-accent-high: #0f4a2c;
+  --sl-color-white: #111111;
+  --sl-color-gray-1: #1d1d1d;
+  --sl-color-gray-2: #3a3a3a;
+  --sl-color-gray-3: #555555;
+  --sl-color-gray-4: #8a8a8a;
+  --sl-color-gray-5: #e2e2df;
+  --sl-color-gray-6: #f1f1ef;
+  --sl-color-gray-7: #f7f7f5;
+  --sl-color-black: #fbfbfa;
+  --sl-color-hairline: #e8e8e6;
+  --sl-color-hairline-light: #efefed;
+  --sl-color-bg-nav: #fbfbfa;
+  --sl-color-bg-sidebar: #fbfbfa;
+}
+
+.site-title {
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  gap: 0.6rem;
+}
+.site-title img {
+  height: 1.35rem;
+}
+
+/* Headings tight, like the landing page's. */
+.sl-markdown-content :is(h1, h2, h3) {
+  letter-spacing: -0.02em;
+  font-weight: 620;
+}
+h1#_top {
+  font-weight: 650;
+  letter-spacing: -0.03em;
+}
+
+/* Tables and cards: a hairline, rounded, no shadow. */
+.sl-markdown-content table {
+  border: 1px solid var(--sl-color-hairline);
+  border-radius: 0.6rem;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+  font-size: var(--sl-text-sm);
+}
+.sl-markdown-content th {
+  background: var(--sl-color-gray-6);
+}
+.card {
+  border-radius: 0.75rem;
+  border-color: var(--sl-color-hairline) !important;
+  transition: border-color 150ms;
+}
+.card:hover {
+  border-color: var(--sl-color-accent) !important;
+}
+
+/* The front page's opening. */
+.hero {
+  padding-block: 2.5rem 1rem;
+}
+.hero h1 {
+  letter-spacing: -0.035em;
+  font-weight: 650;
+}

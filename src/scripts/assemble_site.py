@@ -9,9 +9,10 @@ sends the reader to the new one, keeping any `#section` they were linked to.
 The documentation's 404 page becomes the site's, since Pages only looks for one
 at the root.
 
-    uv run mkdocs build --strict
+    npm --prefix docs-site ci && npm --prefix docs-site run build
     npm --prefix landing ci && npm --prefix landing run build
-    uv run python src/scripts/assemble_site.py --docs site --landing landing/dist --out _site
+    uv run python src/scripts/assemble_site.py \
+        --docs docs-site/dist --landing landing/dist --out _site
 """
 
 from __future__ import annotations

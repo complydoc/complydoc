@@ -11,7 +11,7 @@ produces them.
 
 from __future__ import annotations
 
-import shutil
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -64,35 +64,44 @@ def test_every_example_is_shown_on_a_page(example: Path):
     assert any(needle in page.read_text(encoding="utf-8") for page in pages), needle
 
 
-@pytest.mark.skipif(shutil.which("mkdocs") is None, reason="the docs group is not installed")
-def test_the_site_builds_with_every_reference_page(tmp_path: Path):
+def test_the_site_content_builds_with_every_reference_page(tmp_path: Path):
     """The reference is generated, so building it is the only way to check it."""
-    out = tmp_path / "site"
-    result = subprocess.run(
-        ["mkdocs", "build", "--strict", "--site-dir", str(out)],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-        timeout=600,
-    )
-    assert result.returncode == 0, result.stderr[-3000:]
-    for page in ("cli", "api", "report", "configuration"):
-        assert (out / "reference" / page / "index.html").exists(), page
+    pytest.importorskip("griffe", reason="the docs group is not installed")
+    sys.path.insert(0, str(ROOT / "src" / "scripts"))
+    try:
+        import build_docs
+    finally:
+        sys.path.remove(str(ROOT / "src" / "scripts"))
+
+    out = tmp_path / "docs"
+    assert build_docs.build(out) > 20
+    for page in ("cli", "api", "report", "configuration", "identifiers"):
+        assert (out / "reference" / f"{page}.md").exists(), page
 
     # Generated from the Typer app, so every command has to appear.
     from complydoc.cli import app
 
-    rendered = (out / "reference" / "cli" / "index.html").read_text(encoding="utf-8")
+    rendered = (out / "reference" / "cli.md").read_text(encoding="utf-8")
     for command in app.registered_commands:
         name = command.name or (command.callback.__name__ if command.callback else "")
         assert f"complydoc {name.replace('_', '-')}" in rendered, name
+
+    # Nothing is left for the site to show as written, and every link finds its page.
+    pages = {p.relative_to(out).with_suffix("").as_posix() for p in out.rglob("*.md*")}
+    for page in out.rglob("*.md*"):
+        text = page.read_text(encoding="utf-8")
+        assert "--8<--" not in text and "\n!!! " not in text, page
+        assert not re.search(r"\]\((?!https?:)[^)]*\.md[)#]", text), page
+        for target in re.findall(r"\]\(/complydoc/docs/([^)#]*)", text):
+            slug = target.strip("/") or "index"
+            assert slug in pages, f"{page.relative_to(out)} links to {target}"
 
 
 def test_the_documented_schema_version_is_the_real_one():
     """It said 10 while the schema was at 12, because nothing checked it."""
     from complydoc.report.models import SCHEMA_VERSION
 
-    index = (DOCS / "index.md").read_text(encoding="utf-8")
+    index = (DOCS / "index.mdx").read_text(encoding="utf-8")
     assert f"`schema_version`, currently {SCHEMA_VERSION}." in index, (
-        f"docs/index.md names a schema version that is not {SCHEMA_VERSION}"
+        f"docs/index.mdx names a schema version that is not {SCHEMA_VERSION}"
     )

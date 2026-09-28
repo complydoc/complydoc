@@ -1,0 +1,17 @@
+{
+  "name": "complydoc-docs",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "content": "cd .. && uv run --group docs python src/scripts/build_docs.py",
+    "dev": "npm run content && astro dev",
+    "build": "npm run content && astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "^0.42.4",
+    "@fontsource-variable/geist": "^5.3.0",
+    "@fontsource-variable/geist-mono": "^5.3.0",
+    "astro": "^7.3.5"
+  }
+}

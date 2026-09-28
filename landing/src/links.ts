@@ -1,4 +1,4 @@
-/** Where the page points. The docs site is built from docs/ by mkdocs. */
+/** Where the page points. The docs site is built from docs/ by docs-site/. */
 const DOCS = "https://complydoc.github.io/complydoc/docs";
 const REPO = "https://github.com/complydoc/complydoc";
 
