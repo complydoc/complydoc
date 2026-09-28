@@ -13,7 +13,7 @@ import type { LoaderComparison } from "./loaderTypes";
 import type { Trace } from "./traceTypes";
 
 export type { ChunkRun, InspectedChunk, QuestionResult } from "./chunkTypes";
-export type { StageIdentifier, Trace, TraceStage } from "./traceTypes";
+export type { StageIdentifier, StagePreview, Trace, TraceStage } from "./traceTypes";
 
 export type {
   FactCheck,

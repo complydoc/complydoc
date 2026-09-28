@@ -107,7 +107,8 @@ function step(index: number, stages: TraceStage[]): Step {
 /** The trace's stages as steps: calls one after another of the same component and method are one. */
 export function stepsOf(trace: Trace): Step[] {
   const groups: TraceStage[][] = [];
-  for (const stage of trace.stages) {
+  // The steps are what the pipeline itself called; a call made inside one is part of it.
+  for (const stage of trace.stages.filter((s) => s.parent === null || s.parent === undefined)) {
     const last = groups[groups.length - 1];
     const previous = last?.[last.length - 1];
     if (

@@ -1,0 +1,91 @@
+/**
+ * A trace as a tree of spans, the way a run is read step by step: each call the pipeline
+ * made, the calls made inside it beneath, each placed in time against the whole run.
+ */
+import type { Trace, TraceStage } from "./traceTypes";
+
+export interface Span {
+  stage: TraceStage;
+  depth: number;
+  children: Span[];
+  /** A few words saying which call this was: the folder or file it read, where it names one. */
+  label: string;
+}
+
+/** Settings that say which folder or file a call read, in the order they are looked for. */
+const WHERE = ["file_path", "path", "input_dir", "input_files", "web_path", "source"];
+
+/** The folder or file a call read, from its settings, where it names one. */
+function where(stage: TraceStage): string {
+  for (const key of WHERE) {
+    const value = stage.parameters[key];
+    if (typeof value === "string" && value) return value;
+    if (Array.isArray(value) && value.length > 0) return `${value.length} files`;
+  }
+  const sources = stage.sources;
+  if (stage.kind === "load" && sources.length === 1) return sources[0] ?? "";
+  return "";
+}
+
+export function spansOf(trace: Trace): Span[] {
+  const byParent = new Map<number | null, TraceStage[]>();
+  for (const stage of trace.stages) {
+    const parent = stage.parent ?? null;
+    byParent.set(parent, [...(byParent.get(parent) ?? []), stage]);
+  }
+  const build = (stage: TraceStage, depth: number): Span => ({
+    stage,
+    depth,
+    label: where(stage),
+    children: (byParent.get(stage.index) ?? []).map((child) => build(child, depth + 1)),
+  });
+  return (byParent.get(null) ?? []).map((stage) => build(stage, 0));
+}
+
+/** The spans in the order they are listed, skipping the children of those folded. */
+export function visibleSpans(roots: Span[], folded: Set<number>): Span[] {
+  const rows: Span[] = [];
+  const walk = (span: Span) => {
+    rows.push(span);
+    if (!folded.has(span.stage.index)) span.children.forEach(walk);
+  };
+  roots.forEach(walk);
+  return rows;
+}
+
+/** How long the run took from its first call to its last one's end, for placing spans in it. */
+export function traceSpan(trace: Trace): number {
+  const end = Math.max(0, ...trace.stages.map((s) => (s.started ?? 0) + s.seconds));
+  return Math.max(end, 1e-6);
+}
+
+export interface TraceTotals {
+  seconds: number;
+  /** Tokens sent to be embedded, where the run embedded anything. */
+  tokensEmbedded: number | null;
+  usd: number | null;
+  /** Whether some step that sent text could not be priced. */
+  unpriced: boolean;
+  identifiersSent: number | null;
+  hosts: string[];
+}
+
+export function traceTotals(trace: Trace): TraceTotals {
+  const top = trace.stages.filter((s) => s.parent === null || s.parent === undefined);
+  const embeds = trace.stages.filter((s) => s.kind === "embed");
+  const priced = trace.stages.filter((s) => typeof s.usd === "number");
+  // A stage holds the connections of the stages inside it; hosts are counted once.
+  const senders = trace.stages.filter(
+    (s) => s.hosts.length > 0 && !trace.stages.some((c) => c.parent === s.index && c.hosts.length > 0),
+  );
+  return {
+    seconds: trace.seconds,
+    tokensEmbedded: embeds.length ? embeds.reduce((sum, s) => sum + (s.tokens_in ?? 0), 0) : null,
+    usd: priced.length ? priced.reduce((sum, s) => sum + (s.usd ?? 0), 0) : null,
+    unpriced: trace.stages.some((s) => s.usd_basis === "unpriced"),
+    identifiersSent: senders.some((s) => s.scanned !== "off")
+      ? new Set(senders.flatMap((s) => s.identifiers.map((i) => i.fingerprint))).size
+      : null,
+    hosts: [...new Set(top.flatMap((s) => s.hosts))],
+  };
+}

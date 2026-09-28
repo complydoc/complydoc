@@ -169,7 +169,7 @@ export function ReportView({
                 <ModeToggle dark={dark} onToggle={onToggleTheme} />
               </div>
             </header>
-            <main className={cn("mx-auto w-full p-4 md:p-6", page === "documents" ? "max-w-none" : "max-w-7xl")}>
+            <main className={cn("mx-auto w-full p-4 md:p-6", page === "documents" || page === "pipeline" ? "max-w-none" : "max-w-7xl")}>
               {/* Keyed by page and run, so moving on from a page that failed shows the next one. */}
             <PageErrorBoundary key={`${run.id}:${page}:${detail ?? ""}`}>
               <IgnoreProvider report={report} {...(run.source ? { source: run.source } : {})}>

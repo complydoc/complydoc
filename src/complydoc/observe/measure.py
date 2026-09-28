@@ -19,7 +19,7 @@ from complydoc.cost.price_table import embedding_price
 from complydoc.cost.tokenizer import count_tokens
 from complydoc.extraction.extract import tokenizer_for
 from complydoc.extraction.strings import mask_text
-from complydoc.loaders.inspection import SOURCE_KEYS
+from complydoc.loaders.inspection import ABSOLUTE_PATH, SOURCE_KEYS
 from complydoc.report.models import StagePreview
 
 if TYPE_CHECKING:
@@ -76,7 +76,7 @@ class Measurer:
 
     def _one(self, text: str, metadata: dict[str, Any]) -> StagePreview:
         values = {
-            str(key): self._mask(_as_text(value))[:_VALUE]
+            str(key): self._mask(self._path(_as_text(value)))[:_VALUE]
             for key, value in list(metadata.items())[:_KEYS]
         }
         return StagePreview(
@@ -88,6 +88,22 @@ class Measurer:
             text=self._mask(text[: _TEXT * 2])[:_TEXT],
             metadata=values,
         )
+
+    def _path(self, value: str) -> str:
+        """An absolute path as `/…/` and its part under the run's folder, or its file name.
+
+        That a value is an absolute path is the finding; the account name and folders it
+        spells out are not kept in the report.
+        """
+        if not ABSOLUTE_PATH.match(value):
+            return value
+        path = Path(value)
+        if self.root is not None:
+            try:
+                return f"/…/{path.relative_to(self.root)}"
+            except ValueError:
+                pass
+        return f"/…/{path.name}"
 
     def _mask(self, text: str) -> str:
         return text if self.reveal else mask_text(text, config=self.settings).text

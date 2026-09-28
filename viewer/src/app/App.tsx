@@ -18,13 +18,29 @@ export function App() {
   const collections = useMemo(() => collectionsOf(state.loaded), [state.loaded]);
   const [chosen, setChosen] = useState<Selection | null>(null);
 
+  // `?run=` in the address names a report file to open on, as a link to one run does.
+  const asked = (() => {
+    const name = new URLSearchParams(window.location.search).get("run");
+    if (!name) return null;
+    for (const collection of collections) {
+      const run = collection.runs.find((r) => r.name === name || r.name.endsWith(`/${name}`));
+      if (run) return { collection: collection.id, run: run.id };
+    }
+    return null;
+  })();
+
   // One folder open goes straight to it; several open on the overview, until one is chosen.
   const selection: Selection =
     chosen && (chosen.collection === null || collections.some((c) => c.id === chosen.collection))
       ? chosen
-      : collections.length === 1
-        ? { collection: collections[0]?.id ?? null, run: collections[0] ? (leadRun(collections[0])?.id ?? null) : null }
-        : { collection: null, run: null };
+      : asked
+        ? asked
+        : collections.length === 1
+          ? {
+              collection: collections[0]?.id ?? null,
+              run: collections[0] ? (leadRun(collections[0])?.id ?? null) : null,
+            }
+          : { collection: null, run: null };
 
   const openSamples = useCallback(
     async (ids: string[]) => {

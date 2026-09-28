@@ -8,6 +8,9 @@ const THEMES: readonly Theme[] = ["system", "light", "dark"];
 const DARK_QUERY = "(prefers-color-scheme: dark)";
 
 function stored(): Theme {
+  // `?theme=light` in the address pins it for that visit, as a link or a screenshot wants.
+  const asked = new URLSearchParams(window.location.search).get("theme");
+  if (THEMES.includes(asked as Theme)) return asked as Theme;
   try {
     const value = localStorage.getItem(KEY);
     return THEMES.includes(value as Theme) ? (value as Theme) : "system";

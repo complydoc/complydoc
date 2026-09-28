@@ -1,59 +1,131 @@
 import { TriangleAlertIcon } from "lucide-react";
-import { useState } from "react";
+import type { ReactNode } from "react";
 import { NotInRun } from "@/components/NotInRun";
-import { Section, SectionStack } from "@/components/Section";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { formatDate, formatSeconds, plural } from "@/report/format";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { useHashParam } from "@/hooks/useHashRoute";
+import { cn } from "@/lib/utils";
+import { formatCount, formatDate, formatSeconds, formatUsd, plural } from "@/report/format";
 import { measured } from "@/report/measured";
-import { sendingStep, stepsOf } from "@/report/traceView";
+import { spansOf, traceSpan, traceTotals, visibleSpans, type Span } from "@/report/traceTree";
+import { changeBetween, stepsOf } from "@/report/traceView";
 import type { Report } from "@/report/types";
-import { Sent } from "./Sent";
-import { StepDetail } from "./StepDetail";
-import { StepFlow } from "./StepFlow";
+import { SpanDetail } from "./SpanDetail";
+import { SpanTree } from "./SpanTree";
 import { ValueTrail } from "./ValueTrail";
 
+function Figure({ label, children, tone }: { label: string; children: ReactNode; tone?: string }) {
+  return (
+    <div className="flex flex-col">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className={cn("text-sm font-medium tabular-nums", tone)}>{children}</span>
+    </div>
+  );
+}
+
+function find(roots: Span[], index: number): Span | undefined {
+  for (const span of roots) {
+    if (span.stage.index === index) return span;
+    const inside = find(span.children, index);
+    if (inside) return inside;
+  }
+  return undefined;
+}
+
 /**
- * An ingestion pipeline observed with `cd.observe`, step by step: what left the machine,
- * the steps left to right with what changed between them, the step picked in detail, and
- * where each identifier went along the way.
+ * A run recorded with `cd.observe`, as a trace: every call the pipeline made, the calls
+ * made inside each, when each ran and for how long; the call picked, with what it passed
+ * on and how it was set; and its figures. The run's totals head the page. The second view
+ * follows each identifier through the steps.
  */
 export function PipelinePage({ report }: { report: Report }) {
+  const [spanParam, setSpan] = useHashParam("span");
+  const [view, setView] = useHashParam("view");
   const trace = report.trace;
-  const steps = trace ? stepsOf(trace) : [];
-  const sending = sendingStep(steps);
-  const [selected, setSelected] = useState(() => sending?.index ?? Math.max(0, steps.length - 1));
   if (!trace || !measured(report, "trace")) return <NotInRun report={report} content="trace" />;
-  const step = steps[selected] ?? steps[0];
-  if (!step) return null;
+
+  const roots = spansOf(trace);
+  const steps = stepsOf(trace);
+  const totals = traceTotals(trace);
+  const sender = [...trace.stages].reverse().find((s) => s.hosts.length > 0);
+  const selected = spanParam !== null ? Number(spanParam) : (sender?.index ?? roots[0]?.stage.index ?? 0);
+  const span = find(roots, selected) ?? roots[0];
+  if (!span) return null;
+  // Against the step before, for a step the pipeline itself called.
+  const at = steps.findIndex((step) => step.stages.some((s) => s.index === span.stage.index));
+  const [before, current] = [steps[at - 1], steps[at]];
+  const change = at > 0 && before && current ? changeBetween(before, current) : null;
+  // The call after this one, in the order the tree lists them.
+  const order = visibleSpans(roots, new Set()).map((s) => s.stage.index);
+  const next = order[order.indexOf(span.stage.index) + 1];
 
   return (
-    <SectionStack>
-      <div className="flex flex-col gap-4">
-        <header className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-          <h1 className="font-heading text-2xl font-semibold tracking-tight">{trace.name}</h1>
-          <span className="text-sm text-muted-foreground tabular-nums">
-            {formatDate(report.run.started_at)} · {plural(steps.length, "step")} in {formatSeconds(trace.seconds)} ·
-            observing took {formatSeconds(trace.overhead_seconds)}
+    <div className="flex flex-col gap-4 lg:h-[calc(100svh-6rem)]">
+      <header aria-label="The run" className="flex flex-wrap items-end gap-x-8 gap-y-3">
+        <div className="flex min-w-0 flex-col">
+          <h1 className="truncate font-heading text-xl font-semibold tracking-tight">{trace.name}</h1>
+          <span className="text-sm text-muted-foreground">
+            {formatDate(report.run.started_at)} · {plural(steps.length, "step")}
           </span>
-        </header>
-        {trace.error && (
-          <Alert variant="destructive">
-            <TriangleAlertIcon />
-            <AlertTitle>The pipeline raised {trace.error}</AlertTitle>
-            <AlertDescription>The steps below end where it stopped.</AlertDescription>
-          </Alert>
+        </div>
+        <Figure label="Took">{formatSeconds(totals.seconds)}</Figure>
+        {totals.tokensEmbedded !== null && (
+          <Figure label="Tokens embedded">{formatCount(totals.tokensEmbedded)}</Figure>
         )}
-        {sending && <Sent step={sending} />}
-      </div>
+        {(totals.usd !== null || totals.unpriced) && (
+          <Figure label="Cost">{totals.usd !== null ? formatUsd(totals.usd) : "not priced"}</Figure>
+        )}
+        {totals.hosts.length > 0 && <Figure label="Sent to">{totals.hosts.join(", ")}</Figure>}
+        {totals.identifiersSent !== null && totals.hosts.length > 0 && (
+          <Figure label="Identifiers sent" tone={totals.identifiersSent > 0 ? "text-destructive" : "text-success"}>
+            {formatCount(totals.identifiersSent)}
+          </Figure>
+        )}
+        <Figure label="Observing took">{formatSeconds(trace.overhead_seconds)}</Figure>
+        <ToggleGroup
+          type="single"
+          variant="outline"
+          size="sm"
+          className="ml-auto"
+          value={view === "identifiers" ? "identifiers" : "trace"}
+          onValueChange={(next) => next && setView(next === "trace" ? null : next)}
+          aria-label="View"
+        >
+          <ToggleGroupItem value="trace">Trace</ToggleGroupItem>
+          <ToggleGroupItem value="identifiers">Identifiers</ToggleGroupItem>
+        </ToggleGroup>
+      </header>
 
-      <Section title="Steps">
-        <StepFlow steps={steps} selected={step.index} onSelect={setSelected} />
-        <StepDetail step={step} />
-      </Section>
+      {trace.error && (
+        <Alert variant="destructive">
+          <TriangleAlertIcon />
+          <AlertTitle>The pipeline raised {trace.error}</AlertTitle>
+          <AlertDescription>The trace ends where it stopped.</AlertDescription>
+        </Alert>
+      )}
 
-      <Section title="Where each identifier went" aside="● there · ○ not there · not looked for">
-        <ValueTrail steps={steps} selected={step.index} />
-      </Section>
-    </SectionStack>
+      {view === "identifiers" ? (
+        <ValueTrail steps={steps} selected={at} />
+      ) : (
+        <div className="flex min-h-[32rem] flex-1 flex-col overflow-hidden rounded-xl border bg-card lg:min-h-0 lg:flex-row">
+          <div className="flex max-h-80 min-h-0 flex-col border-b lg:max-h-none lg:w-[28rem] lg:shrink-0 lg:border-r lg:border-b-0">
+            <SpanTree
+              roots={roots}
+              selected={span.stage.index}
+              onSelect={(index) => setSpan(String(index))}
+              total={traceSpan(trace)}
+            />
+          </div>
+          <SpanDetail
+            key={span.stage.index}
+            span={span}
+            total={traceSpan(trace)}
+            from={at > 0 && before && span.stage.parent == null ? before.component : null}
+            change={change}
+            onNext={next === undefined ? null : () => setSpan(String(next))}
+          />
+        </div>
+      )}
+    </div>
   );
 }

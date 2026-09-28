@@ -34,7 +34,7 @@ export const PAGE_CONTENT: Partial<Record<Page, Content>> = {
 /** How each page is named and drawn in the navigation. */
 export const PAGE_INFO: Record<Page, { label: string; icon: LucideIcon }> = {
   home: { label: "Home", icon: HouseIcon },
-  pipeline: { label: "Pipeline", icon: WorkflowIcon },
+  pipeline: { label: "Trace", icon: WorkflowIcon },
   security: { label: "Security", icon: ShieldAlertIcon },
   cost: { label: "Cost & time", icon: GaugeIcon },
   documents: { label: "Documents", icon: FileTextIcon },

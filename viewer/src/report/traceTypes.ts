@@ -10,6 +10,16 @@ export interface StageIdentifier {
   evidence?: string;
 }
 
+/** One item a stage passed on, or for an embedding stage sent, masked. */
+export interface StagePreview {
+  source: string | null;
+  page: number | null;
+  characters: number;
+  tokens: number | null;
+  text: string;
+  metadata: Record<string, string>;
+}
+
 export interface TraceStage {
   index: number;
   kind: "load" | "transform" | "split" | "embed" | "custom";
@@ -37,6 +47,16 @@ export interface TraceStage {
   dimensions: number | null;
   /** For a split stage, its place in the report's `chunks`. */
   chunks: number | null;
+  /** The stage this one ran inside: a directory loader's loader for one file, say. */
+  parent?: number | null;
+  /** Seconds from the start of the block to when the stage was called. */
+  started?: number;
+  tokens_in?: number | null;
+  tokens_out?: number | null;
+  /** What it cost, where it sent text to a priced model. */
+  usd?: number | null;
+  usd_basis?: "estimated" | "unpriced" | "local" | null;
+  previews?: StagePreview[];
   finished: boolean;
   error: string | null;
 }

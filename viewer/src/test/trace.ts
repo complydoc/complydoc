@@ -113,3 +113,69 @@ export function sampleTrace(): Trace {
 export function traceReport(): Report {
   return { ...sampleAudit(), trace: sampleTrace() };
 }
+
+/**
+ * A directory loader that ran a loader for each of two files, then a split and a priced
+ * embedding call, each placed in time, with previews of what it sent.
+ */
+export function nestedTrace(): Trace {
+  const base = sampleTrace();
+  return {
+    ...base,
+    stages: [
+      stage(0, {
+        component: "DirectoryLoader",
+        parameters: { path: "contracts" },
+        documents_out: 4,
+        started: 0,
+        seconds: 0.5,
+      }),
+      stage(1, { parent: 0, parameters: { file_path: "a.pdf" }, started: 0, seconds: 0.2, identifiers: [iban] }),
+      stage(2, { parent: 0, parameters: { file_path: "b.pdf" }, started: 0.2, seconds: 0.3 }),
+      stage(3, {
+        kind: "split",
+        component: "RecursiveCharacterTextSplitter",
+        method: "split_documents",
+        parameters: { chunk_size: 400 },
+        documents_in: 4,
+        documents_out: 9,
+        started: 0.5,
+        seconds: 0.1,
+        identifiers: [iban],
+        scanned: "patterns",
+      }),
+      stage(4, {
+        kind: "embed",
+        component: "OpenAIEmbeddings",
+        method: "embed_documents",
+        parameters: { model: "text-embedding-3-small" },
+        documents_in: 9,
+        documents_out: null,
+        started: 0.6,
+        seconds: 0.4,
+        tokens_in: 1200,
+        usd: 0.000024,
+        usd_basis: "estimated",
+        identifiers: [iban],
+        connections: ["DNS lookup of 'api.example.com'"],
+        hosts: ["api.example.com"],
+        vectors: 9,
+        dimensions: 1536,
+        previews: [
+          {
+            source: null,
+            page: null,
+            characters: 40,
+            tokens: 10,
+            text: "Payments go to account •••• 4432",
+            metadata: {},
+          },
+        ],
+      }),
+    ],
+  };
+}
+
+export function nestedReport(): Report {
+  return { ...sampleAudit(), trace: nestedTrace() };
+}

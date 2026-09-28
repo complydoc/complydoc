@@ -260,6 +260,8 @@ def test_what_a_stage_passed_on_is_previewed_masked(pipeline) -> None:  # type: 
     assert load.previews[0].source == "contract.pdf"
     assert IBAN not in load.previews[0].text and "Payments go to account" in load.previews[0].text
     assert len(split.previews) <= 20 and embed.previews
+    # The metadata's absolute path is marked as one, without the folders it names.
+    assert load.previews[0].metadata["source"] == "/…/contract.pdf"
     assert not pipeline(previews=0).report.trace.stages[0].previews
 
 
