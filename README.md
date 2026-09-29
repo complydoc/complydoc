@@ -24,14 +24,15 @@
 <br>
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/complydoc/complydoc/main/.github/images/viewer-diff-dark.webp">
-  <img alt="The complydoc viewer: two LangChain loaders' readings of the same page side by side, with the page itself beside them" src="https://raw.githubusercontent.com/complydoc/complydoc/main/.github/images/viewer-diff-light.webp" width="100%">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/complydoc/complydoc/main/.github/images/viewer-trace-dark.webp">
+  <img alt="The complydoc viewer: a LangChain ingestion pipeline traced step by step, each loader, splitter and embedding call with its time, tokens, cost and the identifiers it passed on" src="https://raw.githubusercontent.com/complydoc/complydoc/main/.github/images/viewer-trace-light.webp" width="100%">
 </picture>
 
-complydoc is the observability layer for AI ingestion pipelines. It shows what happens
-between your documents and your vector store: what each loader extracted and where two
-loaders read the same page differently, what each step cost and how long it took, and which
-personal or financial identifiers, or instructions hidden for a model, made it through.
+complydoc is the observability layer for AI ingestion pipelines. It traces every step
+between your documents and your vector store (loading, cleaning, splitting, embedding) with
+what each one cost, how long it took and what it passed on. It puts different loaders'
+readings of the same document side by side, and flags the personal or financial
+identifiers, and instructions hidden for a model, that make it through.
 
 It runs on your machine, and nothing leaves it unless you ask.
 
@@ -41,10 +42,20 @@ It runs on your machine, and nothing leaves it unless you ask.
 uv tool install complydoc        # or: pip install complydoc
 ```
 
-Compare loaders on your own documents, page by page:
+Observe an ingestion pipeline as it runs, every loader, splitter and embedding call a step:
 
 ```python
 import complydoc as cd
+
+with cd.observe("contracts-ingest"):
+    documents = PyMuPDF4LLMLoader("contract.pdf").load()
+    chunks = splitter.split_documents(documents)
+    vectors = embeddings.embed_documents([c.page_content for c in chunks])
+```
+
+Compare loaders on your own documents, page by page:
+
+```python
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_pymupdf4llm import PyMuPDF4LLMLoader
 
@@ -56,14 +67,10 @@ report = cd.compare_loaders(
 cd.write_json(report, ".complydoc/loaders.json", detail="full")
 ```
 
-Observe an ingestion pipeline as it runs, every loader, splitter and embedding call a step:
-
-```python
-with cd.observe("contracts-ingest"):
-    documents = PyMuPDF4LLMLoader("contract.pdf").load()
-    chunks = splitter.split_documents(documents)
-    vectors = embeddings.embed_documents([c.page_content for c in chunks])
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/complydoc/complydoc/main/.github/images/viewer-diff-dark.webp">
+  <img alt="The complydoc viewer: two LangChain loaders' readings of the same page side by side, with the page itself beside them" src="https://raw.githubusercontent.com/complydoc/complydoc/main/.github/images/viewer-diff-light.webp" width="100%">
+</picture>
 
 Or audit a folder from the command line:
 
@@ -81,10 +88,10 @@ The [playground](https://github.com/complydoc/playground) has all of this ready 
 
 ## What it shows
 
-- **Loader diffs**: every loader's reading of a document side by side, line by line, with
-  the page it came from.
 - **Pipeline traces**: each LangChain or LlamaIndex loader, splitter and embedding call as a
   step, with its settings, time, tokens, cost and what it passed on.
+- **Loader diffs**: every loader's reading of a document side by side, line by line, with
+  the page it came from.
 - **Identifiers**: personal and financial identifiers from Europe, the Americas, India and
   Australia, checksum-validated where a checksum exists, and masked until you choose to see
   them.
@@ -93,6 +100,11 @@ The [playground](https://github.com/complydoc/playground) has all of this ready 
 - **Chunks**: splitters side by side, drawn over the text, with the sentences and tables
   they cut.
 - **Cost**: text and vision tokens per page, priced across models and extraction paths.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/complydoc/complydoc/main/.github/images/complydoc-architecture-dark.svg">
+  <img alt="complydoc architecture: files and loader output feed four analyses (cost, readiness, identifiers, hidden content) that produce a report and masked text, inside a network guard" src="https://raw.githubusercontent.com/complydoc/complydoc/main/.github/images/complydoc-architecture.svg" width="100%">
+</picture>
 
 ## In CI
 
