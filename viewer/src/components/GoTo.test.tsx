@@ -22,4 +22,18 @@ describe("GoTo", () => {
     const index = report.documents.findIndex((d) => d.relative_path === "annual-report-2025.pdf");
     expect(window.location.hash).toBe(`#documents/${index}`);
   });
+
+  it("folds the sidebar away and back", async () => {
+    render(
+      <TooltipProvider>
+        <SidebarProvider>
+          <GoTo report={sampleAudit()} />
+        </SidebarProvider>
+      </TooltipProvider>,
+    );
+    await userEvent.keyboard("{Control>}k{/Control}");
+    await userEvent.click(await screen.findByRole("option", { name: /Collapse sidebar/ }));
+    await userEvent.keyboard("{Control>}k{/Control}");
+    expect(await screen.findByRole("option", { name: /Expand sidebar/ })).toBeInTheDocument();
+  });
 });

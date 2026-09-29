@@ -33,6 +33,7 @@ import { leadRun, type Collection, type Loaded } from "@/report/collections";
 import { fileName } from "@/report/format";
 import { AppSidebar } from "./AppSidebar";
 import { PAGES, PAGE_INFO } from "./pages";
+import { shortcut } from "@/lib/shortcut";
 
 function leadIdOf(collection: Collection | undefined): string | null {
   return collection ? (leadRun(collection)?.id ?? null) : null;
@@ -91,7 +92,7 @@ export function ReportView({
         <AppSidebar report={null} page={page} switcher={switcher} />
         <SidebarInset className="min-w-0">
           <header className="sticky top-0 z-10 flex h-12 shrink-0 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur">
-            <SidebarTrigger className="-ml-1" />
+            <SidebarTrigger className="-ml-1" title={`Collapse or expand the sidebar (${shortcut("B")})`} />
             <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
             <Breadcrumb className="min-w-0 flex-1">
               <BreadcrumbList>
@@ -136,7 +137,7 @@ export function ReportView({
           {/* min-w-0 lets the page shrink to the space beside the sidebar instead of widening to its widest chart. */}
           <SidebarInset className="min-w-0">
             <header className="sticky top-0 z-10 flex h-12 shrink-0 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur">
-              <SidebarTrigger className="-ml-1" />
+              <SidebarTrigger className="-ml-1" title={`Collapse or expand the sidebar (${shortcut("B")})`} />
               <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
               {/* One line that gives way to the plan controls: it truncates rather than wraps under the bar. */}
               <Breadcrumb className="min-w-0 flex-1">

@@ -1,4 +1,4 @@
-import { FileTextIcon, HistoryIcon, SearchIcon } from "lucide-react";
+import { FileTextIcon, HistoryIcon, PanelLeftIcon, SearchIcon } from "lucide-react";
 import { useContext, useEffect, useState } from "react";
 import {
   Command,
@@ -10,23 +10,23 @@ import {
   CommandList,
   CommandShortcut,
 } from "@/components/ui/command";
-import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
+import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar";
 import { PAGE_INFO, PAGES } from "@/app/pages";
 import { FolderRunsContext } from "@/hooks/useFolderRuns";
+import { shortcut } from "@/lib/shortcut";
 import { runKind, runLabel } from "@/report/collections";
 import { fileName } from "@/report/format";
 import type { Report } from "@/report/types";
 
-/** Whether this machine says ⌘ or Ctrl for the shortcut. */
-const MAC = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
-
 /**
  * Jump anywhere in the report from the keyboard: a page, a document by any part of its
- * path, or another run of the folder. ⌘K or Ctrl+K opens it from any page.
+ * path, or another run of the folder; or fold the sidebar away. ⌘K or Ctrl+K opens it
+ * from any page.
  */
 export function GoTo({ report }: { report: Report }) {
   const [open, setOpen] = useState(false);
   const { runs, current, open: openRun } = useContext(FolderRunsContext);
+  const { state, toggleSidebar } = useSidebar();
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -51,7 +51,7 @@ export function GoTo({ report }: { report: Report }) {
           <SidebarMenuButton tooltip="Go to…" onClick={() => setOpen(true)} className="text-muted-foreground">
             <SearchIcon />
             <span>Go to…</span>
-            <kbd className="ml-auto font-mono text-xs">{MAC ? "⌘K" : "Ctrl K"}</kbd>
+            <kbd className="ml-auto font-mono text-xs">{shortcut("K")}</kbd>
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>
@@ -108,6 +108,19 @@ export function GoTo({ report }: { report: Report }) {
                   ))}
               </CommandGroup>
             )}
+            <CommandGroup heading="View">
+              <CommandItem
+                value="sidebar collapse expand toggle"
+                onSelect={() => {
+                  setOpen(false);
+                  toggleSidebar();
+                }}
+              >
+                <PanelLeftIcon />
+                {state === "expanded" ? "Collapse sidebar" : "Expand sidebar"}
+                <CommandShortcut>{shortcut("B")}</CommandShortcut>
+              </CommandItem>
+            </CommandGroup>
           </CommandList>
         </Command>
       </CommandDialog>
