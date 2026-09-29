@@ -384,3 +384,23 @@ def test_page_images_put_a_picture_of_each_page_beside_the_loaders_text():
 def test_page_images_need_files_to_render():
     with pytest.raises(TypeError, match="needs paths"):
         cd.compare_loaders({"a": Faithful([PAGE_ONE]), "b": Faithful([PAGE_ONE])}, page_images=True)
+
+
+def test_loaders_given_as_classes_or_with_settings_bound_are_named_after_their_class(tmp_path):
+    """`[PyPDFLoader, partial(PyMuPDF4LLMLoader, ...)]` reads as those names, not the metaclass."""
+    import functools
+
+    class PageLoader:
+        def __init__(self, path: str, *, pages: int = 1) -> None:
+            self.path, self.pages = path, pages
+
+        def load(self) -> list:
+            return [LangChainDocument(PAGE_ONE, {"source": self.path, "page": 0})]
+
+    class OtherLoader(PageLoader):
+        pass
+
+    file = tmp_path / "contract.pdf"
+    file.write_bytes(b"%PDF-1.4")
+    report = cd.compare_loaders([PageLoader, functools.partial(OtherLoader, pages=2)], paths=[file])
+    assert [row.name for row in report.loader_comparison.loaders] == ["PageLoader", "OtherLoader"]

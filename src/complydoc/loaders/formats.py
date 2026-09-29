@@ -53,6 +53,7 @@ _KNOWN: dict[str, tuple[str, ...]] = {
     "PyMuPDFLoader": ("pdf",),
     "PDFMinerLoader": ("pdf",),
     "OpenDataLoaderPDFLoader": ("pdf",),
+    "PyMuPDF4LLMLoader": ("pdf",),
     "Docx2txtLoader": ("docx",),
     "UnstructuredPDFLoader": ("pdf",),
     "UnstructuredWordDocumentLoader": ("docx",),

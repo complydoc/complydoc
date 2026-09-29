@@ -37,6 +37,7 @@ document whose page count is marked unknown.
 from __future__ import annotations
 
 import datetime as dt
+import functools
 import hashlib
 import json
 import os
@@ -492,6 +493,12 @@ def _loading_call(source: Any) -> Callable[[], Iterable[Any]] | None:
 def _name_of(source: Any, call: Callable[[], Iterable[Any]] | None) -> str:
     if call is None:
         return "documents"
+    # A loader class, to be called with each file, or one with its settings bound: named
+    # after the class, not after what the class or the binding is an instance of.
+    while isinstance(source, functools.partial):
+        source = source.func
+    if isinstance(source, type):
+        return source.__name__
     if call is source:
         return getattr(source, "__name__", type(source).__name__)
     return type(source).__name__
