@@ -221,9 +221,10 @@ loader that cannot be imported, exits with status 2.
 
 ## Which one to use
 
-The comparison ends with a recommendation, on the command line and at the top of
-the viewer's Documents page for the run, where each file the loaders read
-differently opens its diff. Three things can decide it:
+The comparison ends with a recommendation on the command line and in the report's
+`loader_comparison`. The viewer leaves the choice to you: open a document and its
+Diff sets any loader's reading beside another's. Three things can decide the
+recommendation:
 
 | What decided it | Example |
 | --- | --- |

@@ -41,7 +41,7 @@ Every run opens on the same pages, whichever command wrote it:
 | Home | The headline figures, the findings and documents to look at first | every run |
 | Trace | Every call a pipeline made, or every document an audit read, in a tree with each one's time, input and output | `cd.observe`, `audit` |
 | Security | Identifiers and hidden instructions, per document and page | `audit`, `sensitive` |
-| Documents | Each document's pages, text and readings; for a loader comparison, which loader to use for each file type | every run that reads documents |
+| Documents | Each document's pages, text and readings; for a loader comparison, every loader's reading beside the others in a document's Diff | every run that reads documents |
 | Chunks | How each text splitter cut the text, and the documents it cut worst | `chunks` |
 | Cost & time | Each model's price for the folder, and reading time | `audit`, `cost` |
 
