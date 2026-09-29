@@ -25,6 +25,13 @@ describe("chunkLayers", () => {
     expect(chunkLayers([chunksRun(audit, [at(0, 40, page.characters + 7)])], document)).toEqual([]);
   });
 
+  it("places them on a page that differs only by the line break one reader ends it with", () => {
+    // pypdf ends a page with "\n"; PyPDFLoader strips it. The chunk's end is kept on the page.
+    const [layer] = chunkLayers([chunksRun(audit, [at(0, page.characters + 1, page.characters + 1)])], document);
+    expect(layer?.pages.get(page.number)?.map((c) => [c.start, c.end])).toEqual([[0, page.characters]]);
+    expect(chunkLayers([chunksRun(audit, [at(0, 40, page.characters - 1)])], document)).toEqual([]);
+  });
+
   it("has nothing to draw where the folder has no chunks run", () => {
     expect(chunkLayers([], document)).toEqual([]);
   });

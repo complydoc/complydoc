@@ -18,7 +18,7 @@ describe("App", () => {
     expect(screen.getAllByText("documents").length).toBeGreaterThan(0);
 
     await userEvent.click(screen.getAllByRole("link", { name: "Documents" })[0] as HTMLElement);
-    expect(await screen.findByRole("region", { name: "Which loader to use" })).toBeInTheDocument();
+    expect(await screen.findByRole("region", { name: "Loaders compared" })).toBeInTheDocument();
     expect(window.location.hash).toBe("#documents");
   });
 

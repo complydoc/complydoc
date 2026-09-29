@@ -1,8 +1,7 @@
 import { ArrowRightIcon } from "lucide-react";
 import { Section } from "@/components/Section";
 import { ToneBadge } from "@/components/ToneBadge";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { fileName, formatCount, formatPercent, formatSeconds, plural } from "@/report/format";
@@ -17,25 +16,10 @@ const DIFFERING_SHOWN = 5;
 
 const numeric = "text-right tabular-nums";
 
-function LoaderRowCells({
-  report,
-  type,
-  loader,
-  facts,
-}: {
-  report: Report;
-  type: TypeDecision;
-  loader: LoaderFigures;
-  facts: boolean;
-}) {
+function LoaderRowCells({ report, loader, facts }: { report: Report; loader: LoaderFigures; facts: boolean }) {
   return (
     <TableRow>
-      <TableCell className="font-medium">
-        <span className="flex items-center gap-2">
-          {loader.name}
-          {loader.name === type.pick && <Badge variant="success">use</Badge>}
-        </span>
-      </TableCell>
+      <TableCell className="font-medium">{loader.name}</TableCell>
       <TableCell className={numeric}>
         {formatCount(loader.read)}
         {loader.failed > 0 && <span className="text-destructive"> · failed on {formatCount(loader.failed)}</span>}
@@ -89,7 +73,7 @@ function Figures({ report, type }: { report: Report; type: TypeDecision }) {
       </TableHeader>
       <TableBody>
         {type.loaders.map((loader) => (
-          <LoaderRowCells key={loader.name} report={report} type={type} loader={loader} facts={facts} />
+          <LoaderRowCells key={loader.name} report={report} loader={loader} facts={facts} />
         ))}
       </TableBody>
     </Table>
@@ -142,14 +126,6 @@ function TypeCard({ report, type }: { report: Report; type: TypeDecision }) {
           {type.label}
           <span className="text-sm font-normal text-muted-foreground">{plural(type.files, "file")}</span>
         </CardTitle>
-        {type.why && <CardDescription>{type.why}</CardDescription>}
-        <CardAction>
-          {type.pick ? (
-            <Badge variant="success">Use {type.pick}</Badge>
-          ) : (
-            <Badge variant="secondary">No clear pick</Badge>
-          )}
-        </CardAction>
       </CardHeader>
       <CardContent className="flex flex-col gap-5">
         <Figures report={report} type={type} />
@@ -169,15 +145,15 @@ function TypeCard({ report, type }: { report: Report; type: TypeDecision }) {
 }
 
 /**
- * Which loader to use for each file type, and the evidence that tells them apart: how
- * alike their text is, what they lost, what they failed on, and the files they read
- * differently, each a link to its diff. A type only one loader read has nothing to
- * decide, and is named in a line.
+ * The loaders side by side for each file type: how alike their text is, what they lost,
+ * what they failed on, and the files they read differently, each a link to its diff.
+ * Which one to use is the engineer's call, so no loader is picked here. A type only one
+ * loader read has nothing to compare, and is named in a line.
  */
 export function LoadersSection({ report, comparison }: { report: Report; comparison: LoaderComparison }) {
   const view = loaderView(report, comparison);
   return (
-    <Section title="Which loader to use">
+    <Section title="Loaders compared">
       <div className="flex flex-col gap-4">
         {view.decided.map((type) => (
           <TypeCard key={type.key} report={report} type={type} />
