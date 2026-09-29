@@ -86,6 +86,7 @@ from complydoc.report.models import (
     Limitation,
     LoaderComparison,
     LoaderSummary,
+    PageText,
     ReadingCost,
 )
 from complydoc.report.quickwins import quick_wins
@@ -113,6 +114,7 @@ def compare_loaders(
     verify_with: str | VisionModel | None = None,
     verify_scope: str = "flagged",
     formats: Mapping[str, Iterable[str]] | None = None,
+    page_images: bool = False,
 ) -> AuditReport:
     """Run several loaders on the same input and report where their output differs.
 
@@ -148,6 +150,10 @@ def compare_loaders(
     caller's, as `full_audit` does, rendered from the files the loaders read.
     The vision reading joins each page's `readings`, so it can be put beside any
     loader's, with what each one cost.
+
+    `page_images`, with `paths`, puts a picture of each page of every file read beside
+    its text, rendered by complydoc from the file. A picture shows every value on the
+    page, whatever the report masks, as `full_audit(page_images=True)` does.
     """
     named = _named(loaders)
     if len(named) < 2:
@@ -248,6 +254,10 @@ def compare_loaders(
         )
     ]
 
+    if page_images:
+        if files is None:
+            raise TypeError("page_images renders the files the loaders read, so it needs paths=")
+        _attach_pictures(baseline.entries)
     if not extracted_text:
         for entry in baseline.entries:
             entry.extracted_text = []
@@ -257,6 +267,7 @@ def compare_loaders(
         duration_seconds=round(time.monotonic() - started, 3),
         extracted_text_used=extracted_text,
         compare_extractors=[i.loader.name for i in others],
+        page_images_used=page_images,
     )
 
     other_reports = {i.loader.name: finish_report(i) for i in others}
@@ -304,6 +315,29 @@ def compare_loaders(
     ]
     report.quick_wins = quick_wins(report)
     return report
+
+
+def _attach_pictures(entries: list[DocumentReport]) -> None:
+    """A picture of each page of every file, rendered by complydoc's own reader.
+
+    The loaders' output carries no page geometry, so the pages are opened again here. The
+    identifiers are not drawn on them: they were found in the loaders' text, and where
+    that text sits on the page is known only to the reader that placed it.
+    """
+    from complydoc.ingest.base import IngestOptions, LoaderError
+    from complydoc.ingest.registry import load_document
+    from complydoc.report.preview import build_previews
+
+    options = IngestOptions(ocr=False, render_all_pages=True, max_render_pages=50)
+    for entry in entries:
+        path = Path(entry.path)
+        if not path.is_file():
+            continue
+        try:
+            document = load_document(path, options)
+        except (LoaderError, OSError, ValueError):
+            continue
+        entry.previews = build_previews(document, None, page_images=True)
 
 
 def _named(loaders: Mapping[str, Any] | Sequence[Any]) -> list[tuple[str, Any]]:
@@ -423,6 +457,25 @@ def _pages(entry: DocumentReport) -> dict[int, str]:
     return {page.number: page.text for page in entry.extracted_text}
 
 
+def _masked_pages(entry: DocumentReport) -> dict[int, str] | None:
+    """Each page with every value covered, which a revealing run keeps beside the values."""
+    if any(page.masked_text is None for page in entry.extracted_text):
+        return None
+    return {page.number: page.masked_text or "" for page in entry.extracted_text}
+
+
+def _add_reading(page: PageText, name: str, text: str, masked: dict[int, str] | str | None) -> None:
+    """`name`'s reading of `page`, and on a revealing run its masked copy beside it.
+
+    Without the masked copy a viewer that opens a revealing report masked would show this
+    reading's values in the clear, next to the baseline's covered ones.
+    """
+    page.readings[name] = text
+    if page.masked_readings is not None:
+        covered = masked.get(page.number, "") if isinstance(masked, dict) else masked
+        page.masked_readings[name] = covered if covered is not None else ""
+
+
 def _whole(pages: dict[int, str]) -> str:
     return "\n\n".join(pages[number] for number in sorted(pages))
 
@@ -471,13 +524,14 @@ def _readings(
             continue
         name = inspection.loader.name
         theirs = _pages(other)
+        theirs_masked = _masked_pages(other)
         # Measured on what each loader returned, and shown as the report masks it.
         own_raw = baseline.page_text.get(str(entry.path)) or own
         theirs_raw = inspection.page_text.get(str(other.path)) or theirs
         if entry.page_count_known and other.page_count_known:
             similarity, reordered = _paged_similarity(own_raw, theirs_raw)
             for page in entry.extracted_text:
-                page.readings[name] = theirs.get(page.number, "")
+                _add_reading(page, name, theirs.get(page.number, ""), theirs_masked)
         else:
             # Without page numbers on both sides there is nothing to line pages
             # up by, so the document is compared as one run of text.
@@ -485,7 +539,8 @@ def _readings(
             similarity = reading_similarity(left[:MAX_WORDS], right[:MAX_WORDS])
             reordered = similarity < 1.0 and same_words(left, right)
             if len(entry.extracted_text) == 1:
-                entry.extracted_text[0].readings[name] = _whole(theirs)
+                whole_masked = _whole(theirs_masked) if theirs_masked is not None else None
+                _add_reading(entry.extracted_text[0], name, _whole(theirs), whole_masked)
         readings.append(
             _reading(name, other, similarity, reordered, _file_seconds(their_seconds, other))
         )
@@ -517,22 +572,29 @@ def _cover_found_elsewhere(
     """
     reveal = entry.sensitive.reveal_used if entry.sensitive else False
     for index, page in enumerate(entry.extracted_text):
-        here = [
-            (value, match)
-            for number, value, match in found
-            if number == page.number and not (reveal and match.revealed is not None)
-        ]
-        if not here:
-            continue
+        everything = [(value, match) for number, value, match in found if number == page.number]
+        here = [(v, m) for v, m in everything if not (reveal and m.revealed is not None)]
 
-        def covered(text: str, here: list[tuple[str, SensitiveMatch]] = here) -> str:
-            return mask_matches(text, carried_matches(text, here))[0]
-
+        masked = page.masked_readings
         entry.extracted_text[index] = dataclasses.replace(
             page,
-            text=covered(page.text),
-            readings={name: covered(text) for name, text in page.readings.items()},
+            text=_covered(page.text, here),
+            readings={name: _covered(text, here) for name, text in page.readings.items()},
+            # The masked copies a revealing run keeps are covered for every value found.
+            masked_text=(
+                None if page.masked_text is None else _covered(page.masked_text, everything)
+            ),
+            masked_readings=(
+                None
+                if masked is None
+                else {name: _covered(text, everything) for name, text in masked.items()}
+            ),
         )
+
+
+def _covered(text: str, values: list[tuple[str, SensitiveMatch]]) -> str:
+    """`text` with each of `values` found in it masked."""
+    return mask_matches(text, carried_matches(text, values))[0] if values else text
 
 
 def _file_seconds(seconds: dict[str, float] | None, entry: DocumentReport) -> float:

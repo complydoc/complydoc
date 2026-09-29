@@ -27,7 +27,8 @@ the page itself (text coverage, columns, tables, rotation, scan quality) are
 reported as not measured.
 
 Page numbers come from `page_number` if present, otherwise from `page` read as
-zero-based, which is what LangChain's PDF loaders emit. Several documents with
+zero-based, which is what LangChain's PDF loaders emit, otherwise from the page a
+Docling chunk records for its items. Several documents with
 the same page number — a loader returning one document per element — are
 merged into that page. A loader that returns no page numbers at all produces a
 document whose page count is marked unknown.
@@ -532,7 +533,21 @@ def _page_of(metadata: Mapping[str, Any]) -> int | None:
         value = metadata.get(key)
         if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
             return max(1, value + offset)
-    return None
+    return _docling_page(metadata.get("dl_meta"))
+
+
+def _docling_page(meta: Any) -> int | None:
+    """The first page a Docling chunk came from, which it records per item, from 1."""
+    if not isinstance(meta, Mapping):
+        return None
+    pages = [
+        place["page_no"]
+        for item in meta.get("doc_items") or []
+        if isinstance(item, Mapping)
+        for place in item.get("prov") or []
+        if isinstance(place, Mapping) and isinstance(place.get("page_no"), int)
+    ]
+    return max(1, min(pages)) if pages else None
 
 
 def _documents_from(

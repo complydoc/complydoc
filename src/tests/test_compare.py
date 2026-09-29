@@ -337,3 +337,50 @@ def test_relative_paths_name_documents_from_the_folder_they_share(tmp_path, monk
 
     report = cd.compare_loaders({"a": read, "b": read}, paths=["documents/company/contract.pdf"])
     assert [d.relative_path for d in report.documents] == ["contract.pdf"]
+
+
+def _docling_chunk(text: str, page: int) -> LangChainDocument:
+    item = {"label": "text", "prov": [{"page_no": page, "charspan": [0, len(text)]}]}
+    return LangChainDocument(text, {"source": SOURCE, "dl_meta": {"doc_items": [item]}})
+
+
+def test_docling_chunks_are_placed_on_the_pages_they_record():
+    """DoclingLoader returns chunks, each naming its page in `dl_meta`, counted from 1."""
+    docling = [_docling_chunk(PAGE_ONE, 1), _docling_chunk(PAGE_TWO, 2)]
+    report = cd.compare_loaders({"pypdf": Faithful([PAGE_ONE, PAGE_TWO]), "docling": docling})
+    (document,) = report.documents
+    # Masked as every reading in the report is: page one holds an email address.
+    first, second = (page.readings["docling"] for page in document.extracted_text)
+    assert first.startswith("Agreement between the parties.")
+    assert second == PAGE_TWO
+
+
+def test_a_revealing_comparison_keeps_every_loaders_reading_masked_beside_it():
+    """A viewer opens a revealing report masked: no loader's values may show there."""
+    report = cd.compare_loaders(
+        {"a": Faithful([PAGE_ONE, PAGE_TWO]), "b": Faithful([PAGE_ONE, PAGE_TWO])}, reveal=True
+    )
+    page = report.documents[0].extracted_text[0]
+    assert "jane.doe@example.com" in page.readings["b"]
+    assert page.masked_readings is not None
+    assert "jane.doe@example.com" not in page.masked_readings["b"]
+    assert "jane.doe@example.com" not in (page.masked_text or "")
+
+
+def test_page_images_put_a_picture_of_each_page_beside_the_loaders_text():
+    report = cd.compare_loaders(
+        {"a": _pages_from(0), "b": _pages_from(0)},
+        paths=[FIXTURES / "native_text.pdf"],
+        page_images=True,
+    )
+    (document,) = report.documents
+    assert [p.number for p in document.previews] == [1, 2]
+    assert all(
+        p.image_data_uri and p.image_data_uri.startswith("data:image/") for p in document.previews
+    )
+    assert report.run.page_images_used
+
+
+def test_page_images_need_files_to_render():
+    with pytest.raises(TypeError, match="needs paths"):
+        cd.compare_loaders({"a": Faithful([PAGE_ONE]), "b": Faithful([PAGE_ONE])}, page_images=True)

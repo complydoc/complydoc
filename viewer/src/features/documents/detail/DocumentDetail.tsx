@@ -109,10 +109,11 @@ export function DocumentDetail({
   // Chunks are placed in the kept text, so drawing them shows that text alone, not the diff.
   const readers = readersOf(report, document);
   const compared = readers.length > 1 && mode === "diff" && layer === null;
-  // The diff shows the two readings and nothing else: findings are marked and listed only
-  // in a single reading. Ignored ones stay in the text, struck through, to be brought back.
+  // The diff marks each value where it sits in both readings, so a loader that dropped or
+  // split one shows; the list of findings stays with a single reading. Ignored ones stay in
+  // the text, struck through, to be brought back.
   const shown = compared ? [] : findings;
-  const marks: InlineMark[] = shown.map((f) => ({
+  const marks: InlineMark[] = findings.map((f) => ({
     key: f.key,
     needle: f.needle,
     tone: isIgnored(f) ? "ignored" : f.severity,
