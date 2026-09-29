@@ -395,10 +395,10 @@ class FolderSource:
             cached = self.cache.get(self.name, path)
             if cached is not None:
                 self.cached_files += 1
-                return list(cached)
+                return [_from_file(item, path) for item in cached]
         try:
             source = self.factory(str(path))
-            loaded = _load_items(source, _loading_call(source))
+            loaded = [_from_file(item, path) for item in _load_items(source, _loading_call(source))]
         # The loader is caller code. Whatever it raises is recorded against the file.
         except Exception as exc:
             self.failures[str(path)] = f"{type(exc).__name__}: {exc}"
@@ -406,6 +406,22 @@ class FolderSource:
         if self.cache is not None:
             self.cache.put(self.name, path, [document_content(item) for item in loaded])
         return loaded
+
+
+def _from_file(item: Any, path: Path) -> Any:
+    """`item`, named after `path` when its metadata names no file or only the file's name.
+
+    A loader run on one file read that file, whatever its metadata says. Some name it by
+    its file name alone (OpenDataLoader's `source` is `contract.pdf`), and a document named
+    so could not be matched with the same file read by another loader. One that names a
+    path is left as it is.
+    """
+    text, metadata = document_content(item)
+    key = next((k for k in SOURCE_KEYS if isinstance(metadata.get(k), str | PurePath)), None)
+    named = str(metadata[key]) if key is not None else None
+    if named is not None and PurePath(named).name != named:
+        return item
+    return {"page_content": text, "metadata": {**metadata, key or "source": str(path)}}
 
 
 def load_items(source: Any) -> list[Any]:

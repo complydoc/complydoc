@@ -274,3 +274,19 @@ def test_the_comparison_reads_what_the_loaders_returned_not_the_masked_text():
     far = {r.extractor: r for r in entry.extractions}["far"]
     assert far.similarity < 1.0
     assert far.reordered, "same words, moved around, whatever the masking did to them"
+
+
+def test_a_loader_naming_its_file_by_name_alone_is_matched_with_the_file_it_was_given(tmp_path):
+    """OpenDataLoader's `source` is `contract.pdf`: still the file it read, not another one."""
+    file = tmp_path / "contract.pdf"
+    file.write_bytes(b"%PDF-1.4")
+
+    def by_path(path: str) -> list:
+        return [LangChainDocument(PAGE_ONE, {"source": path, "page": 0})]
+
+    def by_name(path: str) -> list:
+        return [LangChainDocument(PAGE_ONE, {"source": path.rsplit("/", 1)[-1], "page": 0})]
+
+    report = cd.compare_loaders({"by_path": by_path, "by_name": by_name}, paths=[file])
+    assert [d.relative_path for d in report.documents] == ["contract.pdf"]
+    assert report.loader_comparison.documents == {}
