@@ -273,7 +273,7 @@ export function DocumentDetail({
             contextOf={contextOf}
             current={page.number}
             page={pagePanel}
-            // Beside a diff, the page is as wide as the two readings: it is what they are read from.
+            // Beside a diff the page is wider than a column, and the diff keeps room for two readings.
             wide={compared}
             view={view}
             onView={setView}

@@ -23,7 +23,7 @@ interface FindingsPanelProps {
   page?: ReactNode;
   view: PanelView;
   onView: (view: PanelView) => void;
-  /** As wide as what it sits beside, rather than a narrow column. */
+  /** Wider than the findings' column, for a page read beside a diff; the diff keeps the rest. */
   wide?: boolean;
 }
 
@@ -132,7 +132,7 @@ export function FindingsPanel({
       aria-label={findings.length > 0 ? "Findings" : "Page"}
       className={cn(
         "hidden min-h-0 flex-col overflow-hidden rounded-xl border bg-card xl:flex",
-        wide ? "min-w-0 flex-1 basis-0" : "w-80 shrink-0",
+        wide ? "w-[28%] max-w-lg min-w-72 shrink-0" : "w-80 shrink-0",
       )}
     >
       <div className="flex h-10 shrink-0 items-center gap-2 border-b px-3">

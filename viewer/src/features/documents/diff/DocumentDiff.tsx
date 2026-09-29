@@ -8,7 +8,7 @@ import type { Report } from "@/report/types";
 const GitDiff = lazy(() => import("./GitDiff"));
 
 /** The width, in pixels, below which two columns of text are too narrow to read side by side. */
-const SPLIT_WIDTH = 880;
+const SPLIT_WIDTH = 640;
 
 interface ReaderPickerProps {
   label: string;
