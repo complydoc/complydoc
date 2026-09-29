@@ -229,7 +229,7 @@ export function DocumentDetail({
               />
             )}
             {layers.length > 0 && <ChunkPicker layers={layers} value={chunkBy} onChange={setChunkBy} />}
-            {!compared && eyeToggle}
+            {eyeToggle}
           </>
         }
       />
@@ -245,7 +245,6 @@ export function DocumentDetail({
               unmasked={unmasked}
               notes={notes}
               inline={inline}
-              controls={eyeToggle}
               onVisiblePage={(number) => setPageIndex(pageAt(number))}
             />
           ) : (
@@ -274,6 +273,8 @@ export function DocumentDetail({
             contextOf={contextOf}
             current={page.number}
             page={pagePanel}
+            // Beside a diff, the page is as wide as the two readings: it is what they are read from.
+            wide={compared}
             view={view}
             onView={setView}
           />

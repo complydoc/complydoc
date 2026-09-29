@@ -8,10 +8,11 @@ import { generateDiffFile } from "@git-diff-view/file";
 import { DiffModeEnum, DiffView } from "@git-diff-view/react";
 import "@git-diff-view/react/styles/diff-view-pure.css";
 import { FoldVerticalIcon, UnfoldVerticalIcon } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { FindingRail } from "@/features/documents/detail/FindingRail";
 import { useInlineMarks, type InlineFindings, type InlineMark, type MarkTick } from "@/hooks/useInlineMarks";
+import { scrolledToEnd } from "@/lib/scrolledToEnd";
 import { useIsDark } from "@/hooks/useIsDark";
 
 export interface GitDiffProps {
@@ -26,6 +27,8 @@ export interface GitDiffProps {
   onVisiblePage?: (page: number) => void;
   /** Findings to mark where they sit in the text. */
   inline?: InlineFindings;
+  /** What leads the diff's header bar, such as which two readings it sets side by side. */
+  lead?: ReactNode;
 }
 
 const NO_MARKS: InlineMark[] = [];
@@ -78,6 +81,7 @@ export default function GitDiff({
   jump,
   onVisiblePage,
   inline,
+  lead,
 }: GitDiffProps) {
   const scroller = useRef<HTMLDivElement>(null);
   const frame = useRef(0);
@@ -143,16 +147,20 @@ export default function GitDiff({
     frame.current = window.setTimeout(() => {
       const container = scroller.current;
       if (!container) return;
-      const edge = container.getBoundingClientRect().top + 48;
+      const view = container.getBoundingClientRect();
+      const edge = view.top + 48;
       let current: { page: number; top: number } | null = null;
+      let inSight: number | null = null;
       for (const marker of markers(container)) {
         const top = marker.element.getBoundingClientRect().top;
         if (top <= edge) current = { page: marker.page, top };
+        if (top <= view.bottom) inSight = marker.page;
         else break;
       }
       if (current === null) return;
+      // Where the reader is, kept from the top, to find the place again after a redraw.
       place.current = { page: current.page, past: edge - current.top };
-      onVisiblePage?.(current.page);
+      onVisiblePage?.(scrolledToEnd(container) && inSight !== null ? inSight : current.page);
     }, 60);
   };
 
@@ -186,7 +194,8 @@ export default function GitDiff({
   return (
     // Fills the height it is given: the header keeps its line, and the diff scrolls in the rest.
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border bg-card">
-      <div className="flex shrink-0 items-center gap-3 border-b px-3 py-1 text-xs text-muted-foreground">
+      <div className="flex h-10 shrink-0 items-center gap-3 border-b px-2 text-xs text-muted-foreground">
+        {lead}
         {same ? (
           <span>The two read the same</span>
         ) : (

@@ -23,6 +23,8 @@ interface FindingsPanelProps {
   page?: ReactNode;
   view: PanelView;
   onView: (view: PanelView) => void;
+  /** As wide as what it sits beside, rather than a narrow column. */
+  wide?: boolean;
 }
 
 /** The findings of one page, or of the document where a finding has no page. */
@@ -104,6 +106,7 @@ export function FindingsPanel({
   page,
   view,
   onView,
+  wide = false,
 }: FindingsPanelProps) {
   const list = useRef<HTMLUListElement>(null);
   const groups = new Map<number | null, PageFinding[]>();
@@ -127,7 +130,10 @@ export function FindingsPanel({
   return (
     <aside
       aria-label={findings.length > 0 ? "Findings" : "Page"}
-      className="hidden min-h-0 w-80 shrink-0 flex-col overflow-hidden rounded-xl border bg-card xl:flex"
+      className={cn(
+        "hidden min-h-0 flex-col overflow-hidden rounded-xl border bg-card xl:flex",
+        wide ? "min-w-0 flex-1 basis-0" : "w-80 shrink-0",
+      )}
     >
       <div className="flex h-10 shrink-0 items-center gap-2 border-b px-3">
         {page && findings.length > 0 ? (

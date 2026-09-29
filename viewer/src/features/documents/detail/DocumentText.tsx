@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useChunkBands } from "@/hooks/useChunkBands";
 import { useInlineMarks, type InlineFindings, type MarkTick } from "@/hooks/useInlineMarks";
+import { scrolledToEnd } from "@/lib/scrolledToEnd";
 import type { PageChunk } from "@/report/chunkPlaces";
 import { formatCount, plural } from "@/report/format";
 import { FindingRail } from "./FindingRail";
@@ -70,7 +71,8 @@ export function DocumentText({ pages, inline, chunks, jump, onVisiblePage }: Doc
     timer.current = window.setTimeout(() => {
       const container = scroller.current;
       if (!container) return;
-      const edge = container.getBoundingClientRect().top + READING_EDGE;
+      const view = container.getBoundingClientRect();
+      const edge = scrolledToEnd(container) ? view.bottom : view.top + READING_EDGE;
       let current: number | null = null;
       for (const section of container.querySelectorAll<HTMLElement>("[data-page]")) {
         if (section.getBoundingClientRect().top > edge) break;

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { InlineFindings } from "@/hooks/useInlineMarks";
@@ -51,10 +51,6 @@ interface DocumentDiffProps {
   unmasked?: boolean;
   /** Findings to mark where they sit in the text. */
   inline?: InlineFindings;
-  /** More controls beside the readers, such as the eye. */
-  controls?: ReactNode;
-  /** Controls at the far end of the readers' row, right above the text, such as the pages. */
-  end?: ReactNode;
   /** A few words after each page's `# Page N` line, such as what the page costs. */
   notes?: Record<number, string>;
 }
@@ -71,8 +67,6 @@ export function DocumentDiff({
   onVisiblePage,
   unmasked = false,
   inline,
-  controls,
-  end,
   notes = {},
 }: DocumentDiffProps) {
   const [[base, compare], setSides] = useState<[Side, Side]>(() => defaultSides(report, index));
@@ -88,27 +82,7 @@ export function DocumentDiff({
   }, []);
 
   return (
-    <div ref={root} className="flex min-h-0 min-w-0 flex-1 flex-col gap-3">
-      <div className="flex shrink-0 flex-wrap items-center gap-2 text-sm">
-        <ReaderPicker
-          label="Base reader"
-          report={report}
-          index={index}
-          reader={base.reader}
-          onChange={(reader) => setSides([{ ...base, reader }, compare])}
-        />
-        <span className="text-muted-foreground">vs</span>
-        <ReaderPicker
-          label="Compare reader"
-          report={report}
-          index={index}
-          reader={compare.reader}
-          onChange={(reader) => setSides([base, { ...compare, reader }])}
-        />
-        {controls}
-        {end && <span className="ml-auto">{end}</span>}
-      </div>
-
+    <div ref={root} className="flex min-h-0 min-w-0 flex-1 flex-col">
       <Suspense fallback={<Skeleton className="min-h-0 w-full flex-1 rounded-xl" />}>
         <GitDiff
           oldName={sideName(report, base)}
@@ -119,6 +93,26 @@ export function DocumentDiff({
           jump={jump}
           {...(inline && { inline })}
           {...(onVisiblePage && { onVisiblePage })}
+          lead={
+            // The two readings set side by side head the diff, as the page heads the picture.
+            <span className="flex items-center gap-2 text-sm text-foreground">
+              <ReaderPicker
+                label="Base reader"
+                report={report}
+                index={index}
+                reader={base.reader}
+                onChange={(reader) => setSides([{ ...base, reader }, compare])}
+              />
+              <span className="text-muted-foreground">vs</span>
+              <ReaderPicker
+                label="Compare reader"
+                report={report}
+                index={index}
+                reader={compare.reader}
+                onChange={(reader) => setSides([base, { ...compare, reader }])}
+              />
+            </span>
+          }
         />
       </Suspense>
     </div>

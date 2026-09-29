@@ -94,9 +94,10 @@ describe("DocumentDetail", () => {
     expect(screen.getByRole("heading", { name: /master-services-agreement\.pdf$/ })).toBeInTheDocument();
     expect(screen.getByText(/^PDF · 8 pages · \$\d/)).toBeInTheDocument();
     expect(currentPage()).toHaveTextContent("Page 1");
+    // The two readings head the diff, which loads on demand.
+    expect(await screen.findByLabelText("Lines changed", {}, { timeout: 5000 })).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Base reader" })).toHaveTextContent("pdfplumber");
     expect(screen.getByRole("combobox", { name: "Compare reader" })).toHaveTextContent("pypdf");
-    expect(await screen.findByLabelText("Lines changed", {}, { timeout: 5000 })).toBeInTheDocument();
   });
 
   it("shows a document read one way as every page in turn, each with what it costs", () => {
