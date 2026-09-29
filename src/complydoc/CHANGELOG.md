@@ -7,11 +7,53 @@ separately.
 
 ## [Unreleased]
 
+## [0.6.2] — 2026-09-29
+
+Comparing loaders becomes a way to read documents, not a verdict: each document's
+diff sets any loader's reading beside another's, with the page it came from next to
+it, the identifiers marked in both, and the choice of loader left to you.
+
+### Added
+
+- `compare_loaders(page_images=True)`: with `paths`, a picture of each page of every
+  file read, rendered by complydoc from the file, beside the loaders' text.
+- Docling's chunks are placed on the page each records in `dl_meta`, so
+  `DoclingLoader` with its defaults lines up with other loaders page by page.
+- The viewer's Go to (⌘K) collapses and expands the sidebar, and the sidebar button
+  names the shortcut, ⌘B.
+
 ### Changed
 
+- The viewer's Documents page no longer picks a loader. The recommendation stays on
+  the command line and in the report's `loader_comparison`.
+- The diff marks each identifier where it sits in both readings; the list of findings
+  stays with a single reading. The readings head the diff in its own bar, the page
+  beside it takes about a quarter of the width, and two readings are drawn side by
+  side from 640 pixels.
+- The overview and the folder switcher list pipelines apart from folders, so a
+  folder fed to a pipeline is no longer counted twice.
+- `compare_loaders` resolves the paths it is given, so documents are named from the
+  folder they share however the paths were written.
+- `cd.observe` no longer imports libraries the program has not imported, and checks
+  each distinct text for hidden passages once.
 - The documentation site is built with Starlight instead of MkDocs: search, a page
   outline and light and dark themes. `docs/` stays the source; the reference pages are
   still generated from the code, now by `src/scripts/build_docs.py`.
+
+### Fixed
+
+- A revealing loader comparison, opened masked, showed every loader's values but the
+  baseline's in the clear, and each covered value as a difference. Every reading now
+  keeps a masked copy, covered for what any loader's reading held.
+- A loader naming its source by file name alone, as OpenDataLoader does, had each
+  document listed as a file of its own.
+- A loader counting a PDF's pages from 1, as OpenDataLoader does, had every page
+  compared with its neighbour. It is told by the page the file does not have.
+- Type checkers reported every name in `complydoc` as unknown: `__all__` is now
+  built in a form they read.
+- Chunks cut from pypdf's reading were not drawn over PyPDFLoader's pages, which lack
+  the line break pypdf ends a page with.
+- A short last page never became the page being read in the text or the diff.
 
 ## [0.6.1] — 2026-09-28
 
