@@ -403,9 +403,48 @@ class FolderSource:
         except Exception as exc:
             self.failures[str(path)] = f"{type(exc).__name__}: {exc}"
             return []
+        loaded = _counted_from_zero(loaded, path)
         if self.cache is not None:
             self.cache.put(self.name, path, [document_content(item) for item in loaded])
         return loaded
+
+
+def _counted_from_zero(items: list[Any], path: Path) -> list[Any]:
+    """`items` with `page` counted from 0, where the loader counted a PDF's pages from 1.
+
+    LangChain's PDF loaders count from 0; OpenDataLoader counts from 1. Which one a loader
+    did shows in the file: a PDF of 6 pages has no page 6 counted from 0, so a loader that
+    numbered one 6 counted from 1. Without that tell the numbers are left as they are.
+    """
+    numbers = [
+        page
+        for _text, metadata in map(document_content, items)
+        if isinstance(page := metadata.get("page"), int) and not isinstance(page, bool)
+    ]
+    if not numbers or min(numbers) < 1 or "page_number" in document_content(items[0])[1]:
+        return items
+    if path.suffix.lower() != ".pdf" or max(numbers) != _pdf_pages(path):
+        return items
+    shifted = []
+    for item in items:
+        text, metadata = document_content(item)
+        if isinstance(metadata.get("page"), int):
+            metadata = {**metadata, "page": metadata["page"] - 1}
+        shifted.append({"page_content": text, "metadata": metadata})
+    return shifted
+
+
+def _pdf_pages(path: Path) -> int | None:
+    import pypdfium2 as pdfium
+
+    try:
+        pdf = pdfium.PdfDocument(str(path))
+    except Exception:  # pragma: no cover - a file the loader read but pdfium cannot open
+        return None
+    try:
+        return len(pdf)
+    finally:
+        pdf.close()
 
 
 def _from_file(item: Any, path: Path) -> Any:

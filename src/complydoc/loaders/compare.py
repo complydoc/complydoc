@@ -322,12 +322,14 @@ def _named(loaders: Mapping[str, Any] | Sequence[Any]) -> list[tuple[str, Any]]:
 
 def _files(paths: str | os.PathLike[str] | Sequence[str | os.PathLike[str]]) -> list[Path]:
     if isinstance(paths, (str, os.PathLike)):
-        root = Path(paths).expanduser()
+        # Resolved, so documents are named from the folder they share however the paths
+        # were written, and as `complydoc chunks` names the same files.
+        root = Path(paths).expanduser().resolve()
         if not root.exists():
             raise FileNotFoundError(f"no such file or folder: {root}")
         files, _skipped = discover(root)
     else:
-        files = [Path(path).expanduser() for path in paths]
+        files = [Path(path).expanduser().resolve() for path in paths]
     if not files:
         raise ValueError("paths contains no documents to load")
     return files

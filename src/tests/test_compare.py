@@ -290,3 +290,50 @@ def test_a_loader_naming_its_file_by_name_alone_is_matched_with_the_file_it_was_
     report = cd.compare_loaders({"by_path": by_path, "by_name": by_name}, paths=[file])
     assert [d.relative_path for d in report.documents] == ["contract.pdf"]
     assert report.loader_comparison.documents == {}
+
+
+def _pages_from(first: int):
+    """A loader for a two-page PDF that numbers its pages from `first`."""
+
+    def load(path: str) -> list:
+        return [
+            LangChainDocument(text, {"source": path, "page": first + index})
+            for index, text in enumerate((PAGE_ONE, PAGE_TWO))
+        ]
+
+    return load
+
+
+def test_a_loader_counting_pages_from_one_is_lined_up_with_one_counting_from_zero():
+    """OpenDataLoader numbers a two-page PDF's pages 1 and 2; LangChain's loaders 0 and 1."""
+    report = cd.compare_loaders(
+        {"from_zero": _pages_from(0), "from_one": _pages_from(1)},
+        paths=[FIXTURES / "native_text.pdf"],
+    )
+    (document,) = report.documents
+    assert [page.number for page in document.extracted_text] == [1, 2]
+    assert document.extractions[1].similarity == 1.0
+
+
+def test_page_one_of_a_longer_pdf_is_not_taken_for_counting_from_one():
+    """Pages 1 and 2 of a three-page PDF, counted from 0, may be all a loader returned."""
+    report = cd.compare_loaders(
+        {"a": _pages_from(1), "b": _pages_from(1)},
+        paths=[FIXTURES / "mixed_page_sizes.pdf"],
+    )
+    (document,) = report.documents
+    assert [page.number for page in document.extracted_text] == [2, 3]
+
+
+def test_relative_paths_name_documents_from_the_folder_they_share(tmp_path, monkeypatch):
+    folder = tmp_path / "documents" / "company"
+    folder.mkdir(parents=True)
+    file = folder / "contract.pdf"
+    file.write_bytes(b"%PDF-1.4")
+    monkeypatch.chdir(tmp_path)
+
+    def read(path: str) -> list:
+        return [LangChainDocument(PAGE_ONE, {"source": path, "page": 0})]
+
+    report = cd.compare_loaders({"a": read, "b": read}, paths=["documents/company/contract.pdf"])
+    assert [d.relative_path for d in report.documents] == ["contract.pdf"]

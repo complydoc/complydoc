@@ -41,5 +41,8 @@ __version__ = "0.6.1"
 from complydoc import api as _api
 from complydoc.api import *  # noqa: F403
 
-__all__ = ["__version__", *_api.__all__]
+# Written as `+=` rather than unpacked into the list: type checkers read that form, and
+# without it an editor reports every name below as unknown.
+__all__ = ["__version__"]
+__all__ += _api.__all__
 """The public surface: everything `complydoc.api` exports, plus the version."""
