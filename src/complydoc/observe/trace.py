@@ -71,12 +71,13 @@ def build_report(
     last = top[-1].index if top else -1
 
     def config_for(recording: Recording) -> Config | None:
-        """The name model reads the documents loaded and the last stage; patterns the rest."""
+        """The name model reads the documents loaded, what was sent or stored, and the last
+        stage; patterns the rest."""
         if observation.scan == "off":
             return None
-        if observation.scan == "full" or recording.kind == "load" or recording.index == last:
+        if observation.scan == "full" or recording.kind in ("load", "embed", "store"):
             return settings
-        return patterns
+        return settings if recording.index == last else patterns
 
     report = _documents_report(observation, recordings, settings)
     root = Path(report.run.target) if Path(report.run.target).is_absolute() else None
@@ -125,6 +126,7 @@ def build_report(
         )
 
     in_stages = {c for stage in stages for c in stage.connections}
+    unscanned = _unscanned(settings, scans, measurer, report)
     trace = Trace(
         name=observation.name,
         scan=observation.scan,
@@ -134,6 +136,7 @@ def build_report(
         connections_outside=[c for c in connections if c not in in_stages],
         libraries=observation.libraries,
         error=error,
+        unscanned=unscanned,
     )
     report.limitations[:0] = _limitations(trace)
     sent_to = sorted({host for stage in stages for host in stage.hosts})
@@ -265,6 +268,8 @@ def _stage(
             matches = [m for text in texts for m in scans.matches(text, config, reveal)]
         identifiers = _by_fingerprint(matches)
         hidden = sum(scans.hidden(text, config) for text in texts)
+        if report is not None:
+            scans.unavailable.update(_audit_unscanned(report))
 
     keys_out = sorted({key for _, metadata in passed for key in metadata})
     keys_in = {key for _, metadata in given for key in metadata}
@@ -282,7 +287,7 @@ def _stage(
         characters_in=sum(len(t) for t, _ in given) if recording.inputs is not None else None,
         characters_out=None if sends or recording.outputs is None else sum(map(len, texts)),
         sources=_sources(passed, root),
-        scanned=_scanned(config),
+        scanned=_scanned(config, scans.unavailable),
         identifiers=identifiers,
         hidden=hidden,
         metadata_keys=keys_out,
@@ -434,14 +439,34 @@ def _traceback(text: str, context: _Context) -> str:
     return context.measurer.masked("\n".join(lines))
 
 
-def _scanned(config: Config | None) -> str:
+def _scanned(config: Config | None, unavailable: dict[str, str]) -> str:
+    """How a stage was scanned: `full` only where a model-backed category actually ran."""
     if config is None:
         return "off"
-    return (
-        "full"
-        if any(c.model_backed for c in config.sensitive.enabled_categories.values())
-        else "patterns"
-    )
+    ran = [
+        category_id
+        for category_id, category in config.sensitive.enabled_categories.items()
+        if category.model_backed and category_id not in unavailable
+    ]
+    return "full" if ran else "patterns"
+
+
+def _audit_unscanned(report: AuditReport) -> dict[str, str]:
+    return {
+        c.category: c.reason
+        for d in report.documents
+        if d.sensitive is not None
+        for c in d.sensitive.unscanned_categories
+    }
+
+
+def _unscanned(
+    settings: Config, scans: _Scans, measurer: Measurer, report: AuditReport
+) -> dict[str, str]:
+    """The kinds of identifier the run could not look for, by label, with why."""
+    found = {**_audit_unscanned(report), **measurer.unscanned, **scans.unavailable}
+    categories = settings.sensitive.categories
+    return {(categories[c].label if c in categories else c): reason for c, reason in found.items()}
 
 
 def _contents(items: list[Any] | None) -> list[tuple[str, dict[str, Any]]]:
@@ -464,12 +489,16 @@ class _Scans:
     def __init__(self) -> None:
         self._matches: dict[tuple[str, int], list[SensitiveMatch]] = {}
         self._hidden: dict[tuple[str, int], int] = {}
+        self.unavailable: dict[str, str] = {}
+        """Categories that could not be looked for, by id, with why: a name model not
+        installed, say."""
 
     def matches(self, text: str, config: Config, reveal: bool) -> list[SensitiveMatch]:
         key = (text, id(config))
         if key not in self._matches:
             with offline.guarded():
-                self._matches[key] = scan_text(text, config.sensitive, reveal)[0]
+                self._matches[key], unavailable = scan_text(text, config.sensitive, reveal)
+            self.unavailable.update(unavailable)
         return self._matches[key]
 
     def hidden(self, text: str, config: Config) -> int:
@@ -580,6 +609,19 @@ def _limitations(trace: Trace) -> list[Limitation]:
                     severity="info",
                 )
             )
+    if trace.unscanned:
+        labels = " and ".join(trace.unscanned)
+        reason = next(iter(trace.unscanned.values()))
+        limitations.append(
+            Limitation(
+                area="Pipeline",
+                statement=(
+                    f"{labels} were not looked for, so they are neither counted nor masked in "
+                    f"the trace's previews: {reason}"
+                ),
+                severity="important",
+            )
+        )
     if trace.connections_outside:
         limitations.append(
             Limitation(
@@ -662,6 +704,11 @@ def summary_lines(observation: Observation) -> list[str]:
         calls = f" ({len(group)} calls)" if len(group) > 1 else ""
         lines.append(
             f"  {number}. {first.kind:<9} {first.component + calls:<34} {', '.join(parts)}"
+        )
+    if trace.unscanned:
+        lines.append(
+            f"Not looked for, so neither counted nor masked: {', '.join(trace.unscanned)}. "
+            f"{next(iter(trace.unscanned.values()))}"
         )
     if observation.path is not None:
         lines.append(f"Written to {observation.path}")

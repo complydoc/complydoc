@@ -44,6 +44,9 @@ function find(roots: Span[], index: number): Span | undefined {
   return undefined;
 }
 
+/** `text` begun with a capital, as the scanner's reasons are not. */
+const sentence = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
+
 /**
  * One run as a trace: every call the pipeline made, the calls made inside each, when each
  * ran and for how long; the call picked, with what it passed on and how it was set; and the
@@ -127,6 +130,18 @@ export function RunTrace({ report, trace }: { report: Report; trace: Trace }) {
           <TriangleAlertIcon />
           <AlertTitle>The pipeline raised {trace.error}</AlertTitle>
           <AlertDescription>The trace ends where it stopped.</AlertDescription>
+        </Alert>
+      )}
+
+      {Object.keys(trace.unscanned ?? {}).length > 0 && (
+        <Alert className="border-warning/40 [&>svg]:text-warning">
+          <TriangleAlertIcon />
+          <AlertTitle>
+            {Object.keys(trace.unscanned ?? {}).join(" and ")} not looked for: they are neither counted nor masked
+          </AlertTitle>
+          <AlertDescription className="break-words">
+            {sentence(Object.values(trace.unscanned ?? {})[0] ?? "")}
+          </AlertDescription>
         </Alert>
       )}
 

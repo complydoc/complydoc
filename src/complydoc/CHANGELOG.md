@@ -7,6 +7,17 @@ separately.
 
 ## [Unreleased]
 
+### Fixed
+
+- A trace recorded where no name model is installed no longer claims names were looked
+  for. Its steps are marked as read by patterns alone, and the trace names what it could
+  not look for and how to install it: in the report's `trace.unscanned` and
+  limitations, in `run.summary()`, and above the trace in the viewer. Names in its
+  previews were shown unmasked without a word. The report JSON moves to schema 19,
+  which only adds that field.
+- An embedding call or vector store inside another step is read with the name model,
+  as the last step is, so the identifiers a run sent are counted in full.
+
 ## [0.6.3] — 2026-09-30
 
 A trace now says what happened to each document, and what went wrong without an error.

@@ -351,3 +351,33 @@ def test_a_vector_store_is_a_stage_holding_its_embedding_call(tmp_path: Path) ->
     assert {i.label for i in store.identifiers} >= {"IBAN"}
     assert store.documents[0].source == "contract.pdf"
     assert "stored" in observation.summary()
+
+
+def test_names_a_run_could_not_look_for_are_said_not_masked(tmp_path: Path) -> None:
+    from complydoc.config.loader import load_config
+
+    settings = load_config()
+    # A name model that is not there, and no fallback: names cannot be looked for.
+    missing = {
+        key: category.model_copy(
+            update={
+                "model": category.model.model_copy(update={"name": "no-such/model"}),
+                "fallback": [],
+            }
+        )
+        for key, category in settings.sensitive.categories.items()
+        if category.model_backed and category.model is not None
+    }
+    sensitive = settings.sensitive.model_copy(
+        update={"categories": {**settings.sensitive.categories, **missing}}
+    )
+    config = settings.model_copy(update={"sensitive": sensitive})
+    with cd.observe("contracts", out=None, config=config) as observation:
+        _Loader(str(tmp_path / "contract.pdf")).load()
+    trace = observation.report.trace
+    assert "Person name" in trace.unscanned
+    # The stage says it was read by patterns alone, not that names were looked for.
+    assert trace.stages[0].scanned == "patterns"
+    statement = observation.report.limitations[0].statement
+    assert "neither counted nor masked" in statement
+    assert "Not looked for" in observation.summary()

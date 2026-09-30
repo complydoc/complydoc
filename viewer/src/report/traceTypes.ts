@@ -117,4 +117,6 @@ export interface Trace {
   connections_outside: string[];
   libraries: Record<string, string>;
   error: string | null;
+  /** Schema 19: the kinds of identifier the run could not look for, by label, with why. */
+  unscanned?: Record<string, string>;
 }

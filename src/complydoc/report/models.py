@@ -62,7 +62,7 @@ __all__ = [
     "VerificationSummary",
 ]
 
-SCHEMA_VERSION = 18
+SCHEMA_VERSION = 19
 
 
 def report_shape() -> dict[str, object]:
@@ -1160,6 +1160,9 @@ class Trace:
     """The libraries whose classes were observed, with their versions."""
     error: str | None = None
     """What the block raised, if it did."""
+    unscanned: dict[str, str] = field(default_factory=dict)
+    """Schema 19: the kinds of identifier the run could not look for, by label, with why:
+    names, where no name model is installed. They are neither counted nor masked."""
 
 
 @dataclass(frozen=True, slots=True)
