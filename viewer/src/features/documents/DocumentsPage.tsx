@@ -57,8 +57,8 @@ function FolderTotals({ report }: { report: Report }) {
   const totals = reportTotals(report, plan);
   return (
     <span className="tabular-nums">
-      {plural(totals.documents, "document")} · {plural(totals.pages, "page")} · {formatPageUsd(totals.usd)} ·{" "}
-      {totals.seconds === null ? "not timed" : formatSeconds(totals.seconds)}
+      {plural(totals.documents, "document")} · {plural(totals.pages, "page")} · {formatPageUsd(totals.usd)}
+      {totals.seconds !== null && ` · ${formatSeconds(totals.seconds)}`}
     </span>
   );
 }

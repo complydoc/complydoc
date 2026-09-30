@@ -113,7 +113,7 @@ describe("PipelinePage", () => {
           runs: [
             { id: "new", name: "new.json", report },
             { id: "old", name: "old.json", report: older },
-            { id: "audit", name: "audit.json", report: sampleAudit() },
+            { id: "empty", name: "empty.json", report: { ...sampleAudit(), documents: [] } },
           ],
           current: "new",
           open,
@@ -124,7 +124,9 @@ describe("PipelinePage", () => {
     );
     const table = screen.getByRole("table", { name: "Runs" });
     const rows = within(table).getAllByRole("row").slice(1);
-    expect(rows).toHaveLength(2);
+    // Every run is listed, a run without a trace too, named by what it is.
+    expect(rows).toHaveLength(3);
+    expect(rows[2]).toHaveTextContent("Audit");
     expect(screen.queryByRole("complementary", { name: "Trace" })).not.toBeInTheDocument();
     await userEvent.click(required(within(required(rows[0])).getAllByRole("cell")[1]));
     const panel = screen.getByRole("complementary", { name: "Trace" });
@@ -134,6 +136,10 @@ describe("PipelinePage", () => {
     expect(open).toHaveBeenCalledWith("old");
     await userEvent.keyboard("{Escape}");
     expect(screen.queryByRole("complementary", { name: "Trace" })).not.toBeInTheDocument();
+    // A run without a trace opens where what it holds is shown.
+    await userEvent.click(required(within(required(rows[2])).getAllByRole("cell")[1]));
+    expect(open).toHaveBeenCalledWith("empty");
+    expect(window.location.hash).toBe("#home");
   });
   it("says which identifiers the run could not look for, and that they are shown unmasked", () => {
     const report = nestedReport();

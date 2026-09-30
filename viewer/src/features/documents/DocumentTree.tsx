@@ -30,7 +30,26 @@ function Time({ totals }: { totals: Totals }) {
   );
 }
 
-function columnsFor(vision: boolean, thresholds: Thresholds): Columns<TreeNode> {
+/** Which of the columns that only some runs fill have anything in them. */
+interface Filled {
+  agreement: boolean;
+  timed: boolean;
+}
+
+function filled(nodes: TreeNode[]): Filled {
+  const all: TreeNode[] = [];
+  const walk = (node: TreeNode) => {
+    all.push(node);
+    node.children?.forEach(walk);
+  };
+  nodes.forEach(walk);
+  return {
+    agreement: all.some((n) => n.document?.agreement !== undefined && n.document?.agreement !== null),
+    timed: all.some((n) => n.totals.seconds !== null),
+  };
+}
+
+function columnsFor(vision: boolean, thresholds: Thresholds, has: Filled): Columns<TreeNode> {
   const columns: Columns<TreeNode> = [
     column.accessor("name", {
       header: "Name",
@@ -40,7 +59,10 @@ function columnsFor(vision: boolean, thresholds: Thresholds): Columns<TreeNode> 
         const Icon = node.kind === "file" ? FileTextIcon : open ? FolderOpenIcon : FolderIcon;
         return (
           // A long name is cut short, whole on hover, so it does not push the figures off the table.
-          <span className="flex max-w-[15rem] min-w-0 items-center gap-1.5 xl:max-w-[24rem] 2xl:max-w-none" style={{ paddingLeft: `${row.depth * 1.25}rem` }}>
+          <span
+            className="flex max-w-[15rem] min-w-0 items-center gap-1.5 xl:max-w-[24rem] 2xl:max-w-none"
+            style={{ paddingLeft: `${row.depth * 1.25}rem` }}
+          >
             {node.kind === "folder" ? (
               <button
                 type="button"
@@ -75,7 +97,12 @@ function columnsFor(vision: boolean, thresholds: Thresholds): Columns<TreeNode> 
         );
       },
     }),
-    column.accessor((node) => node.totals.pages, { id: "pages", header: "Pages", cell: (c) => formatCount(c.getValue()), ...numeric }),
+    column.accessor((node) => node.totals.pages, {
+      id: "pages",
+      header: "Pages",
+      cell: (c) => formatCount(c.getValue()),
+      ...numeric,
+    }),
     column.accessor((node) => node.score ?? undefined, {
       id: "score",
       header: "Readiness",
@@ -85,29 +112,37 @@ function columnsFor(vision: boolean, thresholds: Thresholds): Columns<TreeNode> 
       },
       ...numeric,
     }),
-    column.accessor((node) => node.document?.agreement ?? undefined, {
-      id: "agreement",
-      header: "Agreement",
-      cell: ({ row, getValue }) => {
-        const value = getValue();
-        if (value === undefined) return "–";
-        return (
-          <ToneBadge tone={agreementTone(thresholds, value)}>
-            {formatPercent(value)}
-            {row.original.document?.reordered && (
-              <span title="A reader held the same words in another order" className="inline-flex">
-                <ArrowDownUpIcon className="size-3" aria-label="reordered" />
-              </span>
-            )}
-          </ToneBadge>
-        );
-      },
-      ...numeric,
-    }),
+    ...(has.agreement
+      ? [
+          column.accessor((node) => node.document?.agreement ?? undefined, {
+            id: "agreement",
+            header: "Agreement",
+            cell: ({ row, getValue }) => {
+              const value = getValue();
+              if (value === undefined) return "–";
+              return (
+                <ToneBadge tone={agreementTone(thresholds, value)}>
+                  {formatPercent(value)}
+                  {row.original.document?.reordered && (
+                    <span title="A reader held the same words in another order" className="inline-flex">
+                      <ArrowDownUpIcon className="size-3" aria-label="reordered" />
+                    </span>
+                  )}
+                </ToneBadge>
+              );
+            },
+            ...numeric,
+          }),
+        ]
+      : []),
     column.accessor("findings", {
       header: "Identifiers",
       cell: ({ row, getValue }) =>
-        row.original.highest ? <ToneBadge tone={severityTone(row.original.highest)}>{formatCount(getValue())}</ToneBadge> : "–",
+        row.original.highest ? (
+          <ToneBadge tone={severityTone(row.original.highest)}>{formatCount(getValue())}</ToneBadge>
+        ) : (
+          "–"
+        ),
       ...numeric,
     }),
   ];
@@ -134,13 +169,15 @@ function columnsFor(vision: boolean, thresholds: Thresholds): Columns<TreeNode> 
     // pushed the table past the width beside the sidebar.
     column.accessor((node) => node.totals.usd ?? undefined, {
       id: "cost",
-      header: "Cost · time",
+      header: has.timed ? "Cost · time" : "Cost",
       cell: ({ row, getValue }) => (
         <span className="flex flex-col items-end tabular-nums">
           <span>{formatPageUsd(getValue() ?? null)}</span>
-          <span className="text-xs text-muted-foreground">
-            <Time totals={row.original.totals} />
-          </span>
+          {has.timed && (
+            <span className="text-xs text-muted-foreground">
+              <Time totals={row.original.totals} />
+            </span>
+          )}
         </span>
       ),
       ...numeric,
@@ -165,7 +202,7 @@ export function DocumentTree({
   return (
     <DataTable
       caption="Documents"
-      columns={columnsFor(vision, thresholds)}
+      columns={columnsFor(vision, thresholds, filled(nodes))}
       rows={nodes}
       rowKey={(node) => node.id}
       subRows={(node) => node.children}

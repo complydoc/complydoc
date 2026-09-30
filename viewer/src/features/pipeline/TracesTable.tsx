@@ -2,25 +2,27 @@ import { createColumnHelper } from "@tanstack/react-table";
 import { CircleCheckIcon, CircleXIcon, TriangleAlertIcon } from "lucide-react";
 import { DataTable, type Columns } from "@/components/DataTable";
 import { cn } from "@/lib/utils";
-import type { Loaded } from "@/report/collections";
+import { runKind, type Loaded } from "@/report/collections";
 import { formatCount, formatSeconds, formatUsd, plural } from "@/report/format";
 import { traceTotals } from "@/report/traceTree";
 import type { Trace } from "@/report/traceTypes";
 import { stepsOf } from "@/report/traceView";
+import type { Report } from "@/report/types";
 import { formatStarted } from "./started";
 
-/** A run of the pipeline, with its trace. */
+/** A run of the folder or pipeline, with its trace where it has one. */
 export interface TracedRun {
   run: Loaded;
-  trace: Trace;
+  trace: Trace | null;
 }
 
 interface Row {
   id: string;
   error: string | null;
   started: string;
+  kind: string;
   steps: string;
-  seconds: number;
+  seconds: number | null;
   warnings: number;
   tokens: number | null;
   usd: number | null;
@@ -28,20 +30,29 @@ interface Row {
   sent: number | null;
 }
 
+/** What a run without a pipeline's trace holds, in a few words. */
+function holdings(report: Report): string {
+  if (report.chunks?.length && report.documents.length === 0) return plural(report.chunks.length, "splitter");
+  if (report.loader_comparison) return plural(report.loader_comparison.loaders.length, "loader");
+  return plural(report.documents.length, "document");
+}
+
 function rowOf({ run, trace }: TracedRun): Row {
-  const totals = traceTotals(trace);
+  const { report } = run;
+  const pipeline = trace !== null && trace.kind !== "audit";
+  const totals = trace ? traceTotals(trace) : null;
   return {
     id: run.id,
-    error: trace.error ?? null,
-    started: run.report.run.started_at,
-    steps:
-      trace.kind === "audit" ? plural(run.report.documents.length, "document") : plural(stepsOf(trace).length, "step"),
-    seconds: totals.seconds,
-    warnings: trace.stages.reduce((sum, s) => sum + (s.warnings?.length ?? 0), 0),
-    tokens: totals.tokensEmbedded,
-    usd: totals.usd,
-    hosts: totals.hosts.join(", "),
-    sent: totals.hosts.length > 0 ? totals.identifiersSent : null,
+    error: trace?.error ?? null,
+    started: report.run.started_at,
+    kind: runKind(report),
+    steps: pipeline ? plural(stepsOf(trace).length, "step") : holdings(report),
+    seconds: totals?.seconds ?? report.run.duration_seconds ?? null,
+    warnings: trace?.stages.reduce((sum, s) => sum + (s.warnings?.length ?? 0), 0) ?? 0,
+    tokens: totals?.tokensEmbedded ?? null,
+    usd: totals?.usd ?? null,
+    hosts: totals?.hosts.join(", ") ?? "",
+    sent: totals && totals.hosts.length > 0 ? totals.identifiersSent : null,
   };
 }
 
@@ -65,13 +76,16 @@ function columnsFor(rows: Row[]): Columns<Row> {
       header: "Started",
       cell: (c) => <span className="tabular-nums">{formatStarted(c.getValue())}</span>,
     }),
+    ...(new Set(rows.map((r) => r.kind)).size > 1
+      ? [column.accessor("kind", { header: "Run", cell: (c) => <span className="font-medium">{c.getValue()}</span> })]
+      : []),
     column.accessor("steps", {
       header: "Steps",
       cell: (c) => <span className="text-muted-foreground">{c.getValue()}</span>,
     }),
     column.accessor("seconds", {
       header: "Duration",
-      cell: (c) => formatSeconds(c.getValue()),
+      cell: (c) => (c.getValue() === null ? "—" : formatSeconds(c.getValue() as number)),
       meta: { numeric: true },
     }),
     ...(any((r) => r.warnings > 0)
@@ -129,7 +143,7 @@ function columnsFor(rows: Row[]): Columns<Row> {
   ];
 }
 
-/** Every traced run of the pipeline, newest first; a click opens one's trace beside the table. */
+/** Every run of the folder or pipeline, newest first; a click opens one. */
 export function TracesTable({
   runs,
   open,

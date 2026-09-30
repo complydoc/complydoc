@@ -44,7 +44,7 @@ const GROUPS: { label: string; pages: Page[] }[] = [
 const FOLDED_KEY = "complydoc-sidebar-missing-open";
 
 /** A figure beside a page's name, where it says something at a glance. */
-function countFor(report: Report, page: Page): string | null {
+function countFor(report: Report, page: Page, runs: number): string | null {
   switch (page) {
     case "security": {
       if (!measured(report, "sensitive")) return null;
@@ -56,8 +56,8 @@ function countFor(report: Report, page: Page): string | null {
     case "chunks":
       return report.chunks?.length ? formatCount(report.chunks.length) : null;
     case "pipeline":
-      // An audit's trace is its documents, counted beside Documents already.
-      return report.trace ? formatCount(report.trace.stages.filter((s) => s.parent == null).length) : null;
+      // The runs listed there, where there is more than the one on screen.
+      return runs > 1 ? formatCount(runs) : null;
     default:
       return null;
   }
@@ -124,11 +124,12 @@ export function AppSidebar({ report, page, switcher, search }: AppSidebarProps) 
     }
   };
   const has = (id: Page) => {
+    // Traces lists every run of the folder or pipeline, a way to the others from any one.
+    if (id === "pipeline" && runs.length > 1) return true;
     const content = PAGE_CONTENT[id];
     return !report || content === undefined || measured(report, content);
   };
   const missing = report ? GROUPS.flatMap((group) => group.pages).filter((id) => !has(id)) : [];
-  const Runs = PAGE_INFO.runs.icon;
   const Settings = PAGE_INFO.settings.icon;
 
   return (
@@ -156,7 +157,7 @@ export function AppSidebar({ report, page, switcher, search }: AppSidebarProps) 
                 <SidebarGroupContent>
                   <SidebarMenu>
                     {pages.map((id) => (
-                      <PageLink key={id} id={id} page={page} count={countFor(report, id)} />
+                      <PageLink key={id} id={id} page={page} count={countFor(report, id, runs.length)} />
                     ))}
                   </SidebarMenu>
                 </SidebarGroupContent>
@@ -196,17 +197,6 @@ export function AppSidebar({ report, page, switcher, search }: AppSidebarProps) 
         <SidebarFooter>
           <SidebarSeparator className="mx-0" />
           <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={page === "runs"} tooltip={PAGE_INFO.runs.label}>
-                <a href="#runs" aria-current={page === "runs" ? "page" : undefined}>
-                  <Runs />
-                  <span>{PAGE_INFO.runs.label}</span>
-                </a>
-              </SidebarMenuButton>
-              {runs.length > 1 && (
-                <SidebarMenuBadge className="text-muted-foreground">{formatCount(runs.length)}</SidebarMenuBadge>
-              )}
-            </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton asChild isActive={page === "settings"} tooltip={PAGE_INFO.settings.label}>
                 <a href="#settings" aria-current={page === "settings" ? "page" : undefined}>

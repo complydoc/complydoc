@@ -13,7 +13,6 @@ import { ChunksPage } from "@/features/chunks/ChunksPage";
 import { CostPage } from "@/features/cost/CostPage";
 import { DocumentsPage } from "@/features/documents/DocumentsPage";
 import { PipelinePage } from "@/features/pipeline/PipelinePage";
-import { RunsPage } from "@/features/runs/RunsPage";
 import { ReviewQueue } from "@/features/security/ReviewQueue";
 import { SecurityPage } from "@/features/security/SecurityPage";
 import { HomePage } from "@/features/home/HomePage";
@@ -32,7 +31,7 @@ import { FolderRunsContext } from "@/hooks/useFolderRuns";
 import { leadRun, type Collection, type Loaded } from "@/report/collections";
 import { fileName } from "@/report/format";
 import { AppSidebar } from "./AppSidebar";
-import { PAGES, PAGE_INFO } from "./pages";
+import { PAGES, PAGE_INFO, type Page } from "./pages";
 import { shortcut } from "@/lib/shortcut";
 
 function leadIdOf(collection: Collection | undefined): string | null {
@@ -66,6 +65,9 @@ function rememberedSidebar(): boolean {
     return true;
   }
 }
+
+/** The pages whose figures the loading plan prices, and so the only ones that show it. */
+const PRICED: readonly Page[] = ["home", "documents", "cost"];
 
 /**
  * The open reports: the sidebar, a bar saying where you are, and the page. With
@@ -186,7 +188,7 @@ export function ReportView({
               </Breadcrumb>
               {/* The plan's pickers give up width before the page scrolls sideways. */}
               <div className="ml-auto flex min-w-0 items-center gap-2">
-                <PlanBar />
+                {PRICED.includes(page) && <PlanBar />}
                 <ModeToggle dark={dark} onToggle={onToggleTheme} />
               </div>
             </header>
@@ -212,7 +214,6 @@ export function ReportView({
                   {page === "cost" && <CostPage report={report} />}
                   {page === "documents" && <DocumentsPage report={report} open={detail} />}
                   {page === "chunks" && <ChunksPage report={report} />}
-                  {page === "runs" && <RunsPage />}
                   {page === "settings" && (
                     <SettingsPage report={report} {...(run.source ? { source: run.source } : {})} />
                   )}

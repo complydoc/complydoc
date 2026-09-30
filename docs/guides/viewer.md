@@ -15,8 +15,7 @@ Viewer  http://127.0.0.1:8500/  Ctrl+C stops it
 
 It lists every audit report it finds under `.complydoc`, where an audit writes
 when no `--out` is given, grouped by the folder each one audited, newest run
-first. Two runs of the same folder show what changed between them. A report
-written while the viewer runs appears when the page is reloaded.
+first. A report written while the viewer runs appears when the page is reloaded.
 
 Name report files or other folders to open those instead:
 
@@ -39,7 +38,7 @@ Every run opens on the same pages, whichever command wrote it:
 | Page | Holds | Written by |
 | --- | --- | --- |
 | Home | The headline figures, the findings and documents to look at first | every run |
-| Trace | Every call a pipeline made, or every document an audit read, in a tree with each one's time, input and output | `cd.observe`, `audit` |
+| Traces | Every run of the folder or pipeline, and a run's trace: every call a pipeline made, or every document an audit read, with each one's time, input and output | `cd.observe`, `audit` |
 | Security | Identifiers and hidden instructions, per document and page | `audit`, `sensitive` |
 | Documents | Each document's pages, text and readings; for a loader comparison, every loader's reading beside the others in a document's Diff | every run that reads documents |
 | Chunks | How each text splitter cut the text, and the documents it cut worst | `chunks` |
@@ -52,12 +51,13 @@ opens the guide for the page on screen.
 
 ### The trace
 
-The Trace page lists every run of a pipeline recorded with
+The Traces page lists every run of the folder, or of a pipeline recorded with
 [`cd.observe`](observe-a-pipeline.md), newest first: when it started, how long it
 took, its warnings, tokens, cost, where it sent text and the identifiers it sent.
 Above the table are figures across the runs. Picking a run opens its trace in a
 panel over the page, the table still showing beside it: up and down go to the next
-run, Escape closes it, and its left edge resizes it.
+run, Escape closes it, and its left edge resizes it. A run without a trace, such as a
+chunks run, opens where what it holds is shown.
 
 A trace is a waterfall. The run is at the root, each step under it, and a component
 called several times in a row, such as a loader called once a file, is one row that
@@ -83,7 +83,8 @@ identifier scan. A large run opens folded, a line a folder.
 
 ### How pages are read
 
-The top bar sets how every cost and time in the report is worked out:
+The top bar of Home, Documents and Cost & time sets how every cost and time in the report
+is worked out:
 
 | Method | Reads each page |
 | --- | --- |
@@ -152,14 +153,7 @@ Every report of the same folder is one of its runs, whichever command wrote it; 
 runs of a pipeline recorded with `cd.observe` are grouped under the pipeline's name.
 The switcher at the top of the sidebar names each run by its kind (Audit, Cost,
 Loader comparison, Chunks, Pipeline and so on) and when it started, and opens any of
-them. The Runs page lists them newest first with what each holds, and what set it
-apart, such as values revealed or identifiers sent. Click a run to open it.
-
-A folder's runs are not compared with each other: its documents come and go between
-runs, so a change in its totals says little about the documents. A pipeline's runs
-are, two at a time: tick two to see what each made and cost, and their steps lined
-up with the settings that changed between them, such as a chunk size or a masking
-step added.
+them. The Traces page lists them all, newest first; click a run to open it.
 
 A folder opens on, and the overview sums it up by, its newest audit; a folder with
 none, by its newest run that read documents.
