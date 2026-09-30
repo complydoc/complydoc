@@ -10,6 +10,9 @@ export const INDENT = 16;
 /** The grid every line of the waterfall shares: the step, its place in time, what it passed on. */
 export const COLUMNS = "grid grid-cols-[minmax(12rem,48%)_minmax(0,1fr)_3.25rem]";
 
+/** The time axis stops short of its column's end, so a call's time fits after its bar. */
+export const AXIS = "absolute inset-y-0 left-0 right-16";
+
 /** The name a call goes by, and what to show beside it, muted. */
 function naming(span: Span): { name: string; aside: string } {
   const { stage } = span;
@@ -59,10 +62,9 @@ function Bar({ span, total }: { span: Span; total: number }) {
   const end = start + width;
   const priced = typeof stage.usd === "number" && stage.usd > 0 && stage.usd_basis !== "local";
   const label = `${formatSeconds(stage.seconds)}${priced ? ` · ${formatUsd(stage.usd ?? 0)}` : ""}`;
-  // The time sits after the bar, before it where the bar runs to the end of the run, or on
-  // its end where the bar runs from start to end, such as the run's own.
-  const after = end < 0.78;
-  const on = !after && start < 0.22;
+  // The time sits after the bar, in the room the axis leaves at its end; a long label on a
+  // bar that ends late and starts late goes before it instead.
+  const after = end < 0.85 || start < 0.3 || !priced;
   return (
     <>
       <span
@@ -74,17 +76,8 @@ function Bar({ span, total }: { span: Span; total: number }) {
         style={{ left: `${start * 100}%`, width: `max(2px, ${width * 100}%)` }}
       />
       <span
-        className={cn(
-          "absolute top-1/2 -translate-y-1/2 font-mono text-[11px] whitespace-nowrap text-muted-foreground tabular-nums",
-          on && "rounded-sm bg-card px-1",
-        )}
-        style={
-          after
-            ? { left: `calc(${end * 100}% + 6px)` }
-            : on
-              ? { right: `calc(${(1 - end) * 100}% + 2px)` }
-              : { right: `calc(${(1 - start) * 100}% + 6px)` }
-        }
+        className="absolute top-1/2 -translate-y-1/2 font-mono text-[11px] whitespace-nowrap text-muted-foreground tabular-nums"
+        style={after ? { left: `calc(${end * 100}% + 6px)` } : { right: `calc(${(1 - start) * 100}% + 6px)` }}
       >
         {label}
       </span>
@@ -181,7 +174,9 @@ export function WaterfallRow({
         )}
       </div>
       <div className="relative h-full min-w-0">
-        <Bar span={span} total={total} />
+        <div className={AXIS}>
+          <Bar span={span} total={total} />
+        </div>
       </div>
       <div className="pr-3 text-right">
         <Found span={span} />

@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { tickLabel, ticks } from "@/report/timeAxis";
 import { filterSpans, filtering, NO_FILTER, type SpanFilter } from "@/report/traceFilter";
 import { visibleSpans, type Span } from "@/report/traceTree";
-import { COLUMNS, Guides, INDENT, WaterfallRow } from "./WaterfallRow";
+import { AXIS, COLUMNS, Guides, INDENT, WaterfallRow } from "./WaterfallRow";
 
 /** Spans beyond which the tree opens folded. */
 const FOLD_ABOVE = 60;
@@ -25,18 +25,17 @@ type Line = { span: Span } | { more: number; parent: Span; depth: number };
 
 /** The marks along the time axis, as faint lines down the waterfall, or as their labels. */
 function Axis({ total, labels }: { total: number; labels?: boolean }) {
-  const marks = ticks(total);
+  const marks = ticks(total, 5);
   return (
     <>
-      {marks.map((at, index) => {
+      {marks.map((at) => {
         const left = (at / total) * 100;
         if (!labels)
           return <span key={at} className="absolute inset-y-0 w-px bg-border/60" style={{ left: `${left}%` }} />;
-        const last = index === marks.length - 1 && left > 90;
         return (
           <span
             key={at}
-            className={cn("absolute top-1/2 -translate-y-1/2 font-mono tabular-nums", last && "-translate-x-full")}
+            className="absolute top-1/2 -translate-y-1/2 font-mono tabular-nums"
             style={{ left: `${left}%` }}
           >
             {tickLabel(at)}
@@ -194,7 +193,9 @@ export function Waterfall({ roots: tree, selected, onSelect, total }: WaterfallP
           )}
         </span>
         <div className="relative h-full" aria-label="Time since the run began">
-          <Axis total={total} labels />
+          <div className={AXIS}>
+            <Axis total={total} labels />
+          </div>
         </div>
         <span className="pr-3 text-right" title="Identifiers each call passed on">
           IDs
@@ -212,7 +213,9 @@ export function Waterfall({ roots: tree, selected, onSelect, total }: WaterfallP
           <div aria-hidden className={cn(COLUMNS, "pointer-events-none absolute inset-0")}>
             <span />
             <div className="relative">
-              <Axis total={total} />
+              <div className={AXIS}>
+                <Axis total={total} />
+              </div>
             </div>
           </div>
           {narrowed && lines.length === 0 && (

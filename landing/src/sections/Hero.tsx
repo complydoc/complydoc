@@ -21,7 +21,7 @@ export function Hero() {
               The observability layer for AI ingestion pipelines.
             </h1>
             <p className="text-lg text-pretty text-muted-foreground">
-              See every step between your documents and your vector store: loading, cleaning, splitting and embedding.
+              See every step between your documents and your vector store: loading, cleaning, splitting, embedding and storing.
               complydoc traces your LangChain or LlamaIndex pipeline as it runs, and shows what each step cost, how long it
               took, what it extracted, and which identifiers it let through.
             </p>

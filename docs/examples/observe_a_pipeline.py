@@ -1,10 +1,11 @@
-"""Observe an ingestion pipeline: load, strip paths, split, embed."""
+"""Observe an ingestion pipeline: load, strip paths, split, store."""
 # requires: langchain_pymupdf4llm, langchain_text_splitters
 
 import tempfile
 from pathlib import Path
 
 from langchain_core.embeddings import DeterministicFakeEmbedding
+from langchain_core.vectorstores import InMemoryVectorStore
 from langchain_pymupdf4llm import PyMuPDF4LLMLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
@@ -19,7 +20,8 @@ with cd.observe("contracts-ingest", out=tempfile.mkdtemp()) as run:
     documents = [page for path in files for page in PyMuPDF4LLMLoader(str(path)).load()]
     documents = cd.StripPathMetadata().transform_documents(documents)
     chunks = splitter.split_documents(documents)
-    vectors = embeddings.embed_documents([chunk.page_content for chunk in chunks])
+    # The store embeds what it is given: its embedding call is a step inside its own.
+    InMemoryVectorStore(embeddings).add_documents(chunks)
 
 print(run.summary())
 
@@ -28,3 +30,8 @@ stages = run.report.trace.stages
 loaded = {i.fingerprint for stage in stages if stage.kind == "load" for i in stage.identifiers}
 embedded = {i.fingerprint for stage in stages if stage.kind == "embed" for i in stage.identifiers}
 print(f"{len(loaded)} identifiers loaded, {len(embedded)} in the text embedded")
+
+# What went wrong without an error, step by step.
+for stage in stages:
+    for warning in stage.warnings:
+        print(f"{stage.component}: {warning.message}")

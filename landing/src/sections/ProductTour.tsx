@@ -19,9 +19,9 @@ const VIEWS = [
     label: "Trace",
     icon: WorkflowIcon,
     src: { dark: traceDark, light: traceLight },
-    alt: "The viewer's trace of an ingestion pipeline: every call in a tree with its time, tokens and identifiers, and the embedding call's input and output",
+    alt: "The viewer's trace of an ingestion pipeline beside its runs: every call on a time axis with its time, cost and identifiers, a warning on a scanned file that loaded no text, and the embedding call's input",
     caption:
-      "Every call your pipeline made, the files each loader read beneath it, with time, tokens, cost and the identifiers it passed on. Here the embedding model was sent text holding 34 of them.",
+      "Every run of your pipeline, and each run's calls on a time axis: the files each loader read, the vector store and the embedding call inside it, with time, cost and the identifiers each passed on. Here a scan loaded no text, and the embedding model was sent text holding 19 identifiers.",
   },
   {
     value: "document",

@@ -37,11 +37,12 @@ import complydoc as cd
 with cd.observe("contracts-ingest"):
     documents = PyMuPDF4LLMLoader("contract.pdf").load()
     chunks = splitter.split_documents(documents)
-    vectors = embeddings.embed_documents([c.page_content for c in chunks])
+    vector_store.add_documents(chunks)
 ```
 
-Each loader, splitter and embedding call becomes a step of a trace, written to
-`.complydoc`. Open it with `complydoc ui`.
+Each loader, splitter, embedding call and vector store becomes a step of a trace,
+written to `.complydoc`, with each document followed through them and warnings for the
+failures that raise no error. Open it with `complydoc ui`.
 
 </TabItem>
 <TabItem label="Audit a folder">

@@ -4,7 +4,7 @@
     uv run python landing/scripts/screenshots.py
 
 Builds the demo reports from the documents bundled with complydoc: a pipeline observed
-twice, with and without masking; an audit with a second reader and page pictures; and a
+twice, with and without masking, into a vector store; an audit with a second reader and page pictures; and a
 chunks run with two chunk sizes. It serves them with the viewer and takes each screenshot
 with headless Chrome, at twice the pixels, in the dark theme and the light one, into
 `landing/src/assets/screens` as WebP.
@@ -42,9 +42,10 @@ SPLITTERS = (
 
 
 def pipeline_runs(out: Path) -> list[Path]:
-    """The sample folder loaded, cleaned, split and embedded, observed twice."""
+    """The sample folder loaded, cleaned, split and stored, observed twice."""
     from langchain_community.document_loaders import DirectoryLoader, PyPDFLoader
     from langchain_core.embeddings import DeterministicFakeEmbedding
+    from langchain_core.vectorstores import InMemoryVectorStore
     from langchain_text_splitters import RecursiveCharacterTextSplitter
 
     import complydoc as cd
@@ -67,7 +68,7 @@ def pipeline_runs(out: Path) -> list[Path]:
             if mask:
                 documents = cd.MaskIdentifiers().transform_documents(documents)
             chunks = splitter.split_documents(documents)
-            OpenAIEmbeddings(size=1536).embed_documents([c.page_content for c in chunks])
+            InMemoryVectorStore(OpenAIEmbeddings(size=1536)).add_documents(chunks)
         assert run.path is not None, run.error
         written.append(run.path)
     return written
@@ -175,7 +176,7 @@ def main() -> int:
 
     unmasked = traces[0].relative_to(reports).as_posix()
     shots = {
-        "trace": (unmasked, "#pipeline"),
+        "trace": (unmasked, "#pipeline?trace=open"),
         "document": ("sample/complydoc.json", f"#documents/{contract}?chunks={splitter}"),
         "diff": ("sample/complydoc.json", f"#documents/{diffed}"),
         "security": ("sample/complydoc.json", "#security"),

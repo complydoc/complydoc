@@ -34,7 +34,7 @@ const ISSUES: Issue[] = [
     icon: ShieldAlertIcon,
     title: "What leaves the machine",
     detail:
-      "Each identifier is followed from the loader to the embedding call, so you see which ones reached a hosted model, and can fail CI when one does.",
+      "Each identifier is followed from the loader to the embedding call and the vector store, so you see which ones reached a hosted model or stayed in your index, and can fail CI when one does.",
   },
 ];
 
@@ -46,8 +46,8 @@ export function Problem() {
       title="Ingestion decides what your model will ever see, and nothing watches it."
       lead={
         <>
-          A loader flattens a table, a splitter cuts a clause in half, an embedding call sends a customer's account
-          number to a hosted model. None of it raises an error. complydoc records each step of your pipeline as it runs,
+          A loader flattens a table, a scanned PDF loads as no text, a splitter cuts a clause in half, an embedding call
+          sends a customer's account number to a hosted model. None of it raises an error. complydoc records each step of your pipeline as it runs,
           and measures what it did to your own files.
         </>
       }

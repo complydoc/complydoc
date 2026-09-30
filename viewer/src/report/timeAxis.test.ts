@@ -3,7 +3,8 @@ import { tickLabel, ticks } from "./timeAxis";
 describe("ticks", () => {
   it("marks a run at round steps from nought, no more than asked for", () => {
     expect(ticks(2.9)).toEqual([0, 1, 2]);
-    expect(ticks(0.12)).toEqual([0, 0.05, 0.1]);
+    expect(ticks(0.12)).toEqual([0, 0.025, 0.05, 0.075, 0.1]);
+    expect(ticks(0.085, 5)).toEqual([0, 0.025, 0.05, 0.075]);
     expect(ticks(45)).toEqual([0, 10, 20, 30, 40]);
     expect(ticks(9.8)).toEqual([0, 2, 4, 6, 8]);
     expect(ticks(10).length).toBeLessThanOrEqual(6);

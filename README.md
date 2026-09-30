@@ -25,14 +25,16 @@
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/complydoc/complydoc/main/.github/images/viewer-trace-dark.webp">
-  <img alt="The complydoc viewer: a LangChain ingestion pipeline traced step by step, each loader, splitter and embedding call with its time, tokens, cost and the identifiers it passed on" src="https://raw.githubusercontent.com/complydoc/complydoc/main/.github/images/viewer-trace-light.webp" width="100%">
+  <img alt="The complydoc viewer: a LangChain ingestion pipeline's runs, and one run traced step by step, each loader, splitter, vector store and embedding call on a time axis with its time, cost and the identifiers it passed on, and warnings on a scanned file that loaded no text" src="https://raw.githubusercontent.com/complydoc/complydoc/main/.github/images/viewer-trace-light.webp" width="100%">
 </picture>
 
 complydoc is the observability layer for AI ingestion pipelines. It traces every step
-between your documents and your vector store (loading, cleaning, splitting, embedding) with
-what each one cost, how long it took and what it passed on. It puts different loaders'
-readings of the same document side by side, and flags the personal or financial
-identifiers, and instructions hidden for a model, that make it through.
+between your documents and your vector store (loading, cleaning, splitting, embedding,
+storing) with what each one cost, how long it took and what it passed on, and follows
+each document through them. It warns of the failures that raise no error, such as a scan
+that loaded no text, puts different loaders' readings of the same document side by side,
+and flags the personal or financial identifiers, and instructions hidden for a model,
+that make it through.
 
 It runs on your machine, and nothing leaves it unless you ask.
 
@@ -42,7 +44,8 @@ It runs on your machine, and nothing leaves it unless you ask.
 uv tool install complydoc        # or: pip install complydoc
 ```
 
-Observe an ingestion pipeline as it runs, every loader, splitter and embedding call a step:
+Observe an ingestion pipeline as it runs, every loader, splitter, embedding call and
+vector store a step:
 
 ```python
 import complydoc as cd
@@ -50,7 +53,7 @@ import complydoc as cd
 with cd.observe("contracts-ingest"):
     documents = PyMuPDF4LLMLoader("contract.pdf").load()
     chunks = splitter.split_documents(documents)
-    vectors = embeddings.embed_documents([c.page_content for c in chunks])
+    vector_store.add_documents(chunks)
 ```
 
 Compare loaders on your own documents, page by page:
