@@ -16,7 +16,7 @@ Two shapes, chosen by `detail`:
     file is, so a missing part is never mistaken for an empty one.
 
 Page pictures are not written into the JSON. They made most of a large report,
-which every reader of it then had to hold whole: 1,671 of them came to 427 MB. Each
+which every reader of it then had to hold whole: 2,000 pages came to about 1 GB. Each
 is written as a JPEG in a folder beside the report, `<report>.parts/pages/`, and the
 page names its file in `image`, so the viewer fetches a picture when its page is
 shown.

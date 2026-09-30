@@ -7,6 +7,15 @@ separately.
 
 ## [Unreleased]
 
+## [0.6.4] — 2026-09-30
+
+complydoc holds up on a large folder. An audit of about 2,000 pages with page pictures
+and three readers wrote a report of several hundred MB that ran the viewer out of memory. Reports now keep their pictures and, when large, their page text beside
+them, and the viewer fetches each only when it is shown: 2,000 pages open from a 13 MB
+report, served in about 100 MB. Traces are tested on the frameworks' own tutorials, and
+a line that runs off the page is no longer taken for hidden text. The report JSON moves
+to schema 20, adding fields only.
+
 ### Added
 
 - Tests that run the frameworks' own tutorials under `cd.observe`, `make test-pipelines`:
@@ -30,8 +39,8 @@ separately.
 - Page pictures are no longer written into the report JSON. Each is a JPEG in a
   `.parts` folder beside the report, `complydoc.parts/pages/` for `complydoc.json`,
   named in its page's new `image` field, and `complydoc ui` fetches a picture only when
-  its page is shown. They were most of a large report: 1,671 of them made 427 MB that
-  every reader had to hold whole. The report JSON moves to schema 20.
+  its page is shown. They were most of a large report, which every reader had to hold
+  whole. The report JSON moves to schema 20.
 - A report whose page text and layout pass 16 MB keeps each document's in
   `.parts/documents/`, named in the document's `parts`, and is written without
   indentation. What pages are priced and listed by stays in the JSON. `load_report` puts
@@ -40,7 +49,7 @@ separately.
 - The viewer's Runs page is gone. The Traces page, as the sidebar now names it, lists
   every run of the folder or pipeline: a run with a trace opens it beside the list, a
   chunks run opens on Chunks and a loader comparison on Documents.
-- The loading plan's pickers show only on Home, Documents and Cost & time, the pages
+- The loading plan's pickers show only on the Dashboard, Documents and Cost & time, the pages
   whose figures they price. The Documents table leaves out the agreement and time
   columns where no document has them.
 
@@ -51,12 +60,12 @@ separately.
   more than three splitters are picked from a list, and two splitters with the same
   settings are told apart by their class.
 - A line set too long for its page, whose end runs past the margin, was reported as
-  hidden text, once for every such line: a real corpus had 376 of them. It is reported
+  hidden text, once for every such line: hundreds of them in a large folder. It is reported
   now only if what runs off the page reads as an instruction. Text placed off the page
   on its own is reported as before.
 - The viewer called every hidden passage a "hidden instruction". A passage hidden from a
   reader that does not address a model is "hidden text" now, counted apart from the
-  instructions on Home and Security, and ranked below them among the documents to look at.
+  instructions on the Dashboard and Security, and ranked below them among the documents to look at.
 - `complydoc ui` could run out of memory on a large report: each request for its ignore or
   concepts file parsed the whole report again, and they came in together. The server now
   parses a report once per version of the file, one report at a time, streams it rather
@@ -66,13 +75,11 @@ separately.
 - LlamaIndex's embedding step is followed back to its documents, though the texts it
   sends carry each node's metadata before its text.
 - `run.summary()` counts a splitter's output in chunks, not documents.
-
 - A trace recorded where no name model is installed no longer claims names were looked
   for. Its steps are marked as read by patterns alone, and the trace names what it could
   not look for and how to install it: in the report's `trace.unscanned` and
   limitations, in `run.summary()`, and above the trace in the viewer. Names in its
-  previews were shown unmasked without a word. The report JSON moves to schema 19,
-  which only adds that field.
+  previews were shown unmasked without a word.
 - An embedding call or vector store inside another step is read with the name model,
   as the last step is, so the identifiers a run sent are counted in full.
 
