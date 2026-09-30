@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -57,6 +57,16 @@ function selected(collections: Collection[], selection: Selection): Loaded | nul
   return collection.runs.find((r) => r.id === selection.run) ?? collection.runs[0] ?? null;
 }
 
+const SIDEBAR_KEY = "complydoc.sidebar";
+
+function rememberedSidebar(): boolean {
+  try {
+    return window.localStorage.getItem(SIDEBAR_KEY) !== "closed";
+  } catch {
+    return true;
+  }
+}
+
 /**
  * The open reports: the sidebar, a bar saying where you are, and the page. With
  * a folder chosen, that folder's run; otherwise every folder side by side.
@@ -71,6 +81,19 @@ export function ReportView({
   onToggleTheme,
 }: ReportViewProps) {
   const [{ page, detail }] = useHashRoute(PAGES);
+  // The sidebar stays as it was left: opening another run or folder remounts what is under it.
+  const [sidebarOpen, setSidebarOpen] = useState(rememberedSidebar);
+  const sidebar = {
+    open: sidebarOpen,
+    onOpenChange: (open: boolean) => {
+      setSidebarOpen(open);
+      try {
+        window.localStorage.setItem(SIDEBAR_KEY, open ? "open" : "closed");
+      } catch {
+        // It opens expanded next time.
+      }
+    },
+  };
   // Each page, and each document, opens at its top, not where the last one was left.
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -88,7 +111,7 @@ export function ReportView({
 
   if (!run) {
     return (
-      <SidebarProvider>
+      <SidebarProvider {...sidebar}>
         <AppSidebar report={null} page={page} switcher={switcher} />
         <SidebarInset className="min-w-0">
           <header className="sticky top-0 z-10 flex h-12 shrink-0 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur">
@@ -132,7 +155,7 @@ export function ReportView({
           open: (id) => onSelect({ collection: selection.collection, run: id }),
         }}
       >
-        <SidebarProvider>
+        <SidebarProvider {...sidebar}>
           <AppSidebar report={report} page={page} switcher={switcher} search={<GoTo report={report} />} />
           {/* min-w-0 lets the page shrink to the space beside the sidebar instead of widening to its widest chart. */}
           <SidebarInset className="min-w-0">

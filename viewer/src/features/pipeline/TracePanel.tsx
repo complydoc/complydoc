@@ -79,7 +79,10 @@ export function TracePanel({
     <aside
       aria-label="Trace"
       className={cn(
-        "fixed inset-y-0 right-0 z-30 flex w-full flex-col border-l bg-background shadow-2xl md:top-12",
+        "fixed inset-y-0 right-0 z-30 flex w-full flex-col border-l bg-background shadow-2xl",
+        // Beside the runs it sits under the app's bar; widened it takes the whole window, the
+        // bar and its sidebar toggle with it, as they act on what it hides.
+        !wide && "md:top-12",
         !wide && !width && "lg:w-[max(760px,calc(100vw-32rem))]",
         !wide && width && "lg:w-(--panel-width)",
       )}
