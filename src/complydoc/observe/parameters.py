@@ -33,7 +33,8 @@ _SKIP: Final = object()
 
 def parameters_of(component: Any) -> dict[str, Any]:
     """The component's settings that are plain values, by name, secrets left out."""
-    if component is None:
+    # A class method's component is the class, whose attributes are its code, not settings.
+    if component is None or isinstance(component, type):
         return {}
     fields = getattr(type(component), "model_fields", None)
     if isinstance(fields, dict):

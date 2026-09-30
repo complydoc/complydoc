@@ -58,6 +58,11 @@ docs-build: ## Build the documentation site the way CI does
 test: ## Run the test suite
 	$(PYTHON) pytest
 
+.PHONY: test-pipelines
+test-pipelines: ## Run real LangChain and LlamaIndex pipelines under cd.observe
+	uv sync --extra ocr --group dev --group integrations --group pipelines
+	$(PYTHON) pytest -q src/tests/test_real_pipelines.py src/tests/test_observe.py
+
 .PHONY: cov
 cov: ## Run the tests with a coverage report
 	$(PYTHON) pytest --cov=complydoc --cov-report=term-missing

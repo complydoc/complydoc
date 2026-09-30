@@ -114,6 +114,28 @@ jobs:
       - name: tests
         run: uv run pytest -q
 
+  test-pipelines:
+    name: tests with real ingestion pipelines
+    runs-on: ubuntu-latest
+    env:
+      FASTEMBED_CACHE_PATH: ~/.cache/fastembed
+      # Only where the repository has the secret: the test that calls OpenAI skips without it.
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: "3.12"
+      # The embedding model the pipelines run, downloaded once.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/fastembed
+          key: fastembed-bge-small-en-v1.5
+      - run: uv sync --extra ocr --group dev --group integrations --group pipelines
+      - name: tests
+        run: uv run pytest -q src/tests/test_real_pipelines.py src/tests/test_observe.py
+
   fixtures:
     name: fixtures match their generator
     runs-on: ubuntu-latest

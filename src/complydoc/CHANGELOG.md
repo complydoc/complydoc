@@ -7,7 +7,29 @@ separately.
 
 ## [Unreleased]
 
+### Added
+
+- Tests that run real ingestion pipelines under `cd.observe`, `make test-pipelines`: LangChain
+  into Chroma and FAISS, and a LlamaIndex `IngestionPipeline` into Chroma, with local
+  embedding models, on the sample documents. One more calls OpenAI where
+  `OPENAI_API_KEY` is set.
+
+### Changed
+
+- The viewer's Runs page is gone. The Traces page, as the sidebar now names it, lists
+  every run of the folder or pipeline: a run with a trace opens it beside the list, a
+  chunks run opens on Chunks and a loader comparison on Documents.
+- The loading plan's pickers show only on Home, Documents and Cost & time, the pages
+  whose figures they price. The Documents table leaves out the agreement and time
+  columns where no document has them.
+
 ### Fixed
+
+- A vector store built by a class method, such as `FAISS.from_documents`, is a step of
+  the trace. FAISS builds its index without calling `add_texts`, so it was missing.
+- LlamaIndex's embedding step is followed back to its documents, though the texts it
+  sends carry each node's metadata before its text.
+- `run.summary()` counts a splitter's output in chunks, not documents.
 
 - A trace recorded where no name model is installed no longer claims names were looked
   for. Its steps are marked as read by patterns alone, and the trace names what it could

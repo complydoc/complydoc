@@ -100,6 +100,16 @@ dev = [
     "types-pyyaml>=6.0",
     "cyclonedx-bom>=7.3.1",
 ]
+pipelines = [
+    "chromadb>=1.0",
+    "faiss-cpu>=1.8",
+    "fastembed>=0.5",
+    "langchain-chroma>=0.2",
+    "langchain-openai>=0.3",
+    "llama-index-embeddings-fastembed>=0.3",
+    "llama-index-readers-file>=0.4",
+    "llama-index-vector-stores-chroma>=0.4",
+]
 
 [build-system]
 requires = ["hatchling"]

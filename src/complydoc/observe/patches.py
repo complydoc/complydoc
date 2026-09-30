@@ -46,6 +46,10 @@ _INPUT: Final = {
     "aadd_texts": "texts",
     "add": "nodes",
     "async_add": "nodes",
+    "from_documents": "documents",
+    "afrom_documents": "documents",
+    "from_texts": "texts",
+    "afrom_texts": "texts",
 }
 """The argument holding what a method is given, by method."""
 
@@ -96,7 +100,18 @@ _TARGETS: Final = (
     _Target(
         "langchain_core.vectorstores.base",
         "VectorStore",
-        ("add_documents", "aadd_documents", "add_texts", "aadd_texts"),
+        # The class methods build a store from documents, and many never call `add_texts`:
+        # FAISS makes its index directly.
+        (
+            "add_documents",
+            "aadd_documents",
+            "add_texts",
+            "aadd_texts",
+            "from_documents",
+            "afrom_documents",
+            "from_texts",
+            "afrom_texts",
+        ),
         "store",
         "langchain-core",
     ),
@@ -171,6 +186,12 @@ def install() -> dict[str, str]:
                 continue
             for method in target.methods:
                 original = cls.__dict__.get(method)
+                if isinstance(original, classmethod) and _wrappable(original.__func__):
+                    # Called on the class: the class is the component.
+                    wrapped: Any = classmethod(_observed(original.__func__, method, kind_of))
+                    setattr(cls, method, wrapped)
+                    _installed.append((cls, method, original))
+                    continue
                 if not _wrappable(original):
                     continue
                 setattr(cls, method, _observed(original, method, kind_of))
@@ -234,8 +255,12 @@ def _observed(original: Any, method: str, kind_of: Callable[[Any], str]) -> Any:
     """`original`, recording a stage each time it is called in a block and not in a stage."""
 
     def begin(self: Any, args: tuple[Any, ...], kwargs: dict[str, Any]) -> Any:
-        module = type(self).__module__
-        return session.begin(kind_of(self), self, module, method, _inputs(method, args, kwargs))
+        # A class method's `self` is the class: it names the step, not its metaclass.
+        on_class = isinstance(self, type)
+        module = self.__module__ if on_class else type(self).__module__
+        label = self.__name__ if on_class else None
+        inputs = _inputs(method, args, kwargs)
+        return session.begin(kind_of(self), self, module, method, inputs, label=label)
 
     if inspect.isasyncgenfunction(original):
 

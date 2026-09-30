@@ -346,7 +346,7 @@ def _followed(
     passed = _contents(recording.inputs if sends else recording.outputs)
     items = []
     for text, metadata in passed:
-        source = _source(metadata, context.root) or context.origin.get(text)
+        source = _source(metadata, context.root) or _origin(text, context.origin)
         if source:
             context.origin.setdefault(text, source)
         items.append((text, source))
@@ -368,6 +368,26 @@ def _followed(
         warnings=warnings,
         traceback=_traceback(recording.traceback, context) if recording.traceback else None,
     )
+
+
+_PREFIXES = 5
+"""Blank lines looked past for a text that was sent with its metadata written before it."""
+
+
+def _origin(text: str, origin: dict[str, str]) -> str | None:
+    """The document a bare text came from. LlamaIndex sends each node's metadata, then a
+    blank line, then its text: the node is found by what follows the blank line."""
+    if text in origin:
+        return origin[text]
+    at = 0
+    for _ in range(_PREFIXES):
+        at = text.find("\n\n", at)
+        if at < 0:
+            return None
+        at += 2
+        if text[at:] in origin:
+            return origin[text[at:]]
+    return None
 
 
 def _documents(
@@ -692,7 +712,8 @@ def summary_lines(observation: Observation) -> list[str]:
         elif first.kind == "store":
             parts.append(f"{count(sum(s.documents_in or 0 for s in group), 'document')} stored")
         elif first.documents_out is not None:
-            parts.append(count(sum(s.documents_out or 0 for s in group), "document"))
+            noun = "chunk" if first.kind == "split" else "document"
+            parts.append(count(sum(s.documents_out or 0 for s in group), noun))
         if first.scanned != "off":
             found = {i.fingerprint for s in group for i in s.identifiers}
             parts.append(count(len(found), "identifier"))

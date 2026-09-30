@@ -381,3 +381,22 @@ def test_names_a_run_could_not_look_for_are_said_not_masked(tmp_path: Path) -> N
     statement = observation.report.limitations[0].statement
     assert "neither counted nor masked" in statement
     assert "Not looked for" in observation.summary()
+
+
+def test_a_store_built_by_a_class_method_is_a_stage(tmp_path: Path) -> None:
+    from langchain_core.vectorstores import InMemoryVectorStore
+
+    splitter = RecursiveCharacterTextSplitter(chunk_size=120, chunk_overlap=0)
+    with cd.observe("built", out=None) as observation:
+        chunks = splitter.split_documents(_Loader(str(tmp_path / "contract.pdf")).load())
+        InMemoryVectorStore.from_documents(chunks, _Embeddings(size=8))
+    stages = observation.report.trace.stages
+    store = next(s for s in stages if s.kind == "store" and s.parent is None)
+    assert (store.component, store.method) == ("InMemoryVectorStore", "from_documents")
+    assert store.documents_in == len(chunks) and store.parameters == {}
+    # What it ran inside, down to the embedding call, is part of it.
+    below = {store.index}
+    for stage in stages:
+        if stage.parent in below:
+            below.add(stage.index)
+    assert any(s.kind == "embed" and s.index in below for s in stages)
