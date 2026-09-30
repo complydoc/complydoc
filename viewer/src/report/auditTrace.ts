@@ -127,6 +127,13 @@ function auditTrace(report: Report): Trace | null {
         usd_basis: usd ? "estimated" : null,
       });
     }
+    // A document spans all its steps. A loader comparison times each loader on its own and
+    // the document by its first reading alone, so the steps can run past that time.
+    const whole = stages[parent];
+    if (whole && at - start > whole.seconds) {
+      stages[parent] = { ...whole, seconds: at - start };
+      cursor = Math.max(cursor, at);
+    }
   }
   return {
     name: report.run.target.split(/[\\/]/).filter(Boolean).pop() ?? report.run.target,

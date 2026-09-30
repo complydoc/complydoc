@@ -119,10 +119,8 @@ export function PipelineCompare({ older, newer }: { older: Loaded; newer: Loaded
             return (
               <TableRow key={index} className={cn(pair.changed.length > 0 && "bg-warning/5")}>
                 <TableCell>
-                  <span className="flex items-center gap-2">
-                    <span className={cn("rounded-md px-1.5 py-0.5 text-xs font-medium ring-1", kind.pill)}>
-                      {kind.label}
-                    </span>
+                  <span className="flex items-center gap-2" title={kind.label}>
+                    <kind.icon className={cn("size-4 shrink-0", kind.tone)} aria-label={kind.label} />
                     <span className="font-medium">{step.component}</span>
                   </span>
                 </TableCell>

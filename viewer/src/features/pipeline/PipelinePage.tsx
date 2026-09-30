@@ -13,15 +13,15 @@ import { spansOf, traceSpan, traceTotals, visibleSpans, type Span } from "@/repo
 import { changeBetween, stepsOf } from "@/report/traceView";
 import type { Report } from "@/report/types";
 import { SpanDetail } from "./SpanDetail";
-import { SpanTree } from "./SpanTree";
-import { TimeSplit } from "./TimeSplit";
 import { ValueTrail } from "./ValueTrail";
+import { Waterfall } from "./Waterfall";
 
+/** One of the run's figures in the strip across the top: a label over its value. */
 function Figure({ label, children, tone }: { label: string; children: ReactNode; tone?: string }) {
   return (
-    <div className="flex flex-col">
-      <span className="text-xs text-muted-foreground">{label}</span>
-      <span className={cn("text-sm font-medium tabular-nums", tone)}>{children}</span>
+    <div className="flex min-w-0 flex-col gap-0.5 px-4 py-2.5 first:pl-0">
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className={cn("text-sm font-medium whitespace-nowrap tabular-nums", tone)}>{children}</dd>
     </div>
   );
 }
@@ -75,43 +75,55 @@ export function PipelinePage({ report }: { report: Report }) {
 
   return (
     <div className="flex flex-col gap-4 lg:h-[calc(100svh-6rem)]">
-      <header aria-label="The run" className="flex flex-wrap items-end gap-x-6 gap-y-3">
-        <div className="flex min-w-0 flex-col">
-          <h1 className="truncate font-heading text-xl font-semibold tracking-tight">{trace.name}</h1>
-          <span className="text-sm text-muted-foreground">
-            {formatDate(report.run.started_at)} ·{" "}
-            {audit ? plural(report.documents.length, "document") : plural(steps.length, "step")}
-          </span>
+      <header aria-label="The run" className="flex flex-col gap-3">
+        <div className="flex items-start gap-4">
+          <div className="flex min-w-0 flex-col">
+            <h1 className="truncate font-heading text-xl font-semibold tracking-tight">{trace.name}</h1>
+            <span className="text-sm text-muted-foreground">
+              {formatDate(report.run.started_at)} ·{" "}
+              {audit ? plural(report.documents.length, "document") : plural(steps.length, "step")}
+            </span>
+          </div>
+          {!audit && (
+            <ToggleGroup
+              type="single"
+              variant="outline"
+              size="sm"
+              className="ml-auto"
+              value={view === "identifiers" ? "identifiers" : "trace"}
+              onValueChange={(next) => next && setView(next === "trace" ? null : next)}
+              aria-label="View"
+            >
+              <ToggleGroupItem value="trace">Trace</ToggleGroupItem>
+              <ToggleGroupItem value="identifiers">Identifiers</ToggleGroupItem>
+            </ToggleGroup>
+          )}
         </div>
-        <Figure label="Took">{formatSeconds(totals.seconds)}</Figure>
-        <TimeSplit trace={trace} />
-        {totals.tokensEmbedded !== null && (
-          <Figure label="Tokens embedded">{formatCount(totals.tokensEmbedded)}</Figure>
-        )}
-        {(totals.usd !== null || totals.unpriced) && (
-          <Figure label="Cost">{totals.usd !== null ? formatUsd(totals.usd) : "not priced"}</Figure>
-        )}
-        {totals.hosts.length > 0 && <Figure label="Sent to">{totals.hosts.join(", ")}</Figure>}
-        {totals.identifiersSent !== null && totals.hosts.length > 0 && (
-          <Figure label="Identifiers sent" tone={totals.identifiersSent > 0 ? "text-destructive" : "text-success"}>
-            {formatCount(totals.identifiersSent)}
+        <dl className="flex flex-wrap divide-x">
+          <Figure label="Duration">
+            {formatSeconds(totals.seconds)}
+            {!audit && trace.overhead_seconds > 0 && (
+              <span
+                className="ml-1.5 text-xs font-normal text-muted-foreground"
+                title="What complydoc spent afterwards, auditing what the run read"
+              >
+                + {formatSeconds(trace.overhead_seconds)} observing
+              </span>
+            )}
           </Figure>
-        )}
-        {!audit && <Figure label="Observing took">{formatSeconds(trace.overhead_seconds)}</Figure>}
-        {!audit && (
-          <ToggleGroup
-            type="single"
-            variant="outline"
-            size="sm"
-            className="ml-auto"
-            value={view === "identifiers" ? "identifiers" : "trace"}
-            onValueChange={(next) => next && setView(next === "trace" ? null : next)}
-            aria-label="View"
-          >
-            <ToggleGroupItem value="trace">Trace</ToggleGroupItem>
-            <ToggleGroupItem value="identifiers">Identifiers</ToggleGroupItem>
-          </ToggleGroup>
-        )}
+          {totals.tokensEmbedded !== null && (
+            <Figure label="Tokens embedded">{formatCount(totals.tokensEmbedded)}</Figure>
+          )}
+          {(totals.usd !== null || totals.unpriced) && (
+            <Figure label="Cost">{totals.usd !== null ? formatUsd(totals.usd) : "not priced"}</Figure>
+          )}
+          {totals.hosts.length > 0 && <Figure label="Sent to">{totals.hosts.join(", ")}</Figure>}
+          {totals.identifiersSent !== null && totals.hosts.length > 0 && (
+            <Figure label="Identifiers sent" tone={totals.identifiersSent > 0 ? "text-destructive" : "text-success"}>
+              {formatCount(totals.identifiersSent)}
+            </Figure>
+          )}
+        </dl>
       </header>
 
       {trace.error && (
@@ -126,8 +138,8 @@ export function PipelinePage({ report }: { report: Report }) {
         <ValueTrail steps={steps} selected={at} />
       ) : (
         <div className="flex min-h-[32rem] flex-1 flex-col overflow-hidden rounded-xl border bg-card lg:min-h-0 lg:flex-row">
-          <div className="flex max-h-80 min-h-0 flex-col border-b lg:max-h-none lg:w-[28rem] lg:shrink-0 lg:border-r lg:border-b-0">
-            <SpanTree
+          <div className="flex max-h-96 min-h-0 flex-col border-b lg:max-h-none lg:w-[56%] lg:shrink-0 lg:border-r lg:border-b-0">
+            <Waterfall
               roots={roots}
               selected={span.stage.index}
               onSelect={(index) => setSpan(String(index))}
@@ -137,7 +149,6 @@ export function PipelinePage({ report }: { report: Report }) {
           <SpanDetail
             key={span.stage.index}
             span={span}
-            total={traceSpan(trace)}
             from={at > 0 && before && span.stage.parent == null ? before.component : null}
             change={change}
             onNext={next === undefined ? null : () => setSpan(String(next))}

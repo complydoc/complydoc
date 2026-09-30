@@ -72,7 +72,7 @@ describe("PipelinePage", () => {
     const report = sampleAudit();
     renderPage(<PipelinePage report={report} />);
     expect(screen.getByRole("banner", { name: "The run" })).toHaveTextContent(`${report.documents.length} documents`);
-    expect(screen.getByRole("group", { name: "Where the time went" })).toBeInTheDocument();
+    expect(screen.getByRole("tree", { name: "Calls" })).toBeInTheDocument();
   });
 
   it("says a run with nothing to trace has none, and how to record one", () => {
