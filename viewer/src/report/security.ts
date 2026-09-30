@@ -1,6 +1,6 @@
 /** What the documents carry that should not leave, arranged for the Security page. */
 import { EVIDENCE, SEVERITIES } from "./select";
-import type { Evidence, Report, SensitiveMatch, Severity } from "./types";
+import type { ContentFinding, Evidence, Report, SensitiveMatch, Severity } from "./types";
 
 export interface FindingRow {
   id: string;
@@ -61,8 +61,23 @@ export function severityByDocument(report: Report): ({ path: string } & Severity
     .sort((a, b) => b.high + b.medium + b.low - (a.high + a.medium + a.low));
 }
 
+/** Whether a passage reads as an instruction to a model, or is only text kept from a reader. */
+export function isInstruction(finding: ContentFinding): boolean {
+  if (finding.instruction !== undefined) return finding.instruction !== "none";
+  return finding.instruction_reasons.length > 0;
+}
+
+/** What a hidden-content finding is called: text hidden from a reader is not an instruction. */
+export function contentLabel(finding: ContentFinding): string {
+  if (!isInstruction(finding)) return "Hidden text";
+  return finding.visibility === "visible" ? "Instruction-like passage" : "Hidden instruction";
+}
+
 export interface HiddenInstruction {
   id: string;
+  /** "Hidden instruction", "Instruction-like passage" or "Hidden text". */
+  label: string;
+  instruction: boolean;
   /** Position among the document's hidden instructions. */
   finding: number;
   document: number;
@@ -75,11 +90,16 @@ export interface HiddenInstruction {
   fingerprint?: string | undefined;
 }
 
-/** Passages written for a model and hidden from a person, where they are and why each was flagged. */
+/**
+ * Passages hidden from a person, and passages written for a model, where they are and why
+ * each was flagged: the instructions first.
+ */
 export function hiddenInstructions(report: Report): HiddenInstruction[] {
-  return report.documents.flatMap((document, index) =>
+  const all = report.documents.flatMap((document, index) =>
     document.content_findings.map((finding, position) => ({
       id: `${index}-${position}`,
+      label: contentLabel(finding),
+      instruction: isInstruction(finding),
       finding: position,
       document: index,
       path: document.relative_path,
@@ -91,6 +111,7 @@ export function hiddenInstructions(report: Report): HiddenInstruction[] {
       fingerprint: finding.fingerprint,
     })),
   );
+  return [...all.filter((f) => f.instruction), ...all.filter((f) => !f.instruction)];
 }
 
 /** How many findings rest on each kind of evidence, strongest first. */

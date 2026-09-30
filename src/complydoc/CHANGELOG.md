@@ -42,6 +42,13 @@ separately.
 
 ### Fixed
 
+- A line set too long for its page, whose end runs past the margin, was reported as
+  hidden text, once for every such line: a real corpus had 376 of them. It is reported
+  now only if what runs off the page reads as an instruction. Text placed off the page
+  on its own is reported as before.
+- The viewer called every hidden passage a "hidden instruction". A passage hidden from a
+  reader that does not address a model is "hidden text" now, counted apart from the
+  instructions on Home and Security, and ranked below them among the documents to look at.
 - `complydoc ui` could run out of memory on a large report: each request for its ignore or
   concepts file parsed the whole report again, and they came in together. The server now
   parses a report once per version of the file, one report at a time, streams it rather

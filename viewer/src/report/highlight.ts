@@ -1,3 +1,4 @@
+import { contentLabel } from "./security";
 /**
  * A finding shown where it sits: which page, what to mark in the text, and
  * which box to mark on the page picture.
@@ -46,7 +47,7 @@ export function findingHighlight(document: DocumentEntry, ref: FindingRef): High
     page: finding.page,
     needle: finding.excerpt.slice(0, PASSAGE_START),
     box: null,
-    label: "Hidden instruction",
+    label: contentLabel(finding),
     severity: finding.severity,
     evidence: null,
     match: null,

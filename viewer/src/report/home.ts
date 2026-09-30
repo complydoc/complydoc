@@ -3,7 +3,7 @@
  * the documents worth opening first, each with the reason it is there.
  */
 import { measured } from "./measured";
-import { findingRows, type FindingRow } from "./security";
+import { findingRows, isInstruction, type FindingRow } from "./security";
 import { bandOf, documentRows, documentVision, type Tone } from "./select";
 import type { Report } from "./types";
 
@@ -25,18 +25,25 @@ export interface AttentionRow {
  * The documents to open first, most to look at first.
  *
  * A hidden instruction outranks everything, then pages a vision model read
- * differently, then readers that disagree, then low readiness, then
- * high-severity identifiers. A document with none of these is not listed.
+ * differently, then readers that disagree, then text hidden from a reader, then low
+ * readiness, then high-severity identifiers. A document with none of these is not listed.
  */
 export function attentionDocuments(report: Report, limit = 6): AttentionRow[] {
   const rows = documentRows(report).map((row) => {
     const document = report.documents[row.index];
     const reasons: Reason[] = [];
     let weight = 0;
-    const hidden = document?.content_findings.length ?? 0;
+    const passages = document?.content_findings ?? [];
+    const hidden = passages.filter(isInstruction).length;
     if (hidden) {
       reasons.push({ label: hidden === 1 ? "hidden instruction" : `${hidden} hidden instructions`, tone: "bad" });
       weight += 16;
+    }
+    // Text hidden from a reader, with nothing in it addressed to a model: worth a look, not an alarm.
+    const hiddenText = passages.length - hidden;
+    if (hiddenText) {
+      reasons.push({ label: hiddenText === 1 ? "hidden text" : `${hiddenText} passages of hidden text`, tone: "warn" });
+      weight += 3;
     }
     const vision = document ? documentVision(document) : null;
     if (vision && vision.disagree > 0) {

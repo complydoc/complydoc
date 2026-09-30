@@ -1,3 +1,4 @@
+import { contentLabel } from "./security";
 /** What was found in a document, ignored or not, as the document view marks it in the text. */
 import type { FindingRef } from "./route";
 import type { DocumentEntry, Evidence, SensitiveMatch, Severity } from "./types";
@@ -55,7 +56,7 @@ export function documentFindings(document: DocumentEntry, unmasked: boolean): Pa
       key: `hidden-${index}`,
       ref: { kind: "hidden", index },
       fingerprint: finding.fingerprint,
-      label: "Hidden instruction",
+      label: contentLabel(finding),
       value: finding.excerpt,
       needle: start(finding.excerpt),
       kind: "hidden",
@@ -93,7 +94,7 @@ export function documentFindings(document: DocumentEntry, unmasked: boolean): Pa
       key: `ignored-${index}`,
       ref: null,
       fingerprint: ignored.fingerprint,
-      label: ignored.identifier?.label ?? "Hidden instruction",
+      label: ignored.identifier?.label ?? "Hidden text",
       value,
       needle: ignored.identifier ? value : start(value),
       kind: ignored.identifier ? "identifier" : "hidden",

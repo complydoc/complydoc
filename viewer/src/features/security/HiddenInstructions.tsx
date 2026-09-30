@@ -19,12 +19,12 @@ import type { HiddenInstruction } from "@/report/security";
 import { severityTone } from "@/report/select";
 import { IgnoreButton } from "./IgnoreButton";
 
-/** Each passage written for a model and hidden from a person: where, what it says, and why it was flagged. */
+/** Each passage hidden from a person or written for a model: what it is, where, what it says, and why it was flagged. */
 export function HiddenInstructions({ found }: { found: HiddenInstruction[] }) {
   const { shown, more, left } = useShown(found);
   return (
     <div className="flex flex-col gap-2">
-      <ItemGroup aria-label="Hidden instructions">
+      <ItemGroup aria-label="Hidden content">
         {shown.map((finding) => (
           <Item key={finding.id} role="listitem" variant="outline" className="bg-card">
             <ItemMedia variant="icon">
@@ -47,6 +47,7 @@ export function HiddenInstructions({ found }: { found: HiddenInstruction[] }) {
               <IgnoreButton fingerprint={finding.fingerprint} what="this passage" />
             </ItemActions>
             <ItemFooter className="flex-wrap justify-start gap-1.5">
+              <Badge variant={finding.instruction ? "destructive" : "secondary"}>{finding.label}</Badge>
               {finding.hiddenBy.map((reason) => (
                 <Badge key={reason} variant="destructive">
                   {reason}

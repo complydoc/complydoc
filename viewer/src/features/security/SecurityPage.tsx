@@ -94,7 +94,7 @@ export function SecurityPage({ report }: { report: Report }) {
               value={formatCount(aggregate.sensitive_by_severity[severity] ?? 0)}
             />
           ))}
-          <Stat label="Hidden instructions" value={formatCount(hidden.length)} />
+          <Stat label="Hidden instructions" value={formatCount(hidden.filter((f) => f.instruction).length)} />
           {ignored.length > 0 && <Stat label="Ignored" value={formatCount(ignored.length)} />}
         </StatGrid>
       </Section>
@@ -138,7 +138,7 @@ export function SecurityPage({ report }: { report: Report }) {
       </Section>
 
       {hidden.length > 0 && (
-        <Section title="Hidden instructions">
+        <Section title={hidden.some((f) => !f.instruction) ? "Hidden instructions and text" : "Hidden instructions"}>
           <HiddenInstructions found={hidden} />
         </Section>
       )}

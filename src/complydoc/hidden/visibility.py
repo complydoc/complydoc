@@ -138,7 +138,7 @@ def _page_runs(page: Any, number: int, config: VisibilityConfig) -> list[HiddenR
 
             outside = x1 <= left or x0 >= right or y1 <= bottom or y0 >= top
             if outside:
-                reasons.append("outside the visible page area")
+                reasons.append(_OUTSIDE)
                 confirming = True
 
             size = raw.FPDFText_GetFontSize(textpage.raw, i)
@@ -192,6 +192,25 @@ def _page_runs(page: Any, number: int, config: VisibilityConfig) -> list[HiddenR
             textpage.close()
 
 
+_OUTSIDE = "outside the visible page area"
+
+
+def _overflows(glyphs: list[Glyph], start: int, reasons: list[str]) -> bool:
+    """Whether a run is the end of a visible line that ran past the page's edge.
+
+    A line set too long for its page carries on beyond the margin: the words are off the
+    page, but nobody hid them. Text placed off the page on its own is another matter.
+    """
+    if reasons != [_OUTSIDE]:
+        return False
+    for glyph in reversed(glyphs[:start]):
+        if glyph.newline:
+            return False
+        if not glyph.space:
+            return not glyph.hidden
+    return False
+
+
 def runs_from_chars(
     glyphs: list[Glyph], page: int | None, config: VisibilityConfig
 ) -> list[HiddenRun]:
@@ -234,12 +253,16 @@ def runs_from_chars(
         if letters >= config.min_characters and len(hidden) >= config.min_hidden_share * len(shown):
             tally = Counter(reason for glyph in hidden for reason in glyph.reasons)
             confirmed = sum(1 for glyph in hidden if glyph.confirming) * 2 >= len(hidden)
+            reasons = [reason for reason, _ in tally.most_common()]
             runs.append(
                 HiddenRun(
                     page=page,
                     text=" ".join("".join(glyph.char for glyph in members).split()),
                     visibility="confirmed" if confirmed else "suspected",
-                    reasons=[reason for reason, _ in tally.most_common()],
+                    reasons=reasons,
+                    # A line that ran off the page is layout, not hiding: worth a word only
+                    # if what is off the page reads as an instruction.
+                    only_if_instruction=_overflows(glyphs, start, reasons),
                 )
             )
         i = end + 1

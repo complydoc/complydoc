@@ -12,6 +12,7 @@ import { usePlan } from "@/hooks/usePlan";
 import { fileName, formatCount, formatPageUsd, formatSeconds, plural } from "@/report/format";
 import { attentionDocuments, topFindings } from "@/report/home";
 import { measured } from "@/report/measured";
+import { isInstruction } from "@/report/security";
 import { documentTotals, reportTotals } from "@/report/plan";
 import { documentHref } from "@/report/route";
 import type { Report } from "@/report/types";
@@ -57,7 +58,10 @@ export function HomePage({ report }: { report: Report }) {
   const totals = reportTotals(report, plan);
   const findings = topFindings(report);
   const documents = attentionDocuments(report);
-  const hidden = report.aggregate.content_findings_total;
+  // Text hidden from a reader is worth a look; an instruction to a model is the finding.
+  const passages = report.documents.flatMap((document) => document.content_findings);
+  const hidden = passages.filter(isInstruction).length;
+  const hiddenText = passages.length - hidden;
   const scanned = measured(report, "sensitive");
   const priced = measured(report, "cost");
   const hasDocuments = measured(report, "documents");
@@ -91,7 +95,15 @@ export function HomePage({ report }: { report: Report }) {
           href="#security"
           label="Hidden instructions"
           value={scanned ? formatCount(hidden) : "—"}
-          note={!scanned ? NOT_IN_RUN : hidden ? "passages written for a model, not a reader" : "none found"}
+          note={
+            !scanned
+              ? NOT_IN_RUN
+              : hidden
+                ? "passages written for a model, not a reader"
+                : hiddenText
+                  ? `none; ${plural(hiddenText, "passage")} of hidden text`
+                  : "none found"
+          }
         />
         <LinkStat
           href="#cost"

@@ -172,6 +172,10 @@ export interface ContentFinding {
   excerpt: string;
   page: number | null;
   severity: Severity;
+  /** How the passage was judged to address a model: `none` where it does not read as an instruction. */
+  instruction?: "none" | "pattern" | "model" | "confirmed";
+  /** `visible`, or hidden: `suspected` or `confirmed`. */
+  visibility?: "visible" | "suspected" | "confirmed";
   hidden_reasons: string[];
   instruction_reasons: string[];
   /** Schema 17: the same for this passage in every run; what an ignore names. */

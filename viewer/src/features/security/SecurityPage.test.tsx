@@ -20,10 +20,24 @@ describe("SecurityPage", () => {
 
   it("quotes each hidden instruction with where it is and why it was flagged", () => {
     render(<SecurityPage report={sampleAudit()} />);
-    const hidden = screen.getByRole("list", { name: "Hidden instructions" });
+    const hidden = screen.getByRole("list", { name: "Hidden content" });
     expect(within(hidden).getAllByRole("listitem")).toHaveLength(1);
+    // It addresses a model, so it is named an instruction, not merely hidden text.
+    expect(within(hidden).getByText("Hidden instruction")).toBeInTheDocument();
     expect(within(hidden).getAllByText("white text").length).toBeGreaterThan(0);
     expect(within(hidden).getAllByText("addresses an AI model directly").length).toBeGreaterThan(0);
+  });
+
+  it("names text hidden from a reader as hidden text, not an instruction", () => {
+    const report = sampleAudit();
+    const document = report.documents.find((d) => d.content_findings.length > 0);
+    const passage = document?.content_findings[0];
+    if (!document || !passage) throw new Error("the sample has a hidden passage");
+    document.content_findings = [{ ...passage, excerpt: "ices", instruction: "none", instruction_reasons: [] }];
+    render(<SecurityPage report={report} />);
+    const hidden = screen.getByRole("list", { name: "Hidden content" });
+    expect(within(hidden).getByText("Hidden text")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Hidden instructions and text" })).toBeInTheDocument();
   });
 
   it("lists every finding masked, each linking to its document", () => {
