@@ -46,8 +46,9 @@ export function inputLines(stage: TraceStage, from: string | null): string[] {
   }
   if (stage.kind === "run")
     return [`pipeline: ${scalar(stage.component)}`, `steps: ${scalar(stage.parameters.steps as number)}`];
-  if (stage.kind === "embed" && stage.previews?.length) {
-    return [`texts: ${scalar(stage.documents_in)}`, ...(stage.previews ?? []).flatMap(preview)];
+  if ((stage.kind === "embed" || stage.kind === "store") && stage.previews?.length) {
+    const unit = stage.kind === "embed" ? "texts" : "documents";
+    return [`${unit}: ${scalar(stage.documents_in)}`, ...(stage.previews ?? []).flatMap(preview)];
   }
   if (stage.documents_in === null) {
     // A loader is given no documents: what it reads is named in its settings.
@@ -79,6 +80,11 @@ export function outputLines(stage: TraceStage): string[] {
     return [
       `vectors: ${scalar(stage.vectors)}`,
       ...(stage.dimensions !== null ? [`dimensions: ${stage.dimensions}`] : []),
+    ];
+  if (stage.kind === "store")
+    return [
+      `stored: ${scalar(stage.vectors ?? stage.documents_in)}`,
+      ...(stage.metadata_keys.length ? [`metadata kept: ${stage.metadata_keys.map(scalar).join(", ")}`] : []),
     ];
   const unit = stage.kind === "split" ? "chunks" : stage.kind === "document" ? "pages" : "documents";
   const head = [

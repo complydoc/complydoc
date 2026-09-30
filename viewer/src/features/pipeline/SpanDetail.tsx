@@ -1,14 +1,17 @@
-import { ArrowDownIcon, FileTextIcon } from "lucide-react";
+import { ArrowDownIcon, FileTextIcon, TriangleAlertIcon } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { CodeBlock } from "@/components/CodeBlock";
 import { SeverityIcon } from "@/components/LevelIcons";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import type { ChunkRun } from "@/report/chunkTypes";
+import { fileName } from "@/report/format";
 import { documentHref } from "@/report/route";
 import type { Span } from "@/report/traceTree";
 import type { TraceStage } from "@/report/traceTypes";
 import type { Change } from "@/report/traceView";
 import { inputLines, outputLines } from "@/report/traceYaml";
+import { ChunkSpread } from "./ChunkSpread";
 import { KIND } from "./kinds";
 import { Details, Facts } from "./SpanFigures";
 
@@ -49,6 +52,35 @@ function Identifiers({ stage }: { stage: TraceStage }) {
   );
 }
 
+/** Documents a warning names before the rest are counted. */
+const NAMED = 3;
+
+function Warnings({ stage }: { stage: TraceStage }) {
+  const warnings = stage.warnings ?? [];
+  if (warnings.length === 0) return null;
+  return (
+    <ul
+      aria-label="Warnings"
+      className="flex flex-col gap-1.5 rounded-lg border border-warning/30 bg-warning/5 px-3 py-2"
+    >
+      {warnings.map((w, i) => (
+        <li key={`${w.code}-${i}`} className="flex items-start gap-2 text-sm">
+          <TriangleAlertIcon className="mt-0.5 size-3.5 shrink-0 text-warning" />
+          <span className="min-w-0">
+            {w.message}
+            {w.sources.length > 0 && (
+              <span className="block truncate text-xs text-muted-foreground">
+                {w.sources.slice(0, NAMED).map(fileName).join(", ")}
+                {w.sources.length > NAMED && ` and ${w.sources.length - NAMED} more`}
+              </span>
+            )}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 /**
  * The call picked: what it is and where it comes from, its figures, then what it was given
  * and what it passed on, the identifiers in that, how it was set, and everything else
@@ -60,8 +92,11 @@ export function SpanDetail({
   change,
   onNext,
   document = null,
+  chunks = null,
 }: {
   span: Span;
+  /** For a split, the chunks it made, as the report inspected them. */
+  chunks?: ChunkRun | null;
   /** The report's document this call read, where it read one, to open it. */
   document?: number | null;
   /** The step before, whose output this step was given, where it follows one. */
@@ -81,6 +116,15 @@ export function SpanDetail({
   const panels: Record<Tab, ReactNode> = {
     run: (
       <div className="flex flex-col gap-4">
+        {stage.traceback && (
+          <CodeBlock
+            title="Traceback"
+            lines={stage.traceback.split("\n")}
+            footer="Paths shortened, identifiers masked"
+            collapsible
+          />
+        )}
+        {chunks && <ChunkSpread run={chunks} />}
         <CodeBlock title="Input" lines={inputLines(stage, from)} footer="YAML" collapsible />
         <CodeBlock
           title="Output"
@@ -130,6 +174,7 @@ export function SpanDetail({
             </Button>
           )}
         </div>
+        <Warnings stage={stage} />
         <Facts stage={stage} />
         <div role="tablist" aria-label="About this call" className="flex gap-5 border-b">
           {tabs.map((t) => (

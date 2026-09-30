@@ -1,5 +1,5 @@
 import { createColumnHelper } from "@tanstack/react-table";
-import { CircleCheckIcon, CircleXIcon } from "lucide-react";
+import { CircleCheckIcon, CircleXIcon, TriangleAlertIcon } from "lucide-react";
 import { DataTable, type Columns } from "@/components/DataTable";
 import { cn } from "@/lib/utils";
 import type { Loaded } from "@/report/collections";
@@ -21,6 +21,7 @@ interface Row {
   started: string;
   steps: string;
   seconds: number;
+  warnings: number;
   tokens: number | null;
   usd: number | null;
   hosts: string;
@@ -36,6 +37,7 @@ function rowOf({ run, trace }: TracedRun): Row {
     steps:
       trace.kind === "audit" ? plural(run.report.documents.length, "document") : plural(stepsOf(trace).length, "step"),
     seconds: totals.seconds,
+    warnings: trace.stages.reduce((sum, s) => sum + (s.warnings?.length ?? 0), 0),
     tokens: totals.tokensEmbedded,
     usd: totals.usd,
     hosts: totals.hosts.join(", "),
@@ -72,6 +74,23 @@ function columnsFor(rows: Row[]): Columns<Row> {
       cell: (c) => formatSeconds(c.getValue()),
       meta: { numeric: true },
     }),
+    ...(any((r) => r.warnings > 0)
+      ? [
+          column.accessor("warnings", {
+            header: "Warnings",
+            cell: (c) =>
+              c.getValue() > 0 ? (
+                <span className="inline-flex items-center gap-1 text-warning">
+                  <TriangleAlertIcon className="size-3.5" />
+                  {formatCount(c.getValue())}
+                </span>
+              ) : (
+                <span className="text-muted-foreground">0</span>
+              ),
+            meta: { numeric: true },
+          }),
+        ]
+      : []),
     ...(any((r) => r.tokens !== null)
       ? [
           column.accessor("tokens", {

@@ -1,4 +1,4 @@
-import { ChevronRightIcon } from "lucide-react";
+import { ChevronRightIcon, TriangleAlertIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fileName, formatSeconds, formatUsd, plural } from "@/report/format";
 import type { Span } from "@/report/traceTree";
@@ -132,7 +132,10 @@ export function WaterfallRow({
       aria-expanded={parent ? !folded : undefined}
       data-span={stage.index}
       onClick={onSelect}
-      title={span.label ? `${stage.component} · ${span.label}` : stage.component}
+      title={[
+        span.label ? `${stage.component} · ${span.label}` : stage.component,
+        ...(stage.warnings ?? []).map((w) => `⚠ ${w.message}`),
+      ].join("\n")}
       className={cn(
         COLUMNS,
         "relative h-8 cursor-default items-center text-sm select-none hover:bg-muted/50",
@@ -163,6 +166,12 @@ export function WaterfallRow({
         )}
         <kind.icon className={cn("size-3.5 shrink-0", kind.tone)} aria-label={kind.label} />
         <span className={cn("min-w-0 truncate", span.depth === 0 && "font-medium")}>{name}</span>
+        {(stage.warnings?.length ?? 0) > 0 && (
+          <TriangleAlertIcon
+            className="size-3.5 shrink-0 text-warning"
+            aria-label={`${stage.warnings?.length} warnings`}
+          />
+        )}
         {aside && (
           // Only where the column has room for it, rather than cut to a stub; the row's tooltip
           // and the call's panel name it either way.

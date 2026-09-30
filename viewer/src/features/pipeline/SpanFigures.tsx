@@ -8,9 +8,11 @@ import type { Change } from "@/report/traceView";
 const units = (stage: TraceStage): [string, string] =>
   stage.kind === "embed"
     ? ["text", "vector"]
-    : stage.kind === "split"
-      ? ["document", "chunk"]
-      : ["document", "document"];
+    : stage.kind === "store"
+      ? ["document", "vector"]
+      : stage.kind === "split"
+        ? ["document", "chunk"]
+        : ["document", "document"];
 
 function cost(stage: TraceStage): ReactNode {
   if (stage.usd_basis === "local") return <span className="text-muted-foreground">ran here</span>;
@@ -33,7 +35,7 @@ function Fact({ label, children, tone }: { label: string; children: ReactNode; t
  */
 export function Facts({ stage }: { stage: TraceStage }) {
   const [inUnit, outUnit] = units(stage);
-  const out = stage.kind === "embed" ? stage.vectors : stage.documents_out;
+  const out = stage.kind === "embed" || stage.kind === "store" ? stage.vectors : stage.documents_out;
   const spent = cost(stage);
   const high = stage.identifiers.some((i) => i.severity === "high");
   return (

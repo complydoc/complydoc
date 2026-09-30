@@ -146,7 +146,7 @@ export function changeBetween(before: Step, after: Step): Change {
   const both = (identifier: StageIdentifier) => couldSee(before, identifier) && couldSee(after, identifier);
   const had = new Set(before.identifiers.map((i) => i.fingerprint));
   const has = new Set(after.identifiers.map((i) => i.fingerprint));
-  const passedOn = after.kind === "embed" ? after.charactersIn : after.charactersOut;
+  const passedOn = after.kind === "embed" || after.kind === "store" ? after.charactersIn : after.charactersOut;
   return {
     entered: after.identifiers.filter((i) => !had.has(i.fingerprint) && both(i)),
     left: before.identifiers.filter((i) => !has.has(i.fingerprint) && both(i)),

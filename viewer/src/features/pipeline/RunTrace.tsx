@@ -11,6 +11,7 @@ import { spansOf, traceSpan, traceTotals, visibleSpans, type Span } from "@/repo
 import { changeBetween, stepsOf } from "@/report/traceView";
 import type { Trace } from "@/report/traceTypes";
 import type { Report } from "@/report/types";
+import { DocumentJourney } from "./DocumentJourney";
 import { SpanDetail } from "./SpanDetail";
 import { ValueTrail } from "./ValueTrail";
 import { Waterfall } from "./Waterfall";
@@ -110,11 +111,12 @@ export function RunTrace({ report, trace }: { report: Report; trace: Trace }) {
             variant="outline"
             size="sm"
             className="ml-auto"
-            value={view === "identifiers" ? "identifiers" : "trace"}
+            value={view === "identifiers" || view === "documents" ? view : "trace"}
             onValueChange={(next) => next && setView(next === "trace" ? null : next)}
             aria-label="View"
           >
             <ToggleGroupItem value="trace">Trace</ToggleGroupItem>
+            <ToggleGroupItem value="documents">Documents</ToggleGroupItem>
             <ToggleGroupItem value="identifiers">Identifiers</ToggleGroupItem>
           </ToggleGroup>
         )}
@@ -130,6 +132,15 @@ export function RunTrace({ report, trace }: { report: Report; trace: Trace }) {
 
       {view === "identifiers" && !audit ? (
         <ValueTrail steps={steps} selected={at} />
+      ) : view === "documents" && !audit ? (
+        <DocumentJourney
+          trace={trace}
+          report={report}
+          onStep={(index) => {
+            setView(null);
+            setSpan(String(index));
+          }}
+        />
       ) : (
         <div className="flex min-h-[32rem] flex-1 flex-col overflow-hidden rounded-xl border bg-card lg:min-h-0 lg:flex-row">
           <div className="flex max-h-96 min-h-0 flex-col border-b lg:max-h-none lg:w-[54%] lg:shrink-0 lg:border-r lg:border-b-0">
@@ -147,6 +158,11 @@ export function RunTrace({ report, trace }: { report: Report; trace: Trace }) {
             change={change}
             onNext={next === undefined ? null : () => setSpan(String(next))}
             document={documentOf(report, span)}
+            chunks={
+              span.stage.chunks !== null && span.stage.chunks !== undefined
+                ? (report.chunks?.[span.stage.chunks] ?? null)
+                : null
+            }
           />
         </div>
       )}

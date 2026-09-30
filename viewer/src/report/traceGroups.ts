@@ -4,7 +4,7 @@
  * as a loader once a file, opening onto those calls.
  */
 import type { Span } from "./traceTree";
-import type { StageIdentifier, Trace, TraceStage } from "./traceTypes";
+import type { StageIdentifier, StageWarning, Trace, TraceStage } from "./traceTypes";
 
 const sum = (values: (number | null | undefined)[]): number | null => {
   const counted = values.filter((v): v is number => typeof v === "number");
@@ -41,11 +41,25 @@ function standIn(stages: TraceStage[], fields: Partial<TraceStage> & Pick<TraceS
     hosts: [...new Set(stages.flatMap((s) => s.hosts))],
     vectors: sum(stages.map((s) => s.vectors)),
     previews: [],
+    documents: [],
+    warnings: [],
+    traceback: null,
     finished: stages.every((s) => s.finished),
     error: stages.find((s) => s.error)?.error ?? null,
     parent: null,
     ...fields,
   };
+}
+
+/** The stages of `spans` and of every span inside them. */
+const within = (spans: Span[]): TraceStage[] => spans.flatMap((s) => [s.stage, ...within(s.children)]);
+
+/** What went wrong anywhere under a row the viewer made, said once each. */
+function warningsIn(spans: Span[]): StageWarning[] {
+  const seen = new Map<string, StageWarning>();
+  for (const stage of within(spans))
+    for (const warning of stage.warnings ?? []) seen.set(`${stage.index}:${warning.code}`, warning);
+  return [...seen.values()];
 }
 
 const deepen = (span: Span, depth: number): Span => ({
@@ -76,7 +90,12 @@ function steps(spans: Span[], next: () => number): Span[] {
     if (calls.length === 1) return first;
     const stage = standIn(
       calls.map((c) => c.stage),
-      { index: next(), method: "calls", parameters: { calls: calls.length, read: calls.map((c) => c.label) } },
+      {
+        index: next(),
+        method: "calls",
+        parameters: { calls: calls.length, read: calls.map((c) => c.label) },
+        warnings: warningsIn(calls),
+      },
     );
     return { stage, depth: 0, label: `${calls.length} calls`, children: calls };
   });
@@ -107,6 +126,7 @@ export function underRun(trace: Trace, spans: Span[]): Span[] {
     tokens_in: null,
     tokens_out: null,
     vectors: null,
+    warnings: warningsIn(spans),
   });
   return [deepen({ stage: root, depth: 0, label: "", children }, 0)];
 }

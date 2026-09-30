@@ -1,7 +1,8 @@
-import { ChevronsDownUpIcon, ChevronsUpDownIcon } from "lucide-react";
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { ChevronsDownUpIcon, ChevronsUpDownIcon, SearchIcon, ShieldAlertIcon, TriangleAlertIcon } from "lucide-react";
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { tickLabel, ticks } from "@/report/timeAxis";
+import { filterSpans, filtering, NO_FILTER, type SpanFilter } from "@/report/traceFilter";
 import { visibleSpans, type Span } from "@/report/traceTree";
 import { COLUMNS, Guides, INDENT, WaterfallRow } from "./WaterfallRow";
 
@@ -51,7 +52,38 @@ function Axis({ total, labels }: { total: number; labels?: boolean }) {
  * where it ran on the run's time axis and as long as it took, with how many identifiers it
  * passed on. Up and down, or J and K, move through the calls; left and right fold and unfold.
  */
-export function Waterfall({ roots, selected, onSelect, total }: WaterfallProps) {
+/** A filter's switch in the toolbar, lit while it is on. */
+function Only({
+  on,
+  onToggle,
+  label,
+  children,
+}: {
+  on: boolean;
+  onToggle: () => void;
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={on}
+      onClick={onToggle}
+      title={label}
+      className={cn(
+        "flex h-6 items-center gap-1 rounded-md border px-2 text-xs text-muted-foreground hover:text-foreground",
+        on && "border-foreground/30 bg-muted text-foreground",
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+export function Waterfall({ roots: tree, selected, onSelect, total }: WaterfallProps) {
+  const [filter, setFilter] = useState<SpanFilter>(NO_FILTER);
+  const narrowed = filtering(filter);
+  const roots = filterSpans(tree, filter);
   // A large run opens folded, a line a folder or call, so its shape can be seen at once.
   const parents = (() => {
     const all: Span[] = [];
@@ -59,7 +91,7 @@ export function Waterfall({ roots, selected, onSelect, total }: WaterfallProps) 
       all.push(span);
       span.children.forEach(walk);
     };
-    roots.forEach(walk);
+    tree.forEach(walk);
     // The run stays open whatever is folded: folded, it would leave one line.
     const folding = all.filter((s) => s.children.length > 0 && s.stage.kind !== "run");
     return { count: all.length, indexes: folding.map((s) => s.stage.index) };
@@ -70,7 +102,9 @@ export function Waterfall({ roots, selected, onSelect, total }: WaterfallProps) 
   const allFolded = parents.indexes.length > 0 && parents.indexes.every((index) => folded.has(index));
   // How many of a span's children are drawn, by span: a folder of a thousand draws a page.
   const [drawn, setDrawn] = useState<Map<number, number>>(() => new Map());
-  const rows = visibleSpans(roots, folded);
+  // What a filter found is shown whatever was folded.
+  const open = narrowed ? new Set<number>() : folded;
+  const rows = visibleSpans(roots, open);
   const list = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -91,7 +125,7 @@ export function Waterfall({ roots, selected, onSelect, total }: WaterfallProps) 
   const walk = (span: Span) => {
     lines.push({ span });
     span.children.forEach((child) => above.set(child.stage.index, span.stage.index));
-    if (span.children.length === 0 || folded.has(span.stage.index)) return;
+    if (span.children.length === 0 || open.has(span.stage.index)) return;
     const shown = drawn.get(span.stage.index) ?? PAGE;
     span.children.slice(0, shown).forEach(walk);
     if (span.children.length > shown)
@@ -115,10 +149,39 @@ export function Waterfall({ roots, selected, onSelect, total }: WaterfallProps) 
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex h-10 shrink-0 items-center gap-2 border-b px-3">
+        <label className="flex min-w-0 flex-1 items-center gap-2">
+          <SearchIcon className="size-3.5 shrink-0 text-muted-foreground" />
+          <input
+            type="search"
+            value={filter.query}
+            onChange={(event) => setFilter({ ...filter, query: event.target.value })}
+            placeholder="Search calls"
+            aria-label="Search calls"
+            className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+          />
+        </label>
+        <Only
+          on={filter.identifiers}
+          onToggle={() => setFilter({ ...filter, identifiers: !filter.identifiers })}
+          label="Only calls that passed on an identifier"
+        >
+          <ShieldAlertIcon className="size-3.5" />
+          Identifiers
+        </Only>
+        <Only
+          on={filter.problems}
+          onToggle={() => setFilter({ ...filter, problems: !filter.problems })}
+          label="Only calls with a warning or an error"
+        >
+          <TriangleAlertIcon className="size-3.5" />
+          Problems
+        </Only>
+      </div>
       <div className={cn(COLUMNS, "h-9 shrink-0 items-center border-b text-xs text-muted-foreground")}>
         <span className="flex items-center gap-1.5 pl-3">
           Step
-          {parents.indexes.length > 0 && (
+          {parents.indexes.length > 0 && !narrowed && (
             <button
               type="button"
               onClick={() => setFolded(allFolded ? new Set() : new Set(parents.indexes))}
@@ -152,6 +215,9 @@ export function Waterfall({ roots, selected, onSelect, total }: WaterfallProps) 
               <Axis total={total} />
             </div>
           </div>
+          {narrowed && lines.length === 0 && (
+            <p className="px-3 py-6 text-center text-sm text-muted-foreground">No call matches.</p>
+          )}
           {lines.map((line) =>
             "span" in line ? (
               <WaterfallRow
@@ -159,7 +225,7 @@ export function Waterfall({ roots, selected, onSelect, total }: WaterfallProps) 
                 span={line.span}
                 total={total}
                 selected={line.span.stage.index === selected}
-                folded={folded.has(line.span.stage.index)}
+                folded={open.has(line.span.stage.index)}
                 onSelect={() => onSelect(line.span.stage.index)}
                 onFold={() => fold(line.span.stage.index)}
               />

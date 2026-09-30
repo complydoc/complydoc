@@ -22,7 +22,7 @@ export interface StagePreview {
 
 export interface TraceStage {
   index: number;
-  /** A pipeline's steps: load, transform, split, embed, custom. An audit's: a document, and
+  /** A pipeline's steps: load, transform, split, embed, store, custom. An audit's: a document, and
    * inside it read, ocr, analyse, scan and verify. A folder is the viewer's, holding an
    * audit's documents as they sit on disk; a run is the viewer's too, the root a pipeline's steps
    * hang from. */
@@ -31,6 +31,7 @@ export interface TraceStage {
     | "transform"
     | "split"
     | "embed"
+    | "store"
     | "custom"
     | "document"
     | "read"
@@ -76,6 +77,33 @@ export interface TraceStage {
   previews?: StagePreview[];
   finished: boolean;
   error: string | null;
+  /** Schema 18: where the error was raised, paths shortened and identifiers masked. */
+  traceback?: string | null;
+  /** Schema 18: what the stage handled of each document. */
+  documents?: StageDocument[];
+  /** Schema 18: what was wrong with what it passed on, though nothing raised. */
+  warnings?: StageWarning[];
+}
+
+/** What a stage passed on, or for an embedding or store stage was given, of one document. */
+export interface StageDocument {
+  source: string;
+  /** Pages, documents, chunks or texts, as the stage handled them. */
+  items: number;
+  characters: number;
+  /** Items with no text. */
+  empty: number;
+  /** Fingerprints of the identifiers in them. */
+  identifiers: string[];
+}
+
+export interface StageWarning {
+  /** empty_document, empty_pages, garbled, tiny_chunks, oversized_chunks, duplicate_chunks,
+   * empty_texts or over_token_limit. */
+  code: string;
+  message: string;
+  /** The documents it concerns. */
+  sources: string[];
 }
 
 export interface Trace {
