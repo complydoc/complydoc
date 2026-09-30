@@ -3,6 +3,7 @@ import { useEffect, useState, type CSSProperties, type PointerEvent as ReactPoin
 import { cn } from "@/lib/utils";
 
 const WIDTH_KEY = "complydoc.trace-panel-width";
+const WIDE_KEY = "complydoc.trace-panel-wide";
 /** Narrower than this, the calls and the call picked no longer fit side by side. */
 const NARROWEST = 760;
 
@@ -12,6 +13,14 @@ function rememberedWidth(): number | null {
     return width >= NARROWEST ? width : null;
   } catch {
     return null;
+  }
+}
+
+function rememberedWide(): boolean {
+  try {
+    return window.localStorage.getItem(WIDE_KEY) === "1";
+  } catch {
+    return false;
   }
 }
 
@@ -37,7 +46,16 @@ export function TracePanel({
   onNext: (() => void) | null;
   children: ReactNode;
 }) {
-  const [wide, setWide] = useState(false);
+  // Kept across runs: opening another run remounts the page, and would narrow it again.
+  const [wide, setWideState] = useState(rememberedWide);
+  const setWide = (to: boolean) => {
+    setWideState(to);
+    try {
+      window.localStorage.setItem(WIDE_KEY, to ? "1" : "0");
+    } catch {
+      // It opens beside the runs next time.
+    }
+  };
   // Dragged by its left edge, as wide as it was left; at first it leaves the runs' first
   // columns showing.
   const [width, setWidth] = useState<number | null>(rememberedWidth);
