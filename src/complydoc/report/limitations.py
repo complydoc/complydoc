@@ -15,6 +15,7 @@ from complydoc.config.schema import Config
 from complydoc.ingest.base import TIMED_OUT, SkipRecord
 from complydoc.readiness.base import SignalStatus
 from complydoc.report.models import (
+    CategorySummary,
     ConceptSummary,
     DocumentReport,
     IgnoreSummary,
@@ -23,7 +24,12 @@ from complydoc.report.models import (
 )
 from complydoc.utils.text import count, plural
 
-__all__ = ["build_limitations", "concept_limitations", "ignore_limitations"]
+__all__ = [
+    "build_limitations",
+    "category_limitations",
+    "concept_limitations",
+    "ignore_limitations",
+]
 
 
 def _sampling(run: RunMetadata) -> list[Limitation]:
@@ -865,6 +871,48 @@ def ignore_limitations(summary: IgnoreSummary | None, ignored: int) -> list[Limi
                     f"entry may belong to another folder."
                 ),
                 affected=[rule.what or rule.finding for rule in summary.unused],
+            )
+        )
+    return notes
+
+
+def category_limitations(summary: CategorySummary | None) -> list[Limitation]:
+    """What a run did not look for because its categories file said not to.
+
+    A category switched off finds nothing, which reads the same as a clean one unless
+    the report says it was not looked for; a name the file gave that is no category
+    changed nothing, and is said so the typo is not taken for a setting.
+    """
+    if summary is None:
+        return []
+    notes: list[Limitation] = []
+    off = [c.label for c in summary.changes if not c.enabled and c.shipped_enabled]
+    if off:
+        notes.append(
+            Limitation(
+                area="Categories switched off",
+                statement=(
+                    f"{', '.join(off)} {plural(len(off), 'was', 'were')} switched off in "
+                    f"{summary.file}, so {plural(len(off), 'it was', 'they were')} not looked "
+                    f"for at all. No conclusion about "
+                    f"{plural(len(off), 'this category', 'these categories')} can be drawn from "
+                    f"this report."
+                ),
+                affected=off,
+                severity="important",
+            )
+        )
+    if summary.unknown:
+        notes.append(
+            Limitation(
+                area="Categories the file names that do not exist",
+                statement=(
+                    f"{summary.file} names {', '.join(summary.unknown)}, which "
+                    f"{plural(len(summary.unknown), 'is', 'are')} no identifier "
+                    f"{plural(len(summary.unknown), 'category', 'categories')}, so "
+                    f"{plural(len(summary.unknown), 'it', 'they')} changed nothing."
+                ),
+                severity="important",
             )
         )
     return notes

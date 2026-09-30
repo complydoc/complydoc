@@ -51,7 +51,7 @@ export default defineConfig({
         },
         {
           label: "Security",
-          items: ["guides/ignore-findings", "guides/custom-concepts", "guides/name-detection-models", "guides/assist"],
+          items: ["guides/ignore-findings", "guides/categories", "guides/custom-concepts", "guides/name-detection-models", "guides/assist"],
         },
         {
           label: "CI and code",

@@ -306,6 +306,9 @@ class AuditOptions(TypedDict, total=False):
     ignore_file: str | os.PathLike[str] | None
     """Findings to set aside, each with a reason. Without it, `.complydoc-ignore.yaml`
     at the top of the folder is read when there is one."""
+    categories_file: str | os.PathLike[str] | None
+    """Identifier categories to switch off or re-grade. Without it,
+    `.complydoc-categories.yaml` at the top of the folder is read when there is one."""
     concepts_file: str | os.PathLike[str] | None
     """Your own things to look for. Without it, `.complydoc-concepts.yaml` at the
     top of the folder is read when there is one."""
@@ -351,6 +354,7 @@ def _audit(
             verify_scope=options.get("verify_scope", "flagged"),
             progress=options.get("progress"),
             ignore_file=_path(options.get("ignore_file")),
+            categories_file=_path(options.get("categories_file")),
             concepts_file=_path(options.get("concepts_file")),
             judge_concepts=options.get("judge_concepts"),
         )

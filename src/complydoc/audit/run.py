@@ -36,6 +36,12 @@ from complydoc.audit.pool import (
     resolve_jobs,
 )
 from complydoc.audit.sampling import sample_files
+from complydoc.categories import (
+    CategoriesApplied,
+    find_categories_file,
+    load_categories,
+    with_categories,
+)
 from complydoc.concepts import (
     Concept,
     ConceptFile,
@@ -62,12 +68,15 @@ from complydoc.ingest.base import (
 from complydoc.ingest.extractors.registry import DEFAULT_EXTRACTOR
 from complydoc.report.limitations import (
     build_limitations,
+    category_limitations,
     concept_limitations,
     ignore_limitations,
 )
 from complydoc.report.models import (
     SCHEMA_VERSION,
     AuditReport,
+    CategoryChangeRecord,
+    CategorySummary,
     ConceptRule,
     ConceptSummary,
     DocumentReport,
@@ -257,6 +266,7 @@ def run_audit(
     verify_scope: str = "flagged",
     progress: Callable[[int, int, Path], None] | None = None,
     ignore_file: Path | None = None,
+    categories_file: Path | None = None,
     concepts_file: Path | None = None,
     judge_concepts: str | ConceptJudge | None = None,
 ) -> AuditReport:
@@ -264,6 +274,8 @@ def run_audit(
 
     `ignore_file` names findings to set aside (see `complydoc.ignores`). Without
     it, `.complydoc-ignore.yaml` at the top of `target` is read when it exists.
+    `categories_file` names identifier categories to switch off or re-grade (see
+    `complydoc.categories`), read the same way from `.complydoc-categories.yaml` without it.
     `concepts_file` names your own things to look for (see `complydoc.concepts`),
     read the same way from `.complydoc-concepts.yaml` without it.
     `judge_concepts` puts the concepts marked `judge` to a judgement model, page
@@ -279,6 +291,12 @@ def run_audit(
     # Read before any document is, so a broken file stops the run at once.
     ignore_path = ignore_file or find_ignore_file(target)
     ignores = (ignore_path, load_ignores(ignore_path)) if ignore_path is not None else None
+    categories_path = categories_file or find_categories_file(target)
+    categories = None
+    if categories_path is not None:
+        original = config
+        config, applied = with_categories(config, load_categories(categories_path))
+        categories = (categories_path, original, config, applied)
     concepts_path = concepts_file or find_concepts_file(target)
     concepts = (concepts_path, load_concepts(concepts_path)) if concepts_path is not None else None
     if concepts is not None:
@@ -409,6 +427,7 @@ def run_audit(
         monthly_volume=monthly_volume,
         ignores=ignores,
         concepts=concepts,
+        categories=categories,
         judge_name=(
             None if not judging else judge_spec or getattr(judge_concepts, "__name__", "your own")
         ),
@@ -426,6 +445,7 @@ def assemble_report(
     monthly_volume: int | None = None,
     ignores: tuple[Path, IgnoreFile] | None = None,
     concepts: tuple[Path, ConceptFile] | None = None,
+    categories: tuple[Path, Config, Config, CategoriesApplied] | None = None,
     judge_name: str | None = None,
 ) -> AuditReport:
     """The report around a finished set of entries: totals, limitations, scores.
@@ -462,6 +482,7 @@ def assemble_report(
         concepts=(
             summarise_concepts(documents, concepts, judge_name) if concepts is not None else None
         ),
+        categories=summarise_categories(*categories) if categories is not None else None,
     )
     if "readiness" in requested and config.readiness.scoring.enabled:
         report.signal_weights = {
@@ -471,6 +492,7 @@ def assemble_report(
         }
     report.limitations = build_limitations(run, documents, skipped, staleness, config)
     report.limitations += concept_limitations(report.concepts)
+    report.limitations += category_limitations(report.categories)
     report.limitations += ignore_limitations(
         ignore_summary, report.aggregate.ignored_total if report.aggregate else 0
     )
@@ -482,6 +504,27 @@ def assemble_report(
     report.quick_wins = quick_wins(report)
     report.routing = summarise_routes(report, config.pricing)
     return report
+
+
+def summarise_categories(
+    path: Path, shipped: Config, used: Config, applied: CategoriesApplied
+) -> CategorySummary:
+    """Each category this run looked for otherwise than as it ships."""
+    changes = []
+    for name in applied.changed:
+        before = shipped.sensitive.categories[name]
+        after = used.sensitive.categories[name]
+        changes.append(
+            CategoryChangeRecord(
+                category=name,
+                label=after.label,
+                enabled=after.enabled,
+                severity=after.severity,
+                shipped_enabled=before.enabled,
+                shipped_severity=before.severity,
+            )
+        )
+    return CategorySummary(file=str(path), changes=changes, unknown=applied.unknown)
 
 
 def summarise_concepts(

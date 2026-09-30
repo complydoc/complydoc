@@ -15,6 +15,7 @@ from complydoc.audit.run import COMPONENTS, run_audit
 from complydoc.cli.classifiers import ClassifierError, classifying
 from complydoc.cli.common import (
     DEFAULT_OUT,
+    CategoriesOpt,
     ClassifierOpt,
     ClassifierThresholdOpt,
     ConceptsOpt,
@@ -136,6 +137,7 @@ def check(
     classifier: ClassifierOpt = None,
     classifier_threshold: ClassifierThresholdOpt = None,
     ignore_file: IgnoreFileOpt = None,
+    categories_file: CategoriesOpt = None,
     concepts_file: ConceptsOpt = None,
     judge_concepts: JudgeConceptsOpt = None,
 ) -> None:
@@ -210,6 +212,7 @@ def check(
                     timeout=timeout or None,
                     classifier_spec=classifier,
                     ignore_file=ignore_file,
+                    categories_file=categories_file,
                     concepts_file=concepts_file,
                     judge_concepts=judge_concepts,
                 )

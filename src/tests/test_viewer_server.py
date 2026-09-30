@@ -11,6 +11,7 @@ import pytest
 from typer.testing import CliRunner
 
 from complydoc import offline
+from complydoc.categories import CATEGORIES_FILENAME
 from complydoc.cli import app
 from complydoc.concepts import CONCEPTS_FILENAME, Concept
 from complydoc.viewer import ViewerNotBuiltError, find_reports, launch_ui
@@ -332,6 +333,53 @@ def test_the_viewer_can_edit_the_concepts_beside_the_documents(tmp_path: Path, d
 
         status, _ = send(
             viewer.port, "POST", url, concept, "http://evil.example", "application/json"
+        )
+        assert status == 403
+    finally:
+        viewer.stop()
+
+
+def test_the_viewer_can_switch_categories_off_and_back_beside_the_documents(
+    tmp_path: Path, dist: Path
+):
+    audited = tmp_path / "policies"
+    audited.mkdir()
+    reports = tmp_path / ".complydoc"
+    write_report(reports / "complydoc.json", target=str(audited), schema=21)
+    viewer = launch_ui(reports, port=0, open_browser=False, dist=dist)
+    try:
+        (report,) = viewer.reports()
+        url = f"/api/reports/{report.id}/categories"
+        origin = f"http://127.0.0.1:{viewer.port}"
+
+        status, _headers, body = get(viewer.port, url)
+        assert status == 200
+        listed = json.loads(body)
+        assert len(listed["categories"]) > 30
+        email = next(c for c in listed["categories"] if c["id"] == "email_address")
+        assert email["enabled"] and email["severity"] == email["shipped_severity"]
+
+        change = {"id": "email_address", "enabled": False}
+        status, body = send(viewer.port, "POST", url, change, origin, "application/json")
+        assert status == 200, body
+        email = next(c for c in json.loads(body)["categories"] if c["id"] == "email_address")
+        assert email["enabled"] is False and email["shipped_enabled"] is True
+        assert (audited / CATEGORIES_FILENAME).is_file()
+
+        status, body = send(
+            viewer.port, "POST", url, {"id": "nope", "enabled": False}, origin, "application/json"
+        )
+        assert status == 400 and b"not an identifier category" in body
+
+        status, body = send(
+            viewer.port, "DELETE", url, {"id": "email_address"}, origin, "application/json"
+        )
+        assert status == 200
+        email = next(c for c in json.loads(body)["categories"] if c["id"] == "email_address")
+        assert email["enabled"] is True
+
+        status, _ = send(
+            viewer.port, "POST", url, change, "http://evil.example", "application/json"
         )
         assert status == 403
     finally:

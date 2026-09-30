@@ -1,4 +1,4 @@
-/** The parts of a report about your setup: the findings ignored, and your own concepts. */
+/** The parts of a report about your setup: the findings ignored, your own concepts, and the categories changed. */
 import type { ContentFinding, SensitiveMatch, Severity } from "./types";
 
 /** One entry of an ignore file: a finding set aside, and why. */
@@ -65,4 +65,36 @@ export interface ConceptFinding {
   label: string;
   severity: Severity;
   score: number;
+}
+
+/** One identifier category a run looked for otherwise than as it ships. */
+export interface CategoryChangeRecord {
+  category: string;
+  label: string;
+  enabled: boolean;
+  severity: Severity;
+  shipped_enabled: boolean;
+  shipped_severity: Severity;
+}
+
+/** The categories file a run read, and what it changed. A category with `enabled` false was not looked for. */
+export interface CategorySummary {
+  file: string;
+  changes: CategoryChangeRecord[];
+  /** Names the file gave that are no category, and so changed nothing. */
+  unknown?: string[];
+}
+
+/** An identifier category as the next run would look for it, beside how it ships. */
+export interface CategoryRow {
+  id: string;
+  label: string;
+  region: string;
+  detector: string;
+  /** Read by a statistical model, which a run may not have available. */
+  model_backed: boolean;
+  enabled: boolean;
+  severity: Severity;
+  shipped_enabled: boolean;
+  shipped_severity: Severity;
 }

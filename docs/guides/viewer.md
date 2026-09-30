@@ -191,10 +191,11 @@ page with the finding marked, and anywhere on a document's row opens the documen
 
 ## Settings
 
-The Settings page holds [your own concepts](custom-concepts.md), the models every
-report is priced on, and the findings the ignore file sets aside.
+The Settings page holds [your own concepts](custom-concepts.md), the
+[categories](categories.md) that are looked for, the models every report is priced on,
+and the findings the ignore file sets aside.
 
-- **Concepts and ignored findings** are files beside the documents a report
+- **Concepts, categories and ignored findings** are files beside the documents a report
   audited, which the command line reads too. Under `complydoc ui` they can be
   added, changed and removed here, and changes apply from the next run. A report
   opened any other way shows what its run used, read only.

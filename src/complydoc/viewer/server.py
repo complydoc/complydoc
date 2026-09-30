@@ -65,11 +65,12 @@ API = "api"
 
 CONFIG_ELEMENT = "complydoc-local"
 
-_KEPT = ("ignores", "concepts")
+_KEPT = ("ignores", "concepts", "categories")
 """The files beside the documents that the viewer may read and change."""
 
 _IGNORE_FIELDS = ("finding", "reason", "what", "paths", "until")
 _CONCEPT_FIELDS = ("id", "label", "description", "pattern", "severity", "judge")
+_CATEGORY_FIELDS = ("enabled", "severity")
 """What the viewer may set; who made a change, and when, is the server's to say."""
 """The id of the script element that tells the viewer where to find the reports."""
 
@@ -226,19 +227,28 @@ def find_reports(*sources: str | Path) -> list[FoundReport]:
     return sorted(found.values(), key=lambda report: report.modified, reverse=True)
 
 
+def _shipped() -> set[str]:
+    from complydoc.config.loader import load_config
+
+    return set(load_config().sensitive.categories)
+
+
 def _file_for(report_path: Path, kind: str) -> Path | None:
-    """The file of this `kind` (`ignores` or `concepts`) that a report's folder keeps, or None.
+    """The file of this `kind` (`ignores`, `concepts` or `categories`) that a report's folder
+    keeps, or None.
 
     The one the run read, when it is still there and still valid, else the file
     of that kind at the top of the folder the report audited. None when that
     folder is not on this machine.
     """
+    from complydoc.categories import CATEGORIES_FILENAME, CategoryError, load_categories
     from complydoc.concepts import CONCEPTS_FILENAME, ConceptError, load_concepts
     from complydoc.ignores import IGNORE_FILENAME, IgnoreError, load_ignores
 
     filename, load, error = {
         "ignores": (IGNORE_FILENAME, load_ignores, IgnoreError),
         "concepts": (CONCEPTS_FILENAME, load_concepts, ConceptError),
+        "categories": (CATEGORIES_FILENAME, load_categories, CategoryError),
     }[kind]
     try:
         stat = report_path.stat()
@@ -342,9 +352,22 @@ class _Handler(BaseHTTPRequestHandler):
         return None if file is None else (kind, file)
 
     def _listing(self, kind: str, file: Path) -> None:
+        from complydoc.categories import effective, load_categories
         from complydoc.concepts import load_concepts
+        from complydoc.config.loader import load_config
         from complydoc.ignores import load_ignores
 
+        if kind == "categories":
+            given = load_categories(file)
+            self._json(
+                HTTPStatus.OK,
+                {
+                    "file": str(file),
+                    "categories": effective(load_config(), given),
+                    "unknown": sorted(n for n in given.categories if n not in _shipped()),
+                },
+            )
+            return
         if kind == "ignores":
             entries = [entry.model_dump(mode="json") for entry in load_ignores(file).ignores]
         else:
@@ -352,7 +375,13 @@ class _Handler(BaseHTTPRequestHandler):
         self._json(HTTPStatus.OK, {"file": str(file), kind: entries})
 
     def _write(self) -> None:
-        """Change the ignore file or the concepts file, for the viewer's own page only."""
+        """Change the ignore, concepts or categories file, for the viewer's own page only."""
+        from complydoc.categories import (
+            CategoryChange,
+            CategoryError,
+            reset_category,
+            save_category,
+        )
         from complydoc.concepts import Concept, ConceptError, remove_concept, save_concept
         from complydoc.ignores import IgnoreEntry, IgnoreError, add_ignore, remove_ignore, who
 
@@ -380,12 +409,24 @@ class _Handler(BaseHTTPRequestHandler):
                         | {"by": who(), "added": dt.date.today()}
                     ),
                 )
+            elif kind == "categories" and self.command == "DELETE":
+                reset_category(file, str(body.get("id", "")))
+            elif kind == "categories":
+                from complydoc.config.loader import load_config
+
+                change = {key: given[key] for key in _CATEGORY_FIELDS if key in given}
+                save_category(
+                    file,
+                    str(body.get("id", "")),
+                    CategoryChange.model_validate(change),
+                    load_config(),
+                )
             elif self.command == "DELETE":
                 remove_concept(file, str(body.get("id", "")))
             else:
                 concept = {key: given[key] for key in _CONCEPT_FIELDS if key in given}
                 save_concept(file, Concept.model_validate(concept))
-        except (IgnoreError, ConceptError, ValueError, OSError) as exc:
+        except (IgnoreError, ConceptError, CategoryError, ValueError, OSError) as exc:
             self._error(HTTPStatus.BAD_REQUEST, str(exc))
             return
         self._listing(kind, file)

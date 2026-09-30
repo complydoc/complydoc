@@ -52,9 +52,10 @@ describe("SettingsPage", () => {
         <SettingsPage report={report} />
       </IgnoreContext.Provider>,
     );
-    // Your concepts come first, then the models, then what is ignored.
+    // Your concepts come first, then the categories, the models, then what is ignored.
     expect(screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent)).toEqual([
       "Your concepts",
+      "Categories",
       "Preferred models",
       "Ignored findings",
     ]);

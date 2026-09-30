@@ -21,5 +21,15 @@ export function notLookedFor(report: Report): NotLookedFor[] {
       found.set(unscanned.category, entry);
     }
   }
+  // A category switched off in the categories file was not looked for in any document.
+  for (const change of report.categories?.changes ?? []) {
+    if (change.enabled || !change.shipped_enabled) continue;
+    found.set(change.category, {
+      category: change.category,
+      label: change.label,
+      reason: "it was switched off in the categories file.",
+      documents: report.documents.length,
+    });
+  }
   return [...found.values()].sort((a, b) => b.documents - a.documents || a.label.localeCompare(b.label));
 }

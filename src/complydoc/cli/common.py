@@ -102,6 +102,14 @@ ConceptsOpt = Annotated[
         ".complydoc-concepts.yaml at the top of the folder is read when there is one.",
     ),
 ]
+CategoriesOpt = Annotated[
+    Path | None,
+    typer.Option(
+        "--categories",
+        help="Identifier categories to switch off, or to call more or less serious. Without "
+        "it, .complydoc-categories.yaml at the top of the folder is read when there is one.",
+    ),
+]
 JudgeConceptsOpt = Annotated[
     str | None,
     typer.Option(

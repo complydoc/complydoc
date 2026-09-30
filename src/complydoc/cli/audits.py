@@ -26,6 +26,7 @@ from complydoc.audit.run import COMPONENTS, run_audit
 from complydoc.cli.classifiers import ClassifierError, classifying
 from complydoc.cli.common import (
     DEFAULT_OUT,
+    CategoriesOpt,
     ClassifierOpt,
     ClassifierThresholdOpt,
     CompareEnginesOpt,
@@ -309,6 +310,7 @@ def run(
     verify: str | None = None,
     verify_scope: str = "flagged",
     ignore_file: Path | None = None,
+    categories_file: Path | None = None,
     concepts_file: Path | None = None,
     judge_concepts: str | None = None,
 ) -> None:
@@ -393,6 +395,7 @@ def run(
                     verify_scope=verify_scope,
                     progress=progress,
                     ignore_file=ignore_file,
+                    categories_file=categories_file,
                     concepts_file=concepts_file,
                     judge_concepts=judge_concepts,
                 )
@@ -463,6 +466,7 @@ def audit(
     verify: VerifyOpt = None,
     verify_scope: VerifyScopeOpt = "flagged",
     ignore_file: IgnoreFileOpt = None,
+    categories_file: CategoriesOpt = None,
     concepts_file: ConceptsOpt = None,
     judge_concepts: JudgeConceptsOpt = None,
 ) -> None:
@@ -499,6 +503,7 @@ def audit(
         verify=verify,
         verify_scope=verify_scope,
         ignore_file=ignore_file,
+        categories_file=categories_file,
         concepts_file=concepts_file,
         judge_concepts=judge_concepts,
     )

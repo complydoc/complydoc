@@ -22,6 +22,16 @@ describe("parseReport", () => {
     expect(() => parseReport(old)).toThrow("uses schema 8");
   });
 
+  it("reads schema 21, which added the categories a run changed", () => {
+    const changed = JSON.stringify({
+      run: { schema_version: 21 },
+      overall: {},
+      documents: [],
+      categories: { file: "c.yaml", changes: [] },
+    });
+    expect(parseReport(changed).categories?.file).toBe("c.yaml");
+  });
+
   it("reads schema 16, which added the vision check and reading costs", () => {
     const verified = JSON.stringify({ run: { schema_version: 16 }, overall: {}, documents: [] });
     const report = parseReport(verified);

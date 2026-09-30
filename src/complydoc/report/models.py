@@ -39,6 +39,8 @@ __all__ = [
     "SIMILAR_ENOUGH",
     "Aggregate",
     "AuditReport",
+    "CategoryChangeRecord",
+    "CategorySummary",
     "ConceptFinding",
     "ConceptRule",
     "ConceptSummary",
@@ -62,7 +64,7 @@ __all__ = [
     "VerificationSummary",
 ]
 
-SCHEMA_VERSION = 20
+SCHEMA_VERSION = 21
 
 
 def report_shape() -> dict[str, object]:
@@ -88,6 +90,7 @@ def report_shape() -> dict[str, object]:
             "verification",
             "ignores",
             "concepts",
+            "categories",
             "chunks",
             "trace",
             "limitations",
@@ -250,6 +253,12 @@ def report_shape() -> dict[str, object]:
             "null unless a concepts file was read: file, concepts[] (id, label, "
             "description, pattern, severity, judge, found); a concept with a pattern "
             "is found as the identifier category concept_<id>"
+        ),
+        "categories": (
+            "null unless a categories file was read: file, changes[] (category, label, "
+            "enabled, severity, shipped_enabled, shipped_severity), unknown[] (names the "
+            "file gave that are no category). A category with enabled false was not "
+            "looked for"
         ),
         "ignores": (
             "null unless an ignore file was read: file, rules[] (finding, reason, by, "
@@ -825,6 +834,31 @@ class ConceptSummary:
 
 
 @dataclass(slots=True)
+class CategoryChangeRecord:
+    """One identifier category a run looked for otherwise than as it ships."""
+
+    category: str
+    label: str
+    enabled: bool
+    severity: str
+    shipped_enabled: bool
+    shipped_severity: str
+
+
+@dataclass(slots=True)
+class CategorySummary:
+    """The categories file a run read, and each change it made.
+
+    A category with `enabled` false was not looked for, so none of it was found.
+    """
+
+    file: str
+    changes: list[CategoryChangeRecord] = field(default_factory=list)
+    unknown: list[str] = field(default_factory=list)
+    """Names the file gave that are no category of this run's, and so changed nothing."""
+
+
+@dataclass(slots=True)
 class IgnoredFinding:
     """A finding an ignore file set aside, with the reason it gave.
 
@@ -1214,6 +1248,9 @@ class AuditReport:
     """The ignore file this run read, and what each entry set aside. None without one."""
     concepts: ConceptSummary | None = None
     """The custom concepts this run looked for. None without a concepts file."""
+    categories: CategorySummary | None = None
+    """Schema 21: the categories this run looked for otherwise than as shipped. None without
+    a categories file."""
     chunks: list[ChunkReport] | None = None
     """Schema 17: each text splitter `complydoc chunks` ran, and what it made of the text.
 

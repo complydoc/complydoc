@@ -7,6 +7,15 @@ separately.
 
 ## [Unreleased]
 
+### Added
+
+- Which identifier categories are looked for, and how serious each is called, can be
+  changed in a file beside the documents, `.complydoc-categories.yaml`, or from the
+  viewer's Settings page. Only what differs from complydoc's own settings is kept. A
+  category switched off is said so in the report, in its limitations and on the Security
+  page, so a run that finds none of it is not read as a clean one. `--categories` names
+  the file. The report JSON moves to schema 21, adding `categories`.
+
 ### Changed
 
 - Observing takes less time after the block. A text that several steps pass on is masked

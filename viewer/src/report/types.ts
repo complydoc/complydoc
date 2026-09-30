@@ -1,4 +1,4 @@
-import type { ConceptFinding, ConceptSummary, IgnoreSummary, IgnoredFinding } from "./setupTypes";
+import type { CategorySummary, ConceptFinding, ConceptSummary, IgnoreSummary, IgnoredFinding } from "./setupTypes";
 
 /**
  * The parts of complydoc's report JSON the viewer reads.
@@ -52,6 +52,8 @@ export interface Report {
   ignores?: IgnoreSummary | null;
   /** Schema 17: the custom concepts the run looked for. Null or absent without a concepts file. */
   concepts?: ConceptSummary | null;
+  /** Schema 21: the categories the run looked for otherwise than as shipped. Null or absent without a categories file. */
+  categories?: CategorySummary | null;
   /** The lines complydoc judged this report by. Filled in by `parseReport` for reports older than schema 17. */
   thresholds: Thresholds;
 }
@@ -387,4 +389,7 @@ export type {
   ConceptRule,
   ConceptSummary,
   ConceptFinding,
+  CategoryChangeRecord,
+  CategorySummary,
+  CategoryRow,
 } from "./setupTypes";
