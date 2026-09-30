@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import socket
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -451,3 +452,25 @@ def test_a_loader_reading_with_pypdf_is_one_step() -> None:
     with cd.observe("loader", out=None) as observation:
         loaders.PyPDFLoader(str(SAMPLE_PDFS[0])).load()
     assert [s.component for s in observation.report.trace.stages] == ["PyPDFLoader"]
+
+
+def test_a_text_previewed_by_every_step_is_masked_once(monkeypatch: pytest.MonkeyPatch) -> None:
+    from complydoc.config.loader import load_config
+    from complydoc.extraction.strings import mask_text
+    from complydoc.observe import measure
+
+    asked: list[str] = []
+
+    def counting(text: str, **kwargs: Any) -> Any:
+        asked.append(text)
+        return mask_text(text, **kwargs)
+
+    monkeypatch.setattr(measure, "mask_text", counting)
+    measurer = measure.Measurer(load_config(), reveal=False, previews=5, root=None)
+    items = [("Write to ana@example.com", {"page": 1})]
+    first = measurer.preview(items)
+    again = measurer.preview(items)
+
+    assert "ana@example.com" not in first[0].text
+    assert again[0].text == first[0].text
+    assert asked.count("Write to ana@example.com") == 1

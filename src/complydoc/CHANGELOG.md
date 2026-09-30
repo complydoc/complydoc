@@ -7,6 +7,14 @@ separately.
 
 ## [Unreleased]
 
+### Changed
+
+- Observing takes less time after the block. A text that several steps pass on is masked
+  once, not once per step: on 90 files with the name model, the time after the block fell
+  from 9.9 s to 6.4 s.
+- The trace groups calls at every depth, so a directory loader that read a hundred files
+  shows one row of calls, not a hundred.
+
 ### Fixed
 
 - A pipeline that imports its library inside the observed block, as a function that

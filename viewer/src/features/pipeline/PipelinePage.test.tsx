@@ -24,12 +24,13 @@ describe("PipelinePage", () => {
     expect(rows.map((row) => [row.getAttribute("aria-level"), row.textContent])).toEqual([
       ["1", expect.any(String)],
       ["2", expect.stringContaining("DirectoryLoadercontracts")],
-      ["3", expect.stringContaining("a.pdfPyPDFLoader")],
-      ["3", expect.stringContaining("b.pdfPyPDFLoader")],
+      ["3", expect.stringContaining("2 calls")],
+      ["4", expect.stringContaining("a.pdfPyPDFLoader")],
+      ["4", expect.stringContaining("b.pdfPyPDFLoader")],
       ["2", expect.stringContaining("RecursiveCharacterTextSplitter")],
       ["2", expect.stringContaining("OpenAIEmbeddings")],
     ]);
-    // Folding the directory loader hides its files; folding the run, everything under it.
+    // Folding the directory loader hides its files, grouped; folding the run, everything under it.
     await userEvent.click(within(required(rows[1])).getByRole("button", { name: "Fold" }));
     expect(within(tree).getAllByRole("treeitem")).toHaveLength(4);
     await userEvent.click(within(required(rows[0])).getByRole("button", { name: "Fold" }));
@@ -42,7 +43,7 @@ describe("PipelinePage", () => {
     await userEvent.click(screen.getByRole("button", { name: "Collapse all" }));
     expect(within(tree).getAllByRole("treeitem")).toHaveLength(4);
     await userEvent.click(screen.getByRole("button", { name: "Expand all" }));
-    expect(within(tree).getAllByRole("treeitem")).toHaveLength(6);
+    expect(within(tree).getAllByRole("treeitem")).toHaveLength(7);
   });
 
   it("folds a call's input away, and brings it back", async () => {
@@ -148,5 +149,4 @@ describe("PipelinePage", () => {
     expect(screen.getByText(/Person name not looked for/)).toHaveTextContent("neither counted nor masked");
     expect(screen.getByText("Names need the ner extra")).toBeInTheDocument();
   });
-
 });

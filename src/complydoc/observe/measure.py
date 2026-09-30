@@ -45,6 +45,8 @@ class Measurer:
         self.root = root
         self._spec = tokenizer_for(settings, None)
         self._counted: dict[str, int] = {}
+        self._masked: dict[str, str] = {}
+        """Each text masked once: the same chunk is previewed by every step it passes through."""
         self.unscanned: dict[str, str] = {}
         """Categories masking could not look for, by id, with why."""
 
@@ -119,9 +121,12 @@ class Measurer:
     def _mask(self, text: str) -> str:
         if self.reveal:
             return text
-        masked = mask_text(text, config=self.settings)
-        self.unscanned.update(masked.unscanned)
-        return masked.text
+        known = self._masked.get(text)
+        if known is None:
+            masked = mask_text(text, config=self.settings)
+            self.unscanned.update(masked.unscanned)
+            known = self._masked[text] = masked.text
+        return known
 
     def _source(self, metadata: dict[str, Any]) -> str | None:
         source = next((metadata[k] for k in SOURCE_KEYS if metadata.get(k)), None)

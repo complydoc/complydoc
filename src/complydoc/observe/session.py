@@ -210,8 +210,8 @@ def observe(
 
     `extracted_text` keeps each loaded page's text, masked, so the viewer can show it
     with the chunks drawn over it. `previews` keeps that many of each step's items,
-    masked, so the viewer can show what the step passed on; 0 keeps none. Library classes
-    are observed if they were imported before the block opened.
+    masked, so the viewer can show what the step passed on; 0 keeps none. A library is
+    observed wherever it is imported, before the block or inside it.
     """
     return Observation(
         name,

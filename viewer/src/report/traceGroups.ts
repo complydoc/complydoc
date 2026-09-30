@@ -101,12 +101,27 @@ function steps(spans: Span[], next: () => number): Span[] {
   });
 }
 
+/** `span` with the calls inside it grouped the same way, at every depth. */
+function nested(span: Span, next: () => number): Span {
+  if (span.children.length === 0) return span;
+  return {
+    ...span,
+    children: steps(
+      span.children.map((child) => nested(child, next)),
+      next,
+    ),
+  };
+}
+
 /** The run at the root and its steps under it, with every level set to its depth. */
 export function underRun(trace: Trace, spans: Span[]): Span[] {
   if (spans.length === 0) return spans;
   let index = -1;
   const next = () => index--;
-  const children = steps(spans, next);
+  const children = steps(
+    spans.map((span) => nested(span, next)),
+    next,
+  );
   const last = [...spans].reverse().find((s) => s.stage.kind !== "custom") ?? spans[spans.length - 1];
   const stages = spans.map((s) => s.stage);
   const root = standIn(stages, {

@@ -35,7 +35,8 @@ A vector store's step is what it was given, since that is what stays in the inde
 its texts, the metadata kept with them and the identifiers in both. A store that
 embeds what it is given holds the embedding call as a step inside it.
 
-Classes are observed if they were imported before the block opened. A call made
+A library is observed wherever it is imported, before the block or inside it, as a
+function that imports what it uses does. A call made
 inside another observed call is part of it: `load` calling `lazy_load` is one step.
 
 ```python

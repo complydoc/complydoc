@@ -40,4 +40,35 @@ describe("spansOf for a pipeline", () => {
     expect(run?.children[0]?.stage.index).toBeLessThan(0);
     expect(run?.stage.index).not.toBe(run?.children[0]?.stage.index);
   });
+
+  it("groups the calls a step makes inside it the same way", () => {
+    const read = (index: number, file: string, started: number) =>
+      stage(index, {
+        component: "PDFReader",
+        method: "load_data",
+        parameters: { file_path: file },
+        started,
+        seconds: 0.1,
+        parent: 0,
+        warnings: index === 2 ? [{ code: "empty_document", sources: [file], message: "no text" }] : [],
+      });
+    const nestedTrace = {
+      ...sampleTrace(),
+      stages: [
+        stage(0, { component: "SimpleDirectoryReader", method: "load_data", started: 0, seconds: 0.5 }),
+        read(1, "a.pdf", 0),
+        read(2, "b.pdf", 0.1),
+        read(3, "c.pdf", 0.2),
+      ],
+    };
+    const [run] = spansOf(nestedTrace);
+    const reader = run?.children[0];
+    expect(reader?.children).toHaveLength(1);
+    const calls = reader?.children[0];
+    expect(calls?.label).toBe("3 calls");
+    expect(calls?.depth).toBe(2);
+    expect(calls?.children.map((c) => c.depth)).toEqual([3, 3, 3]);
+    // What one file warned of shows on the row that stands for them.
+    expect(calls?.stage.warnings?.map((w) => w.code)).toEqual(["empty_document"]);
+  });
 });
