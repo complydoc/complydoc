@@ -9,10 +9,14 @@ separately.
 
 ### Added
 
-- Tests that run real ingestion pipelines under `cd.observe`, `make test-pipelines`: LangChain
-  into Chroma and FAISS, and a LlamaIndex `IngestionPipeline` into Chroma, with local
-  embedding models, on the sample documents. One more calls OpenAI where
+- Tests that run the frameworks' own tutorials under `cd.observe`, `make test-pipelines`:
+  LangChain's semantic search tutorial into its in-memory store and Chroma, LlamaIndex's
+  starter tutorial, and LlamaIndex's ingestion pipeline guide into Qdrant, as published,
+  on the sample documents with local embedding models. One more calls OpenAI where
   `OPENAI_API_KEY` is set.
+- Where documents are read by the caller's own code, as LangChain's tutorial reads PDF
+  pages with pypdf, the first step given them is checked as a loader is: a scan that
+  loaded no text is warned of there, instead of vanishing into the splitter.
 
 ### Changed
 

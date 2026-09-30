@@ -97,6 +97,13 @@ def build_report(
     # A directory loader passes on what the loader it runs for each file did; the warnings
     # are that loader's.
     directories = {r.parent for r in recordings if r.kind == "load" and r.parent is not None}
+    # Where the documents were read by the caller's own code, the first step given them
+    # stands for the loader, and what a loader is checked for is checked in what it was given.
+    first = (
+        next((r for r in recordings if r.inputs and _contents(r.inputs)), None)
+        if not any(r.kind == "load" for r in recordings)
+        else None
+    )
     scans = _Scans()
     origin: dict[str, str] = {}
     stages = []
@@ -122,6 +129,7 @@ def build_report(
                 chunks=chunk_reports[chunks] if chunks is not None else None,
                 report=report if from_report else None,
                 warn=recording.index not in directories,
+                loaded_before=recording is first,
             )
         )
 
@@ -339,6 +347,7 @@ def _followed(
     chunks: ChunkReport | None,
     report: AuditReport | None,
     warn: bool,
+    loaded_before: bool = False,
 ) -> TraceStage:
     """`stage` with what it did to each document, what was wrong with what it passed on,
     and where it raised."""
@@ -362,6 +371,12 @@ def _followed(
         if warn
         else []
     )
+    if loaded_before:
+        given = [
+            (text, _source(metadata, context.root))
+            for text, metadata in _contents(recording.inputs)
+        ]
+        warnings = [*warnings_for("load", given), *warnings]
     return dataclasses.replace(
         stage,
         documents=_documents(items, config, context, report),

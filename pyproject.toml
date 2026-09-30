@@ -102,13 +102,14 @@ dev = [
 ]
 pipelines = [
     "chromadb>=1.0",
-    "faiss-cpu>=1.8",
     "fastembed>=0.5",
     "langchain-chroma>=0.2",
     "langchain-openai>=0.3",
     "llama-index-embeddings-fastembed>=0.3",
     "llama-index-readers-file>=0.4",
     "llama-index-vector-stores-chroma>=0.4",
+    "llama-index-vector-stores-qdrant>=0.4",
+    "qdrant-client>=1.10",
 ]
 
 [build-system]

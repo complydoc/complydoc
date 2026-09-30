@@ -400,3 +400,16 @@ def test_a_store_built_by_a_class_method_is_a_stage(tmp_path: Path) -> None:
         if stage.parent in below:
             below.add(stage.index)
     assert any(s.kind == "embed" and s.index in below for s in stages)
+
+
+def test_documents_read_by_your_own_code_are_checked_where_they_enter() -> None:
+    documents = [
+        Document(page_content="", metadata={"source": "scan.pdf", "page": 0}),
+        Document(page_content="Terms apply. " * 10, metadata={"source": "a.pdf", "page": 0}),
+    ]
+    splitter = RecursiveCharacterTextSplitter(chunk_size=120, chunk_overlap=0)
+    with cd.observe("own-loader", out=None) as observation:
+        splitter.split_documents(documents)
+    (split,) = observation.report.trace.stages
+    empty = next(w for w in split.warnings if w.code == "empty_document")
+    assert empty.sources == ["scan.pdf"]

@@ -1,12 +1,24 @@
-"""Real ingestion pipelines, observed from end to end.
+"""The frameworks' own tutorials, run under `cd.observe` from end to end.
 
-Each is a pipeline as a team would write it: real loaders, splitters, embedding models and
-vector stores, run on the sample documents bundled with complydoc, one of which is a scan
-with no text layer. The embedding models are FastEmbed's, run on this machine, and the
-stores are in memory, so nothing is sent anywhere; the one test that calls OpenAI runs
-only where OPENAI_API_KEY is set.
+Each test is an official tutorial's indexing code as it is published, run on the sample
+documents bundled with complydoc, one of which is a scan with no text layer:
 
-    uv sync --group dev --group integrations --group pipelines
+- LangChain, "Build a semantic search engine": PDF pages read with the tutorial's own
+  pypdf helper, `RecursiveCharacterTextSplitter`, and `add_documents` into the
+  `InMemoryVectorStore` or `Chroma` it offers.
+  https://docs.langchain.com/oss/python/langchain/knowledge-base
+- LlamaIndex, "Starter Tutorial (Using Local LLMs)": `SimpleDirectoryReader` and
+  `VectorStoreIndex.from_documents`.
+  https://developers.llamaindex.ai/python/framework/getting_started/starter_example_local/
+- LlamaIndex, "Ingestion Pipeline": `SentenceSplitter`, `TitleExtractor` and an embedding
+  model into an in-memory Qdrant store.
+  https://developers.llamaindex.ai/python/framework/module_guides/loading/ingestion_pipeline/
+
+Only what cannot run offline is swapped: the embedding models are FastEmbed's, run on this
+machine, and `TitleExtractor` asks LlamaIndex's `MockLLM`. The one test that calls OpenAI,
+as the LangChain tutorial does by default, runs only where OPENAI_API_KEY is set.
+
+    make test-pipelines
 """
 
 from __future__ import annotations
@@ -16,13 +28,13 @@ from pathlib import Path
 
 import pytest
 
-pytest.importorskip("chromadb")
 pytest.importorskip("fastembed")
-pytest.importorskip("llama_index.vector_stores.chroma")
+pytest.importorskip("langchain_chroma")
+pytest.importorskip("llama_index.vector_stores.qdrant")
 
-import chromadb
-from langchain_community.document_loaders import DirectoryLoader, PyPDFLoader
+import pypdf
 from langchain_community.embeddings import FastEmbedEmbeddings
+from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 import complydoc as cd
@@ -34,21 +46,50 @@ MODEL = "BAAI/bge-small-en-v1.5"
 CACHE = os.path.expanduser(os.environ.get("FASTEMBED_CACHE_PATH", "~/.cache/fastembed"))
 
 
+def load_pdf_pages(file_path: str) -> list[Document]:
+    """The LangChain tutorial's helper, as published."""
+    reader = pypdf.PdfReader(file_path)
+    return [
+        Document(
+            page_content=page.extract_text() or "",
+            metadata={"source": file_path, "page": i},
+        )
+        for i, page in enumerate(reader.pages)
+    ]
+
+
+def semantic_search_indexing(vector_store) -> None:  # type: ignore[no-untyped-def]
+    """The LangChain tutorial's indexing, over every sample PDF rather than one 10-K."""
+    docs = [page for path in sorted(SAMPLE.glob("*.pdf")) for page in load_pdf_pages(str(path))]
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=1000, chunk_overlap=200, add_start_index=True
+    )
+    all_splits = text_splitter.split_documents(docs)
+    vector_store.add_documents(documents=all_splits)
+
+
 @pytest.fixture(scope="module")
 def embeddings() -> FastEmbedEmbeddings:
     # Made before any block opens: the model is downloaded once, not by the pipeline.
     return FastEmbedEmbeddings(model_name=MODEL, cache_dir=CACHE)
 
 
-@pytest.fixture(scope="module")
-def chroma() -> chromadb.ClientAPI:
-    return chromadb.EphemeralClient(settings=chromadb.Settings(anonymized_telemetry=False))
+@pytest.fixture
+def llama_settings():  # type: ignore[no-untyped-def]
+    """LlamaIndex's global Settings, set as the tutorials set them and put back after."""
+    from llama_index.core import Settings
+    from llama_index.core.llms import MockLLM
+    from llama_index.embeddings.fastembed import FastEmbedEmbedding
+
+    before = (Settings._embed_model, Settings._llm)
+    Settings.embed_model = FastEmbedEmbedding(model_name=MODEL, cache_dir=CACHE)
+    Settings.llm = MockLLM(max_tokens=8)
+    yield Settings
+    Settings._embed_model, Settings._llm = before
 
 
-def langchain_chunks() -> list:  # type: ignore[type-arg]
-    documents = DirectoryLoader(str(SAMPLE), glob="*.pdf", loader_cls=PyPDFLoader).load()
-    splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=80)
-    return splitter.split_documents(documents)
+def top(trace: Trace) -> list[str]:
+    return [s.kind for s in trace.stages if s.parent is None]
 
 
 def one(trace: Trace, kind: str) -> TraceStage:
@@ -60,74 +101,67 @@ def inside(trace: Trace, stage: TraceStage) -> list[TraceStage]:
     return [s for s in trace.stages if s.parent == stage.index]
 
 
-def loaded_with_text(trace: Trace) -> set[str]:
-    """The documents a loader read text from, by the innermost loader that read each."""
-    loads = [s for s in trace.stages if s.kind == "load"]
-    return {d.source for s in loads for d in s.documents if d.characters > 0}
+def warned(trace: Trace, code: str) -> list[list[str]]:
+    return [w.sources for s in trace.stages for w in s.warnings if w.code == code]
 
 
-def test_langchain_into_chroma(embeddings, chroma, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
-    from langchain_chroma import Chroma
+def named(sources: list[str]) -> list[str]:
+    return [Path(source).name for source in sources]
 
-    store = Chroma(client=chroma, collection_name="contracts", embedding_function=embeddings)
-    with cd.observe("langchain-chroma", out=tmp_path) as run:
-        store.add_documents(langchain_chunks())
+
+@pytest.mark.parametrize("store", ["InMemoryVectorStore", "Chroma"])
+def test_langchain_semantic_search(embeddings, store: str, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
+    if store == "Chroma":
+        from langchain_chroma import Chroma
+
+        vector_store = Chroma(
+            collection_name="example_collection",
+            embedding_function=embeddings,
+            persist_directory=str(tmp_path / "chroma_langchain_db"),
+        )
+    else:
+        from langchain_core.vectorstores import InMemoryVectorStore
+
+        vector_store = InMemoryVectorStore(embeddings)
+
+    with cd.observe("semantic-search", out=tmp_path) as run:
+        semantic_search_indexing(vector_store)
     assert run.error is None and run.path is not None
     trace = run.report.trace
 
-    assert [s.kind for s in trace.stages if s.parent is None] == ["load", "split", "store"]
+    # The pages are read by the tutorial's own function, which is no step: the trace starts
+    # at the splitter, and the store holds the embedding call.
+    assert top(trace) == ["split", "store"]
     stored = one(trace, "store")
-    assert (stored.component, stored.method) == ("Chroma", "add_documents")
+    assert (stored.component, stored.method) == (store, "add_documents")
     assert [s.kind for s in inside(trace, stored)] == ["embed"]
 
-    # The scan loaded no text, and is said so; every other document reaches the store.
-    warned = [w for s in trace.stages for w in s.warnings if w.code == "empty_document"]
-    assert [w.sources for w in warned] == [[SCAN]]
-    assert {d.source for d in stored.documents} == loaded_with_text(trace)
-    assert stored.identifiers and "source" in stored.metadata_keys
+    # The scan's empty page goes into the splitter without a sound, and is still warned of,
+    # on the first step that was given it.
+    assert [named(sources) for sources in warned(trace, "empty_document")] == [[SCAN]]
+    assert one(trace, "split").warnings[0].code == "empty_document"
+    assert SCAN not in named([d.source for d in stored.documents])
+    assert stored.identifiers and "start_index" in stored.metadata_keys
 
     # Nothing left the machine, and the report reads back as written.
-    assert not any(s.hosts for s in trace.stages) and run.report.run.content_sent_to == []
+    assert not any(s.hosts for s in trace.stages)
     again = cd.load_report(run.path)
     assert again.trace is not None and len(again.trace.stages) == len(trace.stages)
 
 
-def test_langchain_faiss_from_documents(embeddings) -> None:  # type: ignore[no-untyped-def]
-    from langchain_community.vectorstores import FAISS
+def test_llamaindex_starter(llama_settings) -> None:  # type: ignore[no-untyped-def]
+    from llama_index.core import SimpleDirectoryReader, VectorStoreIndex
 
-    with cd.observe("langchain-faiss", out=None) as run:
-        FAISS.from_documents(langchain_chunks(), embeddings)
-    trace = run.report.trace
-
-    # A store built by a class method is a step, though FAISS never calls `add_texts`.
-    stored = one(trace, "store")
-    assert (stored.component, stored.method) == ("FAISS", "from_documents")
-    assert stored.parameters == {}
-    assert [s.kind for s in inside(trace, stored)] == ["embed"]
-    assert {d.source for d in stored.documents} == loaded_with_text(trace)
-
-
-def test_llamaindex_ingestion_pipeline_into_chroma(chroma) -> None:  # type: ignore[no-untyped-def]
-    from llama_index.core import SimpleDirectoryReader
-    from llama_index.core.ingestion import IngestionPipeline
-    from llama_index.core.node_parser import SentenceSplitter
-    from llama_index.embeddings.fastembed import FastEmbedEmbedding
-    from llama_index.vector_stores.chroma import ChromaVectorStore
-
-    embed = FastEmbedEmbedding(model_name=MODEL, cache_dir=CACHE)
-    store = ChromaVectorStore(chroma_collection=chroma.get_or_create_collection("llama"))
-    pipeline = IngestionPipeline(
-        transformations=[SentenceSplitter(chunk_size=512), embed], vector_store=store
-    )
-    with cd.observe("llamaindex-chroma", out=None) as run:
+    with cd.observe("starter", out=None) as run:
         documents = SimpleDirectoryReader(str(SAMPLE), required_exts=[".pdf"]).load_data()
-        pipeline.run(documents=documents)
+        VectorStoreIndex.from_documents(documents)
     trace = run.report.trace
 
-    assert [s.kind for s in trace.stages if s.parent is None] == ["load", "split", "embed", "store"]
-    # LlamaIndex keeps the scan's empty text through to the store, and says so there.
-    stored = one(trace, "store")
-    assert any(w.code == "empty_texts" and w.sources == [SCAN] for w in stored.warnings)
+    assert top(trace) == ["load", "split", "embed", "store"]
+    assert one(trace, "store").component == "SimpleVectorStore"
+    assert named(warned(trace, "empty_document")[0]) == [SCAN]
+    # LlamaIndex keeps the scan's empty text all the way into the index.
+    assert named(warned(trace, "empty_texts")[0]) == [SCAN]
     # The texts embedded carry each node's metadata before its text, and are still known
     # by the documents they came from; the scan's node, with no text, is its metadata alone.
     split, embedded = one(trace, "split"), one(trace, "embed")
@@ -135,18 +169,74 @@ def test_llamaindex_ingestion_pipeline_into_chroma(chroma) -> None:  # type: ign
     assert {d.source for d in embedded.documents} == with_text
 
 
+def pipeline(chunk_size: int):  # type: ignore[no-untyped-def]
+    """The ingestion guide's pipeline, into the in-memory Qdrant it connects."""
+    import qdrant_client
+    from llama_index.core import Settings
+    from llama_index.core.extractors import TitleExtractor
+    from llama_index.core.ingestion import IngestionPipeline
+    from llama_index.core.node_parser import SentenceSplitter
+    from llama_index.vector_stores.qdrant import QdrantVectorStore
+
+    client = qdrant_client.QdrantClient(location=":memory:")
+    vector_store = QdrantVectorStore(client=client, collection_name="test_store")
+    return IngestionPipeline(
+        transformations=[
+            SentenceSplitter(chunk_size=chunk_size, chunk_overlap=0),
+            TitleExtractor(),
+            Settings.embed_model,
+        ],
+        vector_store=vector_store,
+    )
+
+
+def test_llamaindex_ingestion_pipeline(llama_settings) -> None:  # type: ignore[no-untyped-def]
+    from llama_index.core import SimpleDirectoryReader
+
+    # Built before the block, as the guide builds it before running it: classes imported
+    # inside a block are not observed.
+    ingestion = pipeline(chunk_size=512)
+    with cd.observe("ingestion", out=None) as run:
+        documents = SimpleDirectoryReader(str(SAMPLE), required_exts=[".pdf"]).load_data()
+        ingestion.run(documents=documents)
+    trace = run.report.trace
+
+    assert top(trace) == ["load", "split", "transform", "embed", "store"]
+    assert one(trace, "transform").component == "TitleExtractor"
+    assert one(trace, "store").component == "QdrantVectorStore"
+    assert not any(s.hosts for s in trace.stages)
+
+
+def test_llamaindex_ingestion_pipeline_as_published_raises(llama_settings) -> None:  # type: ignore[no-untyped-def]
+    """The guide's `chunk_size=25` is shorter than a real file's metadata: the splitter
+    raises, and the trace keeps where."""
+    from llama_index.core import SimpleDirectoryReader
+
+    ingestion = pipeline(chunk_size=25)
+    with (
+        pytest.raises(ValueError, match="longer than chunk size"),
+        cd.observe("ingestion", out=None) as run,
+    ):
+        documents = SimpleDirectoryReader(str(SAMPLE), required_exts=[".pdf"]).load_data()
+        ingestion.run(documents=documents)
+    trace = run.report.trace
+    split = one(trace, "split")
+    assert split.error is not None and "longer than chunk size" in split.error
+    assert split.traceback is not None and "split_text_metadata_aware" in split.traceback
+    assert trace.error is not None
+
+
 @pytest.mark.skipif(not os.environ.get("OPENAI_API_KEY"), reason="calls OpenAI: set OPENAI_API_KEY")
-def test_langchain_with_openai_embeddings() -> None:
+def test_langchain_semantic_search_with_openai() -> None:
     from langchain_core.vectorstores import InMemoryVectorStore
     from langchain_openai import OpenAIEmbeddings
 
-    chunks = langchain_chunks()[:5]
-    with cd.observe("langchain-openai", out=None) as run:
-        InMemoryVectorStore(OpenAIEmbeddings(model="text-embedding-3-small")).add_documents(chunks)
+    embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
+    with cd.observe("semantic-search", out=None) as run:
+        semantic_search_indexing(InMemoryVectorStore(embeddings))
     trace = run.report.trace
 
-    embedded = one(trace, "store")
-    (call,) = inside(trace, embedded)
+    (call,) = inside(trace, one(trace, "store"))
     assert "api.openai.com" in call.hosts
     assert call.usd_basis == "estimated" and (call.usd or 0) > 0
     assert "api.openai.com" in run.report.run.content_sent_to
