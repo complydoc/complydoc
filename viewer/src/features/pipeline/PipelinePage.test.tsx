@@ -7,11 +7,11 @@ import { nestedReport } from "@/test/trace";
 import { PipelinePage } from "./PipelinePage";
 
 describe("PipelinePage", () => {
-  beforeEach(() => window.history.replaceState(null, "", "#pipeline"));
+  beforeEach(() => window.history.replaceState(null, "", "#pipeline?trace=open"));
 
   it("heads the run with what it took, cost, and what it sent where", () => {
     renderPage(<PipelinePage report={nestedReport()} />);
-    const header = screen.getByRole("banner", { name: "The run" });
+    const header = screen.getByRole("group", { name: "The run" });
     expect(header).toHaveTextContent("Tokens embedded1,200");
     expect(header).toHaveTextContent("Sent toapi.example.com");
     expect(header).toHaveTextContent("Identifiers sent1");
@@ -94,7 +94,7 @@ describe("PipelinePage", () => {
   it("reads an audit as a trace of its documents, from the times it recorded", () => {
     const report = sampleAudit();
     renderPage(<PipelinePage report={report} />);
-    expect(screen.getByRole("banner", { name: "The run" })).toHaveTextContent(`${report.documents.length} documents`);
+    expect(screen.getByRole("group", { name: "The run" })).toHaveTextContent(`${report.documents.length} documents`);
     expect(screen.getByRole("tree", { name: "Calls" })).toBeInTheDocument();
   });
 
@@ -102,7 +102,8 @@ describe("PipelinePage", () => {
     renderPage(<PipelinePage report={{ ...sampleAudit(), documents: [] }} />);
     expect(screen.getByText("No pipeline in this run")).toBeInTheDocument();
   });
-  it("lists the pipeline's other runs beside the trace, and opens one in place", async () => {
+  it("lists the pipeline's runs, and opens one's trace beside them", async () => {
+    window.history.replaceState(null, "", "#pipeline");
     const report = nestedReport();
     const older = { ...report, run: { ...report.run, started_at: "2026-09-29T10:00:00" } };
     const open = vi.fn();
@@ -121,15 +122,17 @@ describe("PipelinePage", () => {
         <PipelinePage report={report} />
       </FolderRunsContext.Provider>,
     );
-    const rail = screen.getByRole("navigation", { name: "Runs" });
-    const runs = within(rail).getAllByRole("button", { name: /IDs/ });
-    expect(runs).toHaveLength(2);
-    expect(runs[0]).toHaveAttribute("aria-current", "true");
-    expect(runs[1]).toHaveTextContent("1 IDs");
-    await userEvent.click(required(runs[1]));
+    const table = screen.getByRole("table", { name: "Runs" });
+    const rows = within(table).getAllByRole("row").slice(1);
+    expect(rows).toHaveLength(2);
+    expect(screen.queryByRole("complementary", { name: "Trace" })).not.toBeInTheDocument();
+    await userEvent.click(required(within(required(rows[0])).getAllByRole("cell")[1]));
+    const panel = screen.getByRole("complementary", { name: "Trace" });
+    expect(panel).toHaveTextContent("Run 1 of 2");
+    expect(within(panel).getByRole("tree", { name: "Calls" })).toBeInTheDocument();
+    await userEvent.click(within(panel).getByRole("button", { name: "Older run" }));
     expect(open).toHaveBeenCalledWith("old");
-    await userEvent.click(within(rail).getByRole("button", { name: "Hide the runs" }));
-    expect(screen.queryByRole("navigation", { name: "Runs" })).not.toBeInTheDocument();
-    window.localStorage.clear();
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("complementary", { name: "Trace" })).not.toBeInTheDocument();
   });
 });

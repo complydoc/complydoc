@@ -64,6 +64,8 @@ interface DataTableProps<T> {
   actions?: ReactNode;
   /** What a click anywhere on the row does, where it is not a place to go. */
   onRowClick?: (row: T) => void;
+  /** The row open beside the table, marked as picked. */
+  selected?: (row: T) => boolean;
 }
 
 const SORT_ICON = {
@@ -90,6 +92,7 @@ export function DataTable<T>({
   rowHref,
   onRowClick,
   actions,
+  selected,
 }: DataTableProps<T>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [query, setQuery] = useState("");
@@ -160,7 +163,11 @@ export function DataTable<T>({
                   return (
                     <TableHead
                       key={header.id}
-                      className={cn("first:pl-4 last:pr-4", numeric && "text-right", narrow && "w-px whitespace-nowrap")}
+                      className={cn(
+                        "first:pl-4 last:pr-4",
+                        numeric && "text-right",
+                        narrow && "w-px whitespace-nowrap",
+                      )}
                     >
                       {header.column.getCanSort() ? (
                         <Button
@@ -185,6 +192,8 @@ export function DataTable<T>({
             {table.getRowModel().rows.map((row) => (
               <TableRow
                 key={row.id}
+                data-state={selected?.(row.original) ? "selected" : undefined}
+                aria-selected={selected ? selected(row.original) : undefined}
                 className={cn((onRowClick || rowHref?.(row.original)) && "cursor-pointer")}
                 onClick={(event) => {
                   const href = rowHref?.(row.original);

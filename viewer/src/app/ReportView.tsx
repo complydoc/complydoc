@@ -171,7 +171,7 @@ export function ReportView({
               className={cn(
                 "mx-auto w-full",
                 // The trace takes the window: most of what it shows is the trace itself.
-                page === "pipeline" && !open ? "p-3 md:p-4" : "p-4 md:p-6",
+                "p-4 md:p-6",
                 page === "documents" || page === "pipeline" ? "max-w-none" : "max-w-7xl",
               )}
             >

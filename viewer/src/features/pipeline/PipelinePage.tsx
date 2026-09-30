@@ -1,23 +1,18 @@
-import { TriangleAlertIcon } from "lucide-react";
-import type { ReactNode } from "react";
+import { useContext, type ReactNode } from "react";
 import { NotInRun } from "@/components/NotInRun";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useHashParam } from "@/hooks/useHashRoute";
+import { FolderRunsContext } from "@/hooks/useFolderRuns";
 import { cn } from "@/lib/utils";
-import { formatCount, formatDate, formatSeconds, formatUsd, plural } from "@/report/format";
 import { traceOf } from "@/report/auditTrace";
-import { sameDocument } from "@/report/chunkPlaces";
+import { formatCount, formatSeconds, formatUsd, plural } from "@/report/format";
 import { measured } from "@/report/measured";
-import { spansOf, traceSpan, traceTotals, visibleSpans, type Span } from "@/report/traceTree";
-import { changeBetween, stepsOf } from "@/report/traceView";
+import { traceTotals } from "@/report/traceTree";
 import type { Report } from "@/report/types";
-import { RunsRail } from "./RunsRail";
-import { SpanDetail } from "./SpanDetail";
-import { ValueTrail } from "./ValueTrail";
-import { Waterfall } from "./Waterfall";
+import { RunTrace } from "./RunTrace";
+import { TracePanel } from "./TracePanel";
+import { TracesTable, type TracedRun } from "./TracesTable";
 
-/** One of the run's figures in the strip across the top: a label over its value. */
+/** One of the figures across the runs: a label over its value. */
 function Figure({ label, children, tone }: { label: string; children: ReactNode; tone?: string }) {
   return (
     <div className="flex min-w-0 flex-col px-4 first:pl-0">
@@ -27,134 +22,80 @@ function Figure({ label, children, tone }: { label: string; children: ReactNode;
   );
 }
 
-/** The report's document a call read: the one file it names, where the report holds it. */
-function documentOf(report: Report, span: Span): number | null {
-  const named = span.stage.kind === "document" ? (span.stage.sources[0] ?? null) : span.label || null;
-  const source = named ?? (span.stage.sources.length === 1 ? (span.stage.sources[0] ?? null) : null);
-  if (!source) return null;
-  const index = report.documents.findIndex((d) => sameDocument(source, d.relative_path));
-  return index >= 0 ? index : null;
-}
-
-function find(roots: Span[], index: number): Span | undefined {
-  for (const span of roots) {
-    if (span.stage.index === index) return span;
-    const inside = find(span.children, index);
-    if (inside) return inside;
-  }
-  return undefined;
+function median(values: number[]): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? (sorted[middle] ?? 0) : ((sorted[middle - 1] ?? 0) + (sorted[middle] ?? 0)) / 2;
 }
 
 /**
- * A run recorded with `cd.observe`, as a trace: every call the pipeline made, the calls
- * made inside each, when each ran and for how long; the call picked, with what it passed
- * on and how it was set; and its figures. The run's totals head the page. The second view
- * follows each identifier through the steps.
+ * Every run of the pipeline as a table, newest first, with figures across them above; a run
+ * picked opens its trace in a panel over the page, the table left showing beside it.
  */
 export function PipelinePage({ report }: { report: Report }) {
-  const [spanParam, setSpan] = useHashParam("span");
-  const [view, setView] = useHashParam("view");
+  const { runs, current, open } = useContext(FolderRunsContext);
+  const [panel, setPanel] = useHashParam("trace");
+  const [, setSpan] = useHashParam("span");
   const trace = traceOf(report);
   if (!trace || !measured(report, "trace")) return <NotInRun report={report} content="trace" />;
 
-  const roots = spansOf(trace);
-  // complydoc's own run of a folder: its documents, not a pipeline's steps.
+  // The folder's runs with a trace of this pipeline; a report opened on its own is its only run.
+  const traced: TracedRun[] = runs.flatMap((run) => {
+    const other = run.id === current ? trace : traceOf(run.report);
+    return other && measured(run.report, "trace") && other.kind === trace.kind && other.name === trace.name
+      ? [{ run, trace: other }]
+      : [];
+  });
+  const all = traced.length > 0 ? traced : [{ run: { id: "this", name: "", report }, trace }];
+  const here = current ?? "this";
+  const at = all.findIndex((r) => r.run.id === here);
+  const shown = panel !== null && at >= 0;
+
+  const show = (id: string) => {
+    if (id !== here) open(id);
+    // The call picked belongs to the run left; the new one opens on its own.
+    window.location.assign("#pipeline?trace=open");
+  };
+  const close = () => {
+    setSpan(null);
+    setPanel(null);
+  };
+  const totals = all.map((r) => traceTotals(r.trace));
+  const priced = totals.filter((t) => t.usd !== null);
+  const sending = totals.filter((t) => t.hosts.length > 0 && (t.identifiersSent ?? 0) > 0).length;
   const audit = trace.kind === "audit";
-  const steps = stepsOf(trace);
-  const totals = traceTotals(trace);
-  const sender = [...trace.stages].reverse().find((s) => s.hosts.length > 0);
-  const selected = spanParam !== null ? Number(spanParam) : (sender?.index ?? roots[0]?.stage.index ?? 0);
-  const span = find(roots, selected) ?? roots[0];
-  if (!span) return null;
-  // Against the step before, for a step the pipeline itself called.
-  const at = steps.findIndex((step) => step.stages.some((s) => s.index === span.stage.index));
-  const [before, current] = [steps[at - 1], steps[at]];
-  const change = at > 0 && before && current ? changeBetween(before, current) : null;
-  // The call after this one, in the order the tree lists them.
-  const order = visibleSpans(roots, new Set()).map((s) => s.stage.index);
-  const next = order[order.indexOf(span.stage.index) + 1];
 
   return (
-    <div className="flex flex-col gap-3 lg:h-[calc(100svh-5rem)]">
-      <header aria-label="The run" className="flex flex-wrap items-center gap-x-6 gap-y-2">
+    <div className="flex flex-col gap-4">
+      <header aria-label="The pipeline" className="flex flex-wrap items-end gap-x-8 gap-y-2">
         <div className="flex min-w-0 flex-col">
           <h1 className="truncate font-heading text-lg leading-tight font-semibold tracking-tight">{trace.name}</h1>
           <span className="text-xs text-muted-foreground">
-            {formatDate(report.run.started_at)} ·{" "}
-            {audit ? plural(report.documents.length, "document") : plural(steps.length, "step")}
+            {audit ? "Folder audits" : "Pipeline"} · {plural(all.length, "run")}
           </span>
         </div>
         <dl className="flex flex-wrap divide-x">
-          <Figure label="Duration">
-            {formatSeconds(totals.seconds)}
-            {!audit && trace.overhead_seconds > 0 && (
-              <span
-                className="ml-1.5 text-xs font-normal text-muted-foreground"
-                title="What complydoc spent afterwards, auditing what the run read"
-              >
-                + {formatSeconds(trace.overhead_seconds)} observing
-              </span>
-            )}
-          </Figure>
-          {totals.tokensEmbedded !== null && (
-            <Figure label="Tokens embedded">{formatCount(totals.tokensEmbedded)}</Figure>
+          <Figure label="Median duration">{formatSeconds(median(totals.map((t) => t.seconds)))}</Figure>
+          {priced.length > 0 && (
+            <Figure label="Total cost">{formatUsd(priced.reduce((sum, t) => sum + (t.usd ?? 0), 0))}</Figure>
           )}
-          {(totals.usd !== null || totals.unpriced) && (
-            <Figure label="Cost">{totals.usd !== null ? formatUsd(totals.usd) : "not priced"}</Figure>
-          )}
-          {totals.hosts.length > 0 && <Figure label="Sent to">{totals.hosts.join(", ")}</Figure>}
-          {totals.identifiersSent !== null && totals.hosts.length > 0 && (
-            <Figure label="Identifiers sent" tone={totals.identifiersSent > 0 ? "text-destructive" : "text-success"}>
-              {formatCount(totals.identifiersSent)}
+          {totals.some((t) => t.hosts.length > 0) && (
+            <Figure label="Runs that sent identifiers" tone={sending > 0 ? "text-destructive" : "text-success"}>
+              {formatCount(sending)}
             </Figure>
           )}
         </dl>
-        {!audit && (
-          <ToggleGroup
-            type="single"
-            variant="outline"
-            size="sm"
-            className="ml-auto"
-            value={view === "identifiers" ? "identifiers" : "trace"}
-            onValueChange={(next) => next && setView(next === "trace" ? null : next)}
-            aria-label="View"
-          >
-            <ToggleGroupItem value="trace">Trace</ToggleGroupItem>
-            <ToggleGroupItem value="identifiers">Identifiers</ToggleGroupItem>
-          </ToggleGroup>
-        )}
       </header>
-
-      {trace.error && (
-        <Alert variant="destructive">
-          <TriangleAlertIcon />
-          <AlertTitle>The pipeline raised {trace.error}</AlertTitle>
-          <AlertDescription>The trace ends where it stopped.</AlertDescription>
-        </Alert>
-      )}
-
-      {view === "identifiers" && !audit ? (
-        <ValueTrail steps={steps} selected={at} />
-      ) : (
-        <div className="flex min-h-[32rem] flex-1 flex-col overflow-hidden rounded-xl border bg-card lg:min-h-0 lg:flex-row">
-          {!audit && <RunsRail pipeline={trace.name} />}
-          <div className="flex max-h-96 min-h-0 flex-col border-b lg:max-h-none lg:w-[52%] lg:shrink-0 lg:border-r lg:border-b-0">
-            <Waterfall
-              roots={roots}
-              selected={span.stage.index}
-              onSelect={(index) => setSpan(String(index))}
-              total={traceSpan(trace)}
-            />
-          </div>
-          <SpanDetail
-            key={span.stage.index}
-            span={span}
-            from={at > 0 && before && span.stage.parent == null ? before.component : null}
-            change={change}
-            onNext={next === undefined ? null : () => setSpan(String(next))}
-            document={documentOf(report, span)}
-          />
-        </div>
+      <TracesTable runs={all} open={shown ? here : null} onOpen={show} />
+      {shown && (
+        <TracePanel
+          position={{ at: at + 1, of: all.length }}
+          onClose={close}
+          onPrevious={at > 0 ? () => show(all[at - 1]?.run.id ?? here) : null}
+          onNext={at < all.length - 1 ? () => show(all[at + 1]?.run.id ?? here) : null}
+        >
+          <RunTrace report={report} trace={trace} />
+        </TracePanel>
       )}
     </div>
   );
