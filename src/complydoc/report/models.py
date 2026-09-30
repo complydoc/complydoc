@@ -62,7 +62,7 @@ __all__ = [
     "VerificationSummary",
 ]
 
-SCHEMA_VERSION = 17
+SCHEMA_VERSION = 18
 
 
 def report_shape() -> dict[str, object]:
@@ -1045,13 +1045,40 @@ class StagePreview:
 
 
 @dataclass(frozen=True, slots=True)
+class StageDocument:
+    """Schema 18: what a stage passed on, or for an embedding or store stage was given, of
+    one document, so a document can be followed from its loader to where it was sent."""
+
+    source: str
+    items: int
+    """Pages, documents, chunks or texts, as the stage handled them."""
+    characters: int
+    empty: int
+    """Items with no text."""
+    identifiers: list[str] = field(default_factory=list)
+    """Fingerprints of the identifiers in them, as the stage's `identifiers` lists them."""
+
+
+@dataclass(frozen=True, slots=True)
+class StageWarning:
+    """Schema 18: something wrong with what a stage passed on that raised no error: a
+    document that loaded no text, garbled text, near-empty chunks, a text too long for
+    the embedding model."""
+
+    code: str
+    message: str
+    sources: list[str] = field(default_factory=list)
+    """The documents it concerns, where it concerns some and not the whole stage."""
+
+
+@dataclass(frozen=True, slots=True)
 class TraceStage:
     """One step of an observed ingestion pipeline: a loader, a splitter, a transformer, an
     embedding call, or a function of the caller's own marked with `@cd.stage`."""
 
     index: int
     kind: str
-    """`load`, `transform`, `split`, `embed` or `custom`."""
+    """`load`, `transform`, `split`, `embed`, `store` or `custom`."""
     component: str
     """The class, or the function's name."""
     module: str
@@ -1103,11 +1130,18 @@ class TraceStage:
     finished: bool = True
     """False for a stage read lazily whose items were not all taken before the block ended."""
     error: str | None = None
+    traceback: str | None = None
+    """Schema 18: where the error was raised, file paths shortened and identifiers masked."""
+    documents: list[StageDocument] = field(default_factory=list)
+    """Schema 18: what the stage handled of each document."""
+    warnings: list[StageWarning] = field(default_factory=list)
+    """Schema 18."""
 
 
 @dataclass(frozen=True, slots=True)
 class Trace:
-    """Schema 17: an ingestion pipeline observed with `cd.observe`, stage by stage."""
+    """Schema 17, with schema 18's documents, warnings and tracebacks on each stage: an
+    ingestion pipeline observed with `cd.observe`, stage by stage."""
 
     name: str
     scan: str

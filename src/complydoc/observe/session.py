@@ -17,6 +17,7 @@ import inspect
 import os
 import threading
 import time
+import traceback as tracebacks
 import warnings
 from collections.abc import Callable, Iterator, Sequence
 from contextvars import ContextVar
@@ -75,6 +76,7 @@ class Recording:
     connections: list[str] = field(default_factory=list)
     finished: bool = True
     error: str | None = None
+    traceback: str | None = None
 
 
 class Observation:
@@ -283,6 +285,7 @@ def running(recording: Recording) -> Iterator[None]:
         raise
     except BaseException as error:
         recording.error = f"{type(error).__name__}: {error}"
+        recording.traceback = "".join(tracebacks.format_exception(error))
         raise
     finally:
         recording.seconds += time.perf_counter() - started
@@ -291,7 +294,12 @@ def running(recording: Recording) -> Iterator[None]:
 
 
 def finish(recording: Recording, result: Any) -> None:
-    """Keep what the stage returned: documents, or for an embedding call, the vectors' shape."""
+    """Keep what the stage returned: documents, or for an embedding call, the vectors' shape,
+    or for a vector store, how many it stored."""
+    if recording.kind == "store":
+        if isinstance(result, list | tuple):
+            recording.vectors = len(result)
+        return
     if recording.kind == "embed":
         if isinstance(result, list):
             recording.vectors = len(result)

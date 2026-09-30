@@ -52,16 +52,32 @@ opens the guide for the page on screen.
 
 ### The trace
 
-A run recorded with [`cd.observe`](observe-a-pipeline.md) is a tree of every call
-the pipeline made, the calls made inside each beneath it: a directory loader holds a
-row for each file. Each row has the call's kind, and pills for its time, coloured by
-its share of the run, its tokens, its cost and the identifiers in it. The call picked
-shows its input and output as YAML, its settings, and its figures. Up and down, or J
-and K, move through the calls; left and right fold and unfold one. The header says
-what the run took, cost and sent where, and where its time went by kind of work.
-A second view follows each identifier through the steps.
+The Trace page lists every run of a pipeline recorded with
+[`cd.observe`](observe-a-pipeline.md), newest first: when it started, how long it
+took, its warnings, tokens, cost, where it sent text and the identifiers it sent.
+Above the table are figures across the runs. Picking a run opens its trace in a
+panel over the page, the table still showing beside it: up and down go to the next
+run, Escape closes it, and its left edge resizes it.
 
-An audit is shown the same way, from the times it recorded: its folders, each
+A trace is a waterfall. The run is at the root, each step under it, and a component
+called several times in a row, such as a loader called once a file, is one row that
+opens onto each call. Each row is drawn where it ran on the run's time axis, with its
+time, cost and the identifiers it passed on; a warning sign marks a step with a
+warning. Search narrows the tree to the calls whose name or file matches, and two
+switches to the calls that passed on an identifier or had a warning or an error. Up
+and down, or J and K, move through the calls; left and right fold and unfold one.
+
+The call picked shows its warnings, its figures, its input and output as YAML, its
+settings and everything else measured about it. A step that raised shows where, in
+its traceback. A split shows the spread of its chunks' sizes, the flags complydoc
+set on them and the smallest few.
+
+Two more views follow the run another way. Documents follows each document from the
+loader that read it to where it was sent: what each step made of it, the identifiers
+it gained or lost, its warnings, and whether it reached the end at all. Identifiers
+follows each identifier through the steps.
+
+An audit is shown as a trace too, from the times it recorded: its folders, each
 document in them, and inside each document its readers, OCR, the analysis and the
 identifier scan. A large run opens folded, a line a folder.
 

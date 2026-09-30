@@ -12,6 +12,7 @@ from __future__ import annotations
 import contextlib
 import dataclasses
 import datetime as dt
+import os
 import re
 import time
 from collections.abc import Iterable
@@ -32,11 +33,13 @@ from complydoc.loaders.inspection import (
     inspect_run,
 )
 from complydoc.observe.measure import Measurer
+from complydoc.observe.quality import warnings_for
 from complydoc.report.chunk_run import chunk_run_report
 from complydoc.report.json_writer import write_json
 from complydoc.report.models import (
     AuditReport,
     Limitation,
+    StageDocument,
     StageIdentifier,
     Trace,
     TraceStage,
@@ -52,6 +55,8 @@ __all__ = ["build_report", "summary_lines", "write_trace"]
 
 _HOST = re.compile(r"DNS lookup of '([^']+)'")
 _ADDRESS = re.compile(r"connect(?:_ex)? to \('([^']+)'")
+_PACKAGES = re.compile(r'"[^"\n]*[\\/](?:site|dist)-packages[\\/]')
+_TRACEBACK_LINES = 60
 
 
 def build_report(
@@ -88,21 +93,34 @@ def build_report(
         report.chunks = chunk_reports
 
     loads = [r for r in _outermost(recordings, "load") if r.outputs]
+    # A directory loader passes on what the loader it runs for each file did; the warnings
+    # are that loader's.
+    directories = {r.parent for r in recordings if r.kind == "load" and r.parent is not None}
     scans = _Scans()
+    origin: dict[str, str] = {}
     stages = []
     for recording in recordings:
         config = config_for(recording)
         from_report = len(loads) == 1 and recording is loads[0] and config is settings
+        chunks = chunk_index.get(recording.index)
+        stage = _stage(
+            recording,
+            config,
+            observation.reveal,
+            root,
+            scans,
+            chunks,
+            report if from_report else None,
+            measurer,
+        )
         stages.append(
-            _stage(
+            _followed(
+                stage,
                 recording,
-                config,
-                observation.reveal,
-                root,
-                scans,
-                chunk_index.get(recording.index),
-                report if from_report else None,
-                measurer,
+                _Context(config, observation.reveal, root, scans, measurer, origin),
+                chunks=chunk_reports[chunks] if chunks is not None else None,
+                report=report if from_report else None,
+                warn=recording.index not in directories,
             )
         )
 
@@ -169,7 +187,9 @@ def _documents_report(
     loads = [r for r in _outermost(recordings, "load") if r.outputs]
     documents = [item for r in loads for item in r.outputs or []]
     if not documents:
-        given = next((r.inputs for r in recordings if r.kind != "embed" and r.inputs), None)
+        given = next(
+            (r.inputs for r in recordings if r.kind not in ("embed", "store") and r.inputs), None
+        )
         documents = [item for item in given or [] if not isinstance(item, str)]
     if not documents:
         return chunk_run_report(
@@ -227,12 +247,13 @@ def _stage(
     report: AuditReport | None,
     measurer: Measurer,
 ) -> TraceStage:
-    embed = recording.kind == "embed"
+    # An embedding call or a vector store passes nothing on: what it was given is what left.
+    sends = recording.kind in ("embed", "store")
     given = _contents(recording.inputs)
-    passed = _contents(recording.inputs if embed else recording.outputs)
+    passed = _contents(recording.inputs if sends else recording.outputs)
     texts = [text for text, _ in passed]
     tokens_in = measurer.tokens([t for t, _ in given]) if recording.inputs is not None else None
-    tokens_out = None if embed or recording.outputs is None else measurer.tokens(texts)
+    tokens_out = None if sends or recording.outputs is None else measurer.tokens(texts)
     usd, basis = measurer.cost(recording, tokens_in)
 
     if config is None:
@@ -245,7 +266,7 @@ def _stage(
         identifiers = _by_fingerprint(matches)
         hidden = sum(scans.hidden(text, config) for text in texts)
 
-    keys_out = sorted({key for _, metadata in passed for key in metadata}) if not embed else []
+    keys_out = sorted({key for _, metadata in passed for key in metadata})
     keys_in = {key for _, metadata in given for key in metadata}
     return TraceStage(
         index=recording.index,
@@ -257,10 +278,10 @@ def _stage(
         tags=recording.tags,
         parameters=recording.parameters,
         documents_in=len(given) if recording.inputs is not None else None,
-        documents_out=None if embed or recording.outputs is None else len(recording.outputs),
+        documents_out=None if sends or recording.outputs is None else len(recording.outputs),
         characters_in=sum(len(t) for t, _ in given) if recording.inputs is not None else None,
-        characters_out=None if embed or recording.outputs is None else sum(map(len, texts)),
-        sources=[] if embed else _sources(passed, root),
+        characters_out=None if sends or recording.outputs is None else sum(map(len, texts)),
+        sources=_sources(passed, root),
         scanned=_scanned(config),
         identifiers=identifiers,
         hidden=hidden,
@@ -289,6 +310,128 @@ def _stage(
         finished=recording.finished,
         error=recording.error,
     )
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class _Context:
+    """What following each stage's documents needs, the same for every stage."""
+
+    config: Config | None
+    reveal: bool
+    root: Path | None
+    scans: _Scans
+    measurer: Measurer
+    origin: dict[str, str]
+    """The document each text came from, as the stages before named it: an embedding call
+    is given bare texts, which are known by the chunks they were."""
+
+
+def _followed(
+    stage: TraceStage,
+    recording: Recording,
+    context: _Context,
+    *,
+    chunks: ChunkReport | None,
+    report: AuditReport | None,
+    warn: bool,
+) -> TraceStage:
+    """`stage` with what it did to each document, what was wrong with what it passed on,
+    and where it raised."""
+    sends = recording.kind in ("embed", "store")
+    passed = _contents(recording.inputs if sends else recording.outputs)
+    items = []
+    for text, metadata in passed:
+        source = _source(metadata, context.root) or context.origin.get(text)
+        if source:
+            context.origin.setdefault(text, source)
+        items.append((text, source))
+    config = context.config if stage.scanned != "off" else None
+    warnings = (
+        warnings_for(
+            recording.kind,
+            items,
+            chunks=chunks,
+            model=Measurer.model(recording),
+            tokens=lambda text: context.measurer.tokens([text]),
+        )
+        if warn
+        else []
+    )
+    return dataclasses.replace(
+        stage,
+        documents=_documents(items, config, context, report),
+        warnings=warnings,
+        traceback=_traceback(recording.traceback, context) if recording.traceback else None,
+    )
+
+
+def _documents(
+    items: list[tuple[str, str | None]],
+    config: Config | None,
+    context: _Context,
+    report: AuditReport | None,
+) -> list[StageDocument]:
+    grouped: dict[str, list[str]] = {}
+    for text, source in items:
+        if source:
+            grouped.setdefault(source, []).append(text)
+    audited = _audited(report) if report is not None and config is not None else None
+    documents = []
+    for source, texts in grouped.items():
+        if config is None:
+            found: list[str] = []
+        elif audited is not None:
+            found = _lookup(audited, source)
+        else:
+            matches = (m for t in texts for m in context.scans.matches(t, config, context.reveal))
+            found = list(dict.fromkeys(_key(m) for m in matches))
+        documents.append(
+            StageDocument(
+                source=source,
+                items=len(texts),
+                characters=sum(map(len, texts)),
+                empty=sum(1 for t in texts if not t.strip()),
+                identifiers=found,
+            )
+        )
+    return documents
+
+
+def _audited(report: AuditReport) -> dict[str, list[str]]:
+    """Each audited document's identifiers, by its path: the loader's documents were
+    scanned by the audit, and are not scanned again."""
+    return {
+        d.relative_path: list(dict.fromkeys(_key(m) for m in d.sensitive.matches))
+        for d in report.documents
+        if d.sensitive is not None
+    }
+
+
+def _lookup(audited: dict[str, list[str]], source: str) -> list[str]:
+    if source in audited:
+        return audited[source]
+    name = PurePath(source).name
+    return next(
+        (
+            found
+            for path, found in audited.items()
+            if path.endswith(source) or source.endswith(path) or PurePath(path).name == name
+        ),
+        [],
+    )
+
+
+def _traceback(text: str, context: _Context) -> str:
+    """The last lines of a traceback, with the account's folders and the installed
+    packages' paths cut, and identifiers in the error's message masked."""
+    home = str(Path.home())
+    lines = []
+    for line in text.splitlines()[-_TRACEBACK_LINES:]:
+        line = _PACKAGES.sub('"', line)
+        if context.root is not None:
+            line = line.replace(str(context.root) + os.sep, "")
+        lines.append(line.replace(home, "~"))
+    return context.measurer.masked("\n".join(lines))
 
 
 def _scanned(config: Config | None) -> str:
@@ -349,10 +492,14 @@ def _report_matches(report: AuditReport) -> list[SensitiveMatch] | None:
     return [m for d in report.documents if d.sensitive for m in d.sensitive.matches]
 
 
+def _key(match: SensitiveMatch) -> str:
+    return match.fingerprint or f"{match.category}:{match.masked}"
+
+
 def _by_fingerprint(matches: Iterable[SensitiveMatch]) -> list[StageIdentifier]:
     found: dict[str, StageIdentifier] = {}
     for match in matches:
-        key = match.fingerprint or f"{match.category}:{match.masked}"
+        key = _key(match)
         seen = found.get(key)
         found[key] = (
             dataclasses.replace(seen, occurrences=seen.occurrences + 1)
@@ -363,18 +510,21 @@ def _by_fingerprint(matches: Iterable[SensitiveMatch]) -> list[StageIdentifier]:
     return sorted(found.values(), key=lambda i: (severity.get(i.severity, 3), i.label, i.masked))
 
 
+def _source(metadata: dict[str, Any], root: Path | None) -> str | None:
+    """The document an item came from, as the report names it."""
+    source = next((metadata[k] for k in SOURCE_KEYS if metadata.get(k)), None)
+    if not isinstance(source, str | PurePath):
+        return None
+    path = Path(source)
+    if root is not None and path.is_absolute():
+        with contextlib.suppress(ValueError):
+            path = path.relative_to(root)
+    return str(path)
+
+
 def _sources(contents: list[tuple[str, dict[str, Any]]], root: Path | None) -> list[str]:
-    names: dict[str, None] = {}
-    for _, metadata in contents:
-        source = next((metadata[k] for k in SOURCE_KEYS if metadata.get(k)), None)
-        if not isinstance(source, str | PurePath):
-            continue
-        path = Path(source)
-        if root is not None and path.is_absolute():
-            with contextlib.suppress(ValueError):
-                path = path.relative_to(root)
-        names[str(path)] = None
-    return list(names)
+    names = (_source(metadata, root) for _, metadata in contents)
+    return list(dict.fromkeys(name for name in names if name))
 
 
 def _hosts(connections: list[str]) -> list[str]:
@@ -497,6 +647,8 @@ def summary_lines(observation: Observation) -> list[str]:
         parts = []
         if first.kind == "embed":
             parts.append(f"{count(sum(s.documents_in or 0 for s in group), 'text')} embedded")
+        elif first.kind == "store":
+            parts.append(f"{count(sum(s.documents_in or 0 for s in group), 'document')} stored")
         elif first.documents_out is not None:
             parts.append(count(sum(s.documents_out or 0 for s in group), "document"))
         if first.scanned != "off":
@@ -506,6 +658,7 @@ def summary_lines(observation: Observation) -> list[str]:
         if hosts:
             parts.append("sent to " + ", ".join(hosts))
         parts.extend(f"raised {s.error}" for s in group if s.error)
+        parts.extend(w.message for s in group for w in s.warnings)
         calls = f" ({len(group)} calls)" if len(group) > 1 else ""
         lines.append(
             f"  {number}. {first.kind:<9} {first.component + calls:<34} {', '.join(parts)}"

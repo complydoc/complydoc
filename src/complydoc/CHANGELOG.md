@@ -7,6 +7,31 @@ separately.
 
 ## [Unreleased]
 
+A trace now says what happened to each document, and what went wrong without an error.
+The report JSON moves to schema 18, which only adds fields.
+
+### Added
+
+- `cd.observe` records vector stores: LangChain's `add_documents` and `add_texts`,
+  LlamaIndex's `add`, with what was stored and the metadata kept with it.
+- Each step of a trace records what it did with each document. The viewer's
+  Documents view follows one from its loader to where it was sent, the identifiers
+  it gained or lost on the way, and says when it went no further than a step.
+- Warnings for failures that raise nothing: documents that loaded no text, empty
+  pages, garbled text, chunks under 20 tokens or repeated, empty texts embedded or
+  stored, and texts over an embedding model's token limit.
+- A step that raised keeps its traceback, with file paths shortened and identifiers
+  masked.
+- The viewer's Trace page lists every run of a pipeline, and opens a run's trace in
+  a panel beside the list. The run is the root of its trace, and a component called
+  several times in a row is one row that opens onto each call.
+- In a trace: search and filters for calls with identifiers or problems, warning
+  marks on calls, and the spread of a split's chunk sizes.
+
+### Changed
+
+- The viewer's sidebar stays folded or open as it was left, across runs and reloads.
+
 ## [0.6.2] — 2026-09-29
 
 Comparing loaders becomes a way to read documents, not a verdict: each document's

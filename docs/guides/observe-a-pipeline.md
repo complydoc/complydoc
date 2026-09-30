@@ -15,13 +15,17 @@ Nothing in your pipeline changes. Outside the block, nothing is touched.
 
 | Library | Observed |
 | --- | --- |
-| LangChain | document loaders (`load`, `lazy_load`, `aload`, `alazy_load`), document transformers, text splitters (`split_documents`, `create_documents`) and embedding models (`embed_documents`, `aembed_documents`) |
-| LlamaIndex | readers (`load_data`, `lazy_load_data` and their async forms), node parsers (`get_nodes_from_documents`), embedding models (`get_text_embedding_batch`), and any other transform component an `IngestionPipeline` runs |
+| LangChain | document loaders (`load`, `lazy_load`, `aload`, `alazy_load`), document transformers, text splitters (`split_documents`, `create_documents`), embedding models (`embed_documents`, `aembed_documents`) and vector stores (`add_documents`, `add_texts` and their async forms) |
+| LlamaIndex | readers (`load_data`, `lazy_load_data` and their async forms), node parsers (`get_nodes_from_documents`), embedding models (`get_text_embedding_batch`), vector stores (`add`, `async_add`), and any other transform component an `IngestionPipeline` runs |
 | complydoc | its pipeline steps, such as `MaskIdentifiers` and `StripPathMetadata` |
 | Your code | any function marked `@cd.stage` |
 
 A LlamaIndex embedding model is sent each node's text together with its metadata, so
 its step is recorded where the batch is embedded, and scanned as sent.
+
+A vector store's step is what it was given, since that is what stays in the index:
+its texts, the metadata kept with them and the identifiers in both. A store that
+embeds what it is given holds the embedding call as a step inside it.
 
 Classes are observed if they were imported before the block opened. A call made
 inside another observed call is part of it: `load` calling `lazy_load` is one step.
@@ -43,12 +47,29 @@ given, and a list it returns is what it passed on.
   drawn over the documents in the viewer.
 - Every step's output is scanned for identifiers, so one value can be followed from
   the loader to what the embedding model was sent.
+- Every step records what it did with each document, so a document can be followed
+  from its loader to where it was sent, or to the step it went no further than.
+- Each step is checked for the failures that raise nothing (below).
 - The report is written to `.complydoc/<name>-<time>.json`. Each run is its own file;
   `complydoc ui` groups runs by the pipeline's name.
 
 `run.report` is the report, `run.path` where it was written, and `run.summary()` a
 line per step. Scanning happens after the pipeline has run, so the step timings are
 the pipeline's own; the time observing took is reported apart.
+
+## Warnings
+
+A pipeline's commonest failures raise no error. Each is a warning on the step whose
+output shows it, naming the documents it concerns:
+
+| Step | Warns of |
+| --- | --- |
+| Loader | A document that loaded no text, such as a scan without OCR; pages with no text; text garbled by replacement characters or words run together |
+| Splitter | Chunks under 20 tokens; chunks repeating an earlier one |
+| Embedding model | Empty texts; texts over the model's token limit, for the models whose limit complydoc knows |
+| Vector store | Empty texts stored |
+
+`run.summary()` ends each step's line with its warnings.
 
 ## The network
 
@@ -93,5 +114,6 @@ viewer shows such a name as not looked for at that step, never as removed by it.
 ## If something fails
 
 What the pipeline raises is raised as usual, after the trace is written with the
-step that raised it. If complydoc fails to record the pipeline, the pipeline's
+step that raised it and its traceback. The traceback's file paths are shortened, to
+the package or to the folder the run read, and identifiers in its message masked. If complydoc fails to record the pipeline, the pipeline's
 result stands: complydoc warns, and `run.error` says why.

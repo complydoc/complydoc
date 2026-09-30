@@ -32,6 +32,18 @@ def _run_together(text: str) -> int:
     return count
 
 
+def garbled_rate(text: str) -> float | None:
+    """Replacement characters and run-together words per 1,000 characters of `text`, or
+    None for a text too short for the rate to mean anything.
+
+    Without the page's own characters, broken ligatures are not counted: a loader's text
+    has usually had them normalised away.
+    """
+    if len(text) < _MIN_CHARS:
+        return None
+    return (text.count(_REPLACEMENT) + _run_together(text)) / len(text) * 1000
+
+
 @signal
 class GarbledSignal:
     id = "garbled_char_rate"

@@ -40,6 +40,12 @@ _INPUT: Final = {
     "aget_text_embedding_batch": "texts",
     "__call__": "nodes",
     "acall": "nodes",
+    "add_documents": "documents",
+    "aadd_documents": "documents",
+    "add_texts": "texts",
+    "aadd_texts": "texts",
+    "add": "nodes",
+    "async_add": "nodes",
 }
 """The argument holding what a method is given, by method."""
 
@@ -86,6 +92,14 @@ _TARGETS: Final = (
         "embed",
         "langchain-core",
     ),
+    # Where the documents are kept: what a store is given is what stays in the index.
+    _Target(
+        "langchain_core.vectorstores.base",
+        "VectorStore",
+        ("add_documents", "aadd_documents", "add_texts", "aadd_texts"),
+        "store",
+        "langchain-core",
+    ),
     _Target("complydoc.pipeline.steps", "Step", ("transform_documents",), "transform", None),
     _Target(
         "llama_index.core.readers.base",
@@ -108,6 +122,13 @@ _TARGETS: Final = (
         "BaseEmbedding",
         ("get_text_embedding_batch", "aget_text_embedding_batch"),
         "embed",
+        "llama-index-core",
+    ),
+    _Target(
+        "llama_index.core.vector_stores.types",
+        "BasePydanticVectorStore",
+        ("add", "async_add"),
+        "store",
         "llama-index-core",
     ),
     # Any other step of an ingestion pipeline, such as a metadata extractor.

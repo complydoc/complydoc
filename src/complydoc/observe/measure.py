@@ -55,16 +55,21 @@ class Measurer:
             total += self._counted[text]
         return total
 
+    @staticmethod
+    def model(recording: Recording) -> str | None:
+        """The model a stage names in its settings, such as an embedding model's."""
+        return next(
+            (str(recording.parameters[k]) for k in _MODEL_KEYS if recording.parameters.get(k)),
+            None,
+        )
+
     def cost(self, recording: Recording, tokens_in: int | None) -> tuple[float | None, str | None]:
         """What an embedding step cost, and on what basis; nothing for any other step."""
         if recording.kind != "embed":
             return None, None
         if not recording.connections:
             return 0.0, "local"
-        model = next(
-            (str(recording.parameters[k]) for k in _MODEL_KEYS if recording.parameters.get(k)),
-            None,
-        )
+        model = self.model(recording)
         price = embedding_price(model) if model else None
         if price is None or tokens_in is None:
             return None, "unpriced"
@@ -104,6 +109,10 @@ class Measurer:
             except ValueError:
                 pass
         return f"/…/{path.name}"
+
+    def masked(self, text: str) -> str:
+        """`text` with identifiers masked, unless the run revealed them."""
+        return self._mask(text)
 
     def _mask(self, text: str) -> str:
         return text if self.reveal else mask_text(text, config=self.settings).text

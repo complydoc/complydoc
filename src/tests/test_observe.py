@@ -132,6 +132,10 @@ def test_what_the_pipeline_raises_is_raised_and_recorded(tmp_path: Path) -> None
     trace = observation.report.trace
     assert trace.error == "ValueError: no such page"
     assert trace.stages[0].error == "ValueError: no such page"
+    # Where it was raised, without the account's folders.
+    traceback = trace.stages[0].traceback
+    assert "Traceback" in traceback and "lazy_load" in traceback
+    assert str(Path.home()) not in traceback
 
 
 def test_a_lazy_stage_not_read_to_the_end_says_so(tmp_path: Path) -> None:
@@ -295,3 +299,55 @@ def test_an_audit_says_when_each_document_began_so_its_run_can_be_traced() -> No
     assert len(starts) == len(report.documents) and all(isinstance(s, float) for s in starts)
     # The trace itself is made by the viewer from these timings, not written again.
     assert report.trace is None
+
+
+def test_each_document_is_followed_from_its_loader_to_what_was_sent(pipeline) -> None:  # type: ignore[no-untyped-def]
+    load, split, embed = pipeline().report.trace.stages
+    iban = next(i.fingerprint for i in load.identifiers if i.label == "IBAN")
+    for stage in (load, split, embed):
+        (document,) = stage.documents
+        assert document.source == "contract.pdf"
+        assert iban in document.identifiers
+    assert load.documents[0].items == 2
+    # The embedding model is given bare texts, known by the chunks they were.
+    assert embed.documents[0].items == split.documents[0].items == split.documents_out
+
+
+def test_quiet_failures_are_warned_about(tmp_path: Path) -> None:
+    class Scanned(BaseLoader):
+        """A scan with no text layer, and a file with one blank page."""
+
+        def lazy_load(self):  # type: ignore[no-untyped-def]
+            yield Document(page_content="", metadata={"source": "scan.pdf", "page": 0})
+            yield Document(page_content="Terms apply. " * 10, metadata={"source": "a.pdf"})
+            yield Document(page_content="  ", metadata={"source": "a.pdf", "page": 1})
+
+    splitter = RecursiveCharacterTextSplitter(chunk_size=40, chunk_overlap=0)
+    with cd.observe("scans", out=None) as observation:
+        documents = Scanned().load()
+        chunks = splitter.split_documents(documents)
+        _Embeddings(size=8).embed_documents([c.page_content for c in chunks] + [""])
+    load, split, embed = observation.report.trace.stages
+    codes = {w.code: w for w in load.warnings}
+    assert codes["empty_document"].sources == ["scan.pdf"]
+    assert codes["empty_pages"].sources == ["a.pdf"]
+    assert codes["empty_pages"].message == "1 page with no text, in 1 document"
+    assert "tiny_chunks" in {w.code for w in split.warnings}
+    assert [w.code for w in embed.warnings] == ["empty_texts"]
+    assert "1 document loaded no text" in observation.summary()
+
+
+def test_a_vector_store_is_a_stage_holding_its_embedding_call(tmp_path: Path) -> None:
+    from langchain_core.vectorstores import InMemoryVectorStore
+
+    splitter = RecursiveCharacterTextSplitter(chunk_size=120, chunk_overlap=0)
+    with cd.observe("indexed", out=tmp_path) as observation:
+        chunks = splitter.split_documents(_Loader(str(tmp_path / "contract.pdf")).load())
+        InMemoryVectorStore(_Embeddings(size=8)).add_documents(chunks)
+    _load, _split, store, embed = observation.report.trace.stages
+    assert (store.kind, embed.kind, embed.parent) == ("store", "embed", store.index)
+    assert store.documents_in == store.vectors == len(chunks)
+    assert store.documents_out is None and "source" in store.metadata_keys
+    assert {i.label for i in store.identifiers} >= {"IBAN"}
+    assert store.documents[0].source == "contract.pdf"
+    assert "stored" in observation.summary()
