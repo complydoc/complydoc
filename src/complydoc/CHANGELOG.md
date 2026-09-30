@@ -28,6 +28,11 @@ separately.
   named in its page's new `image` field, and `complydoc ui` fetches a picture only when
   its page is shown. They were most of a large report: 1,671 of them made 427 MB that
   every reader had to hold whole. The report JSON moves to schema 20.
+- A report whose page text and layout pass 16 MB keeps each document's in
+  `.parts/documents/`, named in the document's `parts`, and is written without
+  indentation. What pages are priced and listed by stays in the JSON. `load_report` puts
+  the files back, and `complydoc ui` fetches a document's text when it is opened, so a
+  folder of thousands of pages opens without reading them all.
 - The viewer's Runs page is gone. The Traces page, as the sidebar now names it, lists
   every run of the folder or pipeline: a run with a trace opens it beside the list, a
   chunks run opens on Chunks and a loader comparison on Documents.

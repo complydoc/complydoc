@@ -1,5 +1,7 @@
 import { NotInRun } from "@/components/NotInRun";
 import { Section, SectionStack } from "@/components/Section";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useFullDocument, withDocument } from "@/hooks/useFullDocument";
 import { usePlan } from "@/hooks/usePlan";
 import { formatPageUsd, formatSeconds, plural } from "@/report/format";
 import { measured } from "@/report/measured";
@@ -21,13 +23,22 @@ interface DocumentsPageProps {
 export function DocumentsPage({ report, open }: DocumentsPageProps) {
   const { plan } = usePlan();
   const target = open === null ? null : parseTarget(open);
-  const document = target ? report.documents[target.document] : undefined;
-  if (target && document) {
+  const full = useFullDocument(report, target?.document);
+  if (target && full.document) {
+    if (full.state === "loading") return <Skeleton className="h-[70vh] w-full" aria-label="Opening the document" />;
+    if (full.state !== "ready")
+      return (
+        <p className="text-sm text-muted-foreground">
+          {full.state === "elsewhere"
+            ? "This report keeps each document's text and layout in the .parts folder beside it. Open it with complydoc ui to see them."
+            : "This document's text and layout could not be read from the .parts folder beside the report."}
+        </p>
+      );
     return (
       <DocumentDetail
         key={open}
-        report={report}
-        document={document}
+        report={withDocument(report, target.document, full.document)}
+        document={full.document}
         index={target.document}
         page={target.page}
         finding={target.finding}

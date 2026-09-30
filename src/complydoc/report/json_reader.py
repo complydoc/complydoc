@@ -41,7 +41,10 @@ def load_report(source: str | os.PathLike[str] | Mapping[str, Any]) -> AuditRepo
     if isinstance(source, Mapping):
         data = dict(source)
     else:
-        data = json.loads(Path(source).expanduser().read_text(encoding="utf-8"))
+        from complydoc.report.json_writer import merge_parts
+
+        path = Path(source).expanduser()
+        data = merge_parts(json.loads(path.read_text(encoding="utf-8")), path)
     version = data.get("run", {}).get("schema_version")
     if version not in READABLE_SCHEMA_VERSIONS:
         readable = ", ".join(map(str, READABLE_SCHEMA_VERSIONS))

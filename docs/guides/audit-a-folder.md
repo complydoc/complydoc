@@ -52,6 +52,14 @@ folder beside the report, `complydoc.parts/pages/` for `complydoc.json`, named i
 page's `image`. Keep or move the folder with the report; `complydoc ui` shows a page's
 picture from it.
 
+A report whose page text and page layout pass 16 MB keeps those beside it too, one file
+per document in `complydoc.parts/documents/`, named in the document's `parts`. What each
+page is priced and listed by stays in the JSON, with each reading of a page standing as
+`…` where the reader read text and as empty where it read none. `cd.load_report` puts
+the files back, and `complydoc ui` fetches a document's when it is opened, so a folder of
+thousands of pages opens without reading them all. The report is also written without
+indentation then. A smaller report is one file, but for its pictures.
+
 ## Report summary
 
 **Readiness** (global readiness in the report) is one number for *can these documents go through a

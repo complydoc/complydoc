@@ -309,6 +309,9 @@ export interface PagePreview {
 }
 
 export interface DocumentEntry {
+  /** Schema 20, for a large report only: the file beside it holding this document's page text
+   * and layout, fetched when the document is opened. Until then each reading is "…" or empty. */
+  parts?: string;
   path: string;
   relative_path: string;
   format: string;

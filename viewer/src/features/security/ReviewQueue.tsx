@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
+import { useFullDocument, withDocument } from "@/hooks/useFullDocument";
 import { activeEntry, ignoreCommand, useIgnores } from "@/hooks/useIgnores";
 import { fileName, formatCount } from "@/report/format";
 import { contextOf, nextUnreviewed, progressOf, readKept, reviewId, reviewKey, writeKept } from "@/report/review";
@@ -39,6 +40,8 @@ export function ReviewQueue({ report, at }: { report: Report; at: number }) {
 
   const index = Math.min(Math.max(0, at), Math.max(0, rows.length - 1));
   const row = rows[index];
+  // A large report keeps a document's page text beside it: the line a finding sits in waits for it.
+  const full = useFullDocument(report, row?.document);
   const fingerprint = row?.source.fingerprint;
   const id = row ? reviewId(row) : undefined;
   const isIgnored = (value: string) => activeEntry(entries, value) !== undefined;
@@ -110,7 +113,7 @@ export function ReviewQueue({ report, at }: { report: Report; at: number }) {
   if (!row) {
     return <p className="text-sm text-muted-foreground">This run found no identifier to review.</p>;
   }
-  const context = contextOf(report, row);
+  const context = full.state === "ready" ? contextOf(withDocument(report, row.document, full.document), row) : null;
   const percent = progress.total ? (progress.reviewed / progress.total) * 100 : 0;
 
   return (
