@@ -8,7 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useDocumentLink } from "@/hooks/useFolderRuns";
 import { FACT_TONE, RETRIEVAL_TONE, factCounts, flaggedChunks, retrievalHitRate } from "@/report/chunks";
-import { cutsByDocument, flagSummary, sizeHistogram, splitterName } from "@/report/chunkView";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { cutsByDocument, flagSummary, sizeHistogram, splitterLabels, splitterName } from "@/report/chunkView";
 import { fileName, formatCount, formatPercent, humanise, plural } from "@/report/format";
 import { measured } from "@/report/measured";
 import type { ChunkRun, Report } from "@/report/types";
@@ -17,6 +18,9 @@ import type { ChunkRun, Report } from "@/report/types";
 const DOCUMENTS_SHOWN = 8;
 
 /** A splitter's settings as a short name, or its whole name where it gave none. */
+/** Splitters beyond which the one to show is picked from a list, not a row of buttons. */
+const PICKED_BY_BUTTON = 3;
+
 const shortName = (run: ChunkRun) => splitterName(run.chunker).settings.join(" · ") || run.chunker;
 
 /** How the chunks' sizes spread, smallest to largest, as a strip of bars. */
@@ -211,6 +215,7 @@ export function ChunksPage({ report }: { report: Report }) {
   const run = runs.find((r) => r.chunker === chosen) ?? runs[0];
   if (!run) return null;
   const checks = runs.some((r) => r.facts.length > 0 || r.retrieval.length > 0);
+  const labels = splitterLabels(runs.map((r) => r.chunker));
 
   return (
     <SectionStack>
@@ -225,21 +230,38 @@ export function ChunksPage({ report }: { report: Report }) {
       <Section
         title="Where the cuts fall"
         aside={
-          runs.length > 1 && (
-            <ToggleGroup
-              type="single"
-              variant="outline"
-              size="sm"
-              value={run.chunker}
-              onValueChange={(value) => value && setChosen(value)}
-              aria-label="Splitter"
-            >
-              {runs.map((r) => (
-                <ToggleGroupItem key={r.chunker} value={r.chunker} className="font-mono text-xs">
-                  {shortName(r)}
-                </ToggleGroupItem>
-              ))}
-            </ToggleGroup>
+          runs.length > PICKED_BY_BUTTON ? (
+            <Select value={run.chunker} onValueChange={setChosen}>
+              <SelectTrigger size="sm" aria-label="Splitter" className="max-w-full font-mono text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent align="end">
+                <SelectGroup>
+                  {runs.map((r) => (
+                    <SelectItem key={r.chunker} value={r.chunker} className="font-mono text-xs">
+                      {labels.get(r.chunker)}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          ) : (
+            runs.length > 1 && (
+              <ToggleGroup
+                type="single"
+                variant="outline"
+                size="sm"
+                value={run.chunker}
+                onValueChange={(value) => value && setChosen(value)}
+                aria-label="Splitter"
+              >
+                {runs.map((r) => (
+                  <ToggleGroupItem key={r.chunker} value={r.chunker} className="font-mono text-xs">
+                    {labels.get(r.chunker)}
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
+            )
           )
         }
       >

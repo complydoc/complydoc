@@ -21,6 +21,27 @@ export function splitterName(chunker: string): { kind: string; settings: string[
     : { kind: chunker, settings: [] };
 }
 
+/**
+ * A short name for each splitter of a run, by its `chunker`: its settings, with its class
+ * before them where another splitter has the same settings, and in full where even that
+ * does not tell two apart.
+ */
+export function splitterLabels(chunkers: string[]): Map<string, string> {
+  const short = (chunker: string) => splitterName(chunker).settings.join(" · ") || chunker;
+  const count = (names: string[], name: string) => names.filter((n) => n === name).length;
+  const shorts = chunkers.map(short);
+  const withKind = chunkers.map((chunker, i) => {
+    const name = shorts[i] ?? chunker;
+    return count(shorts, name) > 1 ? `${splitterName(chunker).kind} · ${name}` : name;
+  });
+  return new Map(
+    chunkers.map((chunker, i) => {
+      const name = withKind[i] ?? chunker;
+      return [chunker, count(withKind, name) > 1 ? chunker : name];
+    }),
+  );
+}
+
 /** The flags a splitter set, most chunks first, each counted and in words; none left out but zeros. */
 export function flagSummary(run: ChunkRun): { key: string; count: number; words: string }[] {
   return Object.entries(run.flag_counts)

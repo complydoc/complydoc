@@ -12,9 +12,10 @@ interface SectionProps {
 export function Section({ title, aside, children }: SectionProps) {
   return (
     <section aria-label={title} className="flex flex-col gap-4">
-      <header className="flex items-baseline justify-between gap-4">
-        <h2 className="font-heading text-lg font-semibold tracking-tight">{title}</h2>
-        {aside && <span className="text-sm text-muted-foreground">{aside}</span>}
+      {/* A wide control beside the title goes under it, rather than squeezing it to a word a line. */}
+      <header className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
+        <h2 className="shrink-0 font-heading text-lg font-semibold tracking-tight">{title}</h2>
+        {aside && <span className="max-w-full min-w-0 text-sm text-muted-foreground">{aside}</span>}
       </header>
       {children}
     </section>

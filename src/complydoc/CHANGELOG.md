@@ -46,6 +46,10 @@ separately.
 
 ### Fixed
 
+- The Chunks page squeezed the heading of "Where the cuts fall" to a word a line when a
+  run had many splitters. A section's controls go under its title when they do not fit,
+  more than three splitters are picked from a list, and two splitters with the same
+  settings are told apart by their class.
 - A line set too long for its page, whose end runs past the margin, was reported as
   hidden text, once for every such line: a real corpus had 376 of them. It is reported
   now only if what runs off the page reads as an instruction. Text placed off the page
