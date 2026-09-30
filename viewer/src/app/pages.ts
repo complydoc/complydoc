@@ -1,7 +1,7 @@
 import {
   FileTextIcon,
   GaugeIcon,
-  HouseIcon,
+  LayoutDashboardIcon,
   ScissorsIcon,
   Settings2Icon,
   ShieldAlertIcon,
@@ -24,7 +24,7 @@ export const PAGE_CONTENT: Partial<Record<Page, Content>> = {
 
 /** How each page is named and drawn in the navigation. */
 export const PAGE_INFO: Record<Page, { label: string; icon: LucideIcon }> = {
-  home: { label: "Home", icon: HouseIcon },
+  home: { label: "Dashboard", icon: LayoutDashboardIcon },
   pipeline: { label: "Traces", icon: WorkflowIcon },
   security: { label: "Security", icon: ShieldAlertIcon },
   cost: { label: "Cost & time", icon: GaugeIcon },

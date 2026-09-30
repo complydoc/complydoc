@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { measured } from "@/report/measured";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -83,6 +84,15 @@ export function ReportView({
   onToggleTheme,
 }: ReportViewProps) {
   const [{ page, detail }] = useHashRoute(PAGES);
+  const opened = selected(collections, selection);
+  // A run opens on its traces, as tracing tools open: the calls, or every run to pick from.
+  // A run with neither opens on its dashboard.
+  useEffect(() => {
+    if (!opened || window.location.hash) return;
+    const runs = collections.find((c) => c.id === selection.collection)?.runs.length ?? 0;
+    const traced = measured(opened.report, "trace");
+    window.location.replace(traced || runs > 1 ? "#pipeline" : "#home");
+  }, [opened, collections, selection.collection]);
   // The sidebar stays as it was left: opening another run or folder remounts what is under it.
   const [sidebarOpen, setSidebarOpen] = useState(rememberedSidebar);
   const sidebar = {

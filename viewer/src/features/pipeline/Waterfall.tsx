@@ -6,9 +6,6 @@ import { filterSpans, filtering, NO_FILTER, type SpanFilter } from "@/report/tra
 import { visibleSpans, type Span } from "@/report/traceTree";
 import { AXIS, COLUMNS, Guides, INDENT, WaterfallRow } from "./WaterfallRow";
 
-/** Spans beyond which the tree opens folded. */
-const FOLD_ABOVE = 60;
-
 /** Children drawn at first under one span, and how many more each asking adds. */
 const PAGE = 100;
 
@@ -83,7 +80,7 @@ export function Waterfall({ roots: tree, selected, onSelect, total }: WaterfallP
   const [filter, setFilter] = useState<SpanFilter>(NO_FILTER);
   const narrowed = filtering(filter);
   const roots = filterSpans(tree, filter);
-  // A large run opens folded, a line a folder or call, so its shape can be seen at once.
+  // The spans that can fold, for folding them all at once.
   const parents = (() => {
     const all: Span[] = [];
     const walk = (span: Span) => {
@@ -93,11 +90,10 @@ export function Waterfall({ roots: tree, selected, onSelect, total }: WaterfallP
     tree.forEach(walk);
     // The run stays open whatever is folded: folded, it would leave one line.
     const folding = all.filter((s) => s.children.length > 0 && s.stage.kind !== "run");
-    return { count: all.length, indexes: folding.map((s) => s.stage.index) };
+    return { indexes: folding.map((s) => s.stage.index) };
   })();
-  const [folded, setFolded] = useState<Set<number>>(() =>
-    parents.count <= FOLD_ABOVE ? new Set() : new Set(parents.indexes),
-  );
+  // Every call shows at first, as tracing tools open a trace: folding is the reader's to do.
+  const [folded, setFolded] = useState<Set<number>>(() => new Set());
   const allFolded = parents.indexes.length > 0 && parents.indexes.every((index) => folded.has(index));
   // How many of a span's children are drawn, by span: a folder of a thousand draws a page.
   const [drawn, setDrawn] = useState<Map<number, number>>(() => new Map());

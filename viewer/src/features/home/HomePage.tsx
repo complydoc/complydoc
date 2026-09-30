@@ -17,6 +17,9 @@ import { documentTotals, reportTotals } from "@/report/plan";
 import { documentHref } from "@/report/route";
 import type { Report } from "@/report/types";
 import { ReadinessCard } from "./ReadinessCard";
+import { RunTrends } from "./RunTrends";
+import { stepRows } from "@/report/stepTimes";
+import { StepTimes } from "./StepTimes";
 
 /** A headline figure that is also the way to what it counts. */
 function LinkStat({ href, label, value, note }: { href: string; label: string; value: ReactNode; note?: string }) {
@@ -49,9 +52,10 @@ function SeeAll({ href, children }: { href: string; children: ReactNode }) {
 const COST = { usd: { label: "Cost", color: "var(--primary)" } } satisfies ChartConfig;
 
 /**
- * Where an engineer opening a report should go: the findings that matter, the
- * documents to open first, and what reading the folder costs and takes under
- * the plan chosen. Every block leads somewhere.
+ * The run's dashboard: its headline figures, where its time went step by step, how the
+ * folder's or pipeline's runs compare, the findings that matter, the documents to open
+ * first, and what reading the folder costs and takes under the plan chosen. Every block
+ * leads somewhere.
  */
 export function HomePage({ report }: { report: Report }) {
   const { plan } = usePlan();
@@ -118,6 +122,17 @@ export function HomePage({ report }: { report: Report }) {
           }
         />
       </div>
+
+      {stepRows(report).length > 0 && (
+        <Section title="Where the time goes" aside={<SeeAll href="#pipeline?trace=open">Trace</SeeAll>}>
+          <Card>
+            <CardContent>
+              <StepTimes report={report} />
+            </CardContent>
+          </Card>
+        </Section>
+      )}
+      <RunTrends />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>

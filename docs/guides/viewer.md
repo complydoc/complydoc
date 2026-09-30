@@ -30,14 +30,16 @@ complydoc ui reports/ baseline.json
 
 ## What the viewer shows
 
-The report every run writes: a Home page, every finding linked to where it
+The report every run writes: a dashboard, every finding linked to where it
 sits, and the cost of each model under a loading plan.
 
-Every run opens on the same pages, whichever command wrote it:
+Every run opens on the same pages, whichever command wrote it, and opens on Traces,
+where its calls are, or every run of the folder to pick from. A run with neither opens
+on its Dashboard.
 
 | Page | Holds | Written by |
 | --- | --- | --- |
-| Home | The headline figures, the findings and documents to look at first | every run |
+| Dashboard | The headline figures, where the run's time went step by step, each run of the folder or pipeline against the others (duration, cost, identifiers, warnings), and the findings and documents to look at first | every run |
 | Traces | Every run of the folder or pipeline, and a run's trace: every call a pipeline made, or every document an audit read, with each one's time, input and output | `cd.observe`, `audit` |
 | Security | Identifiers and hidden instructions, per document and page | `audit`, `sensitive` |
 | Documents | Each document's pages, text and readings; for a loader comparison, every loader's reading beside the others in a document's Diff | every run that reads documents |
@@ -59,7 +61,7 @@ panel over the page, the table still showing beside it: up and down go to the ne
 run, Escape closes it, and its left edge resizes it. A run without a trace, such as a
 chunks run, opens where what it holds is shown.
 
-A trace is a waterfall. The run is at the root, each step under it, and a component
+A trace is a waterfall, every call showing when it opens. The run is at the root, each step under it, and a component
 called several times in a row, such as a loader called once a file, is one row that
 opens onto each call. Each row is drawn where it ran on the run's time axis, with its
 time, cost and the identifiers it passed on; a warning sign marks a step with a
@@ -83,7 +85,7 @@ identifier scan. A large run opens folded, a line a folder.
 
 ### How pages are read
 
-The top bar of Home, Documents and Cost & time sets how every cost and time in the report
+The top bar of the Dashboard, Documents and Cost & time sets how every cost and time in the report
 is worked out:
 
 | Method | Reads each page |
@@ -105,7 +107,7 @@ The choice is kept in the browser.
 A page the run did not produce says so and what it would hold. Where another run
 of the folder has it, the page offers to open that run; otherwise it gives the
 command that fills it for the same folder, with a button to copy it, and a link to
-the guide. Home does the same card by card, so a `complydoc cost` run shows its
+the guide. The Dashboard does the same card by card, so a `complydoc cost` run shows its
 prices and says the identifier scan was not part of it. The Security page says
 which identifier categories nothing was looked for, and why. Wherever a document is
 named, it is a link to it.

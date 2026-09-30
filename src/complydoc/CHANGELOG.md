@@ -23,6 +23,10 @@ separately.
 
 ### Changed
 
+- The viewer opens a run on Traces, as tracing tools do, with every call of a trace
+  showing. Home is now the Dashboard, with where the run's time went step by step, and
+  each run of the folder or pipeline against the others: duration, cost, identifiers
+  and warnings.
 - Page pictures are no longer written into the report JSON. Each is a JPEG in a
   `.parts` folder beside the report, `complydoc.parts/pages/` for `complydoc.json`,
   named in its page's new `image` field, and `complydoc ui` fetches a picture only when

@@ -16,7 +16,9 @@ describe("Home", () => {
     const report = sampleAudit();
     renderPage(<HomePage report={report} />);
     const card = screen.getByText("Needs attention").closest("[data-slot=card]") as HTMLElement;
-    const links = within(card).getAllByRole("link").filter((a) => a.getAttribute("href")?.startsWith("#documents/"));
+    const links = within(card)
+      .getAllByRole("link")
+      .filter((a) => a.getAttribute("href")?.startsWith("#documents/"));
     expect(links.length).toBe(topFindings(report).rows.length);
     expect(links[0]).toHaveAttribute("href", expect.stringMatching(/^#documents\/\d+\/\d+\/i\d+$/));
     expect(within(card).getAllByRole("button", { name: /how this was validated/ })[0]).toHaveTextContent("Certain");

@@ -9,12 +9,13 @@ describe("App", () => {
     expect(screen.getByRole("heading", { name: "Open a report" })).toBeInTheDocument();
   });
 
-  it("opens a chosen report on Home, and moves between pages", async () => {
+  it("opens a chosen report on its traces, and moves between pages", async () => {
     render(<App />);
     const file = new File([sampleText], "loaders.json", { type: "application/json" });
     await userEvent.upload(screen.getByLabelText("Report files"), file);
 
-    expect((await screen.findAllByRole("link", { name: "Home", current: "page" })).length).toBeGreaterThan(0);
+    expect((await screen.findAllByRole("link", { name: /^Traces/, current: "page" })).length).toBeGreaterThan(0);
+    expect(window.location.hash).toBe("#pipeline");
     expect(screen.getAllByText("documents").length).toBeGreaterThan(0);
 
     await userEvent.click(screen.getAllByRole("link", { name: "Documents" })[0] as HTMLElement);
@@ -58,7 +59,7 @@ describe("App", () => {
     expect(folders).toHaveTextContent("contracts");
     expect(folders).toHaveTextContent("invoices");
     await userEvent.click(screen.getByRole("button", { name: "invoices" }));
-    expect((await screen.findAllByRole("link", { name: "Home", current: "page" })).length).toBeGreaterThan(0);
+    expect((await screen.findAllByRole("link", { name: /^Traces/, current: "page" })).length).toBeGreaterThan(0);
   });
 
   it("goes back to the open screen", async () => {
