@@ -18,7 +18,7 @@ from collections.abc import AsyncIterator, Callable, Iterator
 from dataclasses import dataclass
 from typing import Any, Final
 
-from complydoc.observe import session
+from complydoc.observe import readers, session
 
 __all__ = ["install", "uninstall"]
 
@@ -196,11 +196,14 @@ def install() -> dict[str, str]:
                     continue
                 setattr(cls, method, _observed(original, method, kind_of))
                 _installed.append((cls, method, original))
+    # Files read with a PDF library directly, not through a loader.
+    libraries.update(readers.install())
     return libraries
 
 
 def uninstall() -> None:
     """Put back every method `install` wrapped."""
+    readers.uninstall()
     while _installed:
         cls, method, original = _installed.pop()
         setattr(cls, method, original)

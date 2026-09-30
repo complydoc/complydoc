@@ -230,8 +230,20 @@ def idle() -> bool:
     return _current is None
 
 
+def in_stage() -> bool:
+    """True while a stage is running: what it does is part of it."""
+    return _inside.get() is not None
+
+
 def begin(
-    kind: str, component: Any, module: str, method: str, inputs: Any, *, label: str | None = None
+    kind: str,
+    component: Any,
+    module: str,
+    method: str,
+    inputs: Any,
+    *,
+    label: str | None = None,
+    started_at: float | None = None,
 ) -> Recording | None:
     """Open a stage in the current block, or return None where the call is not one: no
     block is open, or the component running is calling itself."""
@@ -256,7 +268,7 @@ def begin(
         tags=tags,
         parameters=parameters,
         parent=within.index if within is not None else None,
-        started=round(started - observation._started, 4),
+        started=round((started if started_at is None else started_at) - observation._started, 4),
         owner=id(component) if component is not None else None,
         inputs=list(inputs) if isinstance(inputs, list | tuple) else None,
     )

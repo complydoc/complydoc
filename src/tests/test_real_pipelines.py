@@ -4,8 +4,8 @@ Each test is an official tutorial's indexing code as it is published, run on the
 documents bundled with complydoc, one of which is a scan with no text layer:
 
 - LangChain, "Build a semantic search engine": PDF pages read with the tutorial's own
-  pypdf helper, `RecursiveCharacterTextSplitter`, and `add_documents` into the
-  `InMemoryVectorStore` or `Chroma` it offers.
+  pypdf helper, each file read a load step, `RecursiveCharacterTextSplitter`, and
+  `add_documents` into the `InMemoryVectorStore` or `Chroma` it offers.
   https://docs.langchain.com/oss/python/langchain/knowledge-base
 - LlamaIndex, "Starter Tutorial (Using Local LLMs)": `SimpleDirectoryReader` and
   `VectorStoreIndex.from_documents`.
@@ -129,17 +129,19 @@ def test_langchain_semantic_search(embeddings, store: str, tmp_path: Path) -> No
     assert run.error is None and run.path is not None
     trace = run.report.trace
 
-    # The pages are read by the tutorial's own function, which is no step: the trace starts
-    # at the splitter, and the store holds the embedding call.
-    assert top(trace) == ["split", "store"]
+    # The pages are read by the tutorial's own function, with pypdf: each file read is a
+    # load step of its own, and the store holds the embedding call.
+    files = sorted(SAMPLE.glob("*.pdf"))
+    assert top(trace) == ["load"] * len(files) + ["split", "store"]
+    reads = [s for s in trace.stages if s.kind == "load"]
+    assert {s.component for s in reads} == {"PdfReader"}
+    assert sorted(named([s.parameters["file_path"] for s in reads])) == [f.name for f in files]
     stored = one(trace, "store")
     assert (stored.component, stored.method) == (store, "add_documents")
     assert [s.kind for s in inside(trace, stored)] == ["embed"]
 
-    # The scan's empty page goes into the splitter without a sound, and is still warned of,
-    # on the first step that was given it.
+    # The scan's empty page is warned of on the read of that file, and goes no further.
     assert [named(sources) for sources in warned(trace, "empty_document")] == [[SCAN]]
-    assert one(trace, "split").warnings[0].code == "empty_document"
     assert SCAN not in named([d.source for d in stored.documents])
     assert stored.identifiers and "start_index" in stored.metadata_keys
 

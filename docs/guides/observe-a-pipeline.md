@@ -17,11 +17,19 @@ Nothing in your pipeline changes. Outside the block, nothing is touched.
 | --- | --- |
 | LangChain | document loaders (`load`, `lazy_load`, `aload`, `alazy_load`), document transformers, text splitters (`split_documents`, `create_documents`), embedding models (`embed_documents`, `aembed_documents`) and vector stores (`add_documents`, `add_texts` and their async forms) |
 | LlamaIndex | readers (`load_data`, `lazy_load_data` and their async forms), node parsers (`get_nodes_from_documents`), embedding models (`get_text_embedding_batch`), vector stores (`add`, `async_add`), and any other transform component an `IngestionPipeline` runs |
+| PDF libraries | a file read with pypdf's `PdfReader` or PyMuPDF's `Document` in your own code, page by page |
 | complydoc | its pipeline steps, such as `MaskIdentifiers` and `StripPathMetadata` |
 | Your code | any function marked `@cd.stage` |
 
 A LlamaIndex embedding model is sent each node's text together with its metadata, so
 its step is recorded where the batch is embedded, and scanned as sent.
+
+Many pipelines read their files with a few lines of their own: LangChain's semantic search
+tutorial reads PDF pages with pypdf. Each file opened and read that way is a load step,
+timed from opening it, holding the text of each page with the file and page named. A
+library a loader calls, as `PyPDFLoader` calls pypdf, is part of the loader's step. Where
+documents come from code complydoc does not see at all, the first step given them is
+checked for what a loader is checked for (see Warnings).
 
 A vector store's step is what it was given, since that is what stays in the index:
 its texts, the metadata kept with them and the identifiers in both. A store that

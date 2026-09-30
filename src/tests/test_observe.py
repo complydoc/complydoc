@@ -413,3 +413,41 @@ def test_documents_read_by_your_own_code_are_checked_where_they_enter() -> None:
     (split,) = observation.report.trace.stages
     empty = next(w for w in split.warnings if w.code == "empty_document")
     assert empty.sources == ["scan.pdf"]
+
+
+SAMPLE_PDFS = sorted((Path(cd.__file__).parent / "sample").glob("*.pdf"))
+
+
+def test_a_file_read_with_pypdf_is_a_load_step() -> None:
+    import pypdf
+
+    path = str(SAMPLE_PDFS[0])
+    with cd.observe("plain", out=None) as observation:
+        reader = pypdf.PdfReader(path)
+        pages = [page.extract_text() for page in reader.pages]
+        # Opened and never read: no step.
+        pypdf.PdfReader(str(SAMPLE_PDFS[1]))
+    (read,) = observation.report.trace.stages
+    assert (read.kind, read.component, read.method) == ("load", "PdfReader", "read")
+    assert read.parameters == {"file_path": path}
+    assert read.documents_out == len(pages)
+    assert read.documents[0].source.endswith(SAMPLE_PDFS[0].name)
+
+
+def test_a_file_read_with_pymupdf_is_a_load_step() -> None:
+    pymupdf = pytest.importorskip("pymupdf")
+
+    with cd.observe("plain", out=None) as observation:
+        document = pymupdf.open(str(SAMPLE_PDFS[0]))
+        texts = [page.get_text() for page in document]
+    (read,) = observation.report.trace.stages
+    assert (read.kind, read.component) == ("load", "Document")
+    assert read.documents_out == len(texts)
+
+
+def test_a_loader_reading_with_pypdf_is_one_step() -> None:
+    loaders = pytest.importorskip("langchain_community.document_loaders")
+
+    with cd.observe("loader", out=None) as observation:
+        loaders.PyPDFLoader(str(SAMPLE_PDFS[0])).load()
+    assert [s.component for s in observation.report.trace.stages] == ["PyPDFLoader"]

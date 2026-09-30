@@ -14,9 +14,12 @@ separately.
   starter tutorial, and LlamaIndex's ingestion pipeline guide into Qdrant, as published,
   on the sample documents with local embedding models. One more calls OpenAI where
   `OPENAI_API_KEY` is set.
-- Where documents are read by the caller's own code, as LangChain's tutorial reads PDF
-  pages with pypdf, the first step given them is checked as a loader is: a scan that
-  loaded no text is warned of there, instead of vanishing into the splitter.
+- `cd.observe` records a file read with pypdf's `PdfReader` or PyMuPDF's `Document` in
+  the caller's own code as a load step, as LangChain's semantic search tutorial reads PDF
+  pages: its pages, file and time, and the warnings a loader's output gets. Where the
+  documents come from code complydoc does not see at all, the first step given them is
+  checked as a loader is, so a scan that loaded no text no longer vanishes into the
+  splitter unnoticed.
 
 ### Changed
 
