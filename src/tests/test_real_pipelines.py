@@ -14,6 +14,12 @@ documents bundled with complydoc, one of which is a scan with no text layer:
   model into an in-memory Qdrant store.
   https://developers.llamaindex.ai/python/framework/module_guides/loading/ingestion_pipeline/
 
+- create-llama (MIT), the `generate.py` its projects ship: `SimpleDirectoryReader` with
+  `filename_as_id`, metadata set on each document, `VectorStoreIndex.from_documents` and
+  `persist`. Its FastAPI template imports LlamaIndex inside the function, so that case runs
+  in a fresh interpreter, where the import first happens inside the block.
+  https://github.com/run-llama/create-llama
+
 Only what cannot run offline is swapped: the embedding models are FastEmbed's, run on this
 machine, and `TitleExtractor` asks LlamaIndex's `MockLLM`. The one test that calls OpenAI,
 as the LangChain tutorial does by default, runs only where OPENAI_API_KEY is set.
@@ -23,7 +29,10 @@ as the LangChain tutorial does by default, runs only where OPENAI_API_KEY is set
 
 from __future__ import annotations
 
+import json
 import os
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -242,3 +251,66 @@ def test_langchain_semantic_search_with_openai() -> None:
     assert "api.openai.com" in call.hosts
     assert call.usd_basis == "estimated" and (call.usd or 0) > 0
     assert "api.openai.com" in run.report.run.content_sent_to
+
+
+def test_create_llama_generate(llama_settings, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
+    """create-llama's `none` template: LlamaIndex imported at the top of the file."""
+    from llama_index.core import SimpleDirectoryReader, VectorStoreIndex
+
+    with cd.observe("generate", out=None) as run:
+        documents = SimpleDirectoryReader(
+            str(SAMPLE), recursive=True, filename_as_id=True, raise_on_error=True
+        ).load_data()
+        for doc in documents:
+            doc.metadata["private"] = "false"
+        index = VectorStoreIndex.from_documents(documents, show_progress=False)
+        index.storage_context.persist(str(tmp_path / "storage"))
+    trace = run.report.trace
+
+    assert top(trace) == ["load", "split", "embed", "store"]
+    # Documents keep their sources when their ids are the file names.
+    assert named(warned(trace, "empty_document")[0]) == [SCAN]
+    assert named(warned(trace, "empty_texts")[0]) == [SCAN]
+
+
+LAZY_GENERATE = """
+import json, os, sys
+import complydoc as cd
+from pathlib import Path
+
+def generate_index():  # create-llama's FastAPI template imports inside the function
+    from llama_index.core import Settings, VectorStoreIndex
+    from llama_index.core.llms import MockLLM
+    from llama_index.core.readers import SimpleDirectoryReader
+    from llama_index.embeddings.fastembed import FastEmbedEmbedding
+
+    Settings.embed_model = FastEmbedEmbedding(model_name=sys.argv[2], cache_dir=sys.argv[3])
+    Settings.llm = MockLLM(max_tokens=8)
+    documents = SimpleDirectoryReader(sys.argv[1], recursive=True).load_data()
+    VectorStoreIndex.from_documents(documents)
+
+assert "llama_index" not in sys.modules
+with cd.observe("generate", out=None) as run:
+    generate_index()
+trace = run.report.trace
+print(json.dumps({
+    "top": [s.kind for s in trace.stages if s.parent is None],
+    "libraries": sorted(run.libraries),
+    "warnings": sorted({w.code for s in trace.stages for w in s.warnings}),
+}))
+"""
+
+
+def test_create_llama_generate_importing_inside_the_function() -> None:
+    """A library first imported inside the block is observed from that import on."""
+    done = subprocess.run(
+        [sys.executable, "-c", LAZY_GENERATE, str(SAMPLE), MODEL, CACHE],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    found = json.loads(done.stdout.strip().splitlines()[-1])
+
+    assert found["top"] == ["load", "split", "embed", "store"]
+    assert "llama-index-core" in found["libraries"]
+    assert {"empty_document", "empty_texts"} <= set(found["warnings"])

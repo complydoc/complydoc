@@ -9,8 +9,10 @@ loaded class that defines it. Wrapping is undone when the block ends.
 
 from __future__ import annotations
 
+import contextlib
 import functools
 import importlib
+import importlib.abc
 import importlib.metadata
 import inspect
 import sys
@@ -161,52 +163,140 @@ _TARGETS: Final = (
 )
 
 _installed: list[tuple[type, str, Any]] = []
+_attached: list[_Target] = []
+_pending: list[_Target] = []
+_libraries: dict[str, str] = {}
+_finder: _LateImports | None = None
 
 
 def install() -> dict[str, str]:
-    """Wrap every target method on every loaded class; return the libraries and versions."""
-    libraries: dict[str, str] = {}
-    splitter = _base("langchain_text_splitters.base", "TextSplitter")
+    """Wrap every target method on every loaded class; return the libraries and versions.
+
+    A library the program imports only once the block has begun, as a function that imports
+    what it uses does, is wrapped as it arrives: the returned libraries gain it then.
+    """
+    global _finder
+    _libraries.clear()
+    _attached.clear()
+    _pending.clear()
     for target in _TARGETS:
-        base = _base(target.module, target.base)
-        if base is None:
-            continue
-        if target.distribution is not None:
-            libraries[target.distribution] = _version(target.distribution)
-
-        def kind_of(component: Any, kind: str = target.kind) -> str:
-            # A text splitter is a document transformer; called either way, it splits.
-            if kind == "transform" and splitter is not None and isinstance(component, splitter):
-                return "split"
-            return kind
-
-        excluded = tuple(b for b in (_base(m, n) for m, n in target.exclude) if b is not None)
-        for cls in (base, *_subclasses(base)):
-            if excluded and issubclass(cls, excluded):
-                continue
-            for method in target.methods:
-                original = cls.__dict__.get(method)
-                if isinstance(original, classmethod) and _wrappable(original.__func__):
-                    # Called on the class: the class is the component.
-                    wrapped: Any = classmethod(_observed(original.__func__, method, kind_of))
-                    setattr(cls, method, wrapped)
-                    _installed.append((cls, method, original))
-                    continue
-                if not _wrappable(original):
-                    continue
-                setattr(cls, method, _observed(original, method, kind_of))
-                _installed.append((cls, method, original))
+        (_attached if _attach(target) else _pending).append(target)
     # Files read with a PDF library directly, not through a loader.
-    libraries.update(readers.install())
-    return libraries
+    _libraries.update(readers.install())
+    _finder = _LateImports()
+    sys.meta_path.insert(0, _finder)
+    return _libraries
 
 
 def uninstall() -> None:
     """Put back every method `install` wrapped."""
+    global _finder
+    if _finder is not None:
+        _finder.active = False
+        if _finder in sys.meta_path:
+            sys.meta_path.remove(_finder)
+        _finder = None
+    _attached.clear()
+    _pending.clear()
     readers.uninstall()
     while _installed:
         cls, method, original = _installed.pop()
         setattr(cls, method, original)
+
+
+def _attach(target: _Target) -> bool:
+    """Wrap `target` on its base class and every subclass loaded; False if not loaded."""
+    base = _base(target.module, target.base)
+    if base is None:
+        return False
+    if target.distribution is not None:
+        _libraries[target.distribution] = _version(target.distribution)
+    for cls in (base, *_subclasses(base)):
+        _wrap_class(cls, target)
+    return True
+
+
+def _kind_of(kind: str) -> Callable[[Any], str]:
+    def kind_of(component: Any) -> str:
+        # A text splitter is a document transformer; called either way, it splits.
+        if kind == "transform":
+            splitter = _base("langchain_text_splitters.base", "TextSplitter")
+            if splitter is not None and isinstance(component, splitter):
+                return "split"
+        return kind
+
+    return kind_of
+
+
+def _wrap_class(cls: type, target: _Target) -> None:
+    excluded = tuple(b for b in (_base(m, n) for m, n in target.exclude) if b is not None)
+    if excluded and issubclass(cls, excluded):
+        return
+    kind_of = _kind_of(target.kind)
+    for method in target.methods:
+        original = cls.__dict__.get(method)
+        if isinstance(original, classmethod) and _wrappable(original.__func__):
+            # Called on the class: the class is the component.
+            wrapped: Any = classmethod(_observed(original.__func__, method, kind_of))
+            setattr(cls, method, wrapped)
+            _installed.append((cls, method, original))
+            continue
+        if not _wrappable(original):
+            continue
+        setattr(cls, method, _observed(original, method, kind_of))
+        _installed.append((cls, method, original))
+
+
+def _imported(module: Any) -> None:
+    """A module has just finished importing inside the block: wrap what it brings."""
+    name = getattr(module, "__name__", "")
+    for target in tuple(_pending):
+        if name == target.module and _attach(target):
+            _pending.remove(target)
+            _attached.append(target)
+    for target in _attached:
+        base = _base(target.module, target.base)
+        if base is None:
+            continue
+        for cls in vars(module).values():
+            if isinstance(cls, type) and cls.__module__ == name and issubclass(cls, base):
+                _wrap_class(cls, target)
+    if name in _PDF_LIBRARIES:
+        _libraries.update(readers.install())
+
+
+_PDF_LIBRARIES: Final = frozenset({"pypdf", "pymupdf", "fitz"})
+
+
+class _LateImports(importlib.abc.MetaPathFinder):
+    """Finds nothing itself; has each module imported from here on reported when it is done."""
+
+    def __init__(self) -> None:
+        self.active = True
+
+    def find_spec(self, name: str, path: Any = None, target: Any = None) -> Any:
+        for finder in sys.meta_path:
+            if finder is self or not hasattr(finder, "find_spec"):
+                continue
+            spec = finder.find_spec(name, path, target)
+            if spec is None:
+                continue
+            loader = spec.loader
+            execute = getattr(loader, "exec_module", None)
+            if execute is None:
+                return spec
+
+            def exec_module(module: Any, execute: Any = execute) -> None:
+                execute(module)
+                if self.active:
+                    # The program's import stands whatever happens here.
+                    with contextlib.suppress(Exception):
+                        _imported(module)
+
+            with contextlib.suppress(AttributeError, TypeError):
+                loader.exec_module = exec_module  # type: ignore[union-attr,method-assign]
+            return spec
+        return None
 
 
 def _base(module: str, name: str) -> type | None:

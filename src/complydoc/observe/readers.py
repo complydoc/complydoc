@@ -70,7 +70,7 @@ def uninstall() -> None:
 
 def _wrap(cls: type, name: str, make: Any) -> None:
     original = cls.__dict__.get(name)
-    if original is None:
+    if original is None or any(c is cls and n == name for c, n, _ in _installed):
         return
     setattr(cls, name, make(original))
     _installed.append((cls, name, original))

@@ -7,6 +7,13 @@ separately.
 
 ## [Unreleased]
 
+### Fixed
+
+- A pipeline that imports its library inside the observed block, as a function that
+  imports what it uses does, was recorded as a trace with no steps and no warning. The
+  library's classes are now wrapped as it is imported, so the trace is the same wherever
+  the import is.
+
 ## [0.6.4] — 2026-09-30
 
 complydoc holds up on a large folder. An audit of about 2,000 pages with page pictures
