@@ -7,6 +7,8 @@ separately.
 
 ## [Unreleased]
 
+## [0.6.3] — 2026-09-30
+
 A trace now says what happened to each document, and what went wrong without an error.
 The report JSON moves to schema 18, which only adds fields.
 
