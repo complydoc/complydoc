@@ -81,10 +81,11 @@ export function SpanDetail({
   const panels: Record<Tab, ReactNode> = {
     run: (
       <div className="flex flex-col gap-4">
-        <CodeBlock title="Input" lines={inputLines(stage, from)} footer="YAML" />
+        <CodeBlock title="Input" lines={inputLines(stage, from)} footer="YAML" collapsible />
         <CodeBlock
           title="Output"
           tone="output"
+          collapsible
           lines={outputLines(stage)}
           footer="YAML"
           actions={

@@ -32,6 +32,25 @@ describe("PipelinePage", () => {
     expect(within(tree).getAllByRole("treeitem")).toHaveLength(3);
   });
 
+  it("collapses every call and expands them again from one control", async () => {
+    renderPage(<PipelinePage report={nestedReport()} />);
+    const tree = screen.getByRole("tree", { name: "Calls" });
+    await userEvent.click(screen.getByRole("button", { name: "Collapse all" }));
+    expect(within(tree).getAllByRole("treeitem")).toHaveLength(3);
+    await userEvent.click(screen.getByRole("button", { name: "Expand all" }));
+    expect(within(tree).getAllByRole("treeitem")).toHaveLength(5);
+  });
+
+  it("folds a call's input away, and brings it back", async () => {
+    renderPage(<PipelinePage report={nestedReport()} />);
+    const input = screen.getByRole("region", { name: "Input" });
+    const fold = within(input).getByRole("button", { expanded: true });
+    await userEvent.click(fold);
+    expect(within(input).getByText("Payments go to account •••• 4432")).not.toBeVisible();
+    await userEvent.click(within(input).getByRole("button", { expanded: false }));
+    expect(within(input).getByText("Payments go to account •••• 4432")).toBeVisible();
+  });
+
   it("opens on the call that sent text away, with what it sent", () => {
     renderPage(<PipelinePage report={nestedReport()} />);
     const tree = screen.getByRole("tree", { name: "Calls" });

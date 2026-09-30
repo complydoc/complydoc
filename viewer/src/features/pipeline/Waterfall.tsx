@@ -1,3 +1,4 @@
+import { ChevronsDownUpIcon, ChevronsUpDownIcon } from "lucide-react";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { cn } from "@/lib/utils";
 import { tickLabel, ticks } from "@/report/timeAxis";
@@ -52,16 +53,19 @@ function Axis({ total, labels }: { total: number; labels?: boolean }) {
  */
 export function Waterfall({ roots, selected, onSelect, total }: WaterfallProps) {
   // A large run opens folded, a line a folder or call, so its shape can be seen at once.
-  const [folded, setFolded] = useState<Set<number>>(() => {
+  const parents = (() => {
     const all: Span[] = [];
     const walk = (span: Span) => {
       all.push(span);
       span.children.forEach(walk);
     };
     roots.forEach(walk);
-    if (all.length <= FOLD_ABOVE) return new Set();
-    return new Set(all.filter((span) => span.children.length > 0).map((span) => span.stage.index));
-  });
+    return { count: all.length, indexes: all.filter((s) => s.children.length > 0).map((s) => s.stage.index) };
+  })();
+  const [folded, setFolded] = useState<Set<number>>(() =>
+    parents.count <= FOLD_ABOVE ? new Set() : new Set(parents.indexes),
+  );
+  const allFolded = parents.indexes.length > 0 && parents.indexes.every((index) => folded.has(index));
   // How many of a span's children are drawn, by span: a folder of a thousand draws a page.
   const [drawn, setDrawn] = useState<Map<number, number>>(() => new Map());
   const rows = visibleSpans(roots, folded);
@@ -107,7 +111,20 @@ export function Waterfall({ roots, selected, onSelect, total }: WaterfallProps) 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className={cn(COLUMNS, "h-9 shrink-0 items-center border-b text-xs text-muted-foreground")}>
-        <span className="pl-3">Step</span>
+        <span className="flex items-center gap-1.5 pl-3">
+          Step
+          {parents.indexes.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setFolded(allFolded ? new Set() : new Set(parents.indexes))}
+              aria-label={allFolded ? "Expand all" : "Collapse all"}
+              title={allFolded ? "Expand all" : "Collapse all"}
+              className="flex size-5 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              {allFolded ? <ChevronsUpDownIcon className="size-3.5" /> : <ChevronsDownUpIcon className="size-3.5" />}
+            </button>
+          )}
+        </span>
         <div className="relative h-full" aria-label="Time since the run began">
           <Axis total={total} labels />
         </div>

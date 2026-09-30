@@ -19,7 +19,7 @@ import { Waterfall } from "./Waterfall";
 /** One of the run's figures in the strip across the top: a label over its value. */
 function Figure({ label, children, tone }: { label: string; children: ReactNode; tone?: string }) {
   return (
-    <div className="flex min-w-0 flex-col gap-0.5 px-4 py-2.5 first:pl-0">
+    <div className="flex min-w-0 flex-col px-4 first:pl-0">
       <dt className="text-xs text-muted-foreground">{label}</dt>
       <dd className={cn("text-sm font-medium whitespace-nowrap tabular-nums", tone)}>{children}</dd>
     </div>
@@ -74,30 +74,14 @@ export function PipelinePage({ report }: { report: Report }) {
   const next = order[order.indexOf(span.stage.index) + 1];
 
   return (
-    <div className="flex flex-col gap-4 lg:h-[calc(100svh-6rem)]">
-      <header aria-label="The run" className="flex flex-col gap-3">
-        <div className="flex items-start gap-4">
-          <div className="flex min-w-0 flex-col">
-            <h1 className="truncate font-heading text-xl font-semibold tracking-tight">{trace.name}</h1>
-            <span className="text-sm text-muted-foreground">
-              {formatDate(report.run.started_at)} ·{" "}
-              {audit ? plural(report.documents.length, "document") : plural(steps.length, "step")}
-            </span>
-          </div>
-          {!audit && (
-            <ToggleGroup
-              type="single"
-              variant="outline"
-              size="sm"
-              className="ml-auto"
-              value={view === "identifiers" ? "identifiers" : "trace"}
-              onValueChange={(next) => next && setView(next === "trace" ? null : next)}
-              aria-label="View"
-            >
-              <ToggleGroupItem value="trace">Trace</ToggleGroupItem>
-              <ToggleGroupItem value="identifiers">Identifiers</ToggleGroupItem>
-            </ToggleGroup>
-          )}
+    <div className="flex flex-col gap-3 lg:h-[calc(100svh-5rem)]">
+      <header aria-label="The run" className="flex flex-wrap items-center gap-x-6 gap-y-2">
+        <div className="flex min-w-0 flex-col">
+          <h1 className="truncate font-heading text-lg leading-tight font-semibold tracking-tight">{trace.name}</h1>
+          <span className="text-xs text-muted-foreground">
+            {formatDate(report.run.started_at)} ·{" "}
+            {audit ? plural(report.documents.length, "document") : plural(steps.length, "step")}
+          </span>
         </div>
         <dl className="flex flex-wrap divide-x">
           <Figure label="Duration">
@@ -124,6 +108,20 @@ export function PipelinePage({ report }: { report: Report }) {
             </Figure>
           )}
         </dl>
+        {!audit && (
+          <ToggleGroup
+            type="single"
+            variant="outline"
+            size="sm"
+            className="ml-auto"
+            value={view === "identifiers" ? "identifiers" : "trace"}
+            onValueChange={(next) => next && setView(next === "trace" ? null : next)}
+            aria-label="View"
+          >
+            <ToggleGroupItem value="trace">Trace</ToggleGroupItem>
+            <ToggleGroupItem value="identifiers">Identifiers</ToggleGroupItem>
+          </ToggleGroup>
+        )}
       </header>
 
       {trace.error && (
