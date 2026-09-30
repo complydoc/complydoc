@@ -2,6 +2,7 @@
  * A trace as a tree of spans, the way a run is read step by step: each call the pipeline
  * made, the calls made inside it beneath, each placed in time against the whole run.
  */
+import { underRun } from "./traceGroups";
 import type { Trace, TraceStage } from "./traceTypes";
 
 export interface Span {
@@ -44,8 +45,8 @@ export function spansOf(trace: Trace): Span[] {
   const roots = [...(byParent.get(null) ?? [])].sort((a, b) => (a.started ?? 0) - (b.started ?? 0));
   const spans = roots.map((stage) => build(stage, 0));
   // An audit's documents sit in folders, as they do on disk: a thousand of them read as the
-  // few folders they are in, each opening onto its own.
-  return trace.kind === "audit" ? byFolder(spans) : spans;
+  // few folders they are in, each opening onto its own. A pipeline's steps hang from its run.
+  return trace.kind === "audit" ? byFolder(spans) : underRun(trace, spans);
 }
 
 /** The folder a document span's file is in, as the path's parts. */

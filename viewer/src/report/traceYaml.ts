@@ -36,6 +36,16 @@ function preview(item: StagePreview): string[] {
 
 /** What the step was given. An embedding step's input is the text it sent, previewed. */
 export function inputLines(stage: TraceStage, from: string | null): string[] {
+  // A step of several calls: how many, and what each read.
+  if (stage.method === "calls") {
+    const read = (stage.parameters.read as string[] | undefined)?.filter(Boolean) ?? [];
+    return [
+      `calls: ${scalar(stage.parameters.calls as number)}`,
+      ...(read.length ? ["read:", ...read.map((r) => `  - ${scalar(r)}`)] : []),
+    ];
+  }
+  if (stage.kind === "run")
+    return [`pipeline: ${scalar(stage.component)}`, `steps: ${scalar(stage.parameters.steps as number)}`];
   if (stage.kind === "embed" && stage.previews?.length) {
     return [`texts: ${scalar(stage.documents_in)}`, ...(stage.previews ?? []).flatMap(preview)];
   }
@@ -58,6 +68,11 @@ export function inputLines(stage: TraceStage, from: string | null): string[] {
 
 /** What the step passed on: its previews, or for an embedding step, the vectors' shape. */
 export function outputLines(stage: TraceStage): string[] {
+  if (stage.kind === "run")
+    return [
+      `identifiers passed on: ${stage.identifiers.length}`,
+      ...(stage.hosts.length ? [`sent to: ${stage.hosts.map(scalar).join(", ")}`] : []),
+    ];
   if (stage.kind === "folder")
     return [`documents: ${scalar(stage.documents_out)}`, `identifiers: ${stage.identifiers.length}`];
   if (stage.kind === "embed")

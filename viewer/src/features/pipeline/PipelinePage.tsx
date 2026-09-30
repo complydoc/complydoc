@@ -12,6 +12,7 @@ import { measured } from "@/report/measured";
 import { spansOf, traceSpan, traceTotals, visibleSpans, type Span } from "@/report/traceTree";
 import { changeBetween, stepsOf } from "@/report/traceView";
 import type { Report } from "@/report/types";
+import { RunsRail } from "./RunsRail";
 import { SpanDetail } from "./SpanDetail";
 import { ValueTrail } from "./ValueTrail";
 import { Waterfall } from "./Waterfall";
@@ -136,7 +137,8 @@ export function PipelinePage({ report }: { report: Report }) {
         <ValueTrail steps={steps} selected={at} />
       ) : (
         <div className="flex min-h-[32rem] flex-1 flex-col overflow-hidden rounded-xl border bg-card lg:min-h-0 lg:flex-row">
-          <div className="flex max-h-96 min-h-0 flex-col border-b lg:max-h-none lg:w-[56%] lg:shrink-0 lg:border-r lg:border-b-0">
+          {!audit && <RunsRail pipeline={trace.name} />}
+          <div className="flex max-h-96 min-h-0 flex-col border-b lg:max-h-none lg:w-[52%] lg:shrink-0 lg:border-r lg:border-b-0">
             <Waterfall
               roots={roots}
               selected={span.stage.index}

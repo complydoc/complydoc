@@ -17,7 +17,11 @@ function naming(span: Span): { name: string; aside: string } {
   // the list, its loader after it; a call inside another by what it read; any other by its
   // component, with the folder it read after it.
   const file = /\.[A-Za-z0-9]{1,5}$/.test(fileName(span.label));
-  const byFile = Boolean(span.label) && (span.depth > 0 || (file && stage.kind !== "document"));
+  // A step of several calls goes by the component it called, with how many times after it.
+  if (stage.method === "calls") return { name: stage.component, aside: span.label };
+  const inside = stage.parent !== null && stage.parent !== undefined;
+  const inFolder = span.depth > 0 && stage.kind === "document";
+  const byFile = Boolean(span.label) && (inside || inFolder || (file && stage.kind !== "document"));
   const name = byFile ? fileName(span.label) || span.label : stage.component;
   const labelName = span.label ? fileName(span.label) || span.label : "";
   const aside =
@@ -55,8 +59,10 @@ function Bar({ span, total }: { span: Span; total: number }) {
   const end = start + width;
   const priced = typeof stage.usd === "number" && stage.usd > 0 && stage.usd_basis !== "local";
   const label = `${formatSeconds(stage.seconds)}${priced ? ` · ${formatUsd(stage.usd ?? 0)}` : ""}`;
-  // The time sits after the bar, or before it where the bar runs to the end of the run.
+  // The time sits after the bar, before it where the bar runs to the end of the run, or on
+  // its end where the bar runs from start to end, such as the run's own.
   const after = end < 0.78;
+  const on = !after && start < 0.22;
   return (
     <>
       <span
@@ -68,8 +74,17 @@ function Bar({ span, total }: { span: Span; total: number }) {
         style={{ left: `${start * 100}%`, width: `max(2px, ${width * 100}%)` }}
       />
       <span
-        className="absolute top-1/2 -translate-y-1/2 font-mono text-[11px] whitespace-nowrap text-muted-foreground tabular-nums"
-        style={after ? { left: `calc(${end * 100}% + 6px)` } : { right: `calc(${(1 - start) * 100}% + 6px)` }}
+        className={cn(
+          "absolute top-1/2 -translate-y-1/2 font-mono text-[11px] whitespace-nowrap text-muted-foreground tabular-nums",
+          on && "rounded-sm bg-card px-1",
+        )}
+        style={
+          after
+            ? { left: `calc(${end * 100}% + 6px)` }
+            : on
+              ? { right: `calc(${(1 - end) * 100}% + 2px)` }
+              : { right: `calc(${(1 - start) * 100}% + 6px)` }
+        }
       >
         {label}
       </span>

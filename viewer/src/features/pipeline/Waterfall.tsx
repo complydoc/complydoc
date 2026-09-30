@@ -60,7 +60,9 @@ export function Waterfall({ roots, selected, onSelect, total }: WaterfallProps) 
       span.children.forEach(walk);
     };
     roots.forEach(walk);
-    return { count: all.length, indexes: all.filter((s) => s.children.length > 0).map((s) => s.stage.index) };
+    // The run stays open whatever is folded: folded, it would leave one line.
+    const folding = all.filter((s) => s.children.length > 0 && s.stage.kind !== "run");
+    return { count: all.length, indexes: folding.map((s) => s.stage.index) };
   })();
   const [folded, setFolded] = useState<Set<number>>(() =>
     parents.count <= FOLD_ABOVE ? new Set() : new Set(parents.indexes),
@@ -84,8 +86,11 @@ export function Waterfall({ roots, selected, onSelect, total }: WaterfallProps) 
     });
 
   const lines: Line[] = [];
+  // Each span's parent in the tree drawn, which for a step the viewer grouped is not the call's own.
+  const above = new Map<number, number>();
   const walk = (span: Span) => {
     lines.push({ span });
+    span.children.forEach((child) => above.set(child.stage.index, span.stage.index));
     if (span.children.length === 0 || folded.has(span.stage.index)) return;
     const shown = drawn.get(span.stage.index) ?? PAGE;
     span.children.slice(0, shown).forEach(walk);
@@ -102,7 +107,7 @@ export function Waterfall({ roots, selected, onSelect, total }: WaterfallProps) 
     else if (event.key === "ArrowUp" || event.key === "k") onSelect(rows[Math.max(at - 1, 0)]?.stage.index ?? selected);
     else if (event.key === "ArrowLeft" && row) {
       if (row.children.length > 0 && !folded.has(row.stage.index)) fold(row.stage.index, true);
-      else if (row.stage.parent !== null && row.stage.parent !== undefined) onSelect(row.stage.parent);
+      else if (above.has(row.stage.index)) onSelect(above.get(row.stage.index) as number);
     } else if (event.key === "ArrowRight" && row && row.children.length > 0) fold(row.stage.index, false);
     else return;
     event.preventDefault();

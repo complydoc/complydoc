@@ -1,5 +1,6 @@
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { FolderRunsContext } from "@/hooks/useFolderRuns";
 import { renderPage } from "@/test/render";
 import { required, sampleAudit } from "@/test/sample";
 import { nestedReport } from "@/test/trace";
@@ -21,24 +22,27 @@ describe("PipelinePage", () => {
     const tree = screen.getByRole("tree", { name: "Calls" });
     const rows = within(tree).getAllByRole("treeitem");
     expect(rows.map((row) => [row.getAttribute("aria-level"), row.textContent])).toEqual([
-      ["1", expect.stringContaining("DirectoryLoadercontracts")],
-      ["2", expect.stringContaining("a.pdfPyPDFLoader")],
-      ["2", expect.stringContaining("b.pdfPyPDFLoader")],
-      ["1", expect.stringContaining("RecursiveCharacterTextSplitter")],
-      ["1", expect.stringContaining("OpenAIEmbeddings")],
+      ["1", expect.any(String)],
+      ["2", expect.stringContaining("DirectoryLoadercontracts")],
+      ["3", expect.stringContaining("a.pdfPyPDFLoader")],
+      ["3", expect.stringContaining("b.pdfPyPDFLoader")],
+      ["2", expect.stringContaining("RecursiveCharacterTextSplitter")],
+      ["2", expect.stringContaining("OpenAIEmbeddings")],
     ]);
-    // Folding the directory loader hides its files.
+    // Folding the directory loader hides its files; folding the run, everything under it.
+    await userEvent.click(within(required(rows[1])).getByRole("button", { name: "Fold" }));
+    expect(within(tree).getAllByRole("treeitem")).toHaveLength(4);
     await userEvent.click(within(required(rows[0])).getByRole("button", { name: "Fold" }));
-    expect(within(tree).getAllByRole("treeitem")).toHaveLength(3);
+    expect(within(tree).getAllByRole("treeitem")).toHaveLength(1);
   });
 
   it("collapses every call and expands them again from one control", async () => {
     renderPage(<PipelinePage report={nestedReport()} />);
     const tree = screen.getByRole("tree", { name: "Calls" });
     await userEvent.click(screen.getByRole("button", { name: "Collapse all" }));
-    expect(within(tree).getAllByRole("treeitem")).toHaveLength(3);
+    expect(within(tree).getAllByRole("treeitem")).toHaveLength(4);
     await userEvent.click(screen.getByRole("button", { name: "Expand all" }));
-    expect(within(tree).getAllByRole("treeitem")).toHaveLength(5);
+    expect(within(tree).getAllByRole("treeitem")).toHaveLength(6);
   });
 
   it("folds a call's input away, and brings it back", async () => {
@@ -97,5 +101,35 @@ describe("PipelinePage", () => {
   it("says a run with nothing to trace has none, and how to record one", () => {
     renderPage(<PipelinePage report={{ ...sampleAudit(), documents: [] }} />);
     expect(screen.getByText("No pipeline in this run")).toBeInTheDocument();
+  });
+  it("lists the pipeline's other runs beside the trace, and opens one in place", async () => {
+    const report = nestedReport();
+    const older = { ...report, run: { ...report.run, started_at: "2026-09-29T10:00:00" } };
+    const open = vi.fn();
+    renderPage(
+      <FolderRunsContext.Provider
+        value={{
+          runs: [
+            { id: "new", name: "new.json", report },
+            { id: "old", name: "old.json", report: older },
+            { id: "audit", name: "audit.json", report: sampleAudit() },
+          ],
+          current: "new",
+          open,
+        }}
+      >
+        <PipelinePage report={report} />
+      </FolderRunsContext.Provider>,
+    );
+    const rail = screen.getByRole("navigation", { name: "Runs" });
+    const runs = within(rail).getAllByRole("button", { name: /IDs/ });
+    expect(runs).toHaveLength(2);
+    expect(runs[0]).toHaveAttribute("aria-current", "true");
+    expect(runs[1]).toHaveTextContent("1 IDs");
+    await userEvent.click(required(runs[1]));
+    expect(open).toHaveBeenCalledWith("old");
+    await userEvent.click(within(rail).getByRole("button", { name: "Hide the runs" }));
+    expect(screen.queryByRole("navigation", { name: "Runs" })).not.toBeInTheDocument();
+    window.localStorage.clear();
   });
 });

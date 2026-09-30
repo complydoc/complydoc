@@ -11,6 +11,7 @@ import {
   SendIcon,
   ShieldAlertIcon,
   WandSparklesIcon,
+  WorkflowIcon,
   type LucideIcon,
 } from "lucide-react";
 import type { StepKind } from "@/report/traceView";
@@ -32,4 +33,5 @@ export const KIND: Record<StepKind, { label: string; icon: LucideIcon; tone: str
   analyse: { label: "Analyse", icon: GaugeIcon, tone: "text-amber-500", bar: "bg-amber-500" },
   scan: { label: "Scan", icon: ShieldAlertIcon, tone: "text-rose-500", bar: "bg-rose-500" },
   verify: { label: "Vision", icon: EyeIcon, tone: "text-emerald-500", bar: "bg-emerald-500" },
+  run: { label: "Run", icon: WorkflowIcon, tone: "text-foreground", bar: "bg-muted-foreground/45" },
 };
