@@ -32,6 +32,10 @@ separately.
 
 ### Fixed
 
+- `complydoc ui` could run out of memory on a large report: each request for its ignore or
+  concepts file parsed the whole report again, and they came in together. The server now
+  parses a report once per version of the file, one report at a time, streams it rather
+  than reading it whole, and answers a browser that already holds it with "not modified".
 - A vector store built by a class method, such as `FAISS.from_documents`, is a step of
   the trace. FAISS builds its index without calling `add_texts`, so it was missing.
 - LlamaIndex's embedding step is followed back to its documents, though the texts it

@@ -30,6 +30,7 @@ import datetime as dt
 import hashlib
 import json
 import mimetypes
+import shutil
 import threading
 import webbrowser
 from dataclasses import dataclass
@@ -109,39 +110,73 @@ class FoundReport:
         }
 
 
-_cache: dict[tuple[Path, int, float], tuple[int | None, str] | None] = {}
+@dataclass(frozen=True)
+class _Known:
+    """What the server needs of a report, read from it once per version of the file."""
+
+    schema_version: int | None
+    target: str
+    read: dict[str, str | None]
+    """The ignore and concepts files the run read, by kind, where it read one."""
+
+
+_cache: dict[tuple[Path, int, float], _Known | None] = {}
 _cache_lock = threading.Lock()
+_parse_lock = threading.Lock()
+"""One report parsed at a time: a large one takes gigabytes while it is, and the viewer's
+first requests arrive together."""
 
 
-def _identify(path: Path, size: int, modified: float) -> tuple[int | None, str] | None:
-    """The schema version and audited folder of a report, or None when it is not one.
+def _known(path: Path, size: int, modified: float) -> _Known | None:
+    """What the server needs of a report, or None when the file is not one.
 
     A folder of reports also holds routing manifests, diffs and chunk reports.
     Only an audit report has a `run` with a schema version and a list of
     documents, so that is what is looked for. The answer is kept per file
-    version, so a large report is parsed once, not on every reload.
+    version, so a report is parsed once, not on every request.
     """
     key = (path, size, modified)
     with _cache_lock:
         if key in _cache:
             return _cache[key]
-    result: tuple[int | None, str] | None = None
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, UnicodeDecodeError, ValueError):
-        data = None
-    if isinstance(data, dict):
-        run = data.get("run")
-        if (
-            isinstance(run, dict)
-            and "schema_version" in run
-            and isinstance(data.get("documents"), list)
-        ):
-            version = run.get("schema_version")
-            result = (version if isinstance(version, int) else None, str(run.get("target") or ""))
-    with _cache_lock:
-        _cache[key] = result
+    with _parse_lock:
+        with _cache_lock:
+            if key in _cache:
+                return _cache[key]
+        result: _Known | None = None
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, ValueError):
+            data = None
+        if isinstance(data, dict):
+            run = data.get("run")
+            if (
+                isinstance(run, dict)
+                and "schema_version" in run
+                and isinstance(data.get("documents"), list)
+            ):
+                version = run.get("schema_version")
+                read = {
+                    kind: file
+                    if isinstance(file := (data.get(kind) or {}).get("file"), str)
+                    else None
+                    for kind in _KEPT
+                }
+                result = _Known(
+                    version if isinstance(version, int) else None,
+                    str(run.get("target") or ""),
+                    read,
+                )
+        del data
+        with _cache_lock:
+            _cache[key] = result
     return result
+
+
+def _identify(path: Path, size: int, modified: float) -> tuple[int | None, str] | None:
+    """The schema version and audited folder of a report, or None when it is not one."""
+    known = _known(path, size, modified)
+    return None if known is None else (known.schema_version, known.target)
 
 
 def _report_id(path: Path) -> str:
@@ -201,17 +236,20 @@ def _file_for(report_path: Path, kind: str) -> Path | None:
         "concepts": (CONCEPTS_FILENAME, load_concepts, ConceptError),
     }[kind]
     try:
-        data = json.loads(report_path.read_text(encoding="utf-8"))
-    except (OSError, UnicodeDecodeError, ValueError):
+        stat = report_path.stat()
+    except OSError:
         return None
-    read = (data.get(kind) or {}).get("file") if isinstance(data, dict) else None
+    known = _known(report_path, stat.st_size, stat.st_mtime)
+    if known is None:
+        return None
+    read = known.read.get(kind)
     if isinstance(read, str) and read.endswith((".yaml", ".yml")) and Path(read).is_file():
         try:
             load(Path(read))
             return Path(read)
         except error:
             pass
-    target = Path(str((data.get("run") or {}).get("target") or ""))
+    target = Path(known.target)
     if not target.is_absolute():
         return None
     folder = target if target.is_dir() else target.parent
@@ -384,9 +422,32 @@ class _Handler(BaseHTTPRequestHandler):
             if report is None:
                 self._error(HTTPStatus.NOT_FOUND, "no such report")
                 return
-            self._send(HTTPStatus.OK, report.path.read_bytes(), "application/json")
+            self._report(report)
         else:
             self._static(path)
+
+    def _report(self, report: FoundReport) -> None:
+        """The report file, streamed from disk rather than read whole, and not sent again to
+        a browser that already holds this version of it."""
+        tag = f'"{report.size:x}-{int(report.modified * 1e6):x}"'
+        if self.headers.get("If-None-Match") == tag:
+            self.send_response(HTTPStatus.NOT_MODIFIED)
+            self.send_header("ETag", tag)
+            self.end_headers()
+            return
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(report.size))
+        self.send_header("ETag", tag)
+        # Kept, but asked after each time: a report rewritten in place is seen at once.
+        self.send_header("Cache-Control", "no-cache")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("Referrer-Policy", "no-referrer")
+        self.end_headers()
+        if self.command == "HEAD":
+            return
+        with report.path.open("rb") as file:
+            shutil.copyfileobj(file, self.wfile, 1 << 20)
 
     def _static(self, path: str) -> None:
         """One of the viewer's own files, and only those."""

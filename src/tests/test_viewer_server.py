@@ -336,3 +336,43 @@ def test_the_viewer_can_edit_the_concepts_beside_the_documents(tmp_path: Path, d
         assert status == 403
     finally:
         viewer.stop()
+
+
+def test_a_report_is_parsed_once_however_often_it_is_asked_about(
+    reports: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """A large report takes gigabytes to parse: listing it and finding its ignore and
+    concepts files must not parse it again each time."""
+    from complydoc.viewer import server
+
+    report = write_report(reports / "fresh" / "complydoc.json", target=str(reports))
+    parsed: list[str] = []
+    loads = server.json.loads
+
+    def counting(text: str, *args: object, **kwargs: object) -> object:
+        parsed.append(text[:20])
+        return loads(text, *args, **kwargs)
+
+    monkeypatch.setattr(server.json, "loads", counting)
+    before = len(parsed)
+    for _ in range(3):
+        find_reports(report)
+        server.ignore_file_for(report)
+        server.concepts_file_for(report)
+    assert len(parsed) - before == 1
+
+
+def test_a_report_the_browser_holds_is_not_sent_again(reports: Path, dist: Path):
+    viewer = launch_ui(reports, port=0, open_browser=False, dist=dist)
+    try:
+        _, _, listing = get(viewer.port, "/api/reports")
+        url = json.loads(listing)["reports"][0]["url"]
+        status, headers, body = get(viewer.port, f"/{url}")
+        assert status == 200 and body and headers["Cache-Control"] == "no-cache"
+        connection = http.client.HTTPConnection("127.0.0.1", viewer.port, timeout=5)
+        connection.request("GET", f"/{url}", headers={"If-None-Match": headers["ETag"]})
+        response = connection.getresponse()
+        assert response.status == 304 and response.read() == b""
+        connection.close()
+    finally:
+        viewer.stop()
