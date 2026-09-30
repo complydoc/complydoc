@@ -47,3 +47,9 @@ export function useDocumentLink(): (path: string, query?: string) => (() => void
     return null;
   };
 }
+
+/** Where `complydoc ui` serves the report on screen from, or null for a file opened in the browser. */
+export function useReportSource(): string | null {
+  const { runs, current } = useContext(FolderRunsContext);
+  return runs.find((run) => run.id === current)?.source ?? null;
+}

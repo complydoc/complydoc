@@ -303,6 +303,8 @@ export interface PagePreview {
   image_blocks: Box[];
   sensitive: Box[];
   image_data_uri: string | null;
+  /** Schema 20: where the report keeps the picture, beside it: `<report>.parts/pages/…`. */
+  image?: string | null;
   unreadable: boolean;
 }
 

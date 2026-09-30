@@ -762,10 +762,10 @@ def _masking(run: RunMetadata) -> list[Limitation]:
             Limitation(
                 area="Masking",
                 statement=(
-                    "This report embeds a picture of each page, and a picture shows every "
-                    "value on the page unmasked. The findings and the text are masked; the "
-                    "pictures are not. Treat this file with the same care as the documents "
-                    "it describes."
+                    "This report keeps a picture of each page, in the .parts folder beside "
+                    "it, and a picture shows every value on the page unmasked. The findings "
+                    "and the text are masked; the pictures are not. Treat that folder with "
+                    "the same care as the documents it describes."
                 ),
                 severity="important",
             )

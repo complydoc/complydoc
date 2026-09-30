@@ -1,7 +1,7 @@
 import type { Report, Thresholds } from "./types";
 
 /** The report schemas this viewer was written against. */
-const SUPPORTED_SCHEMAS = [15, 16, 17, 18, 19] as const;
+const SUPPORTED_SCHEMAS = [15, 16, 17, 18, 19, 20] as const;
 
 /**
  * The lines complydoc drew before reports carried them (schemas 15 and 16, and

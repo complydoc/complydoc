@@ -142,6 +142,11 @@ Page pictures need a report written with them:
 complydoc audit ./documents --page-images
 ```
 
+They are kept in the `.parts` folder beside the report, and the viewer fetches a page's
+picture only when the page is shown, so a report of thousands of pages opens as fast as
+one without them. A report opened as a file in the browser, rather than with `complydoc
+ui`, shows each page as its outline instead.
+
 The text is masked, as the report is. A report written with `--reveal` holds the
 values as well as a masked copy of every page. The viewer opens it masked, and
 the eye button shows the values until you mask them again. On any other report,

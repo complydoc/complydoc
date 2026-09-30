@@ -2,7 +2,18 @@ import type { Box, PagePreview } from "./types";
 
 /** Whether a page has anything to draw: a picture, or at least the layout of its text. */
 export function hasPicture(preview: PagePreview | undefined): preview is PagePreview {
-  return Boolean(preview && (preview.image_data_uri || preview.text_blocks.length > 0));
+  return Boolean(preview && (preview.image_data_uri || preview.image || preview.text_blocks.length > 0));
+}
+
+/**
+ * Where a page's picture is: inside an older report, or beside a newer one, fetched from
+ * `complydoc ui` at the report's address. A report opened as a file, without the folder
+ * beside it, has none to show.
+ */
+export function pictureUrl(preview: PagePreview, source: string | null): string | null {
+  if (preview.image_data_uri) return preview.image_data_uri;
+  if (preview.image && source) return `${source}/files/${preview.image.split("/").map(encodeURIComponent).join("/")}`;
+  return null;
 }
 
 /** A finding on the page, found among its boxes by its value and label. */

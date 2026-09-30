@@ -108,9 +108,10 @@ from your machine. A trace shows the calls in a tree with each one's input and o
 a document shows every page with the chunks drawn over its text and each finding in
 place; two readers of a document show as a diff. See [The report viewer](guides/viewer.md).
 
-The report itself is JSON, carrying `schema_version`, currently 19. Identifiers are
+The report itself is JSON, carrying `schema_version`, currently 20. Identifiers are
 masked everywhere in it, including the page text, unless the run used `--reveal`;
-`--page-images` adds a picture of each page, which shows them.
+`--page-images` adds a picture of each page, which shows them, kept in a `.parts`
+folder beside the report rather than inside it.
 
 ## Network access
 

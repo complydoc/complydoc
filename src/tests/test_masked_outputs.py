@@ -104,8 +104,12 @@ def test_page_pictures_are_opt_in_and_disclosed(tmp_path, folder):
     out = tmp_path / "out"
     _audit(folder, out, "--page-images")
     written = _written(out)
-    assert "data:image/jpeg" in written
-    assert "embeds a picture of each page" in written
+    # Beside the report, not in it: the pictures made most of a large report.
+    assert "data:image/jpeg" not in written
+    pictures = sorted((out / "complydoc.parts" / "pages").glob("*.jpg"))
+    assert pictures and all(p.read_bytes()[:2] == b"\xff\xd8" for p in pictures)
+    assert f"complydoc.parts/pages/{pictures[0].name}" in written
+    assert "keeps a picture of each page" in written
 
 
 def test_reveal_keeps_a_masked_copy_of_each_page_for_the_viewer(tmp_path, folder, confirmed_values):

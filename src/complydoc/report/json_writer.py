@@ -14,18 +14,28 @@ Two shapes, chosen by `detail`:
     Every field. Keep this for anything that reprocesses reports, since a summary
     reads back without the parts it left out. `run.report_detail` says which a
     file is, so a missing part is never mistaken for an empty one.
+
+Page pictures are not written into the JSON. They made most of a large report,
+which every reader of it then had to hold whole: 1,671 of them came to 427 MB. Each
+is written as a JPEG in a folder beside the report, `<report>.parts/pages/`, and the
+page names its file in `image`, so the viewer fetches a picture when its page is
+shown.
 """
 
 from __future__ import annotations
 
+import base64
 import json
+import shutil
 from pathlib import Path
 from typing import Any, Literal
 
 from complydoc.report.models import AuditReport, to_jsonable
 from complydoc.utils.files import write_text
 
-__all__ = ["DETAIL_LEVELS", "Detail", "to_dict", "write_json"]
+__all__ = ["DETAIL_LEVELS", "Detail", "parts_folder", "to_dict", "write_json"]
+
+_JPEG = "data:image/jpeg;base64,"
 
 Detail = Literal["summary", "full"]
 DETAIL_LEVELS: tuple[Detail, ...] = ("summary", "full")
@@ -70,9 +80,37 @@ def to_dict(report: AuditReport, *, detail: Detail = "summary") -> dict[str, Any
     return data
 
 
+def parts_folder(path: Path) -> Path:
+    """The folder beside a report at `path` that holds what is kept out of its JSON."""
+    return path.with_name(f"{path.stem}.parts")
+
+
+def _pictures_out(content: dict[str, Any], path: Path) -> None:
+    """Each page picture written as a file beside the report, and named in its place.
+
+    The folder is the report's own: a report written again over the same path replaces
+    its pictures, so none is left from the run before.
+    """
+    folder = parts_folder(path)
+    pages = folder / "pages"
+    if pages.exists():
+        shutil.rmtree(pages)
+    for index, document in enumerate(content.get("documents") or []):
+        for preview in document.get("previews") or []:
+            uri = preview.get("image_data_uri")
+            if not isinstance(uri, str) or not uri.startswith(_JPEG):
+                continue
+            pages.mkdir(parents=True, exist_ok=True)
+            name = f"{index:04d}-{int(preview.get('number') or 0):04d}.jpg"
+            (pages / name).write_bytes(base64.b64decode(uri.removeprefix(_JPEG)))
+            preview["image"] = f"{folder.name}/pages/{name}"
+            preview["image_data_uri"] = None
+
+
 def write_json(report: AuditReport, path: Path, *, detail: Detail = "summary") -> Path:
-    # sort_keys keeps two runs comparable with a plain diff.
     content = to_dict(report, detail=detail)
+    _pictures_out(content, Path(path).expanduser())
+    # sort_keys keeps two runs comparable with a plain diff.
     return write_text(
         path, json.dumps(content, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
     )

@@ -376,3 +376,27 @@ def test_a_report_the_browser_holds_is_not_sent_again(reports: Path, dist: Path)
         connection.close()
     finally:
         viewer.stop()
+
+
+def test_a_page_picture_beside_a_report_is_served_and_nothing_else(reports: Path, dist: Path):
+    parts = reports / "complydoc.parts"
+    (parts / "pages").mkdir(parents=True)
+    (parts / "pages" / "0000-0001.jpg").write_bytes(b"\xff\xd8picture")
+    # A JSON file kept beside a report is never listed as one.
+    write_report(parts / "documents" / "0000.json")
+    (reports / "secret.txt").write_text("not a part")
+    viewer = launch_ui(reports, port=0, open_browser=False, dist=dist)
+    try:
+        _, _, listing = get(viewer.port, "/api/reports")
+        found = json.loads(listing)["reports"]
+        assert sorted(r["name"] for r in found) == ["complydoc.json", "contracts/complydoc.json"]
+        url = next(r["url"] for r in found if r["name"] == "complydoc.json")
+        status, headers, body = get(
+            viewer.port, f"/{url}/files/complydoc.parts/pages/0000-0001.jpg"
+        )
+        assert status == 200 and body == b"\xff\xd8picture"
+        assert headers["Content-Type"] == "image/jpeg"
+        for outside in ("secret.txt", "complydoc.parts/../secret.txt", "contracts/complydoc.json"):
+            assert get(viewer.port, f"/{url}/files/{outside}")[0] == 404
+    finally:
+        viewer.stop()

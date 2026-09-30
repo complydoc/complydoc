@@ -92,8 +92,12 @@ class PagePreview:
     """The page itself, as a JPEG data URI. Only set when --page-images is used.
 
     This is real document content. Everything else in a preview is geometry, and
-    the default report contains no page images at all.
+    the default report contains no page images at all. A written report keeps the
+    picture as a file beside it instead, named in `image`.
     """
+    image: str | None = None
+    """Schema 20: where the written report keeps the picture, relative to the report's
+    folder: `<report>.parts/pages/<document>-<page>.jpg`. Unmasked, as the page is."""
     image_width_px: int = 0
     image_height_px: int = 0
     """Size the page image was encoded at, so the layout can reserve its space."""

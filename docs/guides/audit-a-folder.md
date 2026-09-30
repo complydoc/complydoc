@@ -30,7 +30,7 @@ as an important limitation in the report:
 
 | Flag | Adds |
 | --- | --- |
-| `--page-images` | A picture of each page. A picture shows every value on it, masked or not |
+| `--page-images` | A picture of each page, as a JPEG in the `.parts` folder beside the report. A picture shows every value on it, masked or not |
 | `--reveal` | Every value unmasked, in the findings, the page text and `--save-text` files |
 
 ## How much the JSON carries
@@ -39,12 +39,18 @@ The JSON is written in one of two shapes, and `run.report_detail` says which:
 
 | `--detail` | Carries | 200 one-page documents |
 | --- | --- | --- |
-| `summary` (default) | Every finding, score and limitation, and the folder's cost on each model; the page pictures too when `--page-images` asked for them | 4.6 MB |
+| `summary` (default) | Every finding, score and limitation, and the folder's cost on each model | 4.6 MB |
 | `full` | All of that, plus the price of every document on every model, and the page geometry the viewer draws pages with | 20.3 MB |
 
 Use `--detail full` on `audit` or `cost` when you need a single document's price on a
 given model, or when something reprocesses the reports, since a summary reads back
 without the parts it left out. In Python, `cd.write_json(report, path, detail="full")`.
+
+Page pictures are never written into the JSON, whichever the shape: they are most of a
+large report, and whatever reads it would have to hold them all. Each is a JPEG in a
+folder beside the report, `complydoc.parts/pages/` for `complydoc.json`, named in its
+page's `image`. Keep or move the folder with the report; `complydoc ui` shows a page's
+picture from it.
 
 ## Report summary
 

@@ -195,7 +195,12 @@ def find_reports(*sources: str | Path) -> list[FoundReport]:
         if root.is_file():
             candidates = [(root, root.parent)]
         elif root.is_dir():
-            candidates = [(path, root) for path in sorted(root.rglob("*.json"))]
+            # A report's `.parts` folder holds what is kept out of it, never a report.
+            candidates = [
+                (path, root)
+                for path in sorted(root.rglob("*.json"))
+                if not any(part.endswith(".parts") for part in path.relative_to(root).parts[:-1])
+            ]
         else:
             continue
         for path, base in candidates:
@@ -416,6 +421,8 @@ class _Handler(BaseHTTPRequestHandler):
                 self._listing(*found)
             except ValueError as exc:
                 self._error(HTTPStatus.CONFLICT, str(exc))
+        elif path.startswith(f"/{API}/reports/") and "/files/" in path:
+            self._part(path)
         elif path.startswith(f"/{API}/reports/"):
             wanted = path.removeprefix(f"/{API}/reports/")
             report = next((r for r in find_reports(*server.sources) if r.id == wanted), None)
@@ -426,18 +433,40 @@ class _Handler(BaseHTTPRequestHandler):
         else:
             self._static(path)
 
+    def _part(self, path: str) -> None:
+        """A file kept beside a report, such as a page picture, and only from the report's
+        own `.parts` folder."""
+        from complydoc.report.json_writer import parts_folder
+
+        wanted, _, name = path.removeprefix(f"/{API}/reports/").partition("/files/")
+        report = next((r for r in find_reports(*self.server.sources) if r.id == wanted), None)
+        if report is None:
+            self._error(HTTPStatus.NOT_FOUND, "no such report")
+            return
+        folder = parts_folder(report.path).resolve()
+        file = (report.path.parent / name).resolve()
+        if not file.is_relative_to(folder) or not file.is_file():
+            self._error(HTTPStatus.NOT_FOUND, "no such file in this report")
+            return
+        stat = file.stat()
+        content_type = mimetypes.guess_type(file.name)[0] or "application/octet-stream"
+        self._file(file, stat.st_size, stat.st_mtime, content_type)
+
     def _report(self, report: FoundReport) -> None:
-        """The report file, streamed from disk rather than read whole, and not sent again to
-        a browser that already holds this version of it."""
-        tag = f'"{report.size:x}-{int(report.modified * 1e6):x}"'
+        self._file(report.path, report.size, report.modified, "application/json")
+
+    def _file(self, file: Path, size: int, modified: float, content_type: str) -> None:
+        """A file streamed from disk rather than read whole, and not sent again to a
+        browser that already holds this version of it."""
+        tag = f'"{size:x}-{int(modified * 1e6):x}"'
         if self.headers.get("If-None-Match") == tag:
             self.send_response(HTTPStatus.NOT_MODIFIED)
             self.send_header("ETag", tag)
             self.end_headers()
             return
         self.send_response(HTTPStatus.OK)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(report.size))
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(size))
         self.send_header("ETag", tag)
         # Kept, but asked after each time: a report rewritten in place is seen at once.
         self.send_header("Cache-Control", "no-cache")
@@ -446,8 +475,8 @@ class _Handler(BaseHTTPRequestHandler):
         self.end_headers()
         if self.command == "HEAD":
             return
-        with report.path.open("rb") as file:
-            shutil.copyfileobj(file, self.wfile, 1 << 20)
+        with file.open("rb") as stream:
+            shutil.copyfileobj(stream, self.wfile, 1 << 20)
 
     def _static(self, path: str) -> None:
         """One of the viewer's own files, and only those."""

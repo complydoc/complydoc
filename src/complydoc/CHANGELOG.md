@@ -23,6 +23,11 @@ separately.
 
 ### Changed
 
+- Page pictures are no longer written into the report JSON. Each is a JPEG in a
+  `.parts` folder beside the report, `complydoc.parts/pages/` for `complydoc.json`,
+  named in its page's new `image` field, and `complydoc ui` fetches a picture only when
+  its page is shown. They were most of a large report: 1,671 of them made 427 MB that
+  every reader had to hold whole. The report JSON moves to schema 20.
 - The viewer's Runs page is gone. The Traces page, as the sidebar now names it, lists
   every run of the folder or pipeline: a run with a trace opens it beside the list, a
   chunks run opens on Chunks and a loader comparison on Documents.

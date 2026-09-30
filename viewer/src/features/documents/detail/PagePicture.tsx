@@ -2,7 +2,8 @@ import { ImageOffIcon } from "lucide-react";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { hasPicture, isIgnoredBox, isMarked, type BoxRef } from "@/report/picture";
+import { useReportSource } from "@/hooks/useFolderRuns";
+import { hasPicture, isIgnoredBox, isMarked, pictureUrl, type BoxRef } from "@/report/picture";
 import type { Box, PagePreview } from "@/report/types";
 
 function place(box: Box) {
@@ -24,6 +25,7 @@ interface PagePictureProps {
 }
 
 export function PagePicture({ preview, mark = null, ignored = [] }: PagePictureProps) {
+  const source = useReportSource();
   if (!hasPicture(preview)) {
     return (
       <Empty className="h-full p-4">
@@ -41,6 +43,7 @@ export function PagePicture({ preview, mark = null, ignored = [] }: PagePictureP
   }
 
   const ratio = preview.width_pt / preview.height_pt;
+  const picture = pictureUrl(preview, source);
   return (
     // A size container, so the page can take the largest size that fits both ways.
     <div className="flex size-full items-center justify-center" style={{ containerType: "size" }}>
@@ -49,8 +52,8 @@ export function PagePicture({ preview, mark = null, ignored = [] }: PagePictureP
         className="relative m-0 overflow-hidden rounded-md bg-card ring-1 ring-foreground/10"
         style={{ width: `min(100cqw, calc(100cqh * ${ratio}))`, aspectRatio: `${ratio}` }}
       >
-        {preview.image_data_uri ? (
-          <img src={preview.image_data_uri} alt="" className="absolute inset-0 size-full" />
+        {picture ? (
+          <img src={picture} alt="" loading="lazy" decoding="async" className="absolute inset-0 size-full" />
         ) : (
           preview.text_blocks.map((box, index) => (
             <span
