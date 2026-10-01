@@ -23,6 +23,7 @@ from __future__ import annotations
 import hashlib
 import json
 from collections.abc import Mapping
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
@@ -79,14 +80,12 @@ class CategoryFile(BaseModel):
     categories: dict[str, CategoryChange] = Field(default_factory=dict)
 
 
+@dataclass(frozen=True, slots=True)
 class CategoriesApplied:
     """What `with_categories` found: each change made, and each name it did not know."""
 
-    __slots__ = ("changed", "unknown")
-
-    def __init__(self, changed: dict[str, CategoryChange], unknown: list[str]) -> None:
-        self.changed = changed
-        self.unknown = unknown
+    changed: dict[str, CategoryChange]
+    unknown: list[str]
 
 
 def find_categories_file(target: Path) -> Path | None:
@@ -165,7 +164,9 @@ def effective(config: Config, file: CategoryFile) -> list[dict[str, object]]:
     """Every shipped category as a run with `file` would look for it, and how it differs."""
     rows: list[dict[str, object]] = []
     for name, category in config.sensitive.categories.items():
-        change = file.categories.get(name) or CategoryChange.model_construct()
+        change = file.categories.get(name)
+        enabled = None if change is None else change.enabled
+        severity = None if change is None else change.severity
         rows.append(
             {
                 "id": name,
@@ -173,8 +174,8 @@ def effective(config: Config, file: CategoryFile) -> list[dict[str, object]]:
                 "region": category.region,
                 "detector": category.detector,
                 "model_backed": category.model_backed,
-                "enabled": category.enabled if change.enabled is None else change.enabled,
-                "severity": category.severity if change.severity is None else change.severity,
+                "enabled": category.enabled if enabled is None else enabled,
+                "severity": category.severity if severity is None else severity,
                 "shipped_enabled": category.enabled,
                 "shipped_severity": category.severity,
             }

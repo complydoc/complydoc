@@ -294,9 +294,9 @@ def run_audit(
     categories_path = categories_file or find_categories_file(target)
     categories = None
     if categories_path is not None:
-        original = config
+        shipped = config
         config, applied = with_categories(config, load_categories(categories_path))
-        categories = (categories_path, original, config, applied)
+        categories = summarise_categories(categories_path, shipped, config, applied)
     concepts_path = concepts_file or find_concepts_file(target)
     concepts = (concepts_path, load_concepts(concepts_path)) if concepts_path is not None else None
     if concepts is not None:
@@ -445,7 +445,7 @@ def assemble_report(
     monthly_volume: int | None = None,
     ignores: tuple[Path, IgnoreFile] | None = None,
     concepts: tuple[Path, ConceptFile] | None = None,
-    categories: tuple[Path, Config, Config, CategoriesApplied] | None = None,
+    categories: CategorySummary | None = None,
     judge_name: str | None = None,
 ) -> AuditReport:
     """The report around a finished set of entries: totals, limitations, scores.
@@ -482,7 +482,7 @@ def assemble_report(
         concepts=(
             summarise_concepts(documents, concepts, judge_name) if concepts is not None else None
         ),
-        categories=summarise_categories(*categories) if categories is not None else None,
+        categories=categories,
     )
     if "readiness" in requested and config.readiness.scoring.enabled:
         report.signal_weights = {

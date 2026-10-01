@@ -27,6 +27,7 @@ while the server runs appears when the page is reloaded.
 from __future__ import annotations
 
 import datetime as dt
+import functools
 import hashlib
 import json
 import mimetypes
@@ -227,10 +228,12 @@ def find_reports(*sources: str | Path) -> list[FoundReport]:
     return sorted(found.values(), key=lambda report: report.modified, reverse=True)
 
 
-def _shipped() -> set[str]:
+@functools.lru_cache(maxsize=1)
+def _shipped_config() -> Any:
+    """The settings complydoc ships, read once: the categories the viewer lists and edits."""
     from complydoc.config.loader import load_config
 
-    return set(load_config().sensitive.categories)
+    return load_config()
 
 
 def _file_for(report_path: Path, kind: str) -> Path | None:
@@ -354,17 +357,19 @@ class _Handler(BaseHTTPRequestHandler):
     def _listing(self, kind: str, file: Path) -> None:
         from complydoc.categories import effective, load_categories
         from complydoc.concepts import load_concepts
-        from complydoc.config.loader import load_config
         from complydoc.ignores import load_ignores
 
         if kind == "categories":
+            config = _shipped_config()
             given = load_categories(file)
             self._json(
                 HTTPStatus.OK,
                 {
                     "file": str(file),
-                    "categories": effective(load_config(), given),
-                    "unknown": sorted(n for n in given.categories if n not in _shipped()),
+                    "categories": effective(config, given),
+                    "unknown": sorted(
+                        n for n in given.categories if n not in config.sensitive.categories
+                    ),
                 },
             )
             return

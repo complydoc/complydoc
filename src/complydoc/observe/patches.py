@@ -1,10 +1,10 @@
 """The library methods a `cd.observe` block wraps, and the wrapping.
 
 LangChain's callbacks do not reach loaders or splitters, so the methods themselves are
-wrapped instead. Base classes leave most of
-these methods to their subclasses (`Embeddings.embed_documents` is abstract, and
-most loaders define their own `lazy_load`), so each method is wrapped on every
-loaded class that defines it. Wrapping is undone when the block ends.
+wrapped instead. Base classes leave most of these methods to their subclasses
+(`Embeddings.embed_documents` is abstract, and most loaders define their own `lazy_load`),
+so each method is wrapped on every loaded class that defines it, and on each class a
+library defines as it is imported inside the block. Wrapping is undone when the block ends.
 """
 
 from __future__ import annotations
@@ -162,9 +162,14 @@ _TARGETS: Final = (
     ),
 )
 
+_PDF_LIBRARIES: Final = frozenset({"pypdf", "pymupdf", "fitz"})
+"""Libraries whose own wrapping is `readers`'."""
+
 _installed: list[tuple[type, str, Any]] = []
-_attached: list[_Target] = []
+_attached: dict[_Target, type] = {}
+"""The targets whose base class is loaded, with that class."""
 _pending: list[_Target] = []
+"""The targets whose base class is not loaded yet."""
 _libraries: dict[str, str] = {}
 _finder: _LateImports | None = None
 
@@ -180,7 +185,8 @@ def install() -> dict[str, str]:
     _attached.clear()
     _pending.clear()
     for target in _TARGETS:
-        (_attached if _attach(target) else _pending).append(target)
+        if not _attach(target):
+            _pending.append(target)
     # Files read with a PDF library directly, not through a loader.
     _libraries.update(readers.install())
     _finder = _LateImports()
@@ -209,6 +215,7 @@ def _attach(target: _Target) -> bool:
     base = _base(target.module, target.base)
     if base is None:
         return False
+    _attached[target] = base
     if target.distribution is not None:
         _libraries[target.distribution] = _version(target.distribution)
     for cls in (base, *_subclasses(base)):
@@ -253,19 +260,15 @@ def _imported(module: Any) -> None:
     for target in tuple(_pending):
         if name == target.module and _attach(target):
             _pending.remove(target)
-            _attached.append(target)
-    for target in _attached:
-        base = _base(target.module, target.base)
-        if base is None:
-            continue
-        for cls in vars(module).values():
-            if isinstance(cls, type) and cls.__module__ == name and issubclass(cls, base):
+    defined = [
+        cls for cls in vars(module).values() if isinstance(cls, type) and cls.__module__ == name
+    ]
+    for target, base in _attached.items():
+        for cls in defined:
+            if issubclass(cls, base):
                 _wrap_class(cls, target)
     if name in _PDF_LIBRARIES:
         _libraries.update(readers.install())
-
-
-_PDF_LIBRARIES: Final = frozenset({"pypdf", "pymupdf", "fitz"})
 
 
 class _LateImports(importlib.abc.MetaPathFinder):

@@ -12,6 +12,9 @@ import { humanise } from "@/report/format";
 import { SEVERITIES } from "@/report/select";
 import type { CategoryRow, CategorySummary, Severity } from "@/report/types";
 
+/** Which categories the list shows. */
+type Show = "all" | "changed" | "off";
+
 const isChanged = (row: CategoryRow) => row.enabled !== row.shipped_enabled || row.severity !== row.shipped_severity;
 
 function Row({ row, state }: { row: CategoryRow; state: CategoriesState }) {
@@ -90,7 +93,7 @@ function LastRun({ summary }: { summary: CategorySummary | null }) {
  */
 export function CategoriesSection({ state, lastRun }: { state: CategoriesState; lastRun: CategorySummary | null }) {
   const [query, setQuery] = useState("");
-  const [only, setOnly] = useState<string>("all");
+  const [only, setOnly] = useState<Show>("all");
   const rows = useMemo(() => {
     const needle = query.trim().toLowerCase();
     return state.categories.filter(
@@ -112,7 +115,13 @@ export function CategoriesSection({ state, lastRun }: { state: CategoriesState; 
           aria-label="Find a category"
           className="max-w-xs"
         />
-        <ToggleGroup type="single" variant="outline" size="sm" value={only} onValueChange={(v) => setOnly(v || "all")}>
+        <ToggleGroup
+          type="single"
+          variant="outline"
+          size="sm"
+          value={only}
+          onValueChange={(v) => setOnly((v || "all") as Show)}
+        >
           <ToggleGroupItem value="all">All</ToggleGroupItem>
           <ToggleGroupItem value="changed">Changed</ToggleGroupItem>
           <ToggleGroupItem value="off">Switched off</ToggleGroupItem>

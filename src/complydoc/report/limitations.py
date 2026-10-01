@@ -880,8 +880,8 @@ def category_limitations(summary: CategorySummary | None) -> list[Limitation]:
     """What a run did not look for because its categories file said not to.
 
     A category switched off finds nothing, which reads the same as a clean one unless
-    the report says it was not looked for; a name the file gave that is no category
-    changed nothing, and is said so the typo is not taken for a setting.
+    the report says it was not looked for. A name the file gave that is no category
+    changed nothing, and is said, so that a typo is not taken for a setting.
     """
     if summary is None:
         return []
