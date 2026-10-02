@@ -50,12 +50,12 @@ def install() -> dict[str, str]:
         from pypdf import PdfReader
         from pypdf._page import PageObject
 
-        _wrap(PdfReader, "__init__", _opening("PdfReader"))
+        _wrap(PdfReader, "__init__", _opening())
         _wrap(PageObject, "extract_text", _reading("PdfReader", lambda page: page.pdf))
         libraries["pypdf"] = getattr(pypdf, "__version__", "unknown")
     pymupdf = sys.modules.get("pymupdf") or sys.modules.get("fitz")
     if pymupdf is not None and hasattr(pymupdf, "Document") and hasattr(pymupdf, "Page"):
-        _wrap(pymupdf.Document, "__init__", _opening("Document"))
+        _wrap(pymupdf.Document, "__init__", _opening())
         _wrap(pymupdf.Page, "get_text", _reading("Document", lambda page: page.parent))
         libraries["pymupdf"] = getattr(pymupdf, "VersionBind", "unknown")
     return libraries
@@ -84,7 +84,7 @@ def _path_of(args: tuple[Any, ...], kwargs: dict[str, Any], reader: Any) -> str 
     return name if isinstance(name, str) and name else None
 
 
-def _opening(label: str) -> Any:
+def _opening() -> Any:
     def make(original: Any) -> Any:
         @functools.wraps(original)
         def init(self: Any, *args: Any, **kwargs: Any) -> None:

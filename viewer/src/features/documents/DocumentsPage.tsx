@@ -5,7 +5,7 @@ import { useFullDocument, withDocument } from "@/hooks/useFullDocument";
 import { usePlan } from "@/hooks/usePlan";
 import { formatPageUsd, formatSeconds, plural } from "@/report/format";
 import { measured } from "@/report/measured";
-import { reportTotals } from "@/report/plan";
+import { reportTotals } from "@/report/planEstimate";
 import { documentTree } from "@/report/tree";
 import { parseTarget } from "@/report/route";
 import type { Report } from "@/report/types";

@@ -1,5 +1,6 @@
 import { pricedModels } from "./pricing";
-import { reportTotals, type Plan } from "./plan";
+import { type Plan } from "./plan";
+import { reportTotals } from "./planEstimate";
 import { documentTree, type TreeNode } from "./tree";
 import { required, sampleAudit } from "@/test/sample";
 import type { Report } from "./types";

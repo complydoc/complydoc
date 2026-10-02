@@ -7,7 +7,7 @@ import { ToneBadge } from "@/components/ToneBadge";
 import { measured } from "@/report/measured";
 import { isPipeline, leadRun, runLabel, type Collection } from "@/report/collections";
 import { formatCount, formatPageUsd, formatScore, formatSeconds, plural } from "@/report/format";
-import { EMPTY, combine, reportTotals, type Totals } from "@/report/plan";
+import { EMPTY, combine, reportTotals, type Totals } from "@/report/planEstimate";
 import { planFor } from "@/report/planChoice";
 import { bandTone } from "@/report/select";
 import type { Band } from "@/report/types";

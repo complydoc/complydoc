@@ -2,7 +2,8 @@
  * The documents as the folder they came from: each folder carrying what its
  * documents cost and take to read under the plan chosen, added up.
  */
-import { EMPTY, combine, documentTotals, type Plan, type Totals } from "./plan";
+import { type Plan } from "./plan";
+import { EMPTY, combine, documentTotals, type Totals } from "./planEstimate";
 import { SEVERITIES, documentRows, type DocumentRow } from "./select";
 import type { Report, Severity } from "./types";
 

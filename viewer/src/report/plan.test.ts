@@ -1,5 +1,6 @@
 import { pricedModels } from "./pricing";
-import { defaultMethod, loaderChoices, pageEstimate, planOptions, type Plan } from "./plan";
+import { defaultMethod, loaderChoices, planOptions, type Plan } from "./plan";
+import { pageEstimate } from "./planEstimate";
 import { required, sampleAudit } from "@/test/sample";
 import type { DocumentEntry, PageText, Report } from "./types";
 

@@ -13,7 +13,7 @@ import { fileName, formatCount, formatPageUsd, formatSeconds, plural } from "@/r
 import { attentionDocuments, topFindings } from "@/report/home";
 import { measured } from "@/report/measured";
 import { isInstruction } from "@/report/security";
-import { documentTotals, reportTotals } from "@/report/plan";
+import { documentTotals, reportTotals } from "@/report/planEstimate";
 import { documentHref } from "@/report/route";
 import type { Report } from "@/report/types";
 import { ReadinessCard } from "./ReadinessCard";

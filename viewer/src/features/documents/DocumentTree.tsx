@@ -4,7 +4,7 @@ import { DataTable, type Columns } from "@/components/DataTable";
 import { ToneBadge } from "@/components/ToneBadge";
 import { cn } from "@/lib/utils";
 import { formatCount, formatPageUsd, formatPercent, formatScore, formatSeconds } from "@/report/format";
-import type { Totals } from "@/report/plan";
+import type { Totals } from "@/report/planEstimate";
 import { agreementTone, bandOf, bandTone, severityTone, visionTone } from "@/report/select";
 import type { TreeNode } from "@/report/tree";
 import type { Thresholds } from "@/report/types";

@@ -7,7 +7,8 @@ import { usePlan } from "@/hooks/usePlan";
 import { cn } from "@/lib/utils";
 import { formatCount, formatPageUsd, formatSeconds } from "@/report/format";
 import { Badge } from "@/components/ui/badge";
-import { reportTotals, type Method, type Plan, type Totals } from "@/report/plan";
+import { type Method, type Plan } from "@/report/plan";
+import { reportTotals, type Totals } from "@/report/planEstimate";
 import type { Report } from "@/report/types";
 
 /** A whole number from a box, within reason, or the fallback while it is being typed. */
@@ -167,7 +168,10 @@ export function PlanComparison({ report }: { report: Report }) {
                   {/* Cost with its time beneath, here and projected, so the table fits beside the sidebar. */}
                   <TableCell className="text-right tabular-nums">
                     {formatPageUsd(totals.usd)}
-                    <span className="block text-xs whitespace-normal text-muted-foreground" title={untimed || undefined}>
+                    <span
+                      className="block text-xs whitespace-normal text-muted-foreground"
+                      title={untimed || undefined}
+                    >
                       {totals.seconds === null
                         ? "not timed"
                         : `${totals.averaged ? "~" : ""}${formatSeconds(totals.seconds)}${untimed ? "+" : ""}`}{" "}

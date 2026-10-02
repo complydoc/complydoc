@@ -12,7 +12,7 @@ import { measured } from "@/report/measured";
 import { findingHighlight } from "@/report/highlight";
 import { documentFindings, findingContext, findingFor } from "@/report/pageFindings";
 import { hasPicture } from "@/report/picture";
-import { documentTotals, pageEstimate } from "@/report/plan";
+import { documentTotals, pageEstimate } from "@/report/planEstimate";
 import type { FindingRef } from "@/report/route";
 import type { DocumentEntry, Report } from "@/report/types";
 import { ChunkPicker, EyeToggle, ModeToggle } from "./DocumentControls";
