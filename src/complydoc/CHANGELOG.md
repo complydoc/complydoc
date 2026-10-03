@@ -7,6 +7,12 @@ separately.
 
 ## [Unreleased]
 
+## [0.6.5] — 2026-10-03
+
+You can now choose which identifier categories a run looks for, and a trace no longer
+comes back empty when a pipeline imports its library inside the observed block. Observing
+also takes less time after the block.
+
 ### Added
 
 - Which identifier categories are looked for, and how serious each is called, can be
