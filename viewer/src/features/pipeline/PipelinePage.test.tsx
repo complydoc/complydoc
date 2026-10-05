@@ -132,6 +132,9 @@ describe("PipelinePage", () => {
     await userEvent.click(required(within(required(rows[0])).getAllByRole("cell")[1]));
     const panel = screen.getByRole("complementary", { name: "Trace" });
     expect(panel).toHaveTextContent("Run 1 of 2");
+    // At the top of the document, so that widened it covers the sidebar and the app's bar
+    // whatever the page is wrapped in.
+    expect(panel.parentElement).toBe(document.body);
     expect(within(panel).getByRole("tree", { name: "Calls" })).toBeInTheDocument();
     await userEvent.click(within(panel).getByRole("button", { name: "Older run" }));
     expect(open).toHaveBeenCalledWith("old");

@@ -294,8 +294,10 @@
     transform: translateX(32px);
   }
 }
+/* Not held once it ends: an animation that keeps its last frame keeps a layer of its own,
+   and what the page draws over the window, the trace widened, would be trapped under it. */
 @utility animate-page-in {
-  animation: page-in 160ms var(--ease-out-quint) both;
+  animation: page-in 160ms var(--ease-out-quint);
 }
 @utility animate-panel-in {
   animation: panel-in 240ms var(--ease-out-quint) both;

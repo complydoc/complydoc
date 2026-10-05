@@ -2,6 +2,7 @@ import { ChevronDownIcon, ChevronUpIcon, Maximize2Icon, Minimize2Icon, XIcon } f
 import { useEffect, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { Hint } from "@/components/Hint";
 import { useSidebarEdge } from "@/hooks/useSidebarEdge";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 
 const WIDTH_KEY = "complydoc.trace-panel-width";
@@ -109,7 +110,9 @@ export function TracePanel({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose, onPrevious, onNext]);
 
-  return (
+  // Drawn at the top of the document, not inside the page: widened, it covers the sidebar
+  // and the app's bar, which nothing the page is wrapped in may be allowed to paint over.
+  return createPortal(
     <aside
       aria-label="Trace"
       className={cn(
@@ -190,6 +193,7 @@ export function TracePanel({
         </Hint>
       </div>
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 lg:overflow-hidden">{children}</div>
-    </aside>
+    </aside>,
+    document.body,
   );
 }
