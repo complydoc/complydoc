@@ -36,7 +36,7 @@ passed as `verify_with` — and the report names every host either one reached.
 from __future__ import annotations
 
 # Before the import below, which reaches code that reads it back off this module.
-__version__ = "0.6.6"
+__version__ = "0.6.7"
 
 from complydoc import api as _api
 from complydoc.api import *  # noqa: F403

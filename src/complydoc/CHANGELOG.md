@@ -7,6 +7,14 @@ separately.
 
 ## [Unreleased]
 
+## [0.6.7] — 2026-10-05
+
+### Fixed
+
+- A trace widened to the whole window, which the viewer remembers, was drawn under the
+  sidebar and the bar at the top in 0.6.6: its left side was hidden and its Close out of
+  reach. It covers the window again.
+
 ## [0.6.6] — 2026-10-05
 
 The viewer is quicker to move around in and quieter to read: the keyboard goes
