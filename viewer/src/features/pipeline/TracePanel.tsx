@@ -1,6 +1,7 @@
 import { ChevronDownIcon, ChevronUpIcon, Maximize2Icon, Minimize2Icon, XIcon } from "lucide-react";
 import { useEffect, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { Hint } from "@/components/Hint";
+import { useSidebarEdge } from "@/hooks/useSidebarEdge";
 import { cn } from "@/lib/utils";
 
 const WIDTH_KEY = "complydoc.trace-panel-width";
@@ -60,6 +61,8 @@ export function TracePanel({
   // Dragged by its left edge, as wide as it was left; at first it leaves the runs' first
   // columns showing.
   const [width, setWidth] = useState<number | null>(rememberedWidth);
+  // However wide, beside the runs it stops at the sidebar, so the pages stay in reach.
+  const edge = useSidebarEdge();
 
   const drag = (event: ReactPointerEvent) => {
     event.preventDefault();
@@ -67,7 +70,7 @@ export function TracePanel({
     handle.setPointerCapture(event.pointerId);
     let last = width;
     const move = (e: PointerEvent) => {
-      last = Math.min(window.innerWidth - 48, Math.max(NARROWEST, window.innerWidth - e.clientX));
+      last = Math.min(window.innerWidth - Math.max(48, edge), Math.max(NARROWEST, window.innerWidth - e.clientX));
       setWidth(last);
     };
     const up = () => {
@@ -117,7 +120,14 @@ export function TracePanel({
         !wide && !width && "lg:w-[max(760px,calc(100vw-32rem))]",
         !wide && width && "lg:w-(--panel-width)",
       )}
-      style={width && !wide ? ({ "--panel-width": `${width}px` } as CSSProperties) : undefined}
+      style={
+        wide
+          ? undefined
+          : ({
+              ...(width ? { "--panel-width": `${width}px` } : {}),
+              ...(edge ? { maxWidth: `calc(100vw - ${edge}px)` } : {}),
+            } as CSSProperties)
+      }
     >
       {!wide && (
         <div

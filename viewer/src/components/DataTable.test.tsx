@@ -150,4 +150,52 @@ describe("DataTable", () => {
     await userEvent.keyboard("{Escape}");
     expect(screen.queryByRole("toolbar", { name: "Selected rows" })).not.toBeInTheDocument();
   });
+
+  it("settles when its sort lives in the address and it is paged, as the runs table is", () => {
+    window.location.hash = "#pipeline";
+    const counted = vi.fn();
+    const counting = [
+      column.accessor("name", {
+        header: "Name",
+        cell: (c) => {
+          counted();
+          return c.getValue();
+        },
+      }),
+    ];
+    render(
+      <DataTable
+        caption="Runs"
+        columns={counting}
+        rows={rows}
+        rowKey={(row) => row.name}
+        sortable
+        pageSize={10}
+        stateKey="runs"
+      />,
+    );
+    expect(within(screen.getByRole("table", { name: "Runs" })).getAllByRole("row")).toHaveLength(11);
+    // A page of ten cells, drawn a few times at most, not again and again.
+    expect(counted.mock.calls.length).toBeLessThan(60);
+  });
+
+  it("settles once sorted, when the sort lives in the address and the table is paged", async () => {
+    window.location.hash = "#pipeline";
+    render(
+      <DataTable
+        caption="Runs"
+        columns={columns}
+        rows={rows}
+        rowKey={(row) => row.name}
+        sortable
+        pageSize={10}
+        stateKey="runs"
+      />,
+    );
+    await userEvent.click(screen.getByRole("button", { name: /Name/ }));
+    await userEvent.click(screen.getByRole("button", { name: /Name/ }));
+    expect(window.location.hash).toContain("runs.sort=name%3Adesc");
+    const first = within(screen.getByRole("table", { name: "Runs" })).getAllByRole("row")[1];
+    expect(first).toHaveTextContent("contract-45.pdf");
+  });
 });
