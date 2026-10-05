@@ -5,6 +5,8 @@
  * Each carries its word for a screen reader and in a tooltip.
  */
 import { EVIDENCE } from "@/report/select";
+import type { ReactNode } from "react";
+import type { Tone } from "@/report/select";
 import type { Evidence, Severity } from "@/report/types";
 import { cn } from "@/lib/utils";
 
@@ -87,6 +89,41 @@ export function EvidenceIcon({ evidence, className }: { evidence: Evidence; clas
         )}
       </svg>
       <span className="sr-only">{label}</span>
+    </span>
+  );
+}
+
+const RING: Record<Tone, string> = {
+  good: "text-success",
+  neutral: "text-muted-foreground",
+  warn: "text-warning",
+  bad: "text-destructive",
+};
+
+/**
+ * A score as a ring that closes as it rises, the way Linear draws a project's progress,
+ * beside the number itself. The ring's colour says how the score reads; the number says
+ * what it is, so a table of them is quiet until something is wrong.
+ */
+export function ScoreRing({ share, tone, children }: { share: number; tone: Tone; children: ReactNode }) {
+  const filled = Math.max(0, Math.min(1, share));
+  const circumference = 2 * Math.PI * 5;
+  return (
+    <span className="inline-flex items-center gap-1.5 tabular-nums">
+      <svg viewBox="0 0 14 14" className={cn("size-3.5 shrink-0 -rotate-90", RING[tone])} aria-hidden="true">
+        <circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" strokeOpacity={0.2} strokeWidth={2} />
+        <circle
+          cx="7"
+          cy="7"
+          r="5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeDasharray={`${filled * circumference} ${circumference}`}
+        />
+      </svg>
+      {children}
     </span>
   );
 }

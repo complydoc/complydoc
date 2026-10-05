@@ -87,7 +87,7 @@ describe("concepts a model found", () => {
     render(<SecurityPage report={{ ...report, documents }} />);
     const notice = screen.getByRole("alert");
     expect(within(notice).getByText("1 category was not looked for")).toBeInTheDocument();
-    expect(within(notice).getByText(/no name model is installed/)).toBeInTheDocument();
+    expect(within(notice).getByText(/no name model is installed/i)).toBeInTheDocument();
   });
 
   it("raises no notice when everything was looked for", () => {

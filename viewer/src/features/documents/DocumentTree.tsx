@@ -1,11 +1,12 @@
 import { createColumnHelper } from "@tanstack/react-table";
 import { ArrowDownUpIcon, ChevronRightIcon, FileTextIcon, FolderIcon, FolderOpenIcon } from "lucide-react";
 import { DataTable, type Columns } from "@/components/DataTable";
+import { ScoreRing, SeverityIcon } from "@/components/LevelIcons";
 import { ToneBadge } from "@/components/ToneBadge";
 import { cn } from "@/lib/utils";
 import { formatCount, formatPageUsd, formatPercent, formatScore, formatSeconds } from "@/report/format";
 import type { Totals } from "@/report/planEstimate";
-import { agreementTone, bandOf, bandTone, severityTone, visionTone } from "@/report/select";
+import { agreementTone, bandOf, bandTone, visionTone } from "@/report/select";
 import type { TreeNode } from "@/report/tree";
 import type { Thresholds } from "@/report/types";
 
@@ -108,7 +109,11 @@ function columnsFor(vision: boolean, thresholds: Thresholds, has: Filled): Colum
       header: "Readiness",
       cell: (c) => {
         const score = c.getValue() ?? null;
-        return <ToneBadge tone={bandTone(bandOf(thresholds, score))}>{formatScore(score)}</ToneBadge>;
+        return (
+          <ScoreRing share={(score ?? 0) / 100} tone={bandTone(bandOf(thresholds, score))}>
+            {formatScore(score)}
+          </ScoreRing>
+        );
       },
       ...numeric,
     }),
@@ -121,14 +126,14 @@ function columnsFor(vision: boolean, thresholds: Thresholds, has: Filled): Colum
               const value = getValue();
               if (value === undefined) return "–";
               return (
-                <ToneBadge tone={agreementTone(thresholds, value)}>
+                <ScoreRing share={value} tone={agreementTone(thresholds, value)}>
                   {formatPercent(value)}
                   {row.original.document?.reordered && (
                     <span title="A reader held the same words in another order" className="inline-flex">
                       <ArrowDownUpIcon className="size-3" aria-label="reordered" />
                     </span>
                   )}
-                </ToneBadge>
+                </ScoreRing>
               );
             },
             ...numeric,
@@ -139,7 +144,10 @@ function columnsFor(vision: boolean, thresholds: Thresholds, has: Filled): Colum
       header: "Identifiers",
       cell: ({ row, getValue }) =>
         row.original.highest ? (
-          <ToneBadge tone={severityTone(row.original.highest)}>{formatCount(getValue())}</ToneBadge>
+          <span className="inline-flex items-center gap-1.5 tabular-nums">
+            <SeverityIcon severity={row.original.highest} />
+            {formatCount(getValue())}
+          </span>
         ) : (
           "–"
         ),

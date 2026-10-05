@@ -275,3 +275,37 @@
 .doc-line:hover {
   background-color: color-mix(in oklab, var(--muted) 60%, transparent);
 }
+
+/* Motion, the way Linear moves: quick, eased out, and never in the way. A page fades in
+   rather than sliding, since a transform would carry the trace panel (fixed to the window)
+   with it; the panel slides in from the edge it is pinned to. Both stop for anyone who asks
+   for less motion. */
+@theme inline {
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes page-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes panel-in {
+  from {
+    opacity: 0.5;
+    transform: translateX(32px);
+  }
+}
+@utility animate-page-in {
+  animation: page-in 160ms var(--ease-out-quint) both;
+}
+@utility animate-panel-in {
+  animation: panel-in 240ms var(--ease-out-quint) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}

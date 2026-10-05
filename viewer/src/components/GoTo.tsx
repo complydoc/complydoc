@@ -11,7 +11,8 @@ import {
   CommandShortcut,
 } from "@/components/ui/command";
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar";
-import { PAGE_INFO, PAGES } from "@/app/pages";
+import { GO_KEY, PAGE_INFO, PAGES } from "@/app/pages";
+import { Keys } from "@/components/Keys";
 import { FolderRunsContext } from "@/hooks/useFolderRuns";
 import { shortcut } from "@/lib/shortcut";
 import { runKind, runLabel } from "@/report/collections";
@@ -67,6 +68,9 @@ export function GoTo({ report }: { report: Report }) {
                   <CommandItem key={page} value={`page ${label}`} onSelect={() => go(page)}>
                     <Icon />
                     {label}
+                    <CommandShortcut className="tracking-normal">
+                      <Keys keys={["G", GO_KEY[page]]} />
+                    </CommandShortcut>
                   </CommandItem>
                 );
               })}

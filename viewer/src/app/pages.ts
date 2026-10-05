@@ -32,3 +32,14 @@ export const PAGE_INFO: Record<Page, { label: string; icon: LucideIcon }> = {
   chunks: { label: "Chunks", icon: ScissorsIcon },
   settings: { label: "Settings", icon: Settings2Icon },
 };
+
+/** The key that, after G, opens each page, the way Linear moves between its views. */
+export const GO_KEY: Record<Page, string> = {
+  home: "D",
+  pipeline: "T",
+  security: "S",
+  cost: "M",
+  documents: "F",
+  chunks: "C",
+  settings: ",",
+};

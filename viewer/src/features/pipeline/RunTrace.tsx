@@ -1,10 +1,12 @@
 import { TriangleAlertIcon } from "lucide-react";
 import type { ReactNode } from "react";
+import { InstallCommands } from "@/components/InstallCommands";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useHashParam } from "@/hooks/useHashRoute";
 import { cn } from "@/lib/utils";
 import { formatCount, formatSeconds, formatUsd, plural } from "@/report/format";
+import { installHint } from "@/report/installHint";
 import { formatStarted } from "./started";
 import { sameDocument } from "@/report/chunkPlaces";
 import { spansOf, traceSpan, traceTotals, visibleSpans, type Span } from "@/report/traceTree";
@@ -45,7 +47,6 @@ function find(roots: Span[], index: number): Span | undefined {
 }
 
 /** `text` begun with a capital, as the scanner's reasons are not. */
-const sentence = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
 /**
  * One run as a trace: every call the pipeline made, the calls made inside each, when each
@@ -73,6 +74,8 @@ export function RunTrace({ report, trace }: { report: Report; trace: Trace }) {
   const order = visibleSpans(roots, new Set()).map((s) => s.stage.index);
   const next = order[order.indexOf(span.stage.index) + 1];
 
+  const unscanned = Object.values(trace.unscanned ?? {});
+  const hint = unscanned[0] ? installHint(unscanned[0]) : null;
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
       <div role="group" aria-label="The run" className="flex flex-wrap items-center gap-x-6 gap-y-2">
@@ -139,8 +142,9 @@ export function RunTrace({ report, trace }: { report: Report; trace: Trace }) {
           <AlertTitle>
             {Object.keys(trace.unscanned ?? {}).join(" and ")} not looked for: they are neither counted nor masked
           </AlertTitle>
-          <AlertDescription className="break-words">
-            {sentence(Object.values(trace.unscanned ?? {})[0] ?? "")}
+          <AlertDescription className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+            <span>{hint?.summary}</span>
+            {hint && <InstallCommands hint={hint} />}
           </AlertDescription>
         </Alert>
       )}

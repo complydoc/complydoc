@@ -3,7 +3,7 @@ import { FolderIcon } from "lucide-react";
 import { DataTable, type Columns } from "@/components/DataTable";
 import { Section, SectionStack } from "@/components/Section";
 import { Stat, StatGrid } from "@/components/Stat";
-import { ToneBadge } from "@/components/ToneBadge";
+import { ScoreRing } from "@/components/LevelIcons";
 import { measured } from "@/report/measured";
 import { isPipeline, leadRun, runLabel, type Collection } from "@/report/collections";
 import { formatCount, formatPageUsd, formatScore, formatSeconds, plural } from "@/report/format";
@@ -109,7 +109,9 @@ function columnsFor(onOpen: (id: string) => void): Columns<Row> {
           {row.original.readiness === null ? (
             <NotMeasured />
           ) : (
-            <ToneBadge tone={bandTone(row.original.band)}>{formatScore(row.original.readiness)}</ToneBadge>
+            <ScoreRing share={row.original.readiness / 100} tone={bandTone(row.original.band)}>
+              {formatScore(row.original.readiness)}
+            </ScoreRing>
           )}
         </span>
       ),

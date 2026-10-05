@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { measured } from "@/report/measured";
 import {
   Breadcrumb,
@@ -24,6 +24,8 @@ import { PlanBar } from "@/components/PlanBar";
 import { PlanProvider } from "@/components/PlanProvider";
 import { IgnoreProvider } from "@/components/IgnoreProvider";
 import { GoTo } from "@/components/GoTo";
+import { ShortcutsDialog } from "@/components/ShortcutsDialog";
+import { useGoKeys } from "@/hooks/useGoKeys";
 import { PageErrorBoundary } from "@/components/PageErrorBoundary";
 import { cn } from "@/lib/utils";
 import { CollectionSwitcher, type Selection } from "@/components/CollectionSwitcher";
@@ -93,6 +95,9 @@ export function ReportView({
     const traced = measured(opened.report, "trace");
     window.location.replace(traced || runs > 1 ? "#pipeline" : "#home");
   }, [opened, collections, selection.collection]);
+  // G then a key opens a page; ? lists every shortcut.
+  const [shortcuts, setShortcuts] = useState(false);
+  useGoKeys(useCallback(() => setShortcuts(true), []));
   // The sidebar stays as it was left: opening another run or folder remounts what is under it.
   const [sidebarOpen, setSidebarOpen] = useState(rememberedSidebar);
   const sidebar = {
@@ -149,6 +154,7 @@ export function ReportView({
             </PageErrorBoundary>
           </main>
         </SidebarInset>
+        <ShortcutsDialog open={shortcuts} onOpenChange={setShortcuts} />
       </SidebarProvider>
     );
   }
@@ -213,25 +219,29 @@ export function ReportView({
               {/* Keyed by page and run, so moving on from a page that failed shows the next one. */}
               <PageErrorBoundary key={`${run.id}:${page}:${detail ?? ""}`}>
                 <IgnoreProvider report={report} {...(run.source ? { source: run.source } : {})}>
-                  {page === "home" && <HomePage report={report} />}
-                  {page === "pipeline" && <PipelinePage report={report} />}
-                  {page === "security" &&
-                    (detail?.startsWith("review") ? (
-                      <ReviewQueue report={report} at={Number(detail.split("/")[1] ?? 0) || 0} />
-                    ) : (
-                      <SecurityPage report={report} />
-                    ))}
-                  {page === "cost" && <CostPage report={report} />}
-                  {page === "documents" && <DocumentsPage report={report} open={detail} />}
-                  {page === "chunks" && <ChunksPage report={report} />}
-                  {page === "settings" && (
-                    <SettingsPage report={report} {...(run.source ? { source: run.source } : {})} />
-                  )}
+                  {/* Remounted with the page by the boundary's key, so each page fades in. */}
+                  <div className="animate-page-in">
+                    {page === "home" && <HomePage report={report} />}
+                    {page === "pipeline" && <PipelinePage report={report} />}
+                    {page === "security" &&
+                      (detail?.startsWith("review") ? (
+                        <ReviewQueue report={report} at={Number(detail.split("/")[1] ?? 0) || 0} />
+                      ) : (
+                        <SecurityPage report={report} />
+                      ))}
+                    {page === "cost" && <CostPage report={report} />}
+                    {page === "documents" && <DocumentsPage report={report} open={detail} />}
+                    {page === "chunks" && <ChunksPage report={report} />}
+                    {page === "settings" && (
+                      <SettingsPage report={report} {...(run.source ? { source: run.source } : {})} />
+                    )}
+                  </div>
                 </IgnoreProvider>
               </PageErrorBoundary>
             </main>
           </SidebarInset>
         </SidebarProvider>
+        <ShortcutsDialog open={shortcuts} onOpenChange={setShortcuts} />
       </FolderRunsContext.Provider>
     </PlanProvider>
   );

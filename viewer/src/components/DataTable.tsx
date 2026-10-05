@@ -177,7 +177,15 @@ export function DataTable<T>({
                           onClick={header.column.getToggleSortingHandler()}
                         >
                           {label}
-                          <Icon data-icon={numeric ? "inline-start" : "inline-end"} className="text-faint" />
+                          <Icon
+                            data-icon={numeric ? "inline-start" : "inline-end"}
+                            className={cn(
+                              "transition-opacity",
+                              header.column.getIsSorted()
+                                ? "text-muted-foreground"
+                                : "text-faint opacity-0 group-hover/button:opacity-100 group-focus-visible/button:opacity-100",
+                            )}
+                          />
                         </Button>
                       ) : (
                         label
