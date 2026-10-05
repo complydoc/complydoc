@@ -189,6 +189,21 @@ folder, and the queue reopens at the first finding not yet reviewed.
 path, or another run of the folder. A click anywhere on a finding's row opens its
 page with the finding marked, and anywhere on a document's row opens the document.
 
+| Key | Does |
+| --- | --- |
+| `G` then `D`, `T`, `S`, `F`, `C`, `M`, `,` | Dashboard, Traces, Security, Documents, Chunks, Cost & time, Settings |
+| `?` | Every shortcut |
+| `↑`, `↓` | In a trace, the newer or older run |
+| `J`, `K` | In a trace, the next or previous call |
+| `X` | Pick the finding under the pointer, or let it go |
+| `Esc` | Close the trace, or let every picked finding go |
+
+A right-click on a document or a finding offers what can be done with it: open it, or
+copy its path or its fingerprint. Findings picked together can be ignored for one reason,
+or have their fingerprints copied for `complydoc ignore`, from the bar that shows at the
+foot of the page. A table's sort and search stay in the address, so a view can be linked
+and is there on coming back.
+
 ## Settings
 
 The Settings page holds [your own concepts](custom-concepts.md), the

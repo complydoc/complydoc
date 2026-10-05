@@ -7,6 +7,44 @@ separately.
 
 ## [Unreleased]
 
+## [0.6.6] — 2026-10-05
+
+The viewer is quicker to move around in and quieter to read: the keyboard goes
+everywhere, rows can be picked and acted on together, and tables say less until something
+is wrong.
+
+### Added
+
+- Keyboard: G then a key opens a page (G then T for Traces, G then S for Security), ?
+  lists every shortcut, and Go to shows each page's keys. In a trace, the arrow keys move
+  between runs.
+- Findings can be picked, by their box or with X over the row, and set aside together
+  for one reason or have their fingerprints copied, from a bar at the foot of the page.
+  Escape lets them go.
+- A right-click on a document opens it or copies its path; on a finding, it opens it in
+  the document or copies its fingerprint for `complydoc ignore`. A row's quick actions
+  show while the pointer is on it.
+- A note at the corner confirms a copy, a finding ignored, a concept saved or a category
+  changed, and leaves by itself.
+- The findings, documents and runs tables keep their sort and search in the address, so
+  coming back to a page finds it as it was left, and a view can be linked.
+
+### Changed
+
+- Readiness and reader agreement are a ring that closes as the score rises, and
+  identifiers sit beside the severity bars; both were coloured pills. Sort arrows show
+  only on the column sorted or under the pointer.
+- A category that was not looked for says what is missing in one line, with the install
+  commands as buttons that copy them, and categories held back for one reason are named
+  together.
+- Pages fade in and the trace panel slides in from its edge; both stop for anyone who
+  asks for less motion. While reports or a document load, the viewer shows their shape.
+
+### Fixed
+
+- The trace panel covered the sidebar in a window narrower than 1024 pixels, leaving no
+  way to another page but closing it. It now stops where the sidebar ends.
+
 ## [0.6.5] — 2026-10-03
 
 You can now choose which identifier categories a run looks for, and a trace no longer
@@ -402,8 +440,7 @@ This is a breaking change for anyone calling `cd.write_html`; see Removed.
   eye button shows the values in a report written with `--reveal`, which opens masked.
 
 - Elsewhere in the viewer: the findings table has a search box, a severity filter and
-  pages of 25. It shows severity and confidence as icons, as Linear shows priority and
-  status: signal bars filled by severity, leading each row, and a ring filled by how
+  pages of 25. It shows severity and confidence as icons: signal bars filled by severity, leading each row, and a ring filled by how
   sure complydoc is, each with its word in a tooltip. Home's "Needs attention" gives one
   line per kind of identifier in a document. The readiness ring now fills to the score.
   Each page opens at its top. Chart labels are cut at a whole word. The cost table lists
