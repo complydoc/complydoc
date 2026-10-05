@@ -98,7 +98,10 @@ export function ReportView({
   }, [opened, collections, selection.collection]);
   // G then a key opens a page; ? lists every shortcut.
   const [shortcuts, setShortcuts] = useState(false);
-  useGoKeys(useCallback(() => setShortcuts(true), []));
+  useGoKeys(
+    useCallback(() => setShortcuts(true), []),
+    opened !== null,
+  );
   // The sidebar stays as it was left: opening another run or folder remounts what is under it.
   const [sidebarOpen, setSidebarOpen] = useState(rememberedSidebar);
   const sidebar = {

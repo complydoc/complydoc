@@ -2,8 +2,8 @@ import { render } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useGoKeys } from "./useGoKeys";
 
-function Harness({ onHelp }: { onHelp: () => void }) {
-  useGoKeys(onHelp);
+function Harness({ onHelp, pages = true }: { onHelp: () => void; pages?: boolean }) {
+  useGoKeys(onHelp, pages);
   return <input aria-label="Search" />;
 }
 
@@ -36,6 +36,14 @@ describe("useGoKeys", () => {
     const onHelp = vi.fn();
     render(<Harness onHelp={onHelp} />);
     await userEvent.keyboard("?");
+    expect(onHelp).toHaveBeenCalledTimes(1);
+  });
+
+  it("goes nowhere where there are no pages to go to, but still lists the shortcuts", async () => {
+    const onHelp = vi.fn();
+    render(<Harness onHelp={onHelp} pages={false} />);
+    await userEvent.keyboard("gs?");
+    expect(window.location.hash).toBe("");
     expect(onHelp).toHaveBeenCalledTimes(1);
   });
 });

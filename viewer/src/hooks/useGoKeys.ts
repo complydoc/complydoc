@@ -13,8 +13,10 @@ function typing(target: EventTarget | null): boolean {
 /**
  * G then a page's key opens that page, and ? asks for the list of shortcuts, as in Linear.
  * Keys typed into a field, or pressed with ⌘, Ctrl or Alt, are left to whatever has them.
+ * Without `pages`, as on the overview of every folder where no run is open, G goes nowhere:
+ * moving the address there would change nothing on screen.
  */
-export function useGoKeys(onHelp: () => void) {
+export function useGoKeys(onHelp: () => void, pages = true) {
   useEffect(() => {
     let pressedG = 0;
     const onKey = (event: KeyboardEvent) => {
@@ -25,6 +27,7 @@ export function useGoKeys(onHelp: () => void) {
         return;
       }
       const key = event.key.toUpperCase();
+      if (!pages) return;
       if (pressedG && Date.now() - pressedG < WINDOW_MS) {
         pressedG = 0;
         const page = PAGES.find((p) => GO_KEY[p] === key);
@@ -38,5 +41,5 @@ export function useGoKeys(onHelp: () => void) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onHelp]);
+  }, [onHelp, pages]);
 }
