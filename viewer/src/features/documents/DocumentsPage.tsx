@@ -1,6 +1,6 @@
 import { NotInRun } from "@/components/NotInRun";
 import { Section, SectionStack } from "@/components/Section";
-import { Skeleton } from "@/components/ui/skeleton";
+import { DocumentSkeleton } from "@/components/Skeletons";
 import { useFullDocument, withDocument } from "@/hooks/useFullDocument";
 import { usePlan } from "@/hooks/usePlan";
 import { formatPageUsd, formatSeconds, plural } from "@/report/format";
@@ -25,7 +25,7 @@ export function DocumentsPage({ report, open }: DocumentsPageProps) {
   const target = open === null ? null : parseTarget(open);
   const full = useFullDocument(report, target?.document);
   if (target && full.document) {
-    if (full.state === "loading") return <Skeleton className="h-[70vh] w-full" aria-label="Opening the document" />;
+    if (full.state === "loading") return <DocumentSkeleton />;
     if (full.state !== "ready")
       return (
         <p className="text-sm text-muted-foreground">

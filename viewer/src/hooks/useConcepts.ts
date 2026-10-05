@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "@/lib/toast";
 import type { Concept, Report } from "@/report/types";
 
 export interface ConceptsState {
@@ -64,7 +65,15 @@ export function useConcepts(report: Report, source?: string): ConceptsState {
     file: listing?.file ?? report.concepts?.file ?? null,
     concepts: listing?.concepts ?? report.concepts?.concepts ?? [],
     error,
-    save: (concept) => write("POST", concept),
-    remove: (id) => write("DELETE", { id }),
+    save: async (concept) => {
+      const done = await write("POST", concept);
+      if (done) toast(`${concept.label} saved: the next run looks for it`);
+      return done;
+    },
+    remove: async (id) => {
+      const done = await write("DELETE", { id });
+      if (done) toast("Concept removed");
+      return done;
+    },
   };
 }

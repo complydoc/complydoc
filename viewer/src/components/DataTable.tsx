@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { cn } from "@/lib/utils";
 
 declare module "@tanstack/react-table" {
@@ -66,6 +67,8 @@ interface DataTableProps<T> {
   onRowClick?: (row: T) => void;
   /** The row open beside the table, marked as picked. */
   selected?: (row: T) => boolean;
+  /** What a right-click on a row offers, as menu items; nothing for a row with none. */
+  rowMenu?: (row: T) => ReactNode;
 }
 
 const SORT_ICON = {
@@ -93,6 +96,7 @@ export function DataTable<T>({
   onRowClick,
   actions,
   selected,
+  rowMenu,
 }: DataTableProps<T>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [query, setQuery] = useState("");
@@ -197,35 +201,46 @@ export function DataTable<T>({
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows.map((row) => (
-              <TableRow
-                key={row.id}
-                data-state={selected?.(row.original) ? "selected" : undefined}
-                aria-selected={selected ? selected(row.original) : undefined}
-                className={cn((onRowClick || rowHref?.(row.original)) && "cursor-pointer")}
-                onClick={(event) => {
-                  const href = rowHref?.(row.original);
-                  const target = event.target as HTMLElement;
-                  if ((!href && !onRowClick) || target.closest("a, button, input, [role=menuitem]")) return;
-                  if (window.getSelection()?.toString()) return;
-                  if (onRowClick) onRowClick(row.original);
-                  else if (href) window.location.hash = href.replace(/^#/, "");
-                }}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell
-                    key={cell.id}
-                    className={cn(
-                      "first:pl-4 last:pr-4",
-                      cell.column.columnDef.meta?.numeric && "text-right",
-                      cell.column.columnDef.meta?.narrow && "w-px whitespace-nowrap",
-                    )}
-                  >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))}
+            {table.getRowModel().rows.map((row) => {
+              const tableRow = (
+                <TableRow
+                  key={row.id}
+                  data-state={selected?.(row.original) ? "selected" : undefined}
+                  aria-selected={selected ? selected(row.original) : undefined}
+                  className={cn((onRowClick || rowHref?.(row.original)) && "cursor-pointer")}
+                  onClick={(event) => {
+                    const href = rowHref?.(row.original);
+                    const target = event.target as HTMLElement;
+                    if ((!href && !onRowClick) || target.closest("a, button, input, [role=menuitem]")) return;
+                    if (window.getSelection()?.toString()) return;
+                    if (onRowClick) onRowClick(row.original);
+                    else if (href) window.location.hash = href.replace(/^#/, "");
+                  }}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell
+                      key={cell.id}
+                      className={cn(
+                        "first:pl-4 last:pr-4",
+                        cell.column.columnDef.meta?.numeric && "text-right",
+                        cell.column.columnDef.meta?.narrow && "w-px whitespace-nowrap",
+                      )}
+                    >
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              );
+              const menu = rowMenu?.(row.original);
+              return menu ? (
+                <ContextMenu key={row.id}>
+                  <ContextMenuTrigger asChild>{tableRow}</ContextMenuTrigger>
+                  <ContextMenuContent>{menu}</ContextMenuContent>
+                </ContextMenu>
+              ) : (
+                tableRow
+              );
+            })}
             {matching === 0 && (
               <TableRow>
                 <TableCell colSpan={columns.length} className="py-8 text-center text-muted-foreground">

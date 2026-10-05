@@ -2,6 +2,9 @@ import { createColumnHelper } from "@tanstack/react-table";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { DataTable, type Columns } from "./DataTable";
+import { Toaster } from "./Toaster";
+import { ContextMenuItem } from "./ui/context-menu";
+import { copyWithToast } from "@/lib/toast";
 
 interface Row {
   name: string;
@@ -13,7 +16,14 @@ const rows = Array.from({ length: 45 }, (_, index) => ({ name: `contract-${index
 
 function table() {
   render(
-    <DataTable caption="Files" columns={columns} rows={rows} rowKey={(row) => row.name} search="Search files" pageSize={20} />,
+    <DataTable
+      caption="Files"
+      columns={columns}
+      rows={rows}
+      rowKey={(row) => row.name}
+      search="Search files"
+      pageSize={20}
+    />,
   );
   return screen.getByRole("table", { name: "Files" });
 }
@@ -63,5 +73,29 @@ describe("DataTable", () => {
     expect(window.location.hash).toBe("");
     await userEvent.click(screen.getByText("contract-2.pdf"));
     expect(window.location.hash).toBe("#documents/contract-2.pdf");
+  });
+
+  it("offers a row's actions on a right-click, and says when one is done", async () => {
+    const writeText = vi.fn(async () => undefined);
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    render(
+      <>
+        <DataTable
+          caption="Files"
+          columns={columns}
+          rows={rows.slice(0, 3)}
+          rowKey={(row) => row.name}
+          rowMenu={(row) => (
+            <ContextMenuItem onSelect={() => copyWithToast(row.name, "Path")}>Copy path</ContextMenuItem>
+          )}
+        />
+        <Toaster />
+      </>,
+    );
+    const row = within(screen.getByRole("table", { name: "Files" })).getAllByRole("row")[2] as HTMLElement;
+    await userEvent.pointer({ keys: "[MouseRight]", target: row });
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Copy path" }));
+    expect(writeText).toHaveBeenCalledWith("contract-2.pdf");
+    expect(await screen.findByText("Path copied")).toBeInTheDocument();
   });
 });

@@ -26,6 +26,7 @@ const GROUPS: Group[] = [
   {
     title: "Trace",
     rows: [
+      { label: "Newer or older run", keys: ["↑", "↓"] },
       { label: "Next or previous call", keys: ["J", "K"] },
       { label: "Fold or open a call", keys: ["←", "→"] },
       { label: "Close the trace", keys: ["Esc"] },

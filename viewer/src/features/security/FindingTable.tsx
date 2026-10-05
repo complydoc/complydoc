@@ -1,10 +1,12 @@
 import { createColumnHelper } from "@tanstack/react-table";
 import { DataTable, type Columns } from "@/components/DataTable";
+import { copyWithToast } from "@/lib/toast";
+import { ContextMenuItem, ContextMenuSeparator, ContextMenuShortcut } from "@/components/ui/context-menu";
 import { EvidenceBadge } from "@/components/EvidenceBadge";
 import { SeverityIcon } from "@/components/LevelIcons";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { DownloadIcon } from "lucide-react";
+import { CopyIcon, DownloadIcon, FileTextIcon, FingerprintIcon } from "lucide-react";
 import { toCsv, saveText } from "@/report/csv";
 import { fileName, humanise } from "@/report/format";
 import { documentHref } from "@/report/route";
@@ -102,6 +104,38 @@ function findingsCsv(rows: FindingRow[]): string {
 }
 
 /**
+ * A right-click on a finding: open it where it sits, or copy what the command line needs to
+ * set it aside (`complydoc ignore <fingerprint>`).
+ */
+function findingMenu(row: FindingRow) {
+  const fingerprint = row.source.fingerprint;
+  return (
+    <>
+      <ContextMenuItem
+        onSelect={() =>
+          window.location.assign(documentHref(row.document, row.page, { kind: "identifier", index: row.match }))
+        }
+      >
+        <FileTextIcon />
+        Open in the document
+        <ContextMenuShortcut>↵</ContextMenuShortcut>
+      </ContextMenuItem>
+      <ContextMenuSeparator />
+      {fingerprint && (
+        <ContextMenuItem onSelect={() => copyWithToast(fingerprint, "Fingerprint")}>
+          <FingerprintIcon />
+          Copy fingerprint
+        </ContextMenuItem>
+      )}
+      <ContextMenuItem onSelect={() => copyWithToast(row.path, "Path")}>
+        <CopyIcon />
+        Copy document path
+      </ContextMenuItem>
+    </>
+  );
+}
+
+/**
  * Every identifier found: what it is, its masked value, where it is and how sure
  * complydoc is. Searchable, filtered by severity, and a page of rows at a time.
  */
@@ -122,6 +156,7 @@ export function FindingTable({ rows }: { rows: FindingRow[] }) {
       search="Search findings or documents"
       pageSize={25}
       rowHref={(row) => documentHref(row.document, row.page, { kind: "identifier", index: row.match })}
+      rowMenu={findingMenu}
       toolbar={
         <ToggleGroup
           type="single"

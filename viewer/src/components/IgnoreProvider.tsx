@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { toast } from "@/lib/toast";
 import { IgnoreContext, type IgnoreRequest, type IgnoreState } from "@/hooks/useIgnores";
 import type { IgnoreRule, Report } from "@/report/types";
 
@@ -62,14 +63,16 @@ export function IgnoreProvider({ report, source, children }: { report: Report; s
       entries: listing?.ignores ?? [...(report.ignores?.rules ?? []), ...local],
       error,
       ignore: async (request: IgnoreRequest) => {
-        if (url) return write("POST", request);
-        setLocal((current) => [...current.filter((e) => e.finding !== request.finding), request]);
-        return true;
+        const done = url ? await write("POST", request) : true;
+        if (!url) setLocal((current) => [...current.filter((e) => e.finding !== request.finding), request]);
+        if (done) toast(url ? "Finding ignored, in the ignore file" : "Finding ignored in this browser");
+        return done;
       },
       unignore: async (finding: string) => {
-        if (url) return write("DELETE", { finding });
-        setLocal((current) => current.filter((e) => e.finding !== finding));
-        return true;
+        const done = url ? await write("DELETE", { finding }) : true;
+        if (!url) setLocal((current) => current.filter((e) => e.finding !== finding));
+        if (done) toast("Finding no longer ignored");
+        return done;
       },
     }),
     [listing, report.ignores, local, error, write, url],

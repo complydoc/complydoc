@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "@/lib/toast";
 import type { CategoryRow, Report, Severity } from "@/report/types";
 
 export interface CategoriesState {
@@ -65,7 +66,15 @@ export function useCategories(report: Report, source?: string): CategoriesState 
     file: listing?.file ?? report.categories?.file ?? null,
     categories: listing?.categories ?? [],
     error,
-    change: (id, change) => write("POST", { id, ...change }),
-    reset: (id) => write("DELETE", { id }),
+    change: async (id, change) => {
+      const done = await write("POST", { id, ...change });
+      if (done) toast("Saved: the next run uses it");
+      return done;
+    },
+    reset: async (id) => {
+      const done = await write("DELETE", { id });
+      if (done) toast("Put back as shipped");
+      return done;
+    },
   };
 }

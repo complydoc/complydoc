@@ -1,6 +1,8 @@
 import { createColumnHelper } from "@tanstack/react-table";
-import { ArrowDownUpIcon, ChevronRightIcon, FileTextIcon, FolderIcon, FolderOpenIcon } from "lucide-react";
+import { ArrowDownUpIcon, ChevronRightIcon, CopyIcon, FileTextIcon, FolderIcon, FolderOpenIcon } from "lucide-react";
 import { DataTable, type Columns } from "@/components/DataTable";
+import { copyWithToast } from "@/lib/toast";
+import { ContextMenuItem, ContextMenuSeparator, ContextMenuShortcut } from "@/components/ui/context-menu";
 import { ScoreRing, SeverityIcon } from "@/components/LevelIcons";
 import { ToneBadge } from "@/components/ToneBadge";
 import { cn } from "@/lib/utils";
@@ -194,6 +196,38 @@ function columnsFor(vision: boolean, thresholds: Thresholds, has: Filled): Colum
   return columns;
 }
 
+/** A right-click on a row: open the document, or copy where it is. */
+function documentMenu(node: TreeNode) {
+  const document = node.document;
+  if (!document) {
+    const path = node.id.replace(/^folder:/, "");
+    return (
+      <ContextMenuItem onSelect={() => copyWithToast(path, "Folder path")}>
+        <CopyIcon />
+        Copy folder path
+      </ContextMenuItem>
+    );
+  }
+  return (
+    <>
+      <ContextMenuItem onSelect={() => window.location.assign(`#documents/${document.index}`)}>
+        <FileTextIcon />
+        Open document
+        <ContextMenuShortcut>↵</ContextMenuShortcut>
+      </ContextMenuItem>
+      <ContextMenuSeparator />
+      <ContextMenuItem onSelect={() => copyWithToast(document.path, "Path")}>
+        <CopyIcon />
+        Copy path
+      </ContextMenuItem>
+      <ContextMenuItem onSelect={() => copyWithToast(node.name, "File name")}>
+        <CopyIcon />
+        Copy file name
+      </ContextMenuItem>
+    </>
+  );
+}
+
 /**
  * Every document, in the folders it came from. Each folder adds up what its
  * documents cost and take to read under the plan chosen in the top bar.
@@ -215,6 +249,7 @@ export function DocumentTree({
       rowKey={(node) => node.id}
       subRows={(node) => node.children}
       rowHref={(node) => (node.document ? `#documents/${node.document.index}` : undefined)}
+      rowMenu={documentMenu}
       sortable
       search="Search documents"
       pageSize={ROWS_PER_PAGE}

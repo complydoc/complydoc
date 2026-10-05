@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import type { Selection } from "@/components/CollectionSwitcher";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { OpenReport } from "@/features/open/OpenReport";
+import { Toaster } from "@/components/Toaster";
 import { LocalLoading } from "@/features/open/LocalLoading";
 import { SAMPLES } from "@/features/open/samples";
 import { useLocalReports } from "@/hooks/useLocalReports";
@@ -79,6 +80,7 @@ export function App() {
           local={local}
         />
       )}
+      <Toaster />
     </TooltipProvider>
   );
 }

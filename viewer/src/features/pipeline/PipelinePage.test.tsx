@@ -135,6 +135,11 @@ describe("PipelinePage", () => {
     expect(within(panel).getByRole("tree", { name: "Calls" })).toBeInTheDocument();
     await userEvent.click(within(panel).getByRole("button", { name: "Older run" }));
     expect(open).toHaveBeenCalledWith("old");
+    // The arrow keys move between runs too, as long as the call tree does not have them.
+    open.mockClear();
+    (document.activeElement as HTMLElement | null)?.blur();
+    await userEvent.keyboard("{ArrowDown}");
+    expect(open).toHaveBeenCalledWith("old");
     await userEvent.keyboard("{Escape}");
     expect(screen.queryByRole("complementary", { name: "Trace" })).not.toBeInTheDocument();
     // A run without a trace opens where what it holds is shown.

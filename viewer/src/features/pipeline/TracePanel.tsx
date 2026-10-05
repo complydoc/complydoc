@@ -1,5 +1,6 @@
 import { ChevronDownIcon, ChevronUpIcon, Maximize2Icon, Minimize2Icon, XIcon } from "lucide-react";
 import { useEffect, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { Hint } from "@/components/Hint";
 import { cn } from "@/lib/utils";
 
 const WIDTH_KEY = "complydoc.trace-panel-width";
@@ -84,14 +85,26 @@ export function TracePanel({
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key !== "Escape" || event.defaultPrevented) return;
-      // A dialog or menu open over the panel closes first.
+      if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return;
+      // A dialog or menu open over the panel has the keys first.
       if (document.querySelector("[role=dialog][data-state=open], [role=menu]")) return;
-      onClose();
+      if (event.key === "Escape") onClose();
+      // Up and down move between runs, unless something focused, such as the call tree or a
+      // field, has them.
+      const target = event.target as HTMLElement | null;
+      const focused = target && target !== document.body && target.closest("input, textarea, select, [role=tree]");
+      if (focused) return;
+      if (event.key === "ArrowUp" && onPrevious) {
+        event.preventDefault();
+        onPrevious();
+      } else if (event.key === "ArrowDown" && onNext) {
+        event.preventDefault();
+        onNext();
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, [onClose, onPrevious, onNext]);
 
   return (
     <aside
@@ -124,42 +137,47 @@ export function TracePanel({
         />
       )}
       <div className="flex h-11 shrink-0 items-center gap-1 border-b px-2">
-        <button type="button" className={button} onClick={onClose} aria-label="Close" title="Close (Esc)">
-          <XIcon className="size-4" />
-        </button>
+        <Hint label="Close" keys={["Esc"]}>
+          <button type="button" className={button} onClick={onClose} aria-label="Close">
+            <XIcon className="size-4" />
+          </button>
+        </Hint>
         <span aria-hidden className="mx-1 h-4 w-px bg-border" />
-        <button
-          type="button"
-          className={button}
-          onClick={onPrevious ?? undefined}
-          disabled={!onPrevious}
-          aria-label="Newer run"
-          title="Newer run"
-        >
-          <ChevronUpIcon className="size-4" />
-        </button>
-        <button
-          type="button"
-          className={button}
-          onClick={onNext ?? undefined}
-          disabled={!onNext}
-          aria-label="Older run"
-          title="Older run"
-        >
-          <ChevronDownIcon className="size-4" />
-        </button>
+        <Hint label="Newer run" keys={["↑"]}>
+          <button
+            type="button"
+            className={button}
+            onClick={onPrevious ?? undefined}
+            disabled={!onPrevious}
+            aria-label="Newer run"
+          >
+            <ChevronUpIcon className="size-4" />
+          </button>
+        </Hint>
+        <Hint label="Older run" keys={["↓"]}>
+          <button
+            type="button"
+            className={button}
+            onClick={onNext ?? undefined}
+            disabled={!onNext}
+            aria-label="Older run"
+          >
+            <ChevronDownIcon className="size-4" />
+          </button>
+        </Hint>
         <span className="ml-1.5 text-xs text-muted-foreground tabular-nums">
           Run {position.at} of {position.of}
         </span>
-        <button
-          type="button"
-          className={cn(button, "ml-auto hidden lg:flex")}
-          onClick={() => setWide(!wide)}
-          aria-label={wide ? "Narrow" : "Widen"}
-          title={wide ? "Show the runs beside it" : "Take the whole window"}
-        >
-          {wide ? <Minimize2Icon className="size-3.5" /> : <Maximize2Icon className="size-3.5" />}
-        </button>
+        <Hint label={wide ? "Show the runs beside it" : "Take the whole window"}>
+          <button
+            type="button"
+            className={cn(button, "ml-auto hidden lg:flex")}
+            onClick={() => setWide(!wide)}
+            aria-label={wide ? "Narrow" : "Widen"}
+          >
+            {wide ? <Minimize2Icon className="size-3.5" /> : <Maximize2Icon className="size-3.5" />}
+          </button>
+        </Hint>
       </div>
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 lg:overflow-hidden">{children}</div>
     </aside>

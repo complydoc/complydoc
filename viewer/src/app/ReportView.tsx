@@ -24,6 +24,7 @@ import { PlanBar } from "@/components/PlanBar";
 import { PlanProvider } from "@/components/PlanProvider";
 import { IgnoreProvider } from "@/components/IgnoreProvider";
 import { GoTo } from "@/components/GoTo";
+import { Hint } from "@/components/Hint";
 import { ShortcutsDialog } from "@/components/ShortcutsDialog";
 import { useGoKeys } from "@/hooks/useGoKeys";
 import { PageErrorBoundary } from "@/components/PageErrorBoundary";
@@ -132,7 +133,9 @@ export function ReportView({
         <AppSidebar report={null} page={page} switcher={switcher} />
         <SidebarInset className="min-w-0">
           <header className="sticky top-0 z-10 flex h-12 shrink-0 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur">
-            <SidebarTrigger className="-ml-1" title={`Collapse or expand the sidebar (${shortcut("B")})`} />
+            <Hint label="Collapse or expand the sidebar" keys={[shortcut("").trim(), "B"]}>
+              <SidebarTrigger className="-ml-1" />
+            </Hint>
             <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
             <Breadcrumb className="min-w-0 flex-1">
               <BreadcrumbList>
@@ -178,7 +181,9 @@ export function ReportView({
           {/* min-w-0 lets the page shrink to the space beside the sidebar instead of widening to its widest chart. */}
           <SidebarInset className="min-w-0">
             <header className="sticky top-0 z-10 flex h-12 shrink-0 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur">
-              <SidebarTrigger className="-ml-1" title={`Collapse or expand the sidebar (${shortcut("B")})`} />
+              <Hint label="Collapse or expand the sidebar" keys={[shortcut("").trim(), "B"]}>
+                <SidebarTrigger className="-ml-1" />
+              </Hint>
               <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
               {/* One line that gives way to the plan controls: it truncates rather than wraps under the bar. */}
               <Breadcrumb className="min-w-0 flex-1">
