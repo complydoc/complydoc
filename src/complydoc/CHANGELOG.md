@@ -15,6 +15,9 @@ is wrong.
 
 ### Added
 
+- The search menu (⌘K or Ctrl+K) is rebuilt: it opens on where you have just been, shows
+  pages, documents, runs or actions one kind at a time from tabs the arrow keys change,
+  and says at its foot which keys work.
 - Keyboard: G then a key opens a page (G then T for Traces, G then S for Security), ?
   lists every shortcut, and Go to shows each page's keys. In a trace, the arrow keys move
   between runs.

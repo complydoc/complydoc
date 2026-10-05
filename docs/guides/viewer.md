@@ -185,8 +185,10 @@ folder, and the queue reopens at the first finding not yet reviewed.
 
 ## Getting around
 
-`⌘K`, or `Ctrl+K`, opens a list to jump to any page, any document by part of its
-path, or another run of the folder. A click anywhere on a finding's row opens its
+`⌘K`, or `Ctrl+K`, opens a search over every page, every document by part of its
+path, the folder's other runs, and things to do. It opens on where you have just been;
+the tabs under the search show one kind at a time, and `←` and `→` change the tab while
+nothing is typed. A click anywhere on a finding's row opens its
 page with the finding marked, and anywhere on a document's row opens the document.
 
 | Key | Does |
