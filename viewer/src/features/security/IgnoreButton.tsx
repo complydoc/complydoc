@@ -13,11 +13,14 @@ import {
 } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import { activeEntry, ignoreCommand, useIgnores } from "@/hooks/useIgnores";
+import { cn } from "@/lib/utils";
 
 interface IgnoreButtonProps {
   fingerprint: string | undefined;
   /** The finding in words, written to the file so it can be read without the report. */
   what: string;
+  /** Shown only while the pointer is on its row, as a row's actions are in Linear. */
+  quiet?: boolean;
 }
 
 /**
@@ -25,7 +28,7 @@ interface IgnoreButtonProps {
  * audited folder's ignore file; opened any other way, it gives the command.
  * A finding ignored since the run says so, and takes effect on the next one.
  */
-export function IgnoreButton({ fingerprint, what }: IgnoreButtonProps) {
+export function IgnoreButton({ fingerprint, what, quiet = false }: IgnoreButtonProps) {
   const { editable, entries, error, ignore, unignore } = useIgnores();
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
@@ -64,7 +67,15 @@ export function IgnoreButton({ fingerprint, what }: IgnoreButtonProps) {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="sm" className="h-7 text-muted-foreground">
+        <Button
+          variant="ghost"
+          size="sm"
+          className={cn(
+            "h-7 text-muted-foreground",
+            quiet &&
+              "opacity-0 transition-opacity group-hover/row:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100",
+          )}
+        >
           <EyeOffIcon />
           Ignore
         </Button>

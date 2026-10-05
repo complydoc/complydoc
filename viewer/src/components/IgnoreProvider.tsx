@@ -62,10 +62,11 @@ export function IgnoreProvider({ report, source, children }: { report: Report; s
       file: listing?.file ?? report.ignores?.file ?? null,
       entries: listing?.ignores ?? [...(report.ignores?.rules ?? []), ...local],
       error,
-      ignore: async (request: IgnoreRequest) => {
+      ignore: async (request: IgnoreRequest, options?: { quiet?: boolean }) => {
         const done = url ? await write("POST", request) : true;
         if (!url) setLocal((current) => [...current.filter((e) => e.finding !== request.finding), request]);
-        if (done) toast(url ? "Finding ignored, in the ignore file" : "Finding ignored in this browser");
+        if (done && !options?.quiet)
+          toast(url ? "Finding ignored, in the ignore file" : "Finding ignored in this browser");
         return done;
       },
       unignore: async (finding: string) => {

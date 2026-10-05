@@ -165,6 +165,7 @@ export function TracesTable({
       pageSize={50}
       onRowClick={(row) => onOpen(row.id)}
       selected={(row) => row.id === open}
+      stateKey="runs"
     />
   );
 }

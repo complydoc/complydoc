@@ -25,7 +25,8 @@ export interface IgnoreState {
    */
   entries: IgnoreRule[];
   error: string | null;
-  ignore: (request: IgnoreRequest) => Promise<boolean>;
+  /** Set a finding aside; `quiet` leaves saying so to the caller, as a batch of them does. */
+  ignore: (request: IgnoreRequest, options?: { quiet?: boolean }) => Promise<boolean>;
   unignore: (finding: string) => Promise<boolean>;
 }
 

@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { DataTable, type Columns } from "./DataTable";
 import { Toaster } from "./Toaster";
 import { ContextMenuItem } from "./ui/context-menu";
+import { TooltipProvider } from "./ui/tooltip";
 import { copyWithToast } from "@/lib/toast";
 
 interface Row {
@@ -97,5 +98,56 @@ describe("DataTable", () => {
     await userEvent.click(await screen.findByRole("menuitem", { name: "Copy path" }));
     expect(writeText).toHaveBeenCalledWith("contract-2.pdf");
     expect(await screen.findByText("Path copied")).toBeInTheDocument();
+  });
+
+  it("keeps its sort and search in the address, under its own name", async () => {
+    window.location.hash = "#documents";
+    render(
+      <DataTable
+        caption="Files"
+        columns={columns}
+        rows={rows.slice(0, 5)}
+        rowKey={(row) => row.name}
+        sortable
+        search="Search files"
+        stateKey="files"
+      />,
+    );
+    await userEvent.click(screen.getByRole("button", { name: /Name/ }));
+    expect(window.location.hash).toContain("files.sort=name%3Aasc");
+    await userEvent.type(screen.getByRole("searchbox", { name: "Search files" }), "3");
+    expect(window.location.hash).toContain("files.q=3");
+    expect(within(screen.getByRole("table", { name: "Files" })).getAllByRole("row")).toHaveLength(2);
+  });
+
+  it("picks rows by their box or with X, acts on them together, and lets them go with Escape", async () => {
+    const act = vi.fn();
+    render(
+      <TooltipProvider>
+        <DataTable
+          caption="Files"
+          columns={columns}
+          rows={rows.slice(0, 4)}
+          rowKey={(row) => row.name}
+          bulkActions={(chosen) => (
+            <button type="button" onClick={() => act(chosen.map((row) => row.name))}>
+              Act
+            </button>
+          )}
+        />
+      </TooltipProvider>,
+    );
+    const body = within(screen.getByRole("table", { name: "Files" }))
+      .getAllByRole("row")
+      .slice(1);
+    await userEvent.click(within(body[0] as HTMLElement).getByRole("checkbox", { name: "Select this row" }));
+    await userEvent.hover(body[2] as HTMLElement);
+    await userEvent.keyboard("x");
+    const bar = screen.getByRole("toolbar", { name: "Selected rows" });
+    expect(bar).toHaveTextContent("2 selected");
+    await userEvent.click(within(bar).getByRole("button", { name: "Act" }));
+    expect(act).toHaveBeenCalledWith(["contract-1.pdf", "contract-3.pdf"]);
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("toolbar", { name: "Selected rows" })).not.toBeInTheDocument();
   });
 });

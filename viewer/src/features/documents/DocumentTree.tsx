@@ -1,11 +1,13 @@
 import { createColumnHelper } from "@tanstack/react-table";
 import { ArrowDownUpIcon, ChevronRightIcon, CopyIcon, FileTextIcon, FolderIcon, FolderOpenIcon } from "lucide-react";
 import { DataTable, type Columns } from "@/components/DataTable";
-import { copyWithToast } from "@/lib/toast";
+import { Hint } from "@/components/Hint";
+import { Button } from "@/components/ui/button";
 import { ContextMenuItem, ContextMenuSeparator, ContextMenuShortcut } from "@/components/ui/context-menu";
 import { ScoreRing, SeverityIcon } from "@/components/LevelIcons";
 import { ToneBadge } from "@/components/ToneBadge";
 import { cn } from "@/lib/utils";
+import { copyWithToast } from "@/lib/toast";
 import { formatCount, formatPageUsd, formatPercent, formatScore, formatSeconds } from "@/report/format";
 import type { Totals } from "@/report/planEstimate";
 import { agreementTone, bandOf, bandTone, visionTone } from "@/report/select";
@@ -196,6 +198,24 @@ function columnsFor(vision: boolean, thresholds: Thresholds, has: Filled): Colum
   return columns;
 }
 
+/** A document's path to copy, at the end of its row while the pointer is on it. */
+function copyPathAction(node: TreeNode) {
+  const path = node.document?.path;
+  if (!path) return null;
+  return (
+    <Hint label="Copy path">
+      <Button
+        variant="ghost"
+        size="icon-xs"
+        aria-label={`Copy the path of ${node.name}`}
+        onClick={() => copyWithToast(path, "Path")}
+      >
+        <CopyIcon />
+      </Button>
+    </Hint>
+  );
+}
+
 /** A right-click on a row: open the document, or copy where it is. */
 function documentMenu(node: TreeNode) {
   const document = node.document;
@@ -250,6 +270,8 @@ export function DocumentTree({
       subRows={(node) => node.children}
       rowHref={(node) => (node.document ? `#documents/${node.document.index}` : undefined)}
       rowMenu={documentMenu}
+      rowActions={copyPathAction}
+      stateKey="documents"
       sortable
       search="Search documents"
       pageSize={ROWS_PER_PAGE}

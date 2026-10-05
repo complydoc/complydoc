@@ -9,22 +9,20 @@ import {
   type ColumnDef,
   type ExpandedState,
   type RowData,
-  type SortingState,
+  type RowSelectionState,
 } from "@tanstack/react-table";
-import {
-  ArrowDownIcon,
-  ArrowUpDownIcon,
-  ArrowUpIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  SearchIcon,
-} from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { ArrowDownIcon, ArrowUpDownIcon, ArrowUpIcon, SearchIcon } from "lucide-react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from "@/components/ui/context-menu";
+import { Pager } from "@/components/table/Pager";
+import { actionsColumn, selectColumn } from "@/components/table/columns";
+import { SelectionBar } from "@/components/table/selection";
+import { usePickKeys } from "@/hooks/usePickKeys";
+import { useTableState } from "@/hooks/useTableState";
 import { cn } from "@/lib/utils";
 
 declare module "@tanstack/react-table" {
@@ -69,6 +67,15 @@ interface DataTableProps<T> {
   selected?: (row: T) => boolean;
   /** What a right-click on a row offers, as menu items; nothing for a row with none. */
   rowMenu?: (row: T) => ReactNode;
+  /** Quick actions at a row's end, shown while the pointer is on the row. */
+  rowActions?: (row: T) => ReactNode;
+  /** Keep the sort and search in the address under this name, so they are there on coming back. */
+  stateKey?: string;
+  /**
+   * Rows can be picked, by their box or with X over the row, and acted on together with
+   * these actions, in a bar at the foot of the page. Escape lets them go.
+   */
+  bulkActions?: (rows: T[], clear: () => void) => ReactNode;
 }
 
 const SORT_ICON = {
@@ -97,16 +104,25 @@ export function DataTable<T>({
   actions,
   selected,
   rowMenu,
+  rowActions,
+  stateKey,
+  bulkActions,
 }: DataTableProps<T>) {
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [query, setQuery] = useState("");
+  const { sorting, setSorting, query, setQuery } = useTableState(stateKey);
+  const [picked, setPicked] = useState<RowSelectionState>({});
+  const hovered = useRef<string | null>(null);
+  const selectable = bulkActions !== undefined;
+  const shown = useMemo<Columns<T>>(() => {
+    const all = selectable ? [selectColumn<T>(), ...columns] : columns;
+    return rowActions ? [...all, actionsColumn(rowActions)] : all;
+  }, [columns, selectable, rowActions]);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: pageSize ?? Number.MAX_SAFE_INTEGER });
   const [expanded, setExpanded] = useState<ExpandedState>(true);
   // TanStack Table returns functions the React Compiler cannot memoise; it is the documented way to use it.
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data: rows,
-    columns,
+    columns: shown,
     getRowId: rowKey,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -122,15 +138,21 @@ export function DataTable<T>({
     onSortingChange: setSorting,
     onGlobalFilterChange: setQuery,
     onPaginationChange: setPagination,
+    enableRowSelection: selectable,
+    onRowSelectionChange: setPicked,
     globalFilterFn: "includesString",
     // A new search starts from the first page.
     autoResetPageIndex: true,
     enableSorting: sortable,
-    state: { sorting, globalFilter: query, pagination, expanded: query ? true : expanded },
+    state: { sorting, globalFilter: query, pagination, expanded: query ? true : expanded, rowSelection: picked },
   });
   const matching = table.getPrePaginationRowModel().rows.length;
   const first = pagination.pageIndex * pagination.pageSize;
   const paged = pageSize !== undefined && matching > pageSize;
+  const chosen = table.getSelectedRowModel().flatRows.map((row) => row.original);
+  const clear = () => setPicked({});
+
+  usePickKeys(selectable, picked, setPicked, hovered);
 
   return (
     <div className="flex flex-col gap-3">
@@ -153,7 +175,7 @@ export function DataTable<T>({
           {actions && <div className="ml-auto flex items-center gap-2">{actions}</div>}
         </div>
       )}
-      <Card className="py-0">
+      <Card className="group/table py-0" data-picking={chosen.length > 0 || undefined}>
         <Table>
           <TableCaption className="sr-only">{caption}</TableCaption>
           <TableHeader>
@@ -207,7 +229,9 @@ export function DataTable<T>({
                   key={row.id}
                   data-state={selected?.(row.original) ? "selected" : undefined}
                   aria-selected={selected ? selected(row.original) : undefined}
-                  className={cn((onRowClick || rowHref?.(row.original)) && "cursor-pointer")}
+                  className={cn("group/row", (onRowClick || rowHref?.(row.original)) && "cursor-pointer")}
+                  onMouseEnter={() => (hovered.current = row.id)}
+                  onMouseLeave={() => (hovered.current = null)}
                   onClick={(event) => {
                     const href = rowHref?.(row.original);
                     const target = event.target as HTMLElement;
@@ -243,7 +267,7 @@ export function DataTable<T>({
             })}
             {matching === 0 && (
               <TableRow>
-                <TableCell colSpan={columns.length} className="py-8 text-center text-muted-foreground">
+                <TableCell colSpan={shown.length} className="py-8 text-center text-muted-foreground">
                   Nothing matches “{query}”.
                 </TableCell>
               </TableRow>
@@ -252,37 +276,21 @@ export function DataTable<T>({
         </Table>
       </Card>
       {paged && (
-        <nav
-          aria-label={`${caption} pages`}
-          className="flex items-center justify-between gap-4 text-sm text-muted-foreground"
-        >
-          <span>
-            {first + 1}–{Math.min(first + pagination.pageSize, matching)} of {matching}
-          </span>
-          <span className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="icon-sm"
-              aria-label="Previous page"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-            >
-              <ChevronLeftIcon />
-            </Button>
-            <span className="tabular-nums">
-              {pagination.pageIndex + 1} / {table.getPageCount()}
-            </span>
-            <Button
-              variant="outline"
-              size="icon-sm"
-              aria-label="Next page"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-            >
-              <ChevronRightIcon />
-            </Button>
-          </span>
-        </nav>
+        <Pager
+          label={`${caption} pages`}
+          first={first}
+          size={pagination.pageSize}
+          matching={matching}
+          page={pagination.pageIndex + 1}
+          pages={table.getPageCount()}
+          onPrevious={table.getCanPreviousPage() ? () => table.previousPage() : null}
+          onNext={table.getCanNextPage() ? () => table.nextPage() : null}
+        />
+      )}
+      {bulkActions && chosen.length > 0 && (
+        <SelectionBar count={chosen.length} onClear={clear}>
+          {bulkActions(chosen, clear)}
+        </SelectionBar>
       )}
     </div>
   );

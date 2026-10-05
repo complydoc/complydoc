@@ -14,6 +14,7 @@ import type { FindingRow } from "@/report/security";
 import { EVIDENCE, SEVERITIES } from "@/report/select";
 import type { Severity } from "@/report/types";
 import { useHashParam } from "@/hooks/useHashRoute";
+import { BulkIgnore } from "./BulkIgnore";
 import { IgnoreButton } from "./IgnoreButton";
 
 const column = createColumnHelper<FindingRow>();
@@ -88,6 +89,7 @@ const columns: Columns<FindingRow> = [
         <IgnoreButton
           fingerprint={row.original.source.fingerprint}
           what={`${row.original.label} ${row.original.masked}`}
+          quiet
         />
       </div>
     ),
@@ -157,6 +159,8 @@ export function FindingTable({ rows }: { rows: FindingRow[] }) {
       pageSize={25}
       rowHref={(row) => documentHref(row.document, row.page, { kind: "identifier", index: row.match })}
       rowMenu={findingMenu}
+      stateKey="findings"
+      bulkActions={(chosen, clear) => <BulkIgnore rows={chosen} onDone={clear} />}
       toolbar={
         <ToggleGroup
           type="single"
