@@ -1,5 +1,5 @@
 import type { OnChangeFn, SortingState } from "@tanstack/react-table";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useHashParam } from "./useHashRoute";
 
 /** `name:desc,pages:asc` and back. */
@@ -31,8 +31,10 @@ export function useTableState(key?: string): TableState {
   const [queryParam, setQueryParam] = useHashParam(`${key ?? ""}.q`);
   const [localSort, setLocalSort] = useState<SortingState>([]);
   const [localQuery, setLocalQuery] = useState("");
+  // The same list while the address says the same: the table takes a new list for a new
+  // sort, resets its page for it, and would do so again on every render, without end.
+  const sorting = useMemo(() => readSort(sortParam), [sortParam]);
   if (!key) return { sorting: localSort, setSorting: setLocalSort, query: localQuery, setQuery: setLocalQuery };
-  const sorting = readSort(sortParam);
   return {
     sorting,
     setSorting: (update) => setSortParam(writeSort(typeof update === "function" ? update(sorting) : update)),
