@@ -72,7 +72,7 @@ cd.write_json(report, ".complydoc/loaders.json", detail="full")
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/complydoc/complydoc/main/.github/images/viewer-diff-dark.webp">
-  <img alt="The complydoc viewer: two LangChain loaders' readings of the same page side by side, with the page itself beside them" src="https://raw.githubusercontent.com/complydoc/complydoc/main/.github/images/viewer-diff-light.webp" width="100%">
+  <img alt="The complydoc viewer: two readers' readings of the same page side by side, with the page itself beside them" src="https://raw.githubusercontent.com/complydoc/complydoc/main/.github/images/viewer-diff-light.webp" width="100%">
 </picture>
 
 Or audit a folder from the command line:
