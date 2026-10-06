@@ -10,9 +10,11 @@
 
 Only what differs from the shipped configuration is written: a category left out of the
 file is looked for as it ships, so the file does not drift from the defaults as
-complydoc changes them. `enabled: false` stops a category being looked for at all; the
-report says so, so a run that finds none of it is not read as a clean one. `severity`
-changes how serious a finding of the category is called.
+complydoc changes them. `enabled: false` stops a category being reported: it is in no
+count, finding or check, and the report says so, so a run that shows none of it is not
+read as a clean one. Its values are still masked wherever the report masks text, since a
+report that stopped looking would show them as they are written. `severity` changes how
+serious a finding of the category is called.
 
 A run reads `.complydoc-categories.yaml` at the top of the folder it audits, or the file
 `--categories` names. Your own things to look for are concepts, in their own file.
@@ -50,7 +52,8 @@ CATEGORIES_FILENAME = ".complydoc-categories.yaml"
 
 _HEADER = """\
 # Identifier categories changed from complydoc's own settings; the rest are as shipped.
-# `enabled: false` stops a category being looked for, and the report says so.
+# `enabled: false` stops a category being reported, and the report says so; its values
+# are still masked in the report.
 # `severity` is how serious a finding of the category is called.
 # Written by `complydoc ui`; edit it by hand as well.
 """
@@ -197,7 +200,14 @@ def with_categories(config: Config, file: CategoryFile) -> tuple[Config, Categor
         return config, CategoriesApplied({}, unknown)
     updated = {}
     for name, change in changed.items():
-        fields = {k: v for k, v in change.model_dump().items() if v is not None}
+        fields: dict[str, object] = {}
+        if change.severity is not None:
+            fields["severity"] = change.severity
+        if change.enabled is True:
+            fields["enabled"] = True
+        elif change.enabled is False and known[name].enabled:
+            # Still looked for, so that the report masks it; reported nowhere.
+            fields["silent"] = True
         updated[name] = known[name].model_copy(update=fields)
     sensitive = config.sensitive.model_copy(update={"categories": {**known, **updated}})
     described = json.dumps({n: c.model_dump() for n, c in sorted(changed.items())}, sort_keys=True)

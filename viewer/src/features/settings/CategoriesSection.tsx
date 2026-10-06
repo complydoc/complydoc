@@ -129,8 +129,7 @@ export function CategoriesSection({ state, lastRun }: { state: CategoriesState; 
         <span className="text-xs text-muted-foreground">Takes effect on the next run.</span>
       </div>
       <p className="text-xs text-muted-foreground">
-        A category switched off is not looked for, so it is not masked in reports either: what it would have found shows
-        as written.
+        A category switched off is reported nowhere. What it would have found is still masked in the report&apos;s text.
       </p>
       {state.error && (
         <p role="alert" className="text-sm text-destructive">

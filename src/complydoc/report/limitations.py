@@ -877,10 +877,10 @@ def ignore_limitations(summary: IgnoreSummary | None, ignored: int) -> list[Limi
 
 
 def category_limitations(summary: CategorySummary | None) -> list[Limitation]:
-    """What a run did not look for because its categories file said not to.
+    """What a run does not report because its categories file said not to.
 
-    A category switched off finds nothing, which reads the same as a clean one unless
-    the report says it was not looked for. A name the file gave that is no category
+    A category switched off shows nothing, which reads the same as a clean one unless
+    the report says so. A name the file gave that is no category
     changed nothing, and is said, so that a typo is not taken for a setting.
     """
     if summary is None:
@@ -893,10 +893,11 @@ def category_limitations(summary: CategorySummary | None) -> list[Limitation]:
                 area="Categories switched off",
                 statement=(
                     f"{', '.join(off)} {plural(len(off), 'was', 'were')} switched off in "
-                    f"{summary.file}, so {plural(len(off), 'it was', 'they were')} not looked "
-                    f"for at all. No conclusion about "
+                    f"{summary.file}, so nothing of {plural(len(off), 'it', 'them')} is "
+                    f"reported or counted. No conclusion about "
                     f"{plural(len(off), 'this category', 'these categories')} can be drawn from "
-                    f"this report."
+                    f"this report. {plural(len(off), 'Its', 'Their')} values are still masked "
+                    f"in the report's text."
                 ),
                 affected=off,
                 severity="important",

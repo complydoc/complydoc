@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -16,6 +17,7 @@ from complydoc.categories import (
     save_category,
     with_categories,
 )
+from complydoc.report.json_writer import to_dict
 
 
 def test_a_change_sets_something():
@@ -58,8 +60,9 @@ def test_changes_are_made_and_the_run_is_not_the_same_run(tmp_path, config):
     path.write_text(path.read_text() + "  not_a_category:\n    enabled: false\n")
     changed, applied = with_categories(config, load_categories(path))
     email = changed.sensitive.categories["email_address"]
-    assert (email.enabled, email.severity) == (False, "low")
-    assert config.sensitive.categories["email_address"].enabled
+    # Switched off is silent, not gone: still looked for, so the report can mask it.
+    assert (email.enabled, email.silent, email.severity) == (True, True, "low")
+    assert not config.sensitive.categories["email_address"].silent
     assert applied.unknown == ["not_a_category"]
     assert changed.digest != config.digest
     assert with_categories(config, load_categories(tmp_path / "absent.yaml"))[0] is config
@@ -91,6 +94,42 @@ def test_a_switched_off_category_finds_nothing_and_the_report_says_it_was_not_lo
     off = [item for item in report.limitations if item.area == "Categories switched off"]
     assert len(off) == 1 and "Email address" in off[0].statement
     assert off[0].severity == "important"
+    # Reported nowhere: no count, and no word that it could not be scanned.
+    assert "email_address" not in report.aggregate.sensitive_by_category
+    assert not [u for u in document.sensitive.unscanned_categories if u.category == "email_address"]
+
+
+def test_a_switched_off_category_is_still_masked_in_the_reports_text(tmp_path, config):
+    folder = _folder(tmp_path, "categories:\n  email_address:\n    enabled: false\n")
+    report = run_audit(folder, config, ("sensitive",), ocr=False, extracted_text=True)
+    (document,) = report.documents
+    text = "\n".join(page.masked_text or page.text for page in document.extracted_text)
+    assert "renewal" in text
+    assert "ana.silva@example.com" not in text
+    assert "example.com" not in json.dumps(to_dict(report, detail="full"))
+
+
+def test_a_silent_find_never_takes_a_reported_ones_place(config):
+    from complydoc.sensitive.scanner import scan_text
+
+    text = "Card 4111 1111 1111 1111 for ana.silva@example.com"
+    shipped, _ = scan_text(text, config.sensitive)
+    quiet = config.sensitive.model_copy(
+        update={
+            "categories": {
+                **config.sensitive.categories,
+                "email_address": config.sensitive.categories["email_address"].model_copy(
+                    update={"silent": True}
+                ),
+            }
+        }
+    )
+    reported, _ = scan_text(text, quiet)
+    covered, _ = scan_text(text, quiet, masking=True)
+    assert [m.category for m in reported] == [
+        m.category for m in shipped if m.category != "email_address"
+    ]
+    assert {m.category for m in covered} == {m.category for m in shipped}
 
 
 def test_a_regraded_category_is_found_at_its_new_severity(tmp_path, config):

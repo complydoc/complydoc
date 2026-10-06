@@ -518,7 +518,7 @@ def summarise_categories(
             CategoryChangeRecord(
                 category=name,
                 label=after.label,
-                enabled=after.enabled,
+                enabled=after.enabled and not after.silent,
                 severity=after.severity,
                 shipped_enabled=before.enabled,
                 shipped_severity=before.severity,

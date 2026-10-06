@@ -7,6 +7,12 @@ separately.
 
 ## [Unreleased]
 
+### Changed
+
+- A category switched off in the categories file is still masked in the report's text.
+  It is reported nowhere, as before: no finding, no count, no check. Until now the run
+  stopped looking for it, so its values showed in the report as they were written.
+
 ## [0.6.7] — 2026-10-05
 
 ### Fixed

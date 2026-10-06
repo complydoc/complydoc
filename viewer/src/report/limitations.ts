@@ -27,7 +27,7 @@ export function notLookedFor(report: Report): NotLookedFor[] {
     found.set(change.category, {
       category: change.category,
       label: change.label,
-      reason: "it was switched off in the categories file.",
+      reason: "it was switched off in the categories file, so nothing of it is reported. Its values are still masked.",
       documents: report.documents.length,
     });
   }

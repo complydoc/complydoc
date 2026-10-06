@@ -257,8 +257,8 @@ def report_shape() -> dict[str, object]:
         "categories": (
             "null unless a categories file was read: file, changes[] (category, label, "
             "enabled, severity, shipped_enabled, shipped_severity), unknown[] (names the "
-            "file gave that are no category). A category with enabled false was not "
-            "looked for"
+            "file gave that are no category). A category with enabled false is not "
+            "reported; its values are still masked"
         ),
         "ignores": (
             "null unless an ignore file was read: file, rules[] (finding, reason, by, "
@@ -849,7 +849,8 @@ class CategoryChangeRecord:
 class CategorySummary:
     """The categories file a run read, and each change it made.
 
-    A category with `enabled` false was not looked for, so none of it was found.
+    A category with `enabled` false is reported nowhere; the run still looked for it, so
+    that its values are masked in the report's text.
     """
 
     file: str

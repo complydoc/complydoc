@@ -464,5 +464,5 @@ def _masked(text: str, config: Config, reveal: bool) -> str:
     from complydoc.extraction.extract import mask_matches
     from complydoc.sensitive.scanner import scan_text
 
-    matches, _unavailable = scan_text(text, config.sensitive, reveal=False)
+    matches, _unavailable = scan_text(text, config.sensitive, reveal=False, masking=True)
     return mask_matches(text, matches)[0]

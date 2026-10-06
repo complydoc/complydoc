@@ -443,6 +443,10 @@ class FallbackSpec(_Base):
 
 class CategoryConfig(_Base):
     enabled: bool = True
+    silent: bool = False
+    """Looked for so that its values are masked, and never reported: what a category
+    switched off in a folder's categories file becomes. A report that stopped looking
+    would show those values as they are written."""
     label: str
     region: str = "international"
     """Which jurisdiction the identifier belongs to, shown in the report."""

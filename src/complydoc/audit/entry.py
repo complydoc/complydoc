@@ -199,7 +199,9 @@ def _mask(
     if not text.strip():
         return text
     if located is None:
-        located, _unavailable = scan_text(text, work.config.sensitive, reveal=work.reveal)
+        located, _unavailable = scan_text(
+            text, work.config.sensitive, reveal=work.reveal, masking=True
+        )
     if work.reveal and not fully:
         located = [m for m in located if m.revealed is None]
     return mask_matches(text, located)[0]
@@ -371,7 +373,8 @@ def _page_text(
     """
     matches: list[SensitiveMatch] | None = None
     if scanned is not None:
-        matches = [m for m in scanned.matches if m.page == page.number]
+        # With what the silent categories found: these are for covering the text.
+        matches = [m for m in (*scanned.matches, *scanned.silent) if m.page == page.number]
 
     # Every reading of the page scanned for itself, then each masked for what any of them
     # was found to hold: a name the model recognised in one reader's wording and missed
@@ -379,7 +382,7 @@ def _page_text(
     def scanned_text(text: str) -> list[SensitiveMatch]:
         if not text.strip():
             return []
-        return scan_text(text, work.config.sensitive, reveal=work.reveal)[0]
+        return scan_text(text, work.config.sensitive, reveal=work.reveal, masking=True)[0]
 
     own = matches if matches is not None else scanned_text(page.text)
     readings = {

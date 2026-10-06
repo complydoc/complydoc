@@ -86,6 +86,9 @@ class UnscannedCategory:
 class ScanResult:
     path: Path
     matches: list[SensitiveMatch] = field(default_factory=list)
+    silent: list[SensitiveMatch] = field(default_factory=list)
+    """What the silent categories found: covered wherever the text is masked, and in no
+    count, finding or check."""
     unscanned_categories: list[UnscannedCategory] = field(default_factory=list)
     unreadable_pages: list[int] = field(default_factory=list)
     """Pages with no text at all, so nothing could be looked for on them."""
@@ -191,7 +194,9 @@ def _scan_page(
     reveal: bool,
     unavailable: dict[str, str],
     models_used: dict[str, str] | None = None,
+    silent: list[SensitiveMatch] | None = None,
 ) -> list[SensitiveMatch]:
+    """The page's matches. What its silent categories found goes to `silent`, when given."""
     candidates: list[Candidate] = []
 
     for category_id, category in config.enabled_categories.items():
@@ -241,9 +246,32 @@ def _scan_page(
                 continue
             candidates.append(Candidate(category_id, category, finding, names))
 
+    # What is reported is settled among the reported categories alone, as if the silent
+    # ones were not there; a silent find is kept only where nothing reported covers it.
+    reported = _resolve_overlaps([c for c in candidates if not c.category.silent])
+    taken = [(c.finding.start, c.finding.end) for c in reported]
+    quiet = [
+        c
+        for c in _resolve_overlaps([c for c in candidates if c.category.silent])
+        if not any(c.finding.start < end and start < c.finding.end for start, end in taken)
+    ]
     starts = _line_starts(text)
+    matches = _matches(reported, page_number, text, starts, config, reveal)
+    if silent is not None:
+        silent.extend(_matches(quiet, page_number, text, starts, config, reveal))
+    return matches
+
+
+def _matches(
+    candidates: list[Candidate],
+    page_number: int,
+    text: str,
+    starts: list[int],
+    config: SensitiveConfig,
+    reveal: bool,
+) -> list[SensitiveMatch]:
     matches: list[SensitiveMatch] = []
-    for candidate in _resolve_overlaps(candidates):
+    for candidate in candidates:
         finding = candidate.finding
         value = text[finding.start : finding.end]
         masked, revealed = render(value, candidate.category_id, config.masking, reveal)
@@ -277,9 +305,12 @@ def _scan_page(
 
 
 def scan_text(
-    text: str, config: SensitiveConfig, reveal: bool = False
+    text: str, config: SensitiveConfig, reveal: bool = False, *, masking: bool = False
 ) -> tuple[list[SensitiveMatch], dict[str, str]]:
     """Scan a piece of text that is not a page, such as a metadata value.
+
+    With `masking`, what the silent categories found is returned too: the matches are
+    for covering the text, not for reporting.
 
     Returns the matches — located as line and column within `text`, on page 1 —
     and the categories that could not run, with why. Same detectors, same
@@ -289,7 +320,21 @@ def scan_text(
     unavailable: dict[str, str] = {}
     if not text.strip():
         return [], unavailable
-    return _scan_page(1, text, config, reveal, unavailable), unavailable
+    silent: list[SensitiveMatch] = []
+    matches = _scan_page(1, text, config, reveal, unavailable, silent=silent)
+    if masking:
+        matches = sorted([*matches, *silent], key=lambda m: (m.page, m.line, m.column))
+    return matches, _reported(unavailable, config)
+
+
+def _reported(unavailable: dict[str, str], config: SensitiveConfig) -> dict[str, str]:
+    """The categories that could not run and that a report owes a word on: not the silent
+    ones, which it was told to say nothing of."""
+    return {
+        category: reason
+        for category, reason in unavailable.items()
+        if not (category in config.categories and config.categories[category].silent)
+    }
 
 
 def _prepare(texts: list[str], config: SensitiveConfig) -> None:
@@ -326,10 +371,18 @@ def scan(document: Document, config: SensitiveConfig, reveal: bool = False) -> S
             continue
         result.pages_scanned += 1
         result.matches.extend(
-            _scan_page(page.number, page.text, config, reveal, unavailable, result.models_used)
+            _scan_page(
+                page.number,
+                page.text,
+                config,
+                reveal,
+                unavailable,
+                result.models_used,
+                silent=result.silent,
+            )
         )
 
-    for category_id, reason in unavailable.items():
+    for category_id, reason in _reported(unavailable, config).items():
         category = config.categories.get(category_id)
         result.unscanned_categories.append(
             UnscannedCategory(

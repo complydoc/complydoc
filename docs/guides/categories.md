@@ -20,7 +20,7 @@ file is looked for as it ships, so the file doesn't drift from the defaults as t
 
 | Field | Meaning |
 | --- | --- |
-| `enabled` | `false` stops the category being looked for at all. |
+| `enabled` | `false` stops the category being reported: no finding, no count, no check. Its values are still masked. |
 | `severity` | `low`, `medium` or `high`: how serious a finding of the category is called. The policy, `complydoc check` and the report's counts follow it. |
 
 An audit reads `.complydoc-categories.yaml` at the top of the folder it audits, or the
@@ -29,8 +29,8 @@ from the `config` it is given.
 
 ## What the report says
 
-A category that is switched off finds nothing, which reads the same as a clean one. So
-the report says it was not looked for:
+A category that is switched off shows nothing, which reads the same as a clean one. So
+the report says it is not reported:
 
 - the limitations list "Categories switched off", and the Security page names them above
   the findings, beside any category that couldn't run for another reason, such as a
@@ -47,12 +47,15 @@ its severity, and a button to put it back as shipped. A category changed from it
 is marked. The file is the one the command line reads; changes apply from the next run. A
 report opened any other way shows what its run changed, read only.
 
-## A category switched off is not masked
+## A category switched off is still masked
 
-Masking is done by the same scan that finds identifiers, so a category that isn't looked for
-isn't masked either. A value of it shows in the report's page text as it is written in the
-document. Switch a category off only where the report doesn't leave your hands, or where
-that value is not sensitive to you.
+Switching a category off takes it out of the findings, the counts and the checks. It does
+not take it out of the masking: the run still looks for it, so that a value of it is
+covered wherever the report shows text. A report that stopped looking would show those
+values as they are written, to everyone the report is shared with.
+
+That means switching off a category that a model reads, such as names, does not make a
+run quicker.
 
 ## What this doesn't do
 
