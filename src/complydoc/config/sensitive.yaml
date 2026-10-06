@@ -216,7 +216,7 @@ categories:
     severity: medium
     # `name` is an installed spaCy package or a path to a saved pipeline. See the
     # "Name detection models" guide for drop_short_acronyms, drop_multiline,
-    # spans_key and by_language.
+    # drop_numbered_headings, spans_key and by_language.
     model:
       name: Babelscape/wikineural-multilingual-ner
       entity_labels: [PER]

@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import pytest
 
+from complydoc.config.schema import NerModelSpec
 from complydoc.extraction.extract import mask_matches
 from complydoc.sensitive.base import DetectorContext, Finding
 from complydoc.sensitive.registry import register
 from complydoc.sensitive.scanner import scan_text
+from tests.helpers import requires_ner
 
 RECORD = (
     "EMPLOYEE RECORD\n"
@@ -134,3 +136,66 @@ def test_mask_text_covers_what_the_rules_find_where_no_model_ran(config):
     assert "HARBOUR" not in masked.text and "Jane" not in masked.text
     # Still said: the names a model would have found are not covered.
     assert {"person_name", "organisation_name"} <= set(masked.unscanned)
+
+
+@pytest.mark.parametrize(
+    ("span", "heading"),
+    [
+        ("CONDITIONS 4", True),
+        ("SCHEDULE 2.", True),
+        ("TERMS AND CONDITIONS 12", True),
+        # A name in mixed case, one with no number, a number alone, and a short code.
+        ("Channel 4", False),
+        ("HARBOUR LOGISTICS LTD", False),
+        ("4", False),
+        ("3M", False),
+    ],
+)
+def test_capitals_ending_in_a_bare_number_are_a_heading_not_a_name(span, heading):
+    from complydoc.sensitive.base import numbered_heading
+
+    assert numbered_heading(span) is heading
+
+
+@requires_ner
+def test_the_small_model_no_longer_takes_a_heading_for_an_organisation(config):
+    """`TERMS AND CONDITIONS 4. Neither party…` is how a two-column page reads as flat
+    text, and the small English model called `CONDITIONS 4` an organisation."""
+    text = "TERMS AND CONDITIONS 4. Neither party is liable for\nindirect or consequential loss\n"
+    settings = _with(config, "ner")
+    for name, label in (("person_name", "PERSON"), ("organisation_name", "ORG")):
+        settings = settings.model_copy(
+            update={
+                "categories": {
+                    **settings.categories,
+                    name: settings.categories[name].model_copy(
+                        update={
+                            "min_confidence": 0.0,
+                            "model": NerModelSpec(name="en_core_web_sm", entity_labels=[label]),
+                        }
+                    ),
+                }
+            }
+        )
+    matches, unscanned = scan_text(text, settings, reveal=True)
+    assert unscanned == {}
+    assert [m.revealed for m in matches if m.category == "organisation_name"] == []
+    # With the filter off, the model's answer is what it was.
+    unfiltered = settings.model_copy(
+        update={
+            "categories": {
+                **settings.categories,
+                "organisation_name": settings.categories["organisation_name"].model_copy(
+                    update={
+                        "model": NerModelSpec(
+                            name="en_core_web_sm",
+                            entity_labels=["ORG"],
+                            drop_numbered_headings=False,
+                        )
+                    }
+                ),
+            }
+        }
+    )
+    found, _ = scan_text(text, unfiltered, reveal=True)
+    assert "CONDITIONS 4" in [m.revealed for m in found if m.category == "organisation_name"]

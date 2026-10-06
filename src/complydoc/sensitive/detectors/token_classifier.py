@@ -39,7 +39,7 @@ from multiprocessing import parent_process
 from typing import Any
 
 from complydoc.config.schema import SensitiveConfig
-from complydoc.sensitive.base import DetectorContext, Finding
+from complydoc.sensitive.base import DetectorContext, Finding, numbered_heading
 from complydoc.sensitive.detectors.model_server import Classify, Entity
 from complydoc.sensitive.registry import DetectorUnavailableError, detector, models_for_detector
 from complydoc.utils.install import extra_hint, hf_model_hint
@@ -261,6 +261,8 @@ class TokenClassifierDetector:
                 continue
             span = text[start:end]
             if spec.drop_multiline and ("\n" in span or "\r" in span):
+                continue
+            if spec.drop_numbered_headings and numbered_heading(span):
                 continue
             if sum(1 for character in span if character.isalpha()) < _MIN_ALPHA:
                 continue

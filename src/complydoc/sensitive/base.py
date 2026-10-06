@@ -19,6 +19,7 @@ __all__ = [
     "Finding",
     "SensitiveMatch",
     "evidence_of",
+    "numbered_heading",
 ]
 
 Evidence = Literal["confirmed", "corroborated", "pattern", "model"]
@@ -103,6 +104,20 @@ free when scoring — so each says so where it asks.
 
 EVIDENCE_ORDER: Final = ("confirmed", "corroborated", "pattern", "model")
 """Strongest first. The order the security page sorts by within a severity."""
+
+
+def numbered_heading(span: str) -> bool:
+    """Whether `span` is capitals ending in a bare number: `CONDITIONS 4`, `SCHEDULE 2.`.
+
+    Read as flat text, a heading runs into the number of the clause that follows it, and a
+    name model takes the pair for an organisation. A name written in capitals does not end
+    in a number standing alone, and one in mixed case, such as `Channel 4`, is left be.
+    """
+    words = span.split()
+    if len(words) < 2 or not words[-1].rstrip(".").isdigit():
+        return False
+    letters = [c for c in span if c.isalpha()]
+    return bool(letters) and all(c.isupper() for c in letters)
 
 
 def evidence_of(

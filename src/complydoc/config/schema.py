@@ -412,6 +412,9 @@ class NerModelSpec(_Base):
     """Drop single all-caps tokens of up to five characters, such as `IBAN` or `VAT`."""
     drop_multiline: bool = True
     """Drop entities that span a line break."""
+    drop_numbered_headings: bool = True
+    """Drop an all-capitals entity that ends in a bare number, such as `CONDITIONS 4`: a
+    heading run into the number of the clause after it, which the models take for a name."""
     spans_key: str | None = None
     """Read entities and scores from `doc.spans[spans_key]` instead of `doc.ents`.
 

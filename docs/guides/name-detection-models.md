@@ -46,6 +46,7 @@ it was found by, so in `Name: Jane Doe` only the name is masked.
 | `spans_key` | Read entities and scores from `doc.spans[spans_key]` | none: `doc.ents`, no score |
 | `drop_short_acronyms` | Drop single all-caps tokens of up to five characters | `true` |
 | `drop_multiline` | Drop entities that span a line break | `true` |
+| `drop_numbered_headings` | Drop an all-capitals entity that ends in a bare number, such as `CONDITIONS 4` | `true` |
 
 Label names depend on the model: spaCy's English pipelines use `PERSON` and `ORG`;
 most other spaCy language pipelines and the multilingual `xx_ent_wiki_sm` use `PER`
@@ -67,10 +68,12 @@ evidence tier either way.
 
 ### Filters
 
-The two filters are tuned for English business forms. `drop_short_acronyms`
+The filters are tuned for English business forms. `drop_short_acronyms`
 removes field labels such as `IBAN` or `VAT` that the small English model tags as
 organisations; `drop_multiline` removes entities that join the end of one line to
-the start of the next. Turn them off for models that do not make those mistakes.
+the start of the next; `drop_numbered_headings` removes a heading run into the
+number of the clause after it, such as `CONDITIONS 4`. Turn them off for models
+that do not make those mistakes.
 
 ## The multilingual model, which ships as the preferred one
 

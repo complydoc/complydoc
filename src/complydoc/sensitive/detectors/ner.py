@@ -17,7 +17,7 @@ from functools import lru_cache
 from typing import Any
 
 from complydoc.config.schema import NerModelSpec, SensitiveConfig
-from complydoc.sensitive.base import DetectorContext, Finding
+from complydoc.sensitive.base import DetectorContext, Finding, numbered_heading
 from complydoc.sensitive.registry import DetectorUnavailableError, detector, models_for_detector
 from complydoc.utils.install import spacy_model_hint
 from complydoc.utils.text import detect_language
@@ -130,6 +130,8 @@ class NerDetector:
             # An entity straddling a line break is usually an artefact of reading a
             # laid-out page as flat text: the end of one line run into the next.
             if spec.drop_multiline and ("\n" in span or "\r" in span):
+                continue
+            if spec.drop_numbered_headings and numbered_heading(span):
                 continue
             if sum(1 for c in span if c.isalpha()) < _MIN_ALPHA:
                 continue
