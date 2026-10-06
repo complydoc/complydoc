@@ -152,8 +152,9 @@ def compare_loaders(
     loader's, with what each one cost.
 
     `page_images`, with `paths`, puts a picture of each page of every file read beside
-    its text, rendered by complydoc from the file. A picture shows every value on the
-    page, whatever the report masks, as `full_audit(page_images=True)` does.
+    its text, rendered by complydoc from the file, with the identifiers found on the page
+    blacked out, as `full_audit(page_images=True)` does. A page with one that cannot be
+    placed has no picture; with `reveal`, the pictures are as the pages are.
     """
     named = _named(loaders)
     if len(named) < 2:
@@ -257,7 +258,7 @@ def compare_loaders(
     if page_images:
         if files is None:
             raise TypeError("page_images renders the files the loaders read, so it needs paths=")
-        _attach_pictures(baseline.entries)
+        _attach_pictures(baseline.entries, settings, reveal)
     if not extracted_text:
         for entry in baseline.entries:
             entry.extracted_text = []
@@ -317,16 +318,19 @@ def compare_loaders(
     return report
 
 
-def _attach_pictures(entries: list[DocumentReport]) -> None:
+def _attach_pictures(entries: list[DocumentReport], settings: Config, reveal: bool) -> None:
     """A picture of each page of every file, rendered by complydoc's own reader.
 
     The loaders' output carries no page geometry, so the pages are opened again here. The
-    identifiers are not drawn on them: they were found in the loaders' text, and where
-    that text sits on the page is known only to the reader that placed it.
+    identifiers are not marked on them: they were found in the loaders' text, and where
+    that text sits on the page is known only to the reader that placed it. They are
+    blacked out, though: complydoc's reader is scanned for them itself, since a picture
+    beside masked text must not show what the text hides.
     """
     from complydoc.ingest.base import IngestOptions, LoaderError
     from complydoc.ingest.registry import load_document
     from complydoc.report.preview import build_previews
+    from complydoc.sensitive.scanner import scan
 
     options = IngestOptions(ocr=False, render_all_pages=True, max_render_pages=50)
     for entry in entries:
@@ -337,7 +341,8 @@ def _attach_pictures(entries: list[DocumentReport]) -> None:
             document = load_document(path, options)
         except (LoaderError, OSError, ValueError):
             continue
-        entry.previews = build_previews(document, None, page_images=True)
+        cover = scan(document, settings.sensitive, reveal)
+        entry.previews = build_previews(document, None, page_images=True, cover=cover)
 
 
 def _named(loaders: Mapping[str, Any] | Sequence[Any]) -> list[tuple[str, Any]]:

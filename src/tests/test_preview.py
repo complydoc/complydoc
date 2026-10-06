@@ -315,3 +315,29 @@ def test_what_was_found_only_to_be_masked_is_blacked_out_too(config):
     from PIL import ImageStat
 
     assert ImageStat.Stat(box).mean[0] < 12
+
+
+def test_a_picture_with_no_marks_of_its_own_is_still_covered(config):
+    """A loader comparison's pictures: nothing is marked on them, and what complydoc's
+    own reader finds on the page is blacked out all the same."""
+    from complydoc.report.preview import _locate_all, _value_at
+
+    document = _rendered()
+    found = scan(document, config.sensitive)
+    page = build_previews(document, None, page_images=True, cover=found)[0]
+    assert page.sensitive == [] and page.sensitive_count == 0
+    picture = _picture(page)
+    first = document.pages[0]
+    match = found.matches[0]
+    (rect, *_) = _locate_all(_value_at(first, match.line, match.column, match.length), first)
+    from PIL import ImageStat
+
+    box = picture.crop(
+        (
+            int(rect.x0 / first.width_pt * picture.width),
+            int(rect.y0 / first.height_pt * picture.height),
+            int(rect.x1 / first.width_pt * picture.width),
+            int(rect.y1 / first.height_pt * picture.height),
+        )
+    )
+    assert ImageStat.Stat(box).mean[0] < 12

@@ -363,6 +363,7 @@ def build_previews(
     scan: ScanResult | None,
     page_images: bool = False,
     categories: SensitiveConfig | None = None,
+    cover: ScanResult | None = None,
 ) -> list[PagePreview]:
     """One wireframe per page.
 
@@ -377,9 +378,12 @@ def build_previews(
     if scan is not None:
         for match in scan.matches:
             by_page.setdefault(match.page, []).append(match)
-        if not scan.reveal_used:
-            for match in (*scan.matches, *scan.silent):
-                to_cover.setdefault(match.page, []).append(match)
+    # `cover` is a scan made only to black the pictures out, where the marks on the page
+    # come from somewhere else, or from nowhere: a loader comparison's pictures.
+    covering_scan = cover if cover is not None else scan
+    if covering_scan is not None and not covering_scan.reveal_used:
+        for match in (*covering_scan.matches, *covering_scan.silent):
+            to_cover.setdefault(match.page, []).append(match)
 
     def covering(page: Page) -> tuple[list[Rect], int]:
         """The rectangles that black out the page's identifiers, and how many have none."""
