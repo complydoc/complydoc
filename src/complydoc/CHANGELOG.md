@@ -13,6 +13,7 @@ separately.
   ("Name: Jane Doe", "signed by …") and a company by its form ("Acme Holdings Ltd"). The
   small English model missed both. Where no name model is installed, these finds mask
   the text and are not counted, since the category was not scanned.
+- `complydoc --version` prints the version.
 - A pattern can name the part that is the identifier with a group called `value`, and the
   label it was found by with one called `label`.
 

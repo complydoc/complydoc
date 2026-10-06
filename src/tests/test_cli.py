@@ -456,3 +456,11 @@ def test_doctor_calls_a_working_fallback_working(monkeypatch):
     else:
         # Neither model on this machine, which is a fair thing to report.
         assert "unavailable" in output
+
+
+def test_version_prints_the_version_and_stops():
+    import complydoc
+
+    result = runner.invoke(app, ["--version"])
+    assert result.exit_code == 0
+    assert result.output.strip() == f"complydoc {complydoc.__version__}"

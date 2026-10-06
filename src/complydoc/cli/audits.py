@@ -76,8 +76,27 @@ from complydoc.verification.vision import VERIFY_SCOPES, VisionError
 __all__ = ["run", "summary", "watching"]
 
 
+def _print_version(wanted: bool) -> None:
+    if wanted:
+        from complydoc import __version__
+
+        typer.echo(f"complydoc {__version__}")
+        raise typer.Exit
+
+
 @app.callback(invoke_without_command=True)
-def main(ctx: typer.Context) -> None:
+def main(
+    ctx: typer.Context,
+    version: Annotated[
+        bool,
+        typer.Option(
+            "--version",
+            help="Print the version of complydoc and stop.",
+            callback=_print_version,
+            is_eager=True,
+        ),
+    ] = False,
+) -> None:
     """Run `complydoc` on its own to audit the folder you are standing in.
 
     Anything more specific is a subcommand: `complydoc audit <path>`, `cost`,
