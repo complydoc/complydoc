@@ -63,6 +63,11 @@ test-pipelines: ## Run real LangChain and LlamaIndex pipelines under cd.observe
 	uv sync --extra ocr --group dev --group integrations --group pipelines
 	$(PYTHON) pytest -q src/tests/test_real_pipelines.py src/tests/test_observe.py
 
+.PHONY: browser-check
+browser-check: viewer-bundle ## Check the built viewer in a real browser: no page hangs, nothing is covered
+	uv sync --group dev --group integrations
+	$(PYTHON) python viewer/scripts/browser_check.py
+
 .PHONY: cov
 cov: ## Run the tests with a coverage report
 	$(PYTHON) pytest --cov=complydoc --cov-report=term-missing

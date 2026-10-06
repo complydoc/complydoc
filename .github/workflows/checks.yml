@@ -34,6 +34,24 @@ jobs:
       - run: npm run check
       - run: npm run build
 
+  browser:
+    # The built viewer driven in Chrome, on demo reports: a page that stops answering, or a
+    # control something covers, fails here. Tests in jsdom have shown neither.
+    name: viewer in a real browser
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: viewer/package-lock.json
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: "3.12"
+      - run: make browser-check
+
   landing:
     name: landing page (lint, types, build)
     runs-on: ubuntu-latest
