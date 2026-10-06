@@ -19,6 +19,12 @@ separately.
 
 ### Changed
 
+- Observing adds less time. What reading the pipeline's output needs (the tokenizer, the
+  language identifier, the spaCy name model) is loaded on a thread while the pipeline
+  runs; a metadata value shared by many files is scanned once; and whether OCR is
+  installed is asked without starting it, which cost every run over a second. On a
+  pipeline of 9 files the time observing adds fell from 2.1 s to 0.8 s, and on 90 files
+  from 5.5 s to 2.6 s.
 - Page pictures (`--page-images`) have the identifiers found on the page blacked out. A
   page with an identifier that cannot be placed has no picture, and says so. Until now
   a picture showed every value as it was. A run with `--reveal` keeps its pictures as

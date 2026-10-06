@@ -57,6 +57,19 @@ def available() -> bool:
     return engine is not None and engine.available()
 
 
+def installed() -> bool:
+    """Whether the chosen engine is there to be used, asked without starting it.
+
+    For a run that reads no page with OCR and only records whether it could have: an
+    engine that says nothing cheaper is asked whether it is available.
+    """
+    engine = _engine()
+    if engine is None:
+        return False
+    probe = getattr(engine, "installed", None)
+    return bool(probe()) if callable(probe) else engine.available()
+
+
 def unavailable_reason() -> str | None:
     engine = _engine()
     if engine is None:

@@ -119,6 +119,7 @@ class Observation:
         self._started_at = dt.datetime.now().astimezone()
         self._mark = 0
         self._libraries: dict[str, str] = {}
+        self._warming: threading.Thread | None = None
 
     def __enter__(self) -> Observation:
         from complydoc.observe import patches
@@ -137,6 +138,12 @@ class Observation:
         except BaseException:
             self._close()
             raise
+        # What reading the pipeline's output will need is loaded while the pipeline runs.
+        from complydoc.config.loader import load_config
+        from complydoc.observe import warm
+
+        with contextlib.suppress(Exception):
+            self._warming = warm.start(self.config or load_config(), self.scan)
         self._started_at = dt.datetime.now().astimezone()
         self._started = time.perf_counter()
         return self
@@ -153,6 +160,11 @@ class Observation:
         made = offline.connections_since(self._mark)
         self._close()
         failed = None if error is None else f"{type(error).__name__}: {error}"
+        if self._warming is not None:
+            # Whatever is still loading is needed now; waiting for it is observing's time.
+            waited = time.perf_counter()
+            self._warming.join(timeout=60)
+            self.overhead += time.perf_counter() - waited
         try:
             self.report = build_report(self, seconds=seconds, connections=made, error=failed)
             if self.out is not None:

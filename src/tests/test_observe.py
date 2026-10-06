@@ -474,3 +474,64 @@ def test_a_text_previewed_by_every_step_is_masked_once(monkeypatch: pytest.Monke
     assert "ana@example.com" not in first[0].text
     assert again[0].text == first[0].text
     assert asked.count("Write to ana@example.com") == 1
+
+
+def _warm_module():  # type: ignore[no-untyped-def]
+    # `complydoc.observe` is the function as well as the package, so it is fetched by name.
+    import importlib
+
+    return importlib.import_module("complydoc.observe.warm")
+
+
+def test_what_reading_the_output_needs_is_loaded_while_the_pipeline_runs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import threading
+
+    warm = _warm_module()
+    asked: list[tuple[str, str]] = []
+    finished = threading.Event()
+
+    def recorded(settings: Any, scan: str) -> None:
+        asked.append((type(settings).__name__, scan))
+        finished.set()
+
+    monkeypatch.setattr(warm, "_warm", recorded)
+    with cd.observe("p", out=None, scan="patterns") as run:
+        _Loader(str(tmp_path / "a.pdf")).load()
+        # Begun at the block's start, on a thread of its own, not at its end.
+        assert finished.wait(timeout=5)
+    assert asked == [("Config", "patterns")]
+    assert run.report is not None and run.error is None
+
+
+def test_a_warm_up_that_fails_does_not_fail_the_run(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    warm = _warm_module()
+
+    def broken(settings: Any, scan: str) -> Any:
+        raise RuntimeError("no thread for you")
+
+    monkeypatch.setattr(warm, "start", broken)
+    with cd.observe("p", out=None) as run:
+        _Loader(str(tmp_path / "a.pdf")).load()
+    assert run.error is None
+    assert run.report is not None and run.report.trace is not None
+
+
+def test_a_warm_up_fetches_nothing_and_skips_what_scan_off_does_not_use(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from complydoc.config.loader import load_config
+    from complydoc.cost import tokenizer
+
+    warm = _warm_module()
+    loaded: list[str] = []
+    monkeypatch.setattr(tokenizer, "_encoder", lambda name: loaded.append(name))
+    # A vocabulary that is not in the cache would be fetched, inside a block that
+    # records every connection as the pipeline's own: it is left for where it is used.
+    monkeypatch.setattr(tokenizer, "available_encodings", lambda: [])
+    with offline.guarded():
+        warm._warm(load_config(), "off")
+    assert loaded == []

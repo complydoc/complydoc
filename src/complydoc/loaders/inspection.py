@@ -74,6 +74,7 @@ from complydoc.report.models import (
     MetadataFinding,
     RunMetadata,
 )
+from complydoc.sensitive.base import SensitiveMatch
 from complydoc.sensitive.scanner import scan_text
 from complydoc.utils.text import count
 
@@ -272,7 +273,9 @@ def inspect_run(
             extracted_text_used=extracted_text,
             ocr_compare_used=False,
             ocr_requested=False,
-            ocr_available=ocr_module.available(),
+            # Nothing here is read with OCR: whether it is installed is all that is recorded,
+            # and starting the engine to find out cost every observed run over a second.
+            ocr_available=ocr_module.installed(),
             ner_available=ner_available(settings) if "sensitive" in components else False,
             python_version=platform.python_version(),
             monthly_volume=None,
@@ -578,6 +581,7 @@ def _documents_from(
     findings: dict[str, list[MetadataFinding]] = {}
     exposures: dict[str, list[str]] = {}
     scan_metadata = "sensitive" in components
+    scanned: dict[str, list[SensitiveMatch]] = {}
 
     for key, members in groups.items():
         path = Path(key)
@@ -614,7 +618,9 @@ def _documents_from(
             document.pages.append(page)
         documents.append(document)
 
-        found, paths = _scan_metadata(members, settings, reveal) if scan_metadata else ([], [])
+        found, paths = (
+            _scan_metadata(members, settings, reveal, scanned) if scan_metadata else ([], [])
+        )
         findings[str(path)] = found
         exposures[str(path)] = paths if scan_metadata else _path_keys(members)
 
@@ -622,13 +628,19 @@ def _documents_from(
 
 
 def _scan_metadata(
-    members: list[tuple[str, dict[str, Any]]], settings: Config, reveal: bool
+    members: list[tuple[str, dict[str, Any]]],
+    settings: Config,
+    reveal: bool,
+    scanned: dict[str, list[SensitiveMatch]] | None = None,
 ) -> tuple[list[MetadataFinding], list[str]]:
     """Identifiers in metadata values, each distinct key and value reported once.
 
     Loaders repeat the same metadata on every page, so a finding is attached to
-    the first page it appeared on.
+    the first page it appeared on. `scanned` holds what each value was found to carry,
+    across the documents of a run: the producer, the creator and the like are the same
+    in file after file, and are read by every detector once, not once a file.
     """
+    scanned = {} if scanned is None else scanned
     seen: set[tuple[str, str]] = set()
     found: list[MetadataFinding] = []
     for _text, metadata in members:
@@ -640,7 +652,9 @@ def _scan_metadata(
             seen.add((key, rendered))
             if sum(c.isalnum() for c in rendered) < _MIN_SCANNABLE:
                 continue
-            matches, _unavailable = scan_text(rendered, settings.sensitive, reveal)
+            if rendered not in scanned:
+                scanned[rendered], _unavailable = scan_text(rendered, settings.sensitive, reveal)
+            matches = scanned[rendered]
             found.extend(
                 MetadataFinding(
                     key=key,

@@ -65,6 +65,16 @@ class RapidOcrEngine:
     def available(self) -> bool:
         return _pipeline() is not None
 
+    def installed(self) -> bool:
+        """Whether the package is there, without starting the engine.
+
+        `available` loads the models to be sure they load, which takes over a second:
+        right before a page is read, and too much to say only whether OCR is there.
+        """
+        import importlib.util
+
+        return importlib.util.find_spec("rapidocr_onnxruntime") is not None
+
     def unavailable_reason(self) -> str | None:
         if self.available():
             return None
