@@ -228,9 +228,16 @@ categories:
         model:
           name: en_core_web_sm
           entity_labels: [PERSON]
+    # Names a rule can find without the model, and whether or not the model agrees:
+    # the name after its label at the start of a line, and the one after "signed by".
+    # `value` is the name; `label` is what it was found by. The name itself is read
+    # with its capitals, though the labels are not.
+    patterns:
+      - '(?m)^[ \t]*(?P<label>(?:full |employee |customer |client |patient |contact |account holder |policyholder |insured |beneficiary )?name|nome(?: completo)?|nombre|nom)[ \t]*:[ \t]*(?P<value>(?-i:[A-ZÀ-Þ][a-zà-ÿ''’-]+(?:[ \t]+(?:[A-ZÀ-Þ]\.|d[aeo]s?|van|von|der|la|le|[A-ZÀ-Þ][a-zà-ÿ''’-]+)){1,4}))'
+      - '\b(?P<label>approved|signed|prepared|reviewed|authori[sz]ed|witnessed) by[ \t]+(?P<value>(?-i:[A-ZÀ-Þ][a-zà-ÿ''’-]+(?:[ \t]+(?:[A-ZÀ-Þ]\.|d[aeo]s?|van|von|der|[A-ZÀ-Þ][a-zà-ÿ''’-]+)){1,3}))'
     gdpr_note: >
-      Found by a local statistical model. Expect misses and false positives; the
-      count indicates scale.
+      Found by a local statistical model, and by its label where it has one. Expect
+      misses and false positives; the count indicates scale.
 
   organisation_name:
     enabled: true
@@ -250,6 +257,12 @@ categories:
         model:
           name: en_core_web_sm
           entity_labels: [ORG]
+    # Names a rule can find without the model: one that ends in a company form, such
+    # as "Acme Holdings Ltd" or "HARBOUR LOGISTICS LTD". The form is read with its
+    # capitals, so "the limited edition" is no company; a name does not start with a
+    # word such as "The", and ends at its first company form.
+    patterns:
+      - '(?<![\w&])(?P<value>(?-i:(?!(?:The|See|We|An|A|In|On|At|For|To|Of|Our|Your|This|That|These|Those|It|As|By|If|From|With|And|Or|But)[ \t])[A-ZÀ-Þ][\w&''’-]*(?:[ \t]+(?:&|and|of|de|da|do|(?!(?:Ltd|LTD|Limited|LIMITED|Llc|LLC|Llp|LLP|Inc|INC|Incorporated|INCORPORATED|Corp|CORP|Corporation|CORPORATION|Pty|PTY|Lda|LDA|Unipessoal|UNIPESSOAL|Sarl|SARL|GmbH|GMBH|plc|PLC|S\.A\.|B\.V\.|S\.L\.|SA|AG|BV|NV)(?![\w]))[A-ZÀ-Þ0-9][\w&''’-]*)){0,4}[ \t]+(?:Ltd|LTD|Limited|LIMITED|Llc|LLC|Llp|LLP|Inc|INC|Incorporated|INCORPORATED|Corp|CORP|Corporation|CORPORATION|Pty|PTY|Lda|LDA|Unipessoal|UNIPESSOAL|Sarl|SARL|GmbH|GMBH|plc|PLC|S\.A\.|B\.V\.|S\.L\.|SA|AG|BV|NV)))(?![\w])\.?'
     gdpr_note: >
       Not personal data on its own. Reported because organisation names are often
       what makes an otherwise anonymous document re-identifiable.

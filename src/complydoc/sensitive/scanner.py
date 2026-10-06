@@ -73,6 +73,11 @@ class Candidate:
     category: CategoryConfig
     finding: Finding
     validators_passed: list[str]
+    by_pattern: bool = False
+    """Found by one of the category's patterns, in a category a model reads."""
+    silent: bool = False
+    """For covering the text only: a pattern's find in a category whose model could not
+    run. Reporting it would put a count on a category that was not scanned."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -230,6 +235,36 @@ def _scan_page(
                 models_used[category_id] = f"{detector_id}: {model}"
             break
 
+        # A category a model reads may carry patterns too: what a rule can find without
+        # the model, such as the name after "Name:", is found whether or not the model
+        # is there, and whether or not it agrees.
+        ruled: list[Finding] = []
+        if category.detector != "regex" and category.patterns:
+            rules = detector_by_id("regex")
+            if rules is not None:
+                found_by_model = findings or []
+                ruled = [
+                    rule
+                    for rule in rules.find(text, DetectorContext(category_id, category))
+                    if not any(rule.start < f.end and f.start < rule.end for f in found_by_model)
+                ]
+        for finding in ruled:
+            value = text[finding.start : finding.end]
+            passed, names = validate(value, category.validators)
+            if passed:
+                candidates.append(
+                    Candidate(
+                        category_id,
+                        category,
+                        finding,
+                        names,
+                        by_pattern=True,
+                        # With no model's reading to add to, a rule's finds alone would
+                        # read as the category's count: they cover the text, and no more.
+                        silent=findings is None,
+                    )
+                )
+
         if findings is None:
             unavailable[category_id] = reason
             continue
@@ -248,11 +283,14 @@ def _scan_page(
 
     # What is reported is settled among the reported categories alone, as if the silent
     # ones were not there; a silent find is kept only where nothing reported covers it.
-    reported = _resolve_overlaps([c for c in candidates if not c.category.silent])
+    def is_silent(c: Candidate) -> bool:
+        return c.silent or c.category.silent
+
+    reported = _resolve_overlaps([c for c in candidates if not is_silent(c)])
     taken = [(c.finding.start, c.finding.end) for c in reported]
     quiet = [
         c
-        for c in _resolve_overlaps([c for c in candidates if c.category.silent])
+        for c in _resolve_overlaps([c for c in candidates if is_silent(c)])
         if not any(c.finding.start < end and start < c.finding.end for start, end in taken)
     ]
     starts = _line_starts(text)
@@ -289,7 +327,7 @@ def _matches(
                 revealed=revealed,
                 confidence=finding.confidence,
                 evidence=evidence_of(
-                    candidate.category.model_backed,
+                    candidate.category.model_backed and not candidate.by_pattern,
                     candidate.validators_passed,
                     finding.context_term,
                     _label_near(text, finding, candidate.category),

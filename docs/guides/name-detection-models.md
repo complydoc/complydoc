@@ -11,6 +11,27 @@ model in `sensitive.categories.<id>.model`, and any setting can be changed with
 `complydoc doctor` reports which model is available, and every report records
 which one answered for each category.
 
+## Names found by rule
+
+Some names need no model: a person's name after its label, and a company by its form.
+
+```text
+Name: Jane Doe                 →  Jane Doe            (after "Name:" at the start of a line)
+Approved by John Smith         →  John Smith          (after "approved by", "signed by", …)
+Employer: Acme Holdings Ltd    →  Acme Holdings Ltd   (ends in Ltd, GmbH, S.A., Lda, …)
+```
+
+These are `patterns` on the `person_name` and `organisation_name` categories, applied
+beside whichever model reads them, so a name the model missed is still found. A find the
+model also made is counted once.
+
+Where no name model is installed, the rules still mask what they find, in reports and in
+traces, but they report nothing: the category is "not scanned", and a count from the rules
+alone would read as its count.
+
+In a pattern, a group called `value` is the identifier and a group called `label` is what
+it was found by, so in `Name: Jane Doe` only the name is masked.
+
 ## Your own spaCy model
 
 ```python title="custom_ner_model.py"

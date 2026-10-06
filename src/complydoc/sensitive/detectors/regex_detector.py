@@ -4,6 +4,11 @@ Two kinds of pattern are supported. `patterns` are distinctive enough to report
 on sight. `context_patterns` are bare runs of digits that would carpet a business
 document with false positives, so they are only reported when a label such as
 "account number" appears within a short window.
+
+A pattern may name the part that is the identifier with a group called `value`, where
+what identifies it is beside it and not part of it: in `Name: Jane Doe` the name is the
+value. A group called `label` is then the label it was found by, and the finding is
+reported as one corroborated by that label.
 """
 
 from __future__ import annotations
@@ -45,8 +50,22 @@ class RegexDetector:
         findings: list[Finding] = []
 
         for pattern in config.patterns:
-            for match in _compiled(pattern).finditer(text):
-                findings.append(Finding(start=match.start(), end=match.end(), confidence=1.0))
+            compiled = _compiled(pattern)
+            valued = "value" in compiled.groupindex
+            labelled = "label" in compiled.groupindex
+            for match in compiled.finditer(text):
+                start, end = match.span("value") if valued else match.span()
+                if start < 0 or start == end:
+                    continue
+                label = match.group("label") if labelled else None
+                findings.append(
+                    Finding(
+                        start=start,
+                        end=end,
+                        confidence=1.0,
+                        context_term=label.strip().lower() if label else None,
+                    )
+                )
 
         if config.context_patterns:
             terms = tuple(config.context_terms)
