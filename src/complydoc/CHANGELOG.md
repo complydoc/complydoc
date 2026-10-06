@@ -33,6 +33,15 @@ separately.
   It is reported nowhere, as before: no finding, no count, no check. Until now the run
   stopped looking for it, so its values showed in the report as they were written.
 
+### Fixed
+
+- The page pictures of a loader comparison (`page_images=True`) were not blacked out,
+  since the comparison scans each loader's text and not the page. The page is now
+  scanned for them as an audit scans it.
+- A heading in capitals run into the number of the clause after it, such as
+  "CONDITIONS 4", is no longer taken for an organisation. `drop_numbered_headings` on a
+  name model switches the filter off.
+
 ## [0.6.7] — 2026-10-05
 
 ### Fixed
