@@ -66,6 +66,9 @@ def test_the_model_reports_no_score_rather_than_a_perfect_one(config):
         settings[f"sensitive.categories.{category}.detector"] = "ner"
         settings[f"sensitive.categories.{category}.fallback"] = []
         settings[f"sensitive.categories.{category}.min_confidence"] = 0.0
+        # And to the model alone: a name a rule finds is a pattern's find, with a
+        # pattern's score, and is not what this is about.
+        settings[f"sensitive.categories.{category}.patterns"] = []
         # The model goes with the detector: spaCy cannot load the transformer
         # the shipped configuration prefers, and would report nothing at all.
         settings[f"sensitive.categories.{category}.model"] = {
