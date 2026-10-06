@@ -1,6 +1,6 @@
 # complydoc check as a GitHub Action.
 #
-#   - uses: complydoc/complydoc@v0.6.7
+#   - uses: complydoc/complydoc@v0.6.8
 #     with:
 #       path: documents
 #       policy: policy.yaml
@@ -28,7 +28,7 @@ inputs:
   version:
     description: >-
       complydoc version to install. Empty means the version this action was
-      referenced at when that is a release tag (`@v0.6.7`), and the latest
+      referenced at when that is a release tag (`@v0.6.8`), and the latest
       release otherwise.
     required: false
     default: ""

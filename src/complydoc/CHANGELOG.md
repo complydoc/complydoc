@@ -7,6 +7,12 @@ separately.
 
 ## [Unreleased]
 
+## [0.6.8] — 2026-10-06
+
+What a report shows of the documents is closed up: page pictures are blacked out, a
+category switched off is still masked, and names are found by rule where the model
+misses them. Observing a pipeline also adds less time.
+
 ### Added
 
 - Names are also found by rule, beside the name model: a person's name after its label
