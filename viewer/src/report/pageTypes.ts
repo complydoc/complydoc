@@ -126,5 +126,7 @@ export interface PagePreview {
   image_data_uri: string | null;
   /** Schema 20: where the report keeps the picture, beside it: `<report>.parts/pages/…`. */
   image?: string | null;
+  /** Schema 22: identifiers on the page that could not be covered, for which its picture was left out. */
+  image_withheld?: number;
   unreadable: boolean;
 }

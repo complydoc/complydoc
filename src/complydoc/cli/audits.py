@@ -357,8 +357,9 @@ def run(
     elif page_images:
         errors.print(
             "[bold yellow]--page-images is set.[/] A picture of each page is kept in the "
-            ".parts folder beside the report, and a picture shows every value on it "
-            "unmasked. Treat that folder as a sensitive document in its own right."
+            ".parts folder beside the report, with the identifiers found on it blacked "
+            "out. A picture still shows whatever the scan did not find, so treat that "
+            "folder as a sensitive document in its own right."
         )
 
     try:

@@ -22,6 +22,11 @@ describe("parseReport", () => {
     expect(() => parseReport(old)).toThrow("uses schema 8");
   });
 
+  it("reads schema 22, which added the pictures left out", () => {
+    const withheld = JSON.stringify({ run: { schema_version: 22 }, overall: {}, documents: [] });
+    expect(parseReport(withheld).run.schema_version).toBe(22);
+  });
+
   it("reads schema 21, which added the categories a run changed", () => {
     const changed = JSON.stringify({
       run: { schema_version: 21 },

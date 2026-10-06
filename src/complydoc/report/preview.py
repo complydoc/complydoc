@@ -4,9 +4,11 @@ By default a page is drawn as geometry only: rectangles for the words, shaded
 blocks for the images, marks where sensitive values were found. No pixels from
 the document are rendered, and no character of its text reaches the output.
 
-A picture of the page would show the values the scan masks, so one is embedded
-only when the caller asks for it with `page_images`, and the command line warns
-when it is.
+A picture of the page would show the values the scan masks, so one is kept only when the
+caller asks for it with `page_images`, and then with every identifier found on the page
+blacked out. Where one of them cannot be placed on the page, the picture is left out: a
+picture with some of its identifiers showing would be taken for a masked one. A run that
+reveals values keeps its pictures as the pages are.
 """
 
 from __future__ import annotations
@@ -91,13 +93,18 @@ class PagePreview:
     image_data_uri: str | None = None
     """The page itself, as a JPEG data URI. Only set when --page-images is used.
 
-    This is real document content. Everything else in a preview is geometry, and
-    the default report contains no page images at all. A written report keeps the
-    picture as a file beside it instead, named in `image`.
+    This is real document content, with the identifiers found on the page blacked out.
+    Everything else in a preview is geometry, and the default report contains no page
+    images at all. A written report keeps the picture as a file beside it instead, named
+    in `image`.
     """
     image: str | None = None
     """Schema 20: where the written report keeps the picture, relative to the report's
-    folder: `<report>.parts/pages/<document>-<page>.jpg`. Unmasked, as the page is."""
+    folder: `<report>.parts/pages/<document>-<page>.jpg`. Its identifiers are blacked
+    out, unless the run revealed values."""
+    image_withheld: int = 0
+    """Schema 22: identifiers found on the page that could not be placed on it, for which
+    its picture was left out. 0 where the picture was kept, or none was asked for."""
     image_width_px: int = 0
     image_height_px: int = 0
     """Size the page image was encoded at, so the layout can reserve its space."""
@@ -188,6 +195,35 @@ def _locate(value: str, page: Page) -> Rect | None:
     return None
 
 
+def _locate_all(value: str, page: Page) -> list[Rect]:
+    """Every place `value` sits on the page, for covering it: `_locate` gives the first."""
+    target = _normalise(value)
+    if not target or not page.text_blocks:
+        return []
+    blocks = page.text_blocks
+    found: list[Rect] = []
+    for start in range(len(blocks)):
+        joined = ""
+        for end in range(start, min(start + 8, len(blocks))):
+            joined += _normalise(blocks[end].text)
+            if not target.startswith(joined[: len(target)]) and not joined.startswith(target):
+                break
+            if target in joined:
+                spans = [b.bbox for b in blocks[start : end + 1]]
+                rect = Rect(
+                    x0=min(s.x0 for s in spans),
+                    y0=min(s.y0 for s in spans),
+                    x1=max(s.x1 for s in spans),
+                    y1=max(s.y1 for s in spans),
+                )
+                if _plausible(rect, page):
+                    found.append(rect)
+                break
+            if len(joined) >= len(target):
+                break
+    return found
+
+
 def _value_at(page: Page, line: int, column: int, length: int) -> str | None:
     lines = page.text.split("\n")
     if not 1 <= line <= len(lines):
@@ -237,8 +273,16 @@ def _gutters(page: Page) -> list[Box]:
     return found
 
 
-def _encode_page(raster: object) -> tuple[str, int, int] | None:
+_COVER_MARGIN_PT = 1.5
+"""How far a black box reaches past the words it covers, so no stroke shows at its edge."""
+
+
+def _encode_page(
+    raster: object, cover: list[Rect] | None = None, width_pt: float = 0.0, height_pt: float = 0.0
+) -> tuple[str, int, int] | None:
     """A page raster as a JPEG data URI, with the size it was encoded at.
+
+    Each rectangle of `cover`, in the page's points, is blacked out first.
 
     The size travels with the image so the report can declare it on the `img`
     element. Without that the browser does not know how tall the page will be
@@ -257,14 +301,35 @@ def _encode_page(raster: object) -> tuple[str, int, int] | None:
         image = image.resize(
             (_IMAGE_WIDTH_PX, max(1, round(image.height * ratio))), PILImage.Resampling.LANCZOS
         )
+    if cover and width_pt > 0 and height_pt > 0:
+        from PIL import ImageDraw
+
+        draw = ImageDraw.Draw(image)
+        across, down = image.width / width_pt, image.height / height_pt
+        for rect in cover:
+            draw.rectangle(
+                (
+                    (rect.x0 - _COVER_MARGIN_PT) * across,
+                    (rect.y0 - _COVER_MARGIN_PT) * down,
+                    (rect.x1 + _COVER_MARGIN_PT) * across,
+                    (rect.y1 + _COVER_MARGIN_PT) * down,
+                ),
+                fill=0,
+            )
     buffer = io.BytesIO()
     image.save(buffer, format="JPEG", quality=_IMAGE_QUALITY, optimize=True)
     uri = "data:image/jpeg;base64," + base64.b64encode(buffer.getvalue()).decode("ascii")
     return uri, image.width, image.height
 
 
-def _attach_image(preview: PagePreview, raster: object) -> None:
-    encoded = _encode_page(raster)
+def _attach_image(
+    preview: PagePreview, raster: object, cover: list[Rect] | None = None, uncovered: int = 0
+) -> None:
+    """Keep the page's picture, its identifiers blacked out; leave it out if one cannot be."""
+    if uncovered:
+        preview.image_withheld = uncovered
+        return
+    encoded = _encode_page(raster, cover, preview.width_pt, preview.height_pt)
     if encoded is None:
         return
     preview.image_data_uri, preview.image_width_px, preview.image_height_px = encoded
@@ -306,9 +371,28 @@ def build_previews(
     into a file the report is otherwise safe to forward.
     """
     by_page: dict[int, list[SensitiveMatch]] = {}
+    # What a picture has to cover: every identifier found, and those found only to be
+    # masked. A run that reveals values keeps its pictures as the pages are.
+    to_cover: dict[int, list[SensitiveMatch]] = {}
     if scan is not None:
         for match in scan.matches:
             by_page.setdefault(match.page, []).append(match)
+        if not scan.reveal_used:
+            for match in (*scan.matches, *scan.silent):
+                to_cover.setdefault(match.page, []).append(match)
+
+    def covering(page: Page) -> tuple[list[Rect], int]:
+        """The rectangles that black out the page's identifiers, and how many have none."""
+        rects: list[Rect] = []
+        unplaced = 0
+        for match in to_cover.get(page.number, []):
+            value = _value_at(page, match.line, match.column, match.length)
+            places = _locate_all(value, page) if value else []
+            if places:
+                rects.extend(places)
+            else:
+                unplaced += 1
+        return rects, unplaced
 
     previews: list[PagePreview] = []
     for page in document.pages:
@@ -322,7 +406,8 @@ def build_previews(
         )
         if width <= 0 or height <= 0:
             if page_images and page.raster is not None:
-                _attach_image(preview, page.raster)
+                # No geometry to place anything by: kept only if nothing was found on it.
+                _attach_image(preview, page.raster, uncovered=len(to_cover.get(page.number, [])))
             previews.append(preview)
             continue
 
@@ -363,7 +448,7 @@ def build_previews(
             coverage_fraction([b.bbox for b in page.image_blocks], width, height) * 100, 1
         )
         if page_images and page.raster is not None:
-            _attach_image(preview, page.raster)
+            _attach_image(preview, page.raster, *covering(page))
 
         previews.append(preview)
 

@@ -18,6 +18,10 @@ separately.
 
 ### Changed
 
+- Page pictures (`--page-images`) have the identifiers found on the page blacked out. A
+  page with an identifier that cannot be placed has no picture, and says so. Until now
+  a picture showed every value as it was. A run with `--reveal` keeps its pictures as
+  the pages are. The report JSON moves to schema 22, adding `image_withheld`.
 - A category switched off in the categories file is still masked in the report's text.
   It is reported nowhere, as before: no finding, no count, no check. Until now the run
   stopped looking for it, so its values showed in the report as they were written.

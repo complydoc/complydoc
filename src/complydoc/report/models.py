@@ -64,7 +64,7 @@ __all__ = [
     "VerificationSummary",
 ]
 
-SCHEMA_VERSION = 21
+SCHEMA_VERSION = 22
 
 
 def report_shape() -> dict[str, object]:
@@ -134,7 +134,9 @@ def report_shape() -> dict[str, object]:
             ),
             "previews[]": (
                 "page geometry and pictures the viewer draws pages from; "
-                "full, or summary with --page-images"
+                "full, or summary with --page-images. A picture has the identifiers found "
+                "on the page blacked out; image_withheld counts those that could not be "
+                "placed, for which the picture was left out"
             ),
             "readiness.signals[]": "id, value, rating, weight, why, status",
             "readiness.score": "value 0-100, higher is better; label; low_confidence",

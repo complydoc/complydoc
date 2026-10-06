@@ -137,9 +137,9 @@ PageImagesOpt = Annotated[
     bool,
     typer.Option(
         "--page-images/--no-page-images",
-        help="Embed a picture of each page beside what was extracted from it. "
-        "Off by default: a picture shows every value on the page, so a report "
-        "built with it carries the identifiers the rest of the report masks.",
+        help="Keep a picture of each page beside what was extracted from it, with the "
+        "identifiers found on it blacked out. Off by default: a picture still shows "
+        "whatever the scan did not find.",
     ),
 ]
 

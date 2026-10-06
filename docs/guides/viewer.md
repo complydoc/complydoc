@@ -144,7 +144,9 @@ Page pictures need a report written with them:
 complydoc audit ./documents --page-images
 ```
 
-They are kept in the `.parts` folder beside the report, and the viewer fetches a page's
+The identifiers found on a page are blacked out in its picture; a page with one that
+could not be placed is shown as its outline instead, and says so. They are kept in the
+`.parts` folder beside the report, and the viewer fetches a page's
 picture only when the page is shown, so a report of thousands of pages opens as fast as
 one without them. A report opened as a file in the browser, rather than with `complydoc
 ui`, shows each page as its outline instead.

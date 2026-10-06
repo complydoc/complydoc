@@ -2,6 +2,7 @@ import { ImageOffIcon } from "lucide-react";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { plural } from "@/report/format";
 import { useReportSource } from "@/hooks/useFolderRuns";
 import { hasPicture, isIgnoredBox, isMarked, pictureUrl, type BoxRef } from "@/report/picture";
 import type { Box, PagePreview } from "@/report/types";
@@ -63,6 +64,12 @@ export function PagePicture({ preview, mark = null, ignored = [] }: PagePictureP
               style={place(box)}
             />
           ))
+        )}
+        {!picture && (preview.image_withheld ?? 0) > 0 && (
+          // The picture was asked for and left out: say why, where it would have been.
+          <figcaption className="absolute inset-x-2 bottom-2 rounded-md bg-background/90 px-2 py-1.5 text-center text-xs text-muted-foreground ring-1 ring-foreground/10">
+            No picture of this page: {plural(preview.image_withheld ?? 0, "identifier")} on it could not be covered.
+          </figcaption>
         )}
         {preview.sensitive.map((box, index) => {
           const marked = isMarked(box, mark);

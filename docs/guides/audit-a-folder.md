@@ -30,7 +30,7 @@ as an important limitation in the report:
 
 | Flag | Adds |
 | --- | --- |
-| `--page-images` | A picture of each page, as a JPEG in the `.parts` folder beside the report. A picture shows every value on it, masked or not |
+| `--page-images` | A picture of each page, as a JPEG in the `.parts` folder beside the report, with the identifiers found on it blacked out. A page with an identifier that cannot be placed has no picture. With `--reveal` the pictures are as the pages are |
 | `--reveal` | Every value unmasked, in the findings, the page text and `--save-text` files |
 
 ## How much the JSON carries

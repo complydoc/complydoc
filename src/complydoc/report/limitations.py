@@ -769,9 +769,10 @@ def _masking(run: RunMetadata) -> list[Limitation]:
                 area="Masking",
                 statement=(
                     "This report keeps a picture of each page, in the .parts folder beside "
-                    "it, and a picture shows every value on the page unmasked. The findings "
-                    "and the text are masked; the pictures are not. Treat that folder with "
-                    "the same care as the documents it describes."
+                    "it. The identifiers found on a page are blacked out in its picture, and "
+                    "a page with one that could not be placed has no picture. A picture still "
+                    "shows whatever the scan did not find, such as a name the model missed or "
+                    "handwriting, so treat that folder with the same care as the documents."
                 ),
                 severity="important",
             )

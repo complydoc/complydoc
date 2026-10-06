@@ -218,3 +218,100 @@ def test_a_name_from_the_model_is_not_called_a_pattern(loader, config):
     ner = [m for m in result.matches if config.sensitive.categories[m.category].detector == "ner"]
     for match in ner:
         assert "pattern" not in _why_sensitive(match, config.sensitive)
+
+
+# --- pictures cover what was found ------------------------------------------
+
+
+def _rendered(name: str = "sensitive_sample.pdf"):
+    from complydoc.ingest.base import IngestOptions
+    from complydoc.ingest.registry import load_document
+
+    return load_document(FIXTURES / name, IngestOptions(render_all_pages=True, max_render_pages=10))
+
+
+def _picture(preview):
+    import base64
+    import io
+
+    from PIL import Image
+
+    assert preview.image_data_uri is not None
+    return Image.open(io.BytesIO(base64.b64decode(preview.image_data_uri.split(",", 1)[1])))
+
+
+def _darkness(picture, box) -> float:
+    """The mean grey level under a mark's box: near 0 where it is blacked out."""
+    x0, y0 = int(box.x * picture.width), int(box.y * picture.height)
+    x1, y1 = int((box.x + box.w) * picture.width), int((box.y + box.h) * picture.height)
+    from PIL import ImageStat
+
+    return ImageStat.Stat(picture.crop((x0, y0, max(x1, x0 + 1), max(y1, y0 + 1)))).mean[0]
+
+
+def test_a_picture_has_every_identifier_found_on_the_page_blacked_out(config):
+    document = _rendered()
+    scanned = scan(document, config.sensitive)
+    page = build_previews(document, scanned, page_images=True)[0]
+    assert page.sensitive, "the fixture has identifiers that can be placed"
+    assert page.image_withheld == 0
+    picture = _picture(page)
+    # JPEG leaves a black box a few grey levels off black; printed text on white is far lighter.
+    assert all(_darkness(picture, box) < 12 for box in page.sensitive)
+    plain = _picture(build_previews(document, None, page_images=True)[0])
+    assert all(_darkness(plain, box) > 60 for box in page.sensitive)
+
+
+def test_a_run_that_reveals_values_keeps_its_pictures_as_the_pages_are(config):
+    document = _rendered()
+    revealed = scan(document, config.sensitive, reveal=True)
+    page = build_previews(document, revealed, page_images=True)[0]
+    picture = _picture(page)
+    assert all(_darkness(picture, box) > 60 for box in page.sensitive)
+
+
+def test_a_page_with_an_identifier_that_cannot_be_placed_has_no_picture(config):
+    document = _rendered()
+    scanned = scan(document, config.sensitive)
+    # As a reader gives it where its words carry no positions: nothing can be covered.
+    for page in document.pages:
+        page.text_blocks.clear()
+    page = build_previews(document, scanned, page_images=True)[0]
+    assert page.image_data_uri is None
+    # Every identifier found on it, those found only to be masked among them.
+    found = [m for m in (*scanned.matches, *scanned.silent) if m.page == page.number]
+    assert page.image_withheld == len(found) > 0
+
+
+def test_what_was_found_only_to_be_masked_is_blacked_out_too(config):
+    from complydoc.report.preview import _locate_all, _value_at
+
+    document = _rendered()
+    silent = config.sensitive.model_copy(
+        update={
+            "categories": {
+                name: category.model_copy(update={"silent": True})
+                for name, category in config.sensitive.categories.items()
+            }
+        }
+    )
+    scanned = scan(document, silent)
+    assert scanned.matches == [] and scanned.silent
+    page = build_previews(document, scanned, page_images=True)[0]
+    # Nothing is reported on the page, and its picture still covers what was found.
+    assert page.sensitive == [] and page.sensitive_count == 0
+    picture = _picture(page)
+    first = document.pages[0]
+    match = scanned.silent[0]
+    (rect, *_) = _locate_all(_value_at(first, match.line, match.column, match.length), first)
+    box = picture.crop(
+        (
+            int(rect.x0 / first.width_pt * picture.width),
+            int(rect.y0 / first.height_pt * picture.height),
+            int(rect.x1 / first.width_pt * picture.width),
+            int(rect.y1 / first.height_pt * picture.height),
+        )
+    )
+    from PIL import ImageStat
+
+    assert ImageStat.Stat(box).mean[0] < 12
