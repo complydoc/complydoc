@@ -65,7 +65,8 @@ export function Footer() {
         </div>
         <Separator />
         <p className="text-xs text-muted-foreground">
-          MIT licensed. Logos belong to their owners and are shown only to indicate compatibility.
+          MIT licensed. Logos belong to their owners and are shown only to indicate compatibility. This site counts
+          visits without cookies.
         </p>
       </div>
     </footer>

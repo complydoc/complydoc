@@ -14,6 +14,13 @@ export default defineConfig({
       description: "The observability layer for AI ingestion pipelines.",
       logo: { light: "./public/mark.svg", dark: "./public/mark-dark.svg", alt: "complydoc" },
       favicon: "/favicon.svg",
+      // Visits are counted without cookies and nothing is stored in the browser.
+      head: [
+        {
+          tag: "script",
+          attrs: { "data-goatcounter": "https://complydoc.goatcounter.com/count", async: true, src: "https://gc.zgo.at/count.js" },
+        },
+      ],
       social: [{ icon: "github", label: "GitHub", href: "https://github.com/complydoc/complydoc" }],
       editLink: { baseUrl: "https://github.com/complydoc/complydoc/edit/main/docs/" },
       customCss: [
