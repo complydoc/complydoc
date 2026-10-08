@@ -238,9 +238,50 @@ viewer.stop()
 `block=True` serves in the calling thread instead, and `open_browser=False`
 leaves the browser alone.
 
+## Serve it to a team
+
+By default only this machine can open the viewer. `--host` gives it another
+address to listen on, so everyone who can reach that address opens the same
+reports:
+
+```bash
+complydoc ui ./reports --host 0.0.0.0
+```
+
+```text
+Viewer  http://reports-01:8500/  Ctrl+C stops it
+Served on 0.0.0.0: anyone who can reach it reads these reports, with no sign-in.
+It is read-only.
+```
+
+Three things change when it is served this way:
+
+- **It is read-only.** The viewer has no sign-in, so it changes no file: the
+  ignore, concepts and categories files are shown as they are, and a finding
+  ignored in the page lasts while that page is open. The header says
+  "Read-only". `--allow-edits` lets readers change those files, each change
+  recorded under the name of the user the server runs as; use it only where
+  everyone who can reach the server should be able to.
+- **It answers to this machine's names and addresses**, and refuses a request
+  that names any other host, which is what stops a page elsewhere from reading
+  the reports through a browser inside your network. Behind a proxy, give it
+  the name the proxy serves it under: `--allowed-host reports.example.com`.
+  `--allowed-host '*'` accepts every name, for a proxy that checks it already.
+- **The browser is not opened**, since the server is usually another machine.
+
+The viewer has no accounts and no encryption of its own. Put it on a network
+you trust, or behind the proxy that already signs your people in and serves
+HTTPS. Reports hold masked values unless the run used `--reveal`; a shared
+viewer is a reason not to.
+
+`--read-only` does the same on your own machine, for showing reports without
+changing anything by accident. From Python, `launch_ui` takes `host`,
+`read_only` and `allowed_hosts`.
+
 ## What it does not do
 
-- It listens on 127.0.0.1, so nothing else on the network can reach it.
+- It listens on 127.0.0.1 unless `--host` says otherwise, so nothing else on the
+  network can reach it.
 - It answers only requests addressed to this machine by name, so a web page
   elsewhere cannot read the reports through it.
 - It serves the viewer and the reports it found, nothing else from the disk.

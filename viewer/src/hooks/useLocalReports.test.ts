@@ -1,6 +1,6 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { sampleText } from "@/test/sample";
-import { localConfig, useLocalReports } from "./useLocalReports";
+import { localConfig, notSavedHint, servedReadOnly, useLocalReports } from "./useLocalReports";
 
 /** The element `complydoc ui` writes into the page it serves. */
 function serveConfig(config: object) {
@@ -67,6 +67,20 @@ describe("useLocalReports", () => {
     const { result } = renderHook(() => useLocalReports(vi.fn()));
     await waitFor(() => expect(result.current.status).toBe("failed"));
     expect(result.current.error).toContain("api/reports: 404");
+    remove();
+  });
+
+  it("knows when complydoc ui serves it read-only, as it does for a team", () => {
+    expect(servedReadOnly()).toBe(false);
+    expect(notSavedHint()).toContain("complydoc ui to save it");
+
+    let remove = serveConfig({ reports: "api/reports", sources: [] });
+    expect(servedReadOnly()).toBe(false);
+    remove();
+
+    remove = serveConfig({ reports: "api/reports", sources: [], readOnly: true });
+    expect(servedReadOnly()).toBe(true);
+    expect(notSavedHint()).toContain("read-only");
     remove();
   });
 });

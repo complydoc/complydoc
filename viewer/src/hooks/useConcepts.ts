@@ -1,3 +1,4 @@
+import { servedReadOnly } from "@/hooks/useLocalReports";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "@/lib/toast";
 import type { Concept, Report } from "@/report/types";
@@ -61,7 +62,7 @@ export function useConcepts(report: Report, source?: string): ConceptsState {
   );
 
   return {
-    editable: listing !== null,
+    editable: listing !== null && !servedReadOnly(),
     file: listing?.file ?? report.concepts?.file ?? null,
     concepts: listing?.concepts ?? report.concepts?.concepts ?? [],
     error,

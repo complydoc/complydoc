@@ -2,7 +2,8 @@
 
 The viewer is the React app in `viewer/` at the root of the repository, built
 into `dist/` here when the package is built. It is served with the reports found
-in a folder, from a server that listens on this machine only.
+in a folder, from a server that listens on this machine only unless it is
+given another address to serve a team from.
 """
 
 from complydoc.viewer.server import (

@@ -6,6 +6,8 @@ export interface LocalConfig {
   reports: string;
   /** The folders the server searches, as the command was given them. */
   sources: string[];
+  /** Set when the server changes no file: a viewer shared with a team is read-only. */
+  readOnly: boolean;
 }
 
 interface ListedReport {
@@ -27,10 +29,24 @@ export function localConfig(): LocalConfig | null {
   if (!text) return null;
   try {
     const data = JSON.parse(text) as Partial<LocalConfig>;
-    return typeof data.reports === "string" ? { reports: data.reports, sources: data.sources ?? [] } : null;
+    return typeof data.reports === "string"
+      ? { reports: data.reports, sources: data.sources ?? [], readOnly: data.readOnly === true }
+      : null;
   } catch {
     return null;
   }
+}
+
+/** Whether `complydoc ui` served this page read-only, so nothing here is saved to a file. */
+export function servedReadOnly(): boolean {
+  return localConfig()?.readOnly === true;
+}
+
+/** What to say where a change cannot be saved: why, and what would save it. */
+export function notSavedHint(): string {
+  return servedReadOnly()
+    ? "Kept while this page is open. This viewer is read-only."
+    : "Kept while this page is open. Open the report with complydoc ui to save it.";
 }
 
 /**
@@ -74,7 +90,8 @@ export function useLocalReports(
         setState({
           status: "failed",
           sources: config.sources,
-          error: `The reports could not be read from complydoc ui. ${error instanceof Error ? error.message : ""}`.trim(),
+          error:
+            `The reports could not be read from complydoc ui. ${error instanceof Error ? error.message : ""}`.trim(),
         });
       }
     })();

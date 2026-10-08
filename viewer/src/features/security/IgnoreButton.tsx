@@ -1,3 +1,4 @@
+import { servedReadOnly } from "@/hooks/useLocalReports";
 import { useState } from "react";
 import { EyeOffIcon, Undo2Icon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -118,7 +119,9 @@ export function IgnoreButton({ fingerprint, what, quiet = false }: IgnoreButtonP
         ) : (
           <div className="flex flex-col gap-2 text-sm">
             <p className="text-muted-foreground">
-              Run this in the audited folder, or open the report with complydoc ui to do it here.
+              {servedReadOnly()
+                ? "This viewer is read-only. Run this in the audited folder to ignore it."
+                : "Run this in the audited folder, or open the report with complydoc ui to do it here."}
             </p>
             <code className="rounded-md bg-muted px-2 py-1.5 font-mono text-xs break-all">
               {ignoreCommand(fingerprint)}

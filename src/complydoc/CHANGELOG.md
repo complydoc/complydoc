@@ -7,6 +7,17 @@ separately.
 
 ## [Unreleased]
 
+### Added
+
+- `complydoc ui --host` serves the viewer to a team: given an address other than this
+  machine's own, such as `0.0.0.0`, everyone who can reach it opens the same reports.
+  It has no sign-in, so it is then read-only: it changes no file, the viewer says
+  "Read-only", and a finding ignored in the page lasts while the page is open.
+  `--allow-edits` lifts that, and `--read-only` asks for it on your own machine. It
+  answers to the machine's own names and addresses and to each `--allowed-host`, which
+  is where the name a proxy serves it under goes. `launch_ui` takes `host`, `read_only`
+  and `allowed_hosts`.
+
 ## [0.6.8] — 2026-10-06
 
 What a report shows of the documents is closed up: page pictures are blacked out, a

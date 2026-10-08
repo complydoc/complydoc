@@ -1,4 +1,4 @@
-"""Serve the report viewer and the reports in a folder, on this machine only.
+"""Serve the report viewer and the reports in a folder, on this machine or to a team.
 
 `complydoc ui` starts a small web server, opens the viewer in the browser, and
 lists every report it finds, grouped by the folder each one audited or the
@@ -6,9 +6,14 @@ pipeline it traced, newest run first.
 
 What the server does, and does not do:
 
-- It listens on 127.0.0.1, so nothing on the network can reach it.
+- It listens on 127.0.0.1 unless told otherwise, so nothing on the network can
+  reach it.
 - It answers only requests addressed to this machine by name, so a web page
   elsewhere cannot use DNS rebinding to read the reports through it.
+- Given another address to listen on (`--host`), it serves the reports to whoever
+  can reach that address. It has no sign-in of its own, so it is then read-only
+  unless told to allow edits, and it answers only to the names it is known by:
+  the machine's own, and any given with `--allowed-host`.
 - It serves the viewer's own files and the reports it found, nothing else. A
   report is asked for by an id the server gave it, never by a path.
 - It writes two files, both beside the documents a report audited: the ignore
@@ -18,6 +23,7 @@ What the server does, and does not do:
   It writes `.complydoc-ignore.yaml` and `.complydoc-concepts.yaml` in the
   audited folder, or the file the run read if it is still a valid one, never any
   other file.
+- Read-only, it writes no file at all.
 - It makes no outbound connection. The viewer it serves makes none either.
 
 Reports are found again on every request for the list, so a report written
@@ -29,9 +35,11 @@ from __future__ import annotations
 import datetime as dt
 import functools
 import hashlib
+import ipaddress
 import json
 import mimetypes
 import shutil
+import socket
 import threading
 import webbrowser
 from dataclasses import dataclass
@@ -58,6 +66,10 @@ DEFAULT_PORT = 8500
 PORTS_TO_TRY = 20
 
 HOST = "127.0.0.1"
+"""Where the viewer listens unless given another address: this machine only."""
+
+ANY_HOST = "*"
+"""An allowed host that matches every name, for a server behind a proxy that checks it."""
 
 DIST = Path(__file__).parent / "dist"
 """The built viewer. `make viewer-bundle` puts it here; a release wheel carries it."""
@@ -284,10 +296,61 @@ def concepts_file_for(report_path: Path) -> Path | None:
     return _file_for(report_path, "concepts")
 
 
-def _index_html(dist: Path, sources: list[str]) -> bytes:
-    """The viewer's page, told where the reports are."""
+def is_loopback(host: str) -> bool:
+    """Whether `host` is an address only this machine can reach."""
+    if host.lower() == "localhost":
+        return True
+    try:
+        return ipaddress.ip_address(host.strip("[]")).is_loopback
+    except ValueError:
+        return False
+
+
+def _is_address(name: str) -> bool:
+    """Whether `name` is an address, not a name.
+
+    A request to an address needs no check: a rebinding page reaches this server under
+    its own name, and a page at an address is this server's own or cannot read the answer.
+    """
+    try:
+        ipaddress.ip_address(name)
+    except ValueError:
+        return False
+    return True
+
+
+def _name_of(header: str) -> str:
+    """The host a `Host` header or an origin names, without its port: `[::1]:8500` is `::1`."""
+    host = header.strip().lower()
+    if host.startswith("["):
+        return host[1:].partition("]")[0]
+    return host.rpartition(":")[0] if ":" in host else host
+
+
+def served_names(host: str, allowed: tuple[str, ...] = ()) -> frozenset[str]:
+    """The names a viewer listening on `host` answers to.
+
+    This machine's own names, and the ones in `allowed`; a request to an address is
+    answered whatever the address. A request that names any other host is refused,
+    which is what stops a page elsewhere from reading the reports through a browser
+    inside the network.
+    """
+    names = {"localhost", "127.0.0.1", "::1", host.strip("[]").lower()}
+    names.update(name.strip("[]").lower() for name in allowed)
+    try:
+        hostname = socket.gethostname()
+        names.update({hostname.lower(), socket.getfqdn().lower()})
+        names.update(address.lower() for address in socket.gethostbyname_ex(hostname)[2])
+    except OSError:
+        pass
+    names.discard("")
+    return frozenset(names)
+
+
+def _index_html(dist: Path, sources: list[str], read_only: bool = False) -> bytes:
+    """The viewer's page, told where the reports are and whether it may change files."""
     page = (dist / "index.html").read_text(encoding="utf-8")
-    config = json.dumps({"reports": f"{API}/reports", "sources": sources})
+    config = json.dumps({"reports": f"{API}/reports", "sources": sources, "readOnly": read_only})
     # `</` cannot close the script element from inside the JSON.
     config = config.replace("</", "<\\/")
     element = f'<script type="application/json" id="{CONFIG_ELEMENT}">{config}</script>'
@@ -301,10 +364,14 @@ class _Handler(BaseHTTPRequestHandler):
         """Quiet: the terminal shows the address, not every request."""
 
     def _local_host(self) -> bool:
-        """Whether the request names this machine, which a rebinding page cannot fake."""
+        """Whether the request names this server, which a rebinding page cannot fake."""
         host = (self.headers.get("Host") or "").strip().lower()
         port = self.server.server_address[1]
-        return host in {f"127.0.0.1:{port}", f"localhost:{port}", f"[::1]:{port}"}
+        if self.server.names is None:
+            return host in {f"127.0.0.1:{port}", f"localhost:{port}", f"[::1]:{port}"}
+        # Served to others, the port a reader names may be a proxy's or a container's.
+        name = _name_of(host)
+        return ANY_HOST in self.server.names or name in self.server.names or _is_address(name)
 
     def _send(
         self, status: HTTPStatus, body: bytes, content_type: str, cache: bool = False
@@ -325,6 +392,16 @@ class _Handler(BaseHTTPRequestHandler):
     def do_HEAD(self) -> None:
         self.do_GET()
 
+    def _refusal(self) -> str:
+        """Why a request to another name was refused, and what would let it through."""
+        if self.server.names is None:
+            return "complydoc ui answers requests to this machine only"
+        asked = _name_of(self.headers.get("Host") or "") or "no host"
+        return (
+            f"complydoc ui does not answer to {asked}. If that is a name for this server, "
+            f"start it with --allowed-host {asked}"
+        )
+
     def _same_origin(self) -> bool:
         """Whether a write came from the viewer's own page.
 
@@ -336,11 +413,17 @@ class _Handler(BaseHTTPRequestHandler):
         port = self.server.server_address[1]
         origin = (self.headers.get("Origin") or "").strip().lower()
         content_type = (self.headers.get("Content-Type") or "").split(";")[0].strip().lower()
-        return content_type == "application/json" and origin in {
-            f"http://127.0.0.1:{port}",
-            f"http://localhost:{port}",
-            f"http://[::1]:{port}",
-        }
+        if content_type != "application/json":
+            return False
+        if self.server.names is None:
+            return origin in {
+                f"http://127.0.0.1:{port}",
+                f"http://localhost:{port}",
+                f"http://[::1]:{port}",
+            }
+        # The page that sent it must be the one this request is addressed to.
+        scheme, _, named = origin.partition("://")
+        return scheme in {"http", "https"} and named == (self.headers.get("Host") or "").lower()
 
     def _json(self, status: HTTPStatus, data: Any) -> None:
         self._send(status, json.dumps(data).encode("utf-8"), "application/json")
@@ -390,6 +473,9 @@ class _Handler(BaseHTTPRequestHandler):
         from complydoc.concepts import Concept, ConceptError, remove_concept, save_concept
         from complydoc.ignores import IgnoreEntry, IgnoreError, add_ignore, remove_ignore, who
 
+        if self.server.read_only:
+            self._error(HTTPStatus.FORBIDDEN, "this viewer is read-only")
+            return
         if not self._local_host() or not self._same_origin():
             self._error(HTTPStatus.FORBIDDEN, "only the viewer's own page can change these files")
             return
@@ -444,14 +530,14 @@ class _Handler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         if not self._local_host():
-            self._error(HTTPStatus.FORBIDDEN, "complydoc ui answers requests to this machine only")
+            self._error(HTTPStatus.FORBIDDEN, self._refusal())
             return
         path = unquote(urlsplit(self.path).path)
         server = self.server
         if path in {"/", "/index.html"}:
             self._send(
                 HTTPStatus.OK,
-                _index_html(server.dist, server.source_names),
+                _index_html(server.dist, server.source_names, server.read_only),
                 "text/html; charset=utf-8",
             )
         elif path == f"/{API}/reports":
@@ -541,11 +627,25 @@ class _Handler(BaseHTTPRequestHandler):
 class _Server(ThreadingHTTPServer):
     daemon_threads = True
 
-    def __init__(self, port: int, sources: list[Path], dist: Path) -> None:
+    def __init__(
+        self,
+        port: int,
+        sources: list[Path],
+        dist: Path,
+        host: str = HOST,
+        read_only: bool = False,
+        allowed_hosts: tuple[str, ...] = (),
+    ) -> None:
         self.sources = sources
         self.source_names = [str(source) for source in sources]
         self.dist = dist
-        super().__init__((HOST, port), _Handler)
+        self.host = host
+        self.read_only = read_only
+        # None while only this machine can reach it: the stricter check, port and all.
+        self.names = None if is_loopback(host) else served_names(host, allowed_hosts)
+        if ":" in host:
+            self.address_family = socket.AF_INET6
+        super().__init__((host, port), _Handler)
 
 
 class ViewerServer:
@@ -560,8 +660,26 @@ class ViewerServer:
         return int(self._server.server_address[1])
 
     @property
+    def host(self) -> str:
+        return self._server.host
+
+    @property
+    def read_only(self) -> bool:
+        """Whether the viewer may change the ignore, concepts and categories files."""
+        return self._server.read_only
+
+    @property
+    def shared(self) -> bool:
+        """Whether anything but this machine can reach it."""
+        return self._server.names is not None
+
+    @property
     def url(self) -> str:
-        return f"http://{HOST}:{self.port}/"
+        """Where to open it: by this machine's name when it listens on every address."""
+        host = self.host
+        if host in {"0.0.0.0", "::"}:
+            host = socket.gethostname() or "localhost"
+        return f"http://{f'[{host}]' if ':' in host else host}:{self.port}/"
 
     def reports(self) -> list[FoundReport]:
         """The reports the viewer lists right now."""
@@ -598,15 +716,22 @@ class ViewerServer:
         return f'complydoc viewer: <a href="{self.url}" target="_blank">{self.url}</a>'
 
 
-def _bind(port: int, sources: list[Path], dist: Path) -> _Server:
+def _bind(
+    port: int,
+    sources: list[Path],
+    dist: Path,
+    host: str = HOST,
+    read_only: bool = False,
+    allowed_hosts: tuple[str, ...] = (),
+) -> _Server:
     """A server on `port`, or on the next free one. Port 0 lets the system choose."""
     last: OSError | None = None
     for candidate in [0] if port == 0 else range(port, port + PORTS_TO_TRY):
         try:
-            return _Server(candidate, sources, dist)
+            return _Server(candidate, sources, dist, host, read_only, allowed_hosts)
         except OSError as exc:
             last = exc
-    raise OSError(f"no free port from {port} to {port + PORTS_TO_TRY - 1}") from last
+    raise OSError(f"no free port from {port} to {port + PORTS_TO_TRY - 1} on {host}") from last
 
 
 def launch_ui(
@@ -615,6 +740,9 @@ def launch_ui(
     open_browser: bool = True,
     block: bool = False,
     dist: Path | None = None,
+    host: str = HOST,
+    read_only: bool | None = None,
+    allowed_hosts: tuple[str, ...] | list[str] = (),
 ) -> ViewerServer:
     """Open the report viewer on the reports in `sources`, served from this machine.
 
@@ -622,12 +750,20 @@ def launch_ui(
     given. The server listens on 127.0.0.1 only and makes no outbound
     connection. With `block=False`, the default, it runs in the background and
     the returned server's `stop()` ends it, which is what a notebook wants.
+
+    `host` is the address to listen on. Any but this machine's own serves the
+    reports to whoever can reach it, with no sign-in, so the viewer is then
+    read-only unless `read_only=False` says otherwise. It answers only to this
+    machine's names and to `allowed_hosts`: the name a proxy serves it under goes
+    there, and `"*"` accepts every name.
     """
     dist = dist or DIST
     if not (dist / "index.html").is_file():
         raise ViewerNotBuiltError(dist)
     folders = [Path(source).expanduser().resolve() for source in (sources or (".complydoc",))]
-    viewer = ViewerServer(_bind(port, folders, dist))
+    if read_only is None:
+        read_only = not is_loopback(host)
+    viewer = ViewerServer(_bind(port, folders, dist, host, read_only, tuple(allowed_hosts)))
     if open_browser:
         webbrowser.open(viewer.url)
     if block:

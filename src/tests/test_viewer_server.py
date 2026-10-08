@@ -1,4 +1,4 @@
-"""`complydoc ui`: finding reports, and serving them and the viewer on this machine only."""
+"""`complydoc ui`: finding reports, and serving them and the viewer, here or to a team."""
 
 from __future__ import annotations
 
@@ -15,6 +15,7 @@ from complydoc.categories import CATEGORIES_FILENAME
 from complydoc.cli import app
 from complydoc.concepts import CONCEPTS_FILENAME, Concept
 from complydoc.viewer import ViewerNotBuiltError, find_reports, launch_ui
+from complydoc.viewer.server import is_loopback
 
 runner = CliRunner()
 
@@ -448,3 +449,175 @@ def test_a_page_picture_beside_a_report_is_served_and_nothing_else(reports: Path
             assert get(viewer.port, f"/{url}/files/{outside}")[0] == 404
     finally:
         viewer.stop()
+
+
+# --- Served to a team: another address to listen on, read-only, and the names it answers to.
+
+
+def audited_report(tmp_path: Path) -> tuple[Path, Path]:
+    """A report beside a folder that is here, so its ignore file could be written."""
+    audited = tmp_path / "contracts"
+    audited.mkdir()
+    reports = tmp_path / ".complydoc"
+    write_report(reports / "complydoc.json", target=str(audited), schema=17)
+    return reports, audited
+
+
+@pytest.mark.parametrize(
+    ("host", "loopback"),
+    [
+        ("127.0.0.1", True),
+        ("localhost", True),
+        ("::1", True),
+        ("[::1]", True),
+        ("0.0.0.0", False),
+        ("192.168.1.20", False),
+        ("reports.corp.example", False),
+    ],
+)
+def test_only_this_machines_own_addresses_count_as_local(host: str, loopback: bool):
+    assert is_loopback(host) is loopback
+
+
+def test_a_viewer_on_this_machine_is_not_shared_and_can_edit(reports: Path, dist: Path):
+    viewer = launch_ui(reports, port=0, open_browser=False, dist=dist)
+    try:
+        assert not viewer.shared
+        assert not viewer.read_only
+        assert '"readOnly": false' in get(viewer.port, "/")[2].decode()
+    finally:
+        viewer.stop()
+
+
+def test_served_to_others_it_is_read_only_and_says_so_to_the_page(tmp_path: Path, dist: Path):
+    reports, audited = audited_report(tmp_path)
+    viewer = launch_ui(reports, port=0, open_browser=False, dist=dist, host="0.0.0.0")
+    try:
+        assert viewer.shared
+        assert viewer.read_only
+        assert not viewer.url.startswith("http://0.0.0.0")
+        assert '"readOnly": true' in get(viewer.port, "/")[2].decode()
+
+        (report,) = viewer.reports()
+        url = f"/api/reports/{report.id}/ignores"
+        # What the file holds can still be read.
+        assert get(viewer.port, url)[0] == 200
+        status, body = send(
+            viewer.port,
+            "POST",
+            url,
+            {"finding": FINGERPRINT, "reason": "Planted."},
+            f"http://127.0.0.1:{viewer.port}",
+            "application/json",
+        )
+        assert status == 403
+        assert b"read-only" in body
+        assert not (audited / ".complydoc-ignore.yaml").exists()
+    finally:
+        viewer.stop()
+
+
+def test_read_only_can_be_asked_for_on_this_machine_too(tmp_path: Path, dist: Path):
+    reports, audited = audited_report(tmp_path)
+    viewer = launch_ui(reports, port=0, open_browser=False, dist=dist, read_only=True)
+    try:
+        assert not viewer.shared
+        (report,) = viewer.reports()
+        status, _body = send(
+            viewer.port,
+            "POST",
+            f"/api/reports/{report.id}/ignores",
+            {"finding": FINGERPRINT, "reason": "Planted."},
+            f"http://127.0.0.1:{viewer.port}",
+            "application/json",
+        )
+        assert status == 403
+        assert not (audited / ".complydoc-ignore.yaml").exists()
+    finally:
+        viewer.stop()
+
+
+def test_served_to_others_it_answers_to_its_own_names_and_the_ones_it_is_given(
+    reports: Path, dist: Path
+):
+    viewer = launch_ui(
+        reports,
+        port=0,
+        open_browser=False,
+        dist=dist,
+        host="0.0.0.0",
+        allowed_hosts=["Reports.Corp.Example"],
+    )
+    try:
+        # The port a reader names may be a proxy's or a container's, not the server's.
+        assert get(viewer.port, "/api/reports", host="localhost:9999")[0] == 200
+        assert get(viewer.port, "/api/reports", host="reports.corp.example")[0] == 200
+        assert get(viewer.port, "/api/reports", host="[::1]:8500")[0] == 200
+        # An address is answered whichever it is: the machine may have several.
+        assert get(viewer.port, "/api/reports", host="192.168.1.20:8500")[0] == 200
+
+        status, _headers, body = get(viewer.port, "/api/reports", host="attacker.example:8500")
+        assert status == 403
+        assert b"--allowed-host attacker.example" in body
+    finally:
+        viewer.stop()
+
+
+def test_a_star_accepts_every_name_for_a_proxy_that_checks_it(reports: Path, dist: Path):
+    viewer = launch_ui(
+        reports, port=0, open_browser=False, dist=dist, host="0.0.0.0", allowed_hosts=["*"]
+    )
+    try:
+        assert get(viewer.port, "/api/reports", host="anything.example")[0] == 200
+    finally:
+        viewer.stop()
+
+
+def test_edits_allowed_for_a_team_still_come_only_from_the_viewers_own_page(
+    tmp_path: Path, dist: Path
+):
+    reports, audited = audited_report(tmp_path)
+    viewer = launch_ui(
+        reports, port=0, open_browser=False, dist=dist, host="0.0.0.0", read_only=False
+    )
+    try:
+        assert viewer.shared
+        assert not viewer.read_only
+        (report,) = viewer.reports()
+        url = f"/api/reports/{report.id}/ignores"
+        entry = {"finding": FINGERPRINT, "reason": "Our own account."}
+
+        status, _body = send(
+            viewer.port, "POST", url, entry, "http://evil.example", "application/json"
+        )
+        assert status == 403
+        assert not (audited / ".complydoc-ignore.yaml").exists()
+
+        # http.client names the server as 127.0.0.1:port, so this is its own page asking.
+        own = f"http://127.0.0.1:{viewer.port}"
+        status, body = send(viewer.port, "POST", url, entry, own, "application/json")
+        assert status == 200, body
+        assert (audited / ".complydoc-ignore.yaml").is_file()
+    finally:
+        viewer.stop()
+
+
+def test_the_command_says_who_can_read_a_shared_viewer(reports: Path, monkeypatch):
+    """`--host` is announced before it serves: who reaches it, and that it is read-only."""
+    from complydoc.viewer import server
+
+    seen: dict[str, object] = {}
+
+    class Stopped(server.ViewerServer):
+        def wait(self) -> None:
+            seen.update(shared=self.shared, read_only=self.read_only, host=self.host)
+
+    monkeypatch.setattr(server, "ViewerServer", Stopped)
+    result = runner.invoke(
+        app, ["ui", str(reports), "--port", "0", "--no-browser", "--host", "0.0.0.0"]
+    )
+    assert result.exit_code == 0, result.output
+    assert seen == {"shared": True, "read_only": True, "host": "0.0.0.0"}
+    output = " ".join(result.output.split())
+    assert "no sign-in" in output
+    assert "read-only" in output

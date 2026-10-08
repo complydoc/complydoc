@@ -1,3 +1,4 @@
+import { servedReadOnly } from "@/hooks/useLocalReports";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "@/lib/toast";
 import type { CategoryRow, Report, Severity } from "@/report/types";
@@ -62,7 +63,7 @@ export function useCategories(report: Report, source?: string): CategoriesState 
   );
 
   return {
-    editable: listing !== null,
+    editable: listing !== null && !servedReadOnly(),
     file: listing?.file ?? report.categories?.file ?? null,
     categories: listing?.categories ?? [],
     error,

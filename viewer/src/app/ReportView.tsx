@@ -21,6 +21,7 @@ import { SettingsPage } from "@/features/settings/SettingsPage";
 import { useHashRoute } from "@/hooks/useHashRoute";
 import { ModeToggle } from "@/components/ModeToggle";
 import { PlanBar } from "@/components/PlanBar";
+import { ReadOnlyBadge } from "@/components/ReadOnlyBadge";
 import { PlanProvider } from "@/components/PlanProvider";
 import { IgnoreProvider } from "@/components/IgnoreProvider";
 import { GoTo } from "@/components/GoTo";
@@ -148,6 +149,7 @@ export function ReportView({
               </BreadcrumbList>
             </Breadcrumb>
             <div className="ml-auto flex shrink-0 items-center gap-2">
+              <ReadOnlyBadge />
               <ModeToggle dark={dark} onToggle={onToggleTheme} />
             </div>
           </header>
@@ -218,6 +220,7 @@ export function ReportView({
               {/* The plan's pickers give up width before the page scrolls sideways. */}
               <div className="ml-auto flex min-w-0 items-center gap-2">
                 {PRICED.includes(page) && <PlanBar />}
+                <ReadOnlyBadge />
                 <ModeToggle dark={dark} onToggle={onToggleTheme} />
               </div>
             </header>

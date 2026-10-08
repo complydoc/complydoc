@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { toast } from "@/lib/toast";
 import { IgnoreContext, type IgnoreRequest, type IgnoreState } from "@/hooks/useIgnores";
+import { servedReadOnly } from "@/hooks/useLocalReports";
 import type { IgnoreRule, Report } from "@/report/types";
 
 interface Listing {
@@ -13,24 +14,26 @@ interface Listing {
  *
  * With `source`, the report came from `complydoc ui`, which reads and writes the
  * file on this machine; the viewer asks nothing of any other server. Without
- * it, the entries are the ones the run read, and what is ignored here is kept
- * only while the page is open.
+ * it, or when the server is read-only, the entries are the ones on file and
+ * what is ignored here is kept only while the page is open.
  */
 export function IgnoreProvider({ report, source, children }: { report: Report; source?: string; children: ReactNode }) {
   const [listing, setListing] = useState<Listing | null>(null);
   const [error, setError] = useState<string | null>(null);
   // Ignored in this page only, when there is no complydoc ui to write the file.
   const [local, setLocal] = useState<IgnoreRule[]>([]);
-  const url = source ? `${source}/ignores` : null;
+  const listed = source ? `${source}/ignores` : null;
+  // A read-only server still says what the file holds; it takes no change to it.
+  const url = servedReadOnly() ? null : listed;
 
   useEffect(() => {
-    if (!url) return;
+    if (!listed) return;
     const abort = new AbortController();
-    fetch(url, { signal: abort.signal })
+    fetch(listed, { signal: abort.signal })
       .then(async (response) => (response.ok ? setListing((await response.json()) as Listing) : setListing(null)))
       .catch(() => undefined);
     return () => abort.abort();
-  }, [url]);
+  }, [listed]);
 
   const write = useCallback(
     async (method: "POST" | "DELETE", body: object) => {
@@ -58,9 +61,10 @@ export function IgnoreProvider({ report, source, children }: { report: Report; s
 
   const state = useMemo<IgnoreState>(
     () => ({
-      editable: listing !== null,
+      editable: listing !== null && url !== null,
       file: listing?.file ?? report.ignores?.file ?? null,
-      entries: listing?.ignores ?? [...(report.ignores?.rules ?? []), ...local],
+      // `local` holds something only where nothing is written to a file.
+      entries: [...(listing?.ignores ?? report.ignores?.rules ?? []), ...local],
       error,
       ignore: async (request: IgnoreRequest, options?: { quiet?: boolean }) => {
         const done = url ? await write("POST", request) : true;

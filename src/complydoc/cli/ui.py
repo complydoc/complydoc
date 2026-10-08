@@ -30,6 +30,33 @@ def ui(
         bool,
         typer.Option("--browser/--no-browser", help="Open the viewer in the browser."),
     ] = True,
+    host: Annotated[
+        str,
+        typer.Option(
+            "--host",
+            help="Address to listen on. The default is this machine only; 0.0.0.0 serves "
+            "the reports to whoever can reach it, read-only and with no sign-in.",
+        ),
+    ] = "127.0.0.1",
+    read_only: Annotated[
+        bool | None,
+        typer.Option(
+            "--read-only/--allow-edits",
+            help="Whether the viewer may change the ignore, concepts and categories files. "
+            "Read-only by default when --host serves it to others.",
+            show_default=False,
+        ),
+    ] = None,
+    allowed_host: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--allowed-host",
+            metavar="NAME",
+            help="A name the viewer is reached by, beside this machine's own, such as the "
+            "one a proxy serves it under. Repeat for several; * accepts every name.",
+            show_default=False,
+        ),
+    ] = None,
 ) -> None:
     """Open the report viewer on the reports in a folder, served from this machine.
 
@@ -37,17 +64,44 @@ def ui(
     run first, and a report written while the viewer runs appears on reload. The
     server listens on 127.0.0.1 only and makes no outbound connection. Ctrl+C
     stops it.
+
+    With --host it serves a team: everyone who can reach the address reads the
+    same reports. It has no sign-in, so put it on a network you trust or behind
+    your own proxy.
     """
-    serve_viewer(sources or [DEFAULT_OUT], port=port, browser=browser)
+    serve_viewer(
+        sources or [DEFAULT_OUT],
+        port=port,
+        browser=browser,
+        host=host,
+        read_only=read_only,
+        allowed_hosts=allowed_host or [],
+    )
 
 
-def serve_viewer(folders: list[Path], *, port: int = 8500, browser: bool = True) -> None:
+def serve_viewer(
+    folders: list[Path],
+    *,
+    port: int = 8500,
+    browser: bool = True,
+    host: str = "127.0.0.1",
+    read_only: bool | None = None,
+    allowed_hosts: list[str] | None = None,
+) -> None:
     """Serve the viewer on the reports in `folders` until Ctrl+C."""
     from complydoc.viewer import ViewerNotBuiltError, find_reports, launch_ui
 
     found = find_reports(*folders)
     try:
-        viewer = launch_ui(*folders, port=port, open_browser=False, block=False)
+        viewer = launch_ui(
+            *folders,
+            port=port,
+            open_browser=False,
+            block=False,
+            host=host,
+            read_only=read_only,
+            allowed_hosts=allowed_hosts or [],
+        )
     except ViewerNotBuiltError as exc:
         errors.print(f"[bold red]Cannot start the viewer[/] — {escape(str(exc))}")
         raise typer.Exit(code=2) from exc
@@ -66,7 +120,23 @@ def serve_viewer(folders: list[Path], *, port: int = 8500, browser: bool = True)
     console.print(
         f"[bold]Viewer[/]  [link={viewer.url}]{viewer.url}[/link]  [dim]Ctrl+C stops it[/]"
     )
-    if browser:
+    if viewer.shared:
+        edits = (
+            "It is read-only."
+            if viewer.read_only
+            else "[yellow]They can also change the ignore, concepts and categories files.[/]"
+        )
+        console.print(
+            f"[yellow]Served on {escape(viewer.host)}:[/] anyone who can reach it reads these "
+            f"reports, with no sign-in. {edits}"
+        )
+        console.print(
+            f"[dim]It answers to this machine's names and addresses, on port {viewer.port}. "
+            "For another name, such as a proxy's, add --allowed-host NAME.[/]"
+        )
+    elif viewer.read_only:
+        console.print("[dim]Read-only: the viewer changes no file.[/]")
+    if browser and not viewer.shared:
         import webbrowser
 
         webbrowser.open(viewer.url)

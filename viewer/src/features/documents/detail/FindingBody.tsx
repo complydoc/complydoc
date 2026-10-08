@@ -1,3 +1,4 @@
+import { notSavedHint } from "@/hooks/useLocalReports";
 import { EvidenceBadge } from "@/components/EvidenceBadge";
 import { ToneBadge } from "@/components/ToneBadge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -49,9 +50,7 @@ export function FindingBody({ finding, context = null }: { finding: PageFinding;
         <span className="leading-5">
           Not a problem: ignore it
           <span className="block text-xs text-muted-foreground">
-            {editable
-              ? "This will be ignored for current and future runs."
-              : "Kept while this page is open. Open the report with complydoc ui to save it."}
+            {editable ? "This will be ignored for current and future runs." : notSavedHint()}
           </span>
         </span>
       </label>
