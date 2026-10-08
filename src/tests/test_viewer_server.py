@@ -602,10 +602,12 @@ def test_edits_allowed_for_a_team_still_come_only_from_the_viewers_own_page(
         viewer.stop()
 
 
-def test_the_command_says_who_can_read_a_shared_viewer(reports: Path, monkeypatch):
+def test_the_command_says_who_can_read_a_shared_viewer(reports: Path, dist: Path, monkeypatch):
     """`--host` is announced before it serves: who reaches it, and that it is read-only."""
     from complydoc.viewer import server
 
+    # A checkout has no built viewer; the stand-in is enough to serve.
+    monkeypatch.setattr(server, "DIST", dist)
     seen: dict[str, object] = {}
 
     class Stopped(server.ViewerServer):
