@@ -17,6 +17,9 @@ separately.
   answers to the machine's own names and addresses and to each `--allowed-host`, which
   is where the name a proxy serves it under goes. `launch_ui` takes `host`, `read_only`
   and `allowed_hosts`.
+- `deploy/compose.yaml` runs the viewer for a team: read-only on a shared folder of
+  reports, never published itself, behind a proxy that signs people in with your own
+  identity provider. The "Run it for your team" guide has the steps.
 - A run records where it came from: the repository, branch and commit, and in GitHub
   Actions and GitLab CI the workflow and the page of the run. The viewer's Traces page
   shows it as a Commit column, so runs from several machines say which change produced

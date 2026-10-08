@@ -187,7 +187,7 @@ jobs:
       - uses: docker/setup-buildx-action@v3
       - name: build the plain image and the one with a name model
         run: |
-          docker buildx build --load -t complydoc:ci .
+          docker buildx build --load -t complydoc:ci -t complydoc .
           docker buildx build --load -t complydoc:ci-names --target names .
       - name: it runs as its own user and says its version
         run: |
@@ -231,6 +231,43 @@ jobs:
           test "$(curl -s -o /dev/null -w '%{http_code}' -H 'Host: elsewhere.example' http://localhost:8612/api/reports)" = 403
           docker logs viewer
           docker rm -f viewer
+      # The team set-up: its file is well formed, the proxy's image exists, and the
+      # viewer comes up healthy with a read-only file system. Signing in needs an
+      # identity provider, which this does not have.
+      - name: the Compose file brings the viewer up healthy
+        working-directory: deploy
+        env:
+          COMPLYDOC_HOST: reports.example.com
+          COMPLYDOC_REPORTS: ${{ runner.temp }}/reports
+          OIDC_ISSUER_URL: https://idp.example.com
+          OIDC_CLIENT_ID: complydoc
+          OIDC_CLIENT_SECRET: not-a-secret
+          ALLOWED_EMAIL_DOMAINS: example.com
+          COOKIE_SECRET: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+        run: |
+          docker compose config -q
+          docker compose pull -q proxy
+          docker compose up -d --no-build viewer
+          for _ in $(seq 40); do
+            state=$(docker inspect --format '{{.State.Health.Status}}' "$(docker compose ps -q viewer)")
+            test "$state" = healthy && break
+            sleep 2
+          done
+          docker compose logs viewer
+          test "$state" = healthy
+          # Under the name the proxy would pass on, and no other.
+          docker compose exec -T viewer python -c "
+          import urllib.request, urllib.error
+          def ask(host):
+              request = urllib.request.Request('http://127.0.0.1:8500/api/reports', headers={'Host': host})
+              try:
+                  return urllib.request.urlopen(request, timeout=5).status
+              except urllib.error.HTTPError as error:
+                  return error.code
+          assert ask('reports.example.com') == 200, ask('reports.example.com')
+          assert ask('elsewhere.example') == 403, ask('elsewhere.example')
+          "
+          docker compose down
 
   action:
     name: the GitHub Action runs

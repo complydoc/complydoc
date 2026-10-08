@@ -1,0 +1,57 @@
+# complydoc for a team: the viewer on a shared folder of reports, behind the sign-in
+# your organisation already has.
+#
+#   cp .env.example .env    # then fill it in
+#   docker compose up -d
+#
+# The viewer has no sign-in of its own and is never published: only the proxy is, and
+# the proxy lets through whoever your identity provider signs in. The viewer is
+# read-only and reads the reports folder read-only, so nothing here changes a report.
+
+services:
+  viewer:
+    build:
+      context: ..
+    image: complydoc
+    # The name the proxy serves it under is the only one it answers to from outside.
+    command: ["ui", "/reports", "--host", "0.0.0.0", "--allowed-host", "${COMPLYDOC_HOST:?set COMPLYDOC_HOST in .env}"]
+    volumes:
+      - "${COMPLYDOC_REPORTS:-./reports}:/reports:ro"
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    expose:
+      - "8500"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8500/api/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  proxy:
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.8.1
+    depends_on:
+      viewer:
+        condition: service_healthy
+    environment:
+      OAUTH2_PROXY_HTTP_ADDRESS: "0.0.0.0:4180"
+      OAUTH2_PROXY_UPSTREAMS: "http://viewer:8500"
+      # Any OpenID Connect provider: the one your organisation signs in with.
+      OAUTH2_PROXY_PROVIDER: "oidc"
+      OAUTH2_PROXY_OIDC_ISSUER_URL: "${OIDC_ISSUER_URL:?set OIDC_ISSUER_URL in .env}"
+      OAUTH2_PROXY_CLIENT_ID: "${OIDC_CLIENT_ID:?set OIDC_CLIENT_ID in .env}"
+      OAUTH2_PROXY_CLIENT_SECRET: "${OIDC_CLIENT_SECRET:?set OIDC_CLIENT_SECRET in .env}"
+      OAUTH2_PROXY_REDIRECT_URL: "https://${COMPLYDOC_HOST}/oauth2/callback"
+      # Who may come in, of the people the provider signs in.
+      OAUTH2_PROXY_EMAIL_DOMAINS: "${ALLOWED_EMAIL_DOMAINS:?set ALLOWED_EMAIL_DOMAINS in .env}"
+      OAUTH2_PROXY_COOKIE_SECRET: "${COOKIE_SECRET:?set COOKIE_SECRET in .env}"
+      OAUTH2_PROXY_COOKIE_SECURE: "true"
+      # HTTPS ends at the load balancer in front of this, which says so in its headers.
+      OAUTH2_PROXY_REVERSE_PROXY: "true"
+    ports:
+      - "${PROXY_PORT:-4180}:4180"
+    restart: unless-stopped

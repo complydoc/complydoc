@@ -75,8 +75,10 @@ way the viewer is [read-only](viewer.md#serve-it-to-a-team): it has no sign-in
 of its own, so it changes no file, and the reports can be mounted read-only as
 above.
 
-Put it behind the proxy that already signs your people in and serves HTTPS, and
-tell it the name the proxy serves it under:
+[Run it for your team](team.md) has a Compose file that does this with a
+sign-in proxy in front. To do it by hand, put it behind the proxy that already
+signs your people in and serves HTTPS, and tell it the name the proxy serves it
+under:
 
 ```bash
 docker run -d --name complydoc -p 8500:8500 \

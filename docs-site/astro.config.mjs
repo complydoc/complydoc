@@ -69,6 +69,7 @@ export default defineConfig({
             "guides/policy",
             "guides/github-action",
             "guides/container",
+            "guides/team",
           ],
         },
         {
