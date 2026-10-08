@@ -129,6 +129,8 @@ def test_an_audit_fits_the_schema_with_no_key_left_undescribed(
 
 
 def test_a_chunks_run_fits_it_too(tmp_path: Path, schema: dict[str, Any]):
+    # The splitters are an optional install; the jobs that have them run this.
+    pytest.importorskip("langchain_text_splitters")
     out = tmp_path / "chunks"
     result = runner.invoke(
         app,

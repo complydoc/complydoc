@@ -80,9 +80,41 @@ def route_output(print_json: bool) -> None:
 
 
 TargetArg = Annotated[Path, typer.Argument(help="A file or folder to audit.")]
+BUCKET_COMMANDS = frozenset(
+    {"audit", "check", "compare-loaders", "compare-readers", "cost", "readiness", "sensitive"}
+)
+"""The commands whose report can be written to a bucket folder: the ones that write it
+through `emit`."""
+
+
+def _out_is_usable(context: typer.Context, value: Path | None) -> Path | None:
+    """Refuse a bucket where a command would only make a folder here named like one."""
+    from complydoc import storage
+
+    if value is None:
+        return value
+    try:
+        remote = storage.remote_folder(value)
+    except storage.StorageError as exc:
+        raise typer.BadParameter(str(exc)) from exc
+    command = context.command.name or ""
+    if remote is not None and command not in BUCKET_COMMANDS:
+        raise typer.BadParameter(
+            f"`complydoc {command}` writes to a folder on this machine. A bucket can be given "
+            f"to: {', '.join(sorted(BUCKET_COMMANDS))}."
+        )
+    return value
+
+
 OutDirOpt = Annotated[
     Path,
-    typer.Option("--out", "-o", help="Directory for the reports."),
+    typer.Option(
+        "--out",
+        "-o",
+        help="Directory for the reports. For the commands that write a report, "
+        "also a bucket folder: s3://bucket/folder.",
+        callback=_out_is_usable,
+    ),
 ]
 DEFAULT_OUT = Path(".complydoc")
 """Hidden, so a second run does not discover the first run's own reports."""
@@ -340,7 +372,35 @@ def emit(
     save_text: Path | None = None,
     detail: Detail = "summary",
 ) -> None:
-    """Write the report, and the extracted text when asked, then say where and how to open it."""
+    """Write the report, and the extracted text when asked, then say where and how to open it.
+
+    `out` may name a bucket folder, `s3://bucket/folder`: the report is then written to a
+    folder on this machine as usual and its files copied up.
+    """
+    from complydoc import storage
+
+    try:
+        remote = storage.remote_folder(out)
+    except storage.StorageError as exc:
+        errors.print(f"[bold red]Cannot write the report[/] — {escape(str(exc))}")
+        raise typer.Exit(code=2) from exc
+    if remote is not None:
+        try:
+            with storage.staged(out) as (local, _):
+                write_json(report, local / f"{name}.json", detail=detail)
+        except storage.StorageError as exc:
+            errors.print(f"[bold red]Cannot write the report[/] — {escape(str(exc))}")
+            raise typer.Exit(code=2) from exc
+        if not quiet:
+            console.print()
+            address = remote.address(f"{name}.json")
+            console.print(f"[bold]Report [/] {escape(address)}", no_wrap=True, crop=False)
+            console.print(f"[bold]View[/]    complydoc ui {escape(str(remote))}", no_wrap=True)
+        if save_text is not None:
+            from complydoc.report.text_writer import write_text
+
+            write_text(report, save_text)
+        return
     json_path = write_json(report, out / f"{name}.json", detail=detail).resolve()
 
     written: list[Path] = []

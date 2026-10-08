@@ -1,7 +1,8 @@
 # syntax=docker/dockerfile:1
 #
 # complydoc in a container: audit a folder of documents, and serve the viewer on the
-# reports to a team. Nothing in it reaches the network when it runs.
+# reports to a team. It reaches no network when it runs, unless you give it a bucket to
+# write reports to or read them from.
 #
 #   docker build -t complydoc .                        # audits and the viewer
 #   docker build -t complydoc:names --target names .   # the same, with a name model
@@ -39,7 +40,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends libgl1 libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 # Which optional parts to install, as in `pip install "complydoc[ocr]"`.
-ARG EXTRAS="ocr"
+ARG EXTRAS="ocr,s3"
 RUN --mount=type=bind,from=wheel,source=/wheels,target=/wheels \
     pip install --no-cache-dir "$(ls /wheels/complydoc-*.whl)[${EXTRAS}]"
 # Not root: it reads documents and writes reports, nothing else. The home folder is
@@ -62,7 +63,7 @@ FROM plain AS names
 USER root
 ARG SPACY_MODEL="https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl"
 RUN --mount=type=bind,from=wheel,source=/wheels,target=/wheels \
-    pip install --no-cache-dir "$(ls /wheels/complydoc-*.whl)[ocr,ner]" "${SPACY_MODEL}"
+    pip install --no-cache-dir "$(ls /wheels/complydoc-*.whl)[ocr,ner,s3]" "${SPACY_MODEL}"
 USER complydoc
 
 # `docker build .` with no --target gives the plain image.

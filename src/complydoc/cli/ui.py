@@ -17,8 +17,9 @@ def ui(
     sources: Annotated[
         list[Path] | None,
         typer.Argument(
-            help="Report files, or folders to search for them. Defaults to .complydoc, "
-            "where an audit writes when no --out is given.",
+            help="Report files, or folders to search for them: on this machine, or in a "
+            "bucket as s3://bucket/folder. Defaults to .complydoc, where an audit writes "
+            "when no --out is given.",
             show_default=False,
         ),
     ] = None,
@@ -89,12 +90,14 @@ def serve_viewer(
     allowed_hosts: list[str] | None = None,
 ) -> None:
     """Serve the viewer on the reports in `folders` until Ctrl+C."""
-    from complydoc.viewer import ViewerNotBuiltError, find_reports, launch_ui
+    from complydoc import storage
+    from complydoc.viewer import ViewerNotBuiltError, launch_ui
 
-    found = find_reports(*folders)
     try:
+        # A path with its slashes collapsed by the command line, back as the address it was.
+        sources = [str(storage.remote_folder(folder) or folder) for folder in folders]
         viewer = launch_ui(
-            *folders,
+            *sources,
             port=port,
             open_browser=False,
             block=False,
@@ -105,11 +108,14 @@ def serve_viewer(
     except ViewerNotBuiltError as exc:
         errors.print(f"[bold red]Cannot start the viewer[/] — {escape(str(exc))}")
         raise typer.Exit(code=2) from exc
-    except OSError as exc:
+    except (OSError, storage.StorageError) as exc:
         errors.print(f"[bold red]Cannot start the viewer[/] — {escape(str(exc))}")
         raise typer.Exit(code=2) from exc
 
-    where = ", ".join(str(folder) for folder in folders)
+    found = viewer.reports()
+    for problem in viewer.storage_errors:
+        errors.print(f"[bold red]Cannot read the bucket[/] — {escape(problem)}")
+    where = ", ".join(sources)
     if found:
         console.print(f"{count(len(found), 'report')} in {escape(where)}")
     else:

@@ -192,6 +192,9 @@ jobs:
       - name: it runs as its own user and says its version
         run: |
           test "$(docker run --rm --entrypoint id complydoc:ci -u)" = 1000
+          # What reading and writing a bucket needs is in both images.
+          docker run --rm --entrypoint python complydoc:ci -c "import boto3"
+          docker run --rm --entrypoint python complydoc:ci-names -c "import boto3"
           docker run --rm complydoc:ci --version
       # No network at all, as in a locked-down environment: an audit must not need one.
       - name: audit the sample documents, with no network

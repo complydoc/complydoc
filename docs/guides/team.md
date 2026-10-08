@@ -90,7 +90,44 @@ Each run records the [repository, branch and commit](viewer.md#which-change-a-ru
 it came from, so the viewer says which change produced which run.
 
 The folder can be anything every writer can reach and the viewer's machine can
-mount: a network share, a volume, or a bucket mounted as a folder.
+mount: a network share or a volume. Or it can be a bucket.
+
+### Reports in a bucket
+
+Most infrastructure already has object storage that every job can reach. Give a
+bucket folder wherever a folder goes, and install the `s3` extra
+(`pip install "complydoc[s3]"`; the container images have it):
+
+```python
+with cd.observe("contracts-ingest", out="s3://team-reports/contracts-ingest"):
+    run_the_pipeline()
+```
+
+```bash
+complydoc audit ./documents --out s3://team-reports/contracts --name "audit-$(date +%Y%m%d-%H%M%S)"
+complydoc ui s3://team-reports --host 0.0.0.0
+```
+
+- **Writing.** A run is written on the machine that ran it, as always, and its
+  files are then copied to the bucket. Two pipeline runs in the same second get
+  different names. If the bucket cannot be reached, a pipeline being observed
+  carries on and the failure is reported; a command exits with an error.
+- **Serving.** The viewer keeps a copy of the bucket folder's reports and looks
+  again, at most every ten seconds, as pages are loaded. Page pictures and
+  document text are fetched when a page asks for them, not before.
+- **Credentials** are found the way the AWS tools find them: the environment, a
+  profile, or the machine's role. Writers need to put objects; the viewer needs
+  to list and get them. `AWS_ENDPOINT_URL` names another S3-compatible store.
+- **What goes up is the report.** It holds masked values unless a run used
+  `--reveal`. The documents are never uploaded.
+
+This is the one case where complydoc reaches a network by itself, and it
+reaches only the bucket you named. [Network isolation](../explanation/offline.md)
+says how that is kept narrow.
+
+To serve a bucket from the Compose file, change the viewer's command to
+`ui s3://your-bucket/folder --host 0.0.0.0 --allowed-host <name>`, pass it the
+credentials, and remove the reports volume.
 
 ## What to keep out of it
 
@@ -109,5 +146,5 @@ mount: a network share, a volume, or a bucket mounted as a folder.
   folder. Serve separate folders from separate viewers to keep teams apart.
 - It is read-only, so findings are not triaged together here. Ignore files and
   concepts live beside the documents, in the repository that owns them.
-- It does not write to object storage itself. Mount the bucket, or copy the
-  reports in.
+- The viewer's copy of a bucket lives in the container and is rebuilt when it
+  restarts, which takes as long as downloading the reports does.

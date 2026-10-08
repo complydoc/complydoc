@@ -26,7 +26,7 @@ from pathlib import Path
 from types import TracebackType
 from typing import TYPE_CHECKING, Any, Literal, ParamSpec, TypeVar
 
-from complydoc import offline
+from complydoc import offline, storage
 from complydoc.observe.parameters import parameters_of
 
 if TYPE_CHECKING:
@@ -102,7 +102,9 @@ class Observation:
         if scan not in SCANS:
             raise ValueError(f"scan is one of {', '.join(SCANS)}, not {scan!r}")
         self.name = name
-        self.out = None if out is None else Path(out).expanduser()
+        # A bucket folder, `s3://bucket/folder`, is written to through a folder here.
+        self.remote = storage.remote_folder(out)
+        self.out = None if out is None or self.remote else Path(out).expanduser()
         self.scan: Scan = scan
         self.reveal = reveal
         self.config = config
@@ -112,6 +114,8 @@ class Observation:
         self.recordings: list[Recording] = []
         self.report: AuditReport | None = None
         self.path: Path | None = None
+        self.location: str | None = None
+        """Where the report is: its path here, or its address in a bucket."""
         self.error: str | None = None
         self.overhead = 0.0
         self._stack = contextlib.ExitStack()
@@ -169,10 +173,23 @@ class Observation:
             self.report = build_report(self, seconds=seconds, connections=made, error=failed)
             if self.out is not None:
                 self.path = write_trace(self.report, self.out, self.name, self._started_at)
+                self.location = str(self.path)
+            elif self.remote is not None:
+                self.location = self._upload()
         # Whatever went wrong in complydoc's own work, the pipeline's result stands.
         except Exception as exc:
             self.error = f"{type(exc).__name__}: {exc}"
             warnings.warn(f"complydoc could not record {self.name!r}: {self.error}", stacklevel=2)
+
+    def _upload(self) -> str:
+        """Write the report to a folder here, copy its files to the bucket, and say where."""
+        from complydoc.observe.trace import trace_stem, write_trace
+
+        assert self.report is not None and self.remote is not None
+        taken = storage.names_starting(self.remote, trace_stem(self.name, self._started_at))
+        with storage.staged(str(self.remote)) as (local, _):
+            written = write_trace(self.report, local, self.name, self._started_at, taken)
+        return self.remote.address(written.name)
 
     def _close(self) -> None:
         from complydoc.observe import patches
@@ -213,7 +230,9 @@ def observe(
 
     `name` names the pipeline: its runs are grouped under it, as an experiment's are.
     The report is written to `out`, `.complydoc` in the working directory by default,
-    as `<name>-<time>.json`; `out=None` keeps it in memory only.
+    as `<name>-<time>.json`; `out=None` keeps it in memory only. `out` may be a bucket
+    folder, `s3://bucket/folder`, with the `s3` extra installed: the report is then
+    copied there, and `location` says where it went.
 
     `scan` sets what is looked for in each stage's output when the block ends:
     `patterns`, the default, reads identifiers by pattern at every stage and runs the

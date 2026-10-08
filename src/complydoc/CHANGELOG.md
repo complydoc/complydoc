@@ -17,6 +17,14 @@ separately.
   answers to the machine's own names and addresses and to each `--allowed-host`, which
   is where the name a proxy serves it under goes. `launch_ui` takes `host`, `read_only`
   and `allowed_hosts`.
+- Reports can live in a bucket. `--out s3://bucket/folder` and
+  `cd.observe(out="s3://bucket/folder")` copy a run's report, and what it keeps beside
+  it, to the bucket once it is written, and `complydoc ui s3://bucket/folder` serves a
+  bucket folder, fetching page pictures and document text as pages ask for them. It
+  needs the new `s3` extra, uses your own credentials, and works with any S3-compatible
+  store through `AWS_ENDPOINT_URL`. This is the one case where complydoc reaches a
+  network by itself: only that bucket, only the report, and with the guard still armed
+  around it. An observed pipeline's `location` says where its report went.
 - `deploy/compose.yaml` runs the viewer for a team: read-only on a shared folder of
   reports, never published itself, behind a proxy that signs people in with your own
   identity provider. The "Run it for your team" guide has the steps.

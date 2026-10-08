@@ -1,8 +1,8 @@
 # Network isolation
 
 complydoc makes no outbound network connections of its own. This is enforced at
-runtime. Two things a caller can switch on send data out, and both are named
-below and recorded in the report.
+runtime. A few things a caller can switch on send data out, and each is named
+below.
 
 `complydoc/offline.py` replaces the standard library's outbound entry points —
 `socket.socket.connect`, `connect_ex`, `socket.create_connection` and
@@ -24,7 +24,17 @@ A stated policy covers first-party code only. Replacing the socket entry points
 also covers transitive dependencies: a library that opens a connection during a
 run raises `NetworkAccessError`.
 
-There are three exceptions, and none happens unless a caller asks for it.
+There are four exceptions, and none happens unless a caller asks for it.
+
+Giving a bucket as the place to write reports, `--out s3://bucket/folder` or
+`cd.observe(out="s3://bucket/folder")`, uploads the report's files to that
+bucket, and `complydoc ui s3://bucket/folder` reads them from it. The run is
+written to a folder on this machine first, exactly as otherwise, and the guard
+stays armed around the copy, which is let through for that one step. What goes
+up is the report: masked values unless the run used `--reveal`, never the
+documents. The command says where it wrote; the report cannot record its own
+upload, since it is written before it is sent. Without the `s3` extra installed
+there is no code to do any of this.
 
 `inspect_documents(..., allow_network=True)` lets the loader being inspected
 call connect. The connections are recorded, the report states it, and

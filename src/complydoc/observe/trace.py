@@ -15,7 +15,7 @@ import datetime as dt
 import os
 import re
 import time
-from collections.abc import Iterable
+from collections.abc import Collection, Iterable
 from pathlib import Path, PurePath
 from typing import TYPE_CHECKING, Any
 
@@ -51,7 +51,7 @@ from complydoc.utils.text import count
 if TYPE_CHECKING:
     from complydoc.observe.session import Observation, Recording
 
-__all__ = ["build_report", "summary_lines", "write_trace"]
+__all__ = ["build_report", "summary_lines", "trace_stem", "write_trace"]
 
 _HOST = re.compile(r"DNS lookup of '([^']+)'")
 _ADDRESS = re.compile(r"connect(?:_ex)? to \('([^']+)'")
@@ -680,13 +680,27 @@ def _limitations(trace: Trace) -> list[Limitation]:
     return limitations
 
 
-def write_trace(report: AuditReport, out: Path, name: str, started_at: dt.datetime) -> Path:
-    """Write the report as `<name>-<time>.json` in `out`, never over an earlier run."""
+def trace_stem(name: str, started_at: dt.datetime) -> str:
+    """What a run's report is called before its `.json`: the pipeline's name and the time."""
     slug = re.sub(r"[^A-Za-z0-9._-]+", "-", name).strip("-.") or "pipeline"
-    stem = f"{slug}-{started_at.strftime('%Y%m%d-%H%M%S')}"
+    return f"{slug}-{started_at.strftime('%Y%m%d-%H%M%S')}"
+
+
+def write_trace(
+    report: AuditReport,
+    out: Path,
+    name: str,
+    started_at: dt.datetime,
+    taken: Collection[str] = (),
+) -> Path:
+    """Write the report as `<name>-<time>.json` in `out`, never over an earlier run.
+
+    `taken` are names already used where the report is bound for, when that is not `out`.
+    """
+    stem = trace_stem(name, started_at)
     path = out / f"{stem}.json"
     number = 2
-    while path.exists():
+    while path.exists() or path.name in taken:
         path = out / f"{stem}-{number}.json"
         number += 1
     return write_json(report, path)
@@ -746,6 +760,6 @@ def summary_lines(observation: Observation) -> list[str]:
             f"Not looked for, so neither counted nor masked: {', '.join(trace.unscanned)}. "
             f"{next(iter(trace.unscanned.values()))}"
         )
-    if observation.path is not None:
-        lines.append(f"Written to {observation.path}")
+    if observation.location is not None:
+        lines.append(f"Written to {observation.location}")
     return lines

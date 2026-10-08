@@ -24,7 +24,9 @@ What the server does, and does not do:
   audited folder, or the file the run read if it is still a valid one, never any
   other file.
 - Read-only, it writes no file at all.
-- It makes no outbound connection. The viewer it serves makes none either.
+- It makes no outbound connection, unless a source is a bucket folder
+  (`s3://bucket/folder`): it then reads that bucket and nothing else. The viewer it
+  serves makes none either.
 
 Reports are found again on every request for the list, so a report written
 while the server runs appears when the page is reloaded.
@@ -48,6 +50,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 from urllib.parse import unquote, urlsplit
+
+from complydoc.storage import Mirror, remote_folder
 
 __all__ = [
     "DEFAULT_PORT",
@@ -534,6 +538,7 @@ class _Handler(BaseHTTPRequestHandler):
             return
         path = unquote(urlsplit(self.path).path)
         server = self.server
+        server.refresh()
         if path in {"/", "/index.html"}:
             self._send(
                 HTTPStatus.OK,
@@ -551,6 +556,8 @@ class _Handler(BaseHTTPRequestHandler):
                     "version": __version__,
                     "reports": len(find_reports(*server.sources)),
                     "read_only": server.read_only,
+                    # A bucket that could not be read: the reports copied earlier are still served.
+                    "storage_errors": [m.error for m in server.mirrors if m.error],
                 },
             )
         elif path == f"/{API}/reports":
@@ -590,7 +597,10 @@ class _Handler(BaseHTTPRequestHandler):
             return
         folder = parts_folder(report.path).resolve()
         file = (report.path.parent / name).resolve()
-        if not file.is_relative_to(folder) or not file.is_file():
+        if not file.is_relative_to(folder):
+            self._error(HTTPStatus.NOT_FOUND, "no such file in this report")
+            return
+        if not file.is_file() and not self.server.fetch(file):
             self._error(HTTPStatus.NOT_FOUND, "no such file in this report")
             return
         stat = file.stat()
@@ -640,6 +650,15 @@ class _Handler(BaseHTTPRequestHandler):
 class _Server(ThreadingHTTPServer):
     daemon_threads = True
 
+    def refresh(self) -> None:
+        """Bring the reports of each bucket folder up to date, when it is time to look."""
+        for mirror in self.mirrors:
+            mirror.refresh()
+
+    def fetch(self, file: Path) -> bool:
+        """Copy down a report's part that is still only in its bucket."""
+        return any(mirror.holds(file) and mirror.fetch(file) for mirror in self.mirrors)
+
     def __init__(
         self,
         port: int,
@@ -651,6 +670,7 @@ class _Server(ThreadingHTTPServer):
     ) -> None:
         self.sources = sources
         self.source_names = [str(source) for source in sources]
+        self.mirrors: list[Mirror] = []
         self.dist = dist
         self.host = host
         self.read_only = read_only
@@ -696,7 +716,13 @@ class ViewerServer:
 
     def reports(self) -> list[FoundReport]:
         """The reports the viewer lists right now."""
+        self._server.refresh()
         return find_reports(*self._server.sources)
+
+    @property
+    def storage_errors(self) -> list[str]:
+        """Why a bucket folder could not be read, for each that could not."""
+        return [mirror.error for mirror in self._server.mirrors if mirror.error]
 
     def serve_forever(self) -> None:
         """Serve until interrupted, in this thread."""
@@ -719,6 +745,8 @@ class ViewerServer:
     def stop(self) -> None:
         self._server.shutdown()
         self._server.server_close()
+        for mirror in self._server.mirrors:
+            mirror.close()
         if self._thread is not None:
             self._thread.join(timeout=5)
 
@@ -761,8 +789,11 @@ def launch_ui(
 
     `sources` are report files or folders to search, `.complydoc` when none is
     given. The server listens on 127.0.0.1 only and makes no outbound
-    connection. With `block=False`, the default, it runs in the background and
-    the returned server's `stop()` ends it, which is what a notebook wants.
+    connection. A source may also be a bucket folder, `s3://bucket/folder`, which
+    is the one case where it does: it copies that folder's reports here to serve
+    them, and looks again as the page is reloaded. With `block=False`, the
+    default, it runs in the background and the returned server's `stop()` ends
+    it, which is what a notebook wants.
 
     `host` is the address to listen on. Any but this machine's own serves the
     reports to whoever can reach it, with no sign-in, so the viewer is then
@@ -773,10 +804,30 @@ def launch_ui(
     dist = dist or DIST
     if not (dist / "index.html").is_file():
         raise ViewerNotBuiltError(dist)
-    folders = [Path(source).expanduser().resolve() for source in (sources or (".complydoc",))]
+    # A bucket folder, `s3://bucket/folder`, is served from a copy of its reports kept here.
+    mirrors: list[Mirror] = []
+    folders: list[Path] = []
+    names: list[str] = []
+    for source in sources or (".complydoc",):
+        remote = remote_folder(source)
+        if remote is None:
+            folders.append(Path(source).expanduser().resolve())
+            names.append(str(folders[-1]))
+        else:
+            mirrors.append(Mirror.of(remote))
+            folders.append(mirrors[-1].folder)
+            names.append(str(remote))
     if read_only is None:
         read_only = not is_loopback(host)
-    viewer = ViewerServer(_bind(port, folders, dist, host, read_only, tuple(allowed_hosts)))
+    try:
+        server = _bind(port, folders, dist, host, read_only, tuple(allowed_hosts))
+    except OSError:
+        for mirror in mirrors:
+            mirror.close()
+        raise
+    server.source_names = names
+    server.mirrors = mirrors
+    viewer = ViewerServer(server)
     if open_browser:
         webbrowser.open(viewer.url)
     if block:

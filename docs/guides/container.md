@@ -3,7 +3,8 @@
 The repository builds a container image that audits a folder of documents and
 serves the [viewer](viewer.md) on the reports. It is how complydoc runs where
 nothing is installed by hand: a server your team shares, or a job in your own
-infrastructure. Nothing in the image reaches the network when it runs.
+infrastructure. Nothing in the image reaches the network when it runs, unless
+you give it a bucket for the reports.
 
 ## Build the image
 
@@ -86,6 +87,26 @@ docker run -d --name complydoc -p 8500:8500 \
   complydoc ui /reports --host 0.0.0.0 --allowed-host reports.example.com
 ```
 
+## Reports in a bucket
+
+Both images can write reports to a bucket and serve them from one, in place of
+a mounted folder. Give them the address and the credentials your bucket needs:
+
+```bash
+docker run --rm \
+  -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION \
+  -v "$PWD/documents:/documents:ro" \
+  complydoc audit /documents --out s3://team-reports/contracts --name "audit-$(date +%Y%m%d-%H%M%S)"
+
+docker run -d -p 8500:8500 \
+  -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION \
+  complydoc ui s3://team-reports/contracts --host 0.0.0.0
+```
+
+`AWS_ENDPOINT_URL` names another S3-compatible store. This is the one case where
+a run reaches a network, and it reaches only that bucket:
+[Run it for your team](team.md#reports-in-a-bucket) has the details.
+
 ## What is in the image
 
 | | `complydoc` | `complydoc:names` |
@@ -94,4 +115,4 @@ docker run -d --name complydoc -p 8500:8500 \
 | OCR for scanned pages | yes | yes |
 | Person and organisation names | no, and the report says so | yes, English |
 | Runs as | its own user | its own user |
-| Reaches the network | never | never |
+| Reaches the network | only a bucket you name | only a bucket you name |
