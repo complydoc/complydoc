@@ -266,10 +266,23 @@ def test_a_command_that_writes_only_here_refuses_a_bucket(
     arguments = [command] if command == "demo" else [command, str(SAMPLE)]
     result = complydoc(*arguments, "--out", f"s3://{BUCKET}/x")
     assert result.exit_code == 2, result.output
-    # The message comes in a box, wrapped to the terminal.
-    said = " ".join(result.output.replace("│", " ").split())
-    assert "writes to a folder on this machine" in said
     assert not list(tmp_path.iterdir())
+
+
+def test_the_refusal_says_which_commands_take_a_bucket():
+    import click
+    import typer
+
+    from complydoc.cli.common import _out_is_usable
+
+    context = typer.Context(click.Command("chunks"))
+    with pytest.raises(typer.BadParameter) as refused:
+        _out_is_usable(context, Path(f"s3://{BUCKET}/x"))
+    assert "writes to a folder on this machine" in str(refused.value)
+    assert "audit" in str(refused.value)
+    # A folder here is anyone's to use, and a bucket is the audit's.
+    assert _out_is_usable(context, Path("reports")) == Path("reports")
+    assert _out_is_usable(typer.Context(click.Command("audit")), Path(f"s3://{BUCKET}/x"))
 
 
 def test_an_audit_to_a_bucket_leaves_no_folder_here(bucket, tmp_path: Path, monkeypatch):  # type: ignore[no-untyped-def]
