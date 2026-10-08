@@ -540,6 +540,19 @@ class _Handler(BaseHTTPRequestHandler):
                 _index_html(server.dist, server.source_names, server.read_only),
                 "text/html; charset=utf-8",
             )
+        elif path == f"/{API}/health":
+            # For whatever keeps the server running to ask: it is up, and can read its folders.
+            from complydoc import __version__
+
+            self._json(
+                HTTPStatus.OK,
+                {
+                    "status": "ok",
+                    "version": __version__,
+                    "reports": len(find_reports(*server.sources)),
+                    "read_only": server.read_only,
+                },
+            )
         elif path == f"/{API}/reports":
             reports = [report.to_dict() for report in find_reports(*server.sources)]
             body = json.dumps({"reports": reports, "sources": server.source_names}).encode("utf-8")

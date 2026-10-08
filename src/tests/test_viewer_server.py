@@ -623,3 +623,21 @@ def test_the_command_says_who_can_read_a_shared_viewer(reports: Path, dist: Path
     output = " ".join(result.output.split())
     assert "no sign-in" in output
     assert "read-only" in output
+
+
+def test_it_says_it_is_up_and_what_it_serves(reports: Path, dist: Path):
+    """What a container's health check asks."""
+    viewer = launch_ui(reports, port=0, open_browser=False, dist=dist, host="0.0.0.0")
+    try:
+        status, headers, body = get(viewer.port, "/api/health")
+        assert status == 200
+        assert headers["Content-Type"] == "application/json"
+        health = json.loads(body)
+        assert health["status"] == "ok"
+        assert health["version"]
+        assert health["reports"] == 2
+        assert health["read_only"] is True
+        # Under a name it was not given, it says nothing about itself either.
+        assert get(viewer.port, "/api/health", host="elsewhere.example")[0] == 403
+    finally:
+        viewer.stop()
