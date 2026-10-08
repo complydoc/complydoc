@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import http.client
 import json
+import re
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -99,7 +100,9 @@ def test_an_audit_is_written_to_the_bucket_with_what_it_keeps_beside_it(bucket, 
         "--page-images",
     )
     assert result.exit_code == 0, result.output
-    assert f"s3://{BUCKET}/contracts/audit-1.json" in " ".join(result.output.split())
+    # Whatever colours the terminal is given, the address is said in full.
+    said = "".join(re.sub(r"\x1b\[[0-9;]*m", "", result.output).split())
+    assert f"s3://{BUCKET}/contracts/audit-1.json" in said
 
     written = keys(bucket)
     assert "contracts/audit-1.json" in written
