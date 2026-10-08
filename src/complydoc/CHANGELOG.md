@@ -17,6 +17,10 @@ separately.
   answers to the machine's own names and addresses and to each `--allowed-host`, which
   is where the name a proxy serves it under goes. `launch_ui` takes `host`, `read_only`
   and `allowed_hosts`.
+- A container image, built from the repository with `docker build`. It audits a folder
+  mounted into it and, run with no command, serves the viewer on the reports, read-only.
+  It runs as its own user and needs no network. A second target, `names`, carries the
+  small English name model. The "Run it in a container" guide has the commands.
 
 ## [0.6.8] — 2026-10-06
 

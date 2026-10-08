@@ -179,6 +179,59 @@ jobs:
               sys.exit(f"the generator no longer produces: {missing}")
           print(f"{len(want)} fixtures accounted for")
           PY
+  image:
+    name: the container image audits and serves
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/setup-buildx-action@v3
+      - name: build the plain image and the one with a name model
+        run: |
+          docker buildx build --load -t complydoc:ci .
+          docker buildx build --load -t complydoc:ci-names --target names .
+      - name: it runs as its own user and says its version
+        run: |
+          test "$(docker run --rm --entrypoint id complydoc:ci -u)" = 1000
+          docker run --rm complydoc:ci --version
+      # No network at all, as in a locked-down environment: an audit must not need one.
+      - name: audit the sample documents, with no network
+        run: |
+          mkdir -p "$RUNNER_TEMP/reports" && chmod 777 "$RUNNER_TEMP/reports"
+          docker run --rm --network none \
+            -v "$PWD/src/complydoc/sample:/documents:ro" -v "$RUNNER_TEMP/reports:/reports" \
+            complydoc:ci audit /documents --out /reports -q
+          test -s "$RUNNER_TEMP/reports/complydoc.json"
+      - name: the name model finds names, with no network
+        run: |
+          mkdir -p "$RUNNER_TEMP/names" && chmod 777 "$RUNNER_TEMP/names"
+          docker run --rm --network none \
+            -v "$PWD/src/complydoc/sample:/documents:ro" -v "$RUNNER_TEMP/names:/reports" \
+            complydoc:ci-names audit /documents --out /reports -q
+          python3 - "$RUNNER_TEMP/reports/complydoc.json" "$RUNNER_TEMP/names/complydoc.json" <<'PY'
+          import json, sys
+          plain, names = (json.load(open(path))["aggregate"] for path in sys.argv[1:])
+          assert "person_name" in plain["categories_not_scanned"], "the plain image scanned names"
+          assert "person_name" not in names["categories_not_scanned"], names["categories_not_scanned"]
+          found = names["sensitive_by_category"].get("person_name", 0)
+          assert found > 0, "the image with a name model found no person names"
+          print(f"{found} person names found")
+          PY
+      - name: the viewer is served read-only on the reports
+        run: |
+          docker run -d --name viewer -p 8612:8500 -v "$RUNNER_TEMP/reports:/reports:ro" complydoc:ci
+          for _ in $(seq 30); do curl -sf http://localhost:8612/api/reports > /dev/null && break; sleep 1; done
+          curl -sf http://localhost:8612/api/reports | python3 -c "import json,sys; r=json.load(sys.stdin)['reports']; assert len(r) == 1, r; print(r[0]['name'])"
+          curl -sf http://localhost:8612/ | grep -q '"readOnly": true'
+          id=$(curl -sf http://localhost:8612/api/reports | python3 -c "import json,sys; print(json.load(sys.stdin)['reports'][0]['id'])")
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' \
+            -H 'Origin: http://localhost:8612' -d '{"finding":"x","reason":"y"}' \
+            "http://localhost:8612/api/reports/$id/ignores")
+          test "$code" = 403
+          # A name it was not given is refused.
+          test "$(curl -s -o /dev/null -w '%{http_code}' -H 'Host: elsewhere.example' http://localhost:8612/api/reports)" = 403
+          docker logs viewer
+          docker rm -f viewer
+
   action:
     name: the GitHub Action runs
     runs-on: ubuntu-latest

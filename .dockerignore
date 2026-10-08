@@ -1,0 +1,11 @@
+# The image is built from the package source and the viewer's source; nothing else.
+**
+!pyproject.toml
+!README.md
+!LICENSE
+!src/complydoc/**
+!viewer/**
+src/complydoc/viewer/dist
+viewer/node_modules
+viewer/dist
+**/__pycache__

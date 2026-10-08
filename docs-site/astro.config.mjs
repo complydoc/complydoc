@@ -68,6 +68,7 @@ export default defineConfig({
             "guides/baselines-and-tests",
             "guides/policy",
             "guides/github-action",
+            "guides/container",
           ],
         },
         {
