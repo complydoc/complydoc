@@ -114,6 +114,20 @@ export interface RunMetadata {
   content_sent_to?: string[];
   /** True when the run kept identifier values unmasked (`--reveal`). */
   reveal_used?: boolean;
+  /** Schema 23: where the run came from, as CI or git told it. */
+  context?: RunContext | null;
+}
+
+export interface RunContext {
+  /** `host/owner/name`, never with credentials. */
+  repository?: string | null;
+  branch?: string | null;
+  commit?: string | null;
+  /** Whether the working tree had uncommitted changes; null when not known, as in CI. */
+  dirty?: boolean | null;
+  workflow?: string | null;
+  /** The page of the CI run. */
+  url?: string | null;
 }
 
 export interface Factor {

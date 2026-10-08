@@ -22,6 +22,12 @@ describe("parseReport", () => {
     expect(() => parseReport(old)).toThrow("uses schema 8");
   });
 
+  it("reads schema 23, which added where a run came from", () => {
+    const run = { schema_version: 23, context: { branch: "main", commit: "1b84563c" } };
+    const report = parseReport(JSON.stringify({ run, overall: {}, documents: [] }));
+    expect(report.run.context?.branch).toBe("main");
+  });
+
   it("reads schema 22, which added the pictures left out", () => {
     const withheld = JSON.stringify({ run: { schema_version: 22 }, overall: {}, documents: [] });
     expect(parseReport(withheld).run.schema_version).toBe(22);

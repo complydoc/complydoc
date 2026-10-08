@@ -65,6 +65,7 @@ from complydoc.ingest.base import (
 )
 from complydoc.loaders.formats import format_of
 from complydoc.loaders.origin import loader_tags
+from complydoc.report.context import run_context
 from complydoc.report.models import (
     SCHEMA_VERSION,
     AuditReport,
@@ -259,6 +260,7 @@ def inspect_run(
 
         run = RunMetadata(
             tool_version=__version__,
+            context=run_context(),
             schema_version=SCHEMA_VERSION,
             started_at=started_at.isoformat(timespec="seconds"),
             finished_at=dt.datetime.now().astimezone().isoformat(timespec="seconds"),

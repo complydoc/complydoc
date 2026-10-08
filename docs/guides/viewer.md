@@ -167,6 +167,30 @@ them. The Traces page lists them all, newest first; click a run to open it.
 A folder opens on, and the overview sums it up by, its newest audit; a folder with
 none, by its newest run that read documents.
 
+### Which change a run came from
+
+A run records where it came from, so a list of runs from several machines says
+which change produced which. The Traces page shows it as a Commit column: the
+branch and the commit, the repository when the pointer rests on it, and a link
+to the CI run when there is one.
+
+It is read from what the machine already knows, and nothing is asked of the
+network:
+
+- In GitHub Actions and GitLab CI, from the job's own variables: repository,
+  branch, commit, workflow and the page of the run.
+- Anywhere else, from git, about the folder the command ran in: repository,
+  branch, commit, and whether there were uncommitted changes.
+
+The repository is recorded as `host/owner/name`. A token or a password in the
+remote's address is never recorded.
+
+| Variable | Sets |
+| --- | --- |
+| `COMPLYDOC_REPOSITORY`, `COMPLYDOC_BRANCH`, `COMPLYDOC_COMMIT` | The repository, branch and commit, in place of what was found |
+| `COMPLYDOC_WORKFLOW`, `COMPLYDOC_RUN_URL` | The CI workflow and the page of its run, for a CI system complydoc does not know |
+| `COMPLYDOC_CONTEXT=off` | Nothing is recorded |
+
 ## Reviewing findings
 
 "Review one by one" on the Security page steps through every finding, the most

@@ -23,6 +23,7 @@ from complydoc.ingest.base import DocumentFormat, SkipRecord
 from complydoc.readiness.analyser import ReadinessReport
 from complydoc.readiness.base import SignalStatus
 from complydoc.readiness.scoring import BAND_FLOORS
+from complydoc.report.context import RunContext
 from complydoc.report.preview import PagePreview
 from complydoc.sensitive.base import SensitiveMatch
 from complydoc.sensitive.scanner import ScanResult
@@ -64,7 +65,7 @@ __all__ = [
     "VerificationSummary",
 ]
 
-SCHEMA_VERSION = 22
+SCHEMA_VERSION = 23
 
 
 def report_shape() -> dict[str, object]:
@@ -566,6 +567,8 @@ class RunMetadata:
     """
     documents_read_after_worker_failure: int = 0
     """Documents read in the main process after a worker process stopped."""
+    context: RunContext | None = None
+    """Where the run came from: repository, branch and commit, as CI or git told it."""
     content_sent_to: list[str] = field(default_factory=list)
     """Hosts that were sent text from these documents.
 

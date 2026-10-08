@@ -66,6 +66,7 @@ from complydoc.ingest.base import (
     SkipRecord,
 )
 from complydoc.ingest.extractors.registry import DEFAULT_EXTRACTOR
+from complydoc.report.context import run_context
 from complydoc.report.limitations import (
     build_limitations,
     category_limitations,
@@ -379,6 +380,7 @@ def run_audit(
     finished_at = dt.datetime.now().astimezone()
     run = RunMetadata(
         tool_version=__version__,
+        context=run_context(),
         schema_version=SCHEMA_VERSION,
         started_at=started_at.isoformat(timespec="seconds"),
         finished_at=finished_at.isoformat(timespec="seconds"),

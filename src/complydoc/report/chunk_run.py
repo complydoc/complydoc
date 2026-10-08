@@ -19,6 +19,7 @@ from complydoc.audit.run import assemble_report
 from complydoc.config.schema import Config
 from complydoc.extraction.chunks import ChunkReport
 from complydoc.ingest import ocr as ocr_module
+from complydoc.report.context import run_context
 from complydoc.report.models import SCHEMA_VERSION, AuditReport, RunMetadata
 
 __all__ = ["chunk_run_report"]
@@ -37,6 +38,7 @@ def chunk_run_report(
     """A report holding `reports` and no documents, for the viewer and `load_report`."""
     run = RunMetadata(
         tool_version=__version__,
+        context=run_context(),
         schema_version=SCHEMA_VERSION,
         started_at=started_at.isoformat(timespec="seconds"),
         finished_at=dt.datetime.now().astimezone().isoformat(timespec="seconds"),

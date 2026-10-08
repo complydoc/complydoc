@@ -4,6 +4,7 @@ import { DataTable, type Columns } from "@/components/DataTable";
 import { cn } from "@/lib/utils";
 import { runKind, type Loaded } from "@/report/collections";
 import { formatCount, formatSeconds, formatUsd, plural } from "@/report/format";
+import { contextDetail, contextLabel, contextUrl } from "@/report/runContext";
 import { traceTotals } from "@/report/traceTree";
 import type { Trace } from "@/report/traceTypes";
 import { stepsOf } from "@/report/traceView";
@@ -28,6 +29,10 @@ interface Row {
   usd: number | null;
   hosts: string;
   sent: number | null;
+  /** The branch and commit the run came from, with the rest for a tooltip and the CI run's page. */
+  from: string;
+  fromDetail: string;
+  fromUrl: string | null;
 }
 
 /** What a run without a pipeline's trace holds, in a few words. */
@@ -53,6 +58,9 @@ function rowOf({ run, trace }: TracedRun): Row {
     usd: totals?.usd ?? null,
     hosts: totals?.hosts.join(", ") ?? "",
     sent: totals && totals.hosts.length > 0 ? totals.identifiersSent : null,
+    from: contextLabel(report.run.context),
+    fromDetail: contextDetail(report.run.context),
+    fromUrl: contextUrl(report.run.context),
   };
 }
 
@@ -78,6 +86,33 @@ function columnsFor(rows: Row[]): Columns<Row> {
     }),
     ...(new Set(rows.map((r) => r.kind)).size > 1
       ? [column.accessor("kind", { header: "Run", cell: (c) => <span className="font-medium">{c.getValue()}</span> })]
+      : []),
+    ...(any((r) => r.from !== "")
+      ? [
+          column.accessor("from", {
+            header: "Commit",
+            cell: (c) => {
+              const { from, fromDetail, fromUrl } = c.row.original;
+              if (!from) return <span className="text-muted-foreground">—</span>;
+              return fromUrl ? (
+                <a
+                  href={fromUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  title={fromDetail || undefined}
+                  className="font-mono text-xs underline-offset-4 hover:underline"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  {from}
+                </a>
+              ) : (
+                <span className="font-mono text-xs" title={fromDetail || undefined}>
+                  {from}
+                </span>
+              );
+            },
+          }),
+        ]
       : []),
     column.accessor("steps", {
       header: "Steps",

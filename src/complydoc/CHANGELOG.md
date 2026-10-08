@@ -17,6 +17,15 @@ separately.
   answers to the machine's own names and addresses and to each `--allowed-host`, which
   is where the name a proxy serves it under goes. `launch_ui` takes `host`, `read_only`
   and `allowed_hosts`.
+- A run records where it came from: the repository, branch and commit, and in GitHub
+  Actions and GitLab CI the workflow and the page of the run. The viewer's Traces page
+  shows it as a Commit column, so runs from several machines say which change produced
+  which. It is read from the CI job's variables or from git, never from the network,
+  and a remote's credentials are never recorded. `COMPLYDOC_REPOSITORY`,
+  `COMPLYDOC_BRANCH`, `COMPLYDOC_COMMIT`, `COMPLYDOC_WORKFLOW` and `COMPLYDOC_RUN_URL`
+  say it outright, and `COMPLYDOC_CONTEXT=off` records nothing. The report JSON moves to
+  schema 23, adding `run.context`.
+- `complydoc ui` answers `/api/health`, for whatever keeps a shared viewer running.
 - A container image, built from the repository with `docker build`. It audits a folder
   mounted into it and, run with no command, serves the viewer on the reports, read-only.
   It runs as its own user and needs no network. A second target, `names`, carries the
