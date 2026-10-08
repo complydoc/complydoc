@@ -3,3 +3,5 @@ dist/
 .astro/
 # Made from docs/ by src/scripts/build_docs.py.
 src/content/docs/
+# The report's JSON Schemas, copied from docs/schema when the site is built.
+public/schema/

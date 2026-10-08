@@ -31,8 +31,12 @@ OUT = ROOT / "docs-site" / "src" / "content" / "docs"
 BASE = "/complydoc/docs"
 """Where the site is served from, which absolute links between pages start with."""
 
-SKIP = {"design", "examples", "assets"}
-"""Folders of `docs/` that are not pages: design notes, the examples pages include, images."""
+SKIP = {"design", "examples", "assets", "schema"}
+"""Folders of `docs/` that are not pages: design notes, the examples pages include, images,
+and the report's JSON Schemas, which are served as files."""
+
+SCHEMAS = ROOT / "docs-site" / "public" / "schema"
+"""Where the site serves the report's JSON Schemas from: one file a version."""
 
 HIDDEN = {"--help", "--install-completion", "--show-completion"}
 
@@ -372,6 +376,7 @@ def report_page() -> None:
     """The JSON a run writes, from the code that writes it."""
     from complydoc.report.models import SCHEMA_VERSION, report_shape
 
+    this_version = f"report-{SCHEMA_VERSION}.json"
     lines = [
         f"`schema_version` is **{SCHEMA_VERSION}**. It moves when this shape moves,",
         "which is the field to branch on when reading a report programmatically.",
@@ -382,8 +387,40 @@ def report_page() -> None:
         "```json",
         json.dumps(report_shape(), indent=2),
         "```",
+        "",
+        "## JSON Schema",
+        "",
+        "That is a summary. The whole shape, every key with its type, is a JSON Schema",
+        "generated from the code that writes the report:",
+        "",
+        f"- This version: [`{this_version}`]({BASE}/schema/{this_version})",
+        f"- The newest, whichever it is: [`report.json`]({BASE}/schema/report.json)",
+        "- From the tool you have installed: `complydoc schema --json-schema`",
+        "",
+        "Each schema version keeps its own address, so a report can be checked against",
+        "the schema of the version that wrote it.",
     ]
     _write("reference/report.md", "Report JSON", lines)
+
+
+def schema_files() -> int:
+    """Put the report's JSON Schemas where the site serves them, and return how many."""
+    from complydoc.report.models import SCHEMA_VERSION
+
+    if SCHEMAS.exists():
+        shutil.rmtree(SCHEMAS)
+    SCHEMAS.mkdir(parents=True)
+    files = sorted((DOCS / "schema").glob("report-*.json"))
+    for file in files:
+        shutil.copy(file, SCHEMAS / file.name)
+    newest = DOCS / "schema" / f"report-{SCHEMA_VERSION}.json"
+    if not newest.is_file():
+        raise SystemExit(
+            f"docs/schema has no report-{SCHEMA_VERSION}.json: write it with "
+            f"`complydoc schema --json-schema > {newest.relative_to(ROOT)}`"
+        )
+    shutil.copy(newest, SCHEMAS / "report.json")
+    return len(files)
 
 
 def configuration_page() -> None:
@@ -456,6 +493,7 @@ def build(out: Path = OUT) -> int:
     command_page()
     api_page()
     report_page()
+    schema_files()
     configuration_page()
     identifiers_page()
     return written

@@ -1,0 +1,5220 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://complydoc.github.io/complydoc/docs/schema/report-23.json",
+  "title": "complydoc report, schema 23",
+  "description": "What a complydoc run writes: an audit, a cost or readiness run, a loader comparison, a chunks run or a pipeline's trace. `run.schema_version` says which version of this shape a file holds.",
+  "$defs": {
+    "Aggregate": {
+      "description": "What a decision maker reads.",
+      "properties": {
+        "documents_audited": {
+          "title": "Documents Audited",
+          "type": "integer"
+        },
+        "documents_skipped": {
+          "title": "Documents Skipped",
+          "type": "integer"
+        },
+        "pages_total": {
+          "title": "Pages Total",
+          "type": "integer"
+        },
+        "pages_unreadable": {
+          "title": "Pages Unreadable",
+          "type": "integer"
+        },
+        "formats": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Formats",
+          "type": "object"
+        },
+        "total_text_path_usd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Total Text Path Usd"
+        },
+        "total_vision_path_usd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Total Vision Path Usd"
+        },
+        "monthly_text_usd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Monthly Text Usd"
+        },
+        "monthly_vision_usd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Monthly Vision Usd"
+        },
+        "annual_text_usd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Annual Text Usd"
+        },
+        "annual_vision_usd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Annual Vision Usd"
+        },
+        "currency": {
+          "default": "USD",
+          "title": "Currency",
+          "type": "string"
+        },
+        "signal_distribution": {
+          "additionalProperties": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object"
+          },
+          "title": "Signal Distribution",
+          "type": "object"
+        },
+        "readiness_bands": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Readiness Bands",
+          "type": "object"
+        },
+        "mean_readiness_score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mean Readiness Score"
+        },
+        "sensitive_by_category": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Sensitive By Category",
+          "type": "object"
+        },
+        "sensitive_by_severity": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Sensitive By Severity",
+          "type": "object"
+        },
+        "sensitive_total": {
+          "default": 0,
+          "title": "Sensitive Total",
+          "type": "integer"
+        },
+        "documents_with_sensitive_data": {
+          "default": 0,
+          "title": "Documents With Sensitive Data",
+          "type": "integer"
+        },
+        "categories_not_scanned": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Categories Not Scanned",
+          "type": "object"
+        },
+        "content_matrix": {
+          "additionalProperties": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object"
+          },
+          "title": "Content Matrix",
+          "type": "object"
+        },
+        "content_findings_total": {
+          "default": 0,
+          "title": "Content Findings Total",
+          "type": "integer"
+        },
+        "content_findings_high": {
+          "default": 0,
+          "title": "Content Findings High",
+          "type": "integer"
+        },
+        "documents_with_content_findings": {
+          "default": 0,
+          "title": "Documents With Content Findings",
+          "type": "integer"
+        },
+        "documents_visibility_unchecked": {
+          "default": 0,
+          "title": "Documents Visibility Unchecked",
+          "type": "integer"
+        },
+        "ignored_total": {
+          "default": 0,
+          "title": "Ignored Total",
+          "type": "integer"
+        },
+        "total_seconds": {
+          "default": 0.0,
+          "title": "Total Seconds",
+          "type": "number"
+        },
+        "seconds_per_document": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Seconds Per Document"
+        },
+        "seconds_per_page": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Seconds Per Page"
+        },
+        "ocr_pages": {
+          "default": 0,
+          "title": "Ocr Pages",
+          "type": "integer"
+        },
+        "ocr_seconds": {
+          "default": 0.0,
+          "title": "Ocr Seconds",
+          "type": "number"
+        },
+        "ocr_pages_per_second": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ocr Pages Per Second"
+        },
+        "hours_per_1000_documents": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Hours Per 1000 Documents"
+        },
+        "read_seconds": {
+          "default": 0.0,
+          "title": "Read Seconds",
+          "type": "number"
+        },
+        "analyse_seconds": {
+          "default": 0.0,
+          "title": "Analyse Seconds",
+          "type": "number"
+        },
+        "scan_seconds": {
+          "default": 0.0,
+          "title": "Scan Seconds",
+          "type": "number"
+        },
+        "projected_seconds": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Projected Seconds",
+          "type": "object"
+        }
+      },
+      "required": [
+        "documents_audited",
+        "documents_skipped",
+        "pages_total",
+        "pages_unreadable"
+      ],
+      "title": "Aggregate",
+      "type": "object"
+    },
+    "Box": {
+      "description": "A rectangle in normalised page space, 0.0 to 1.0 on both axes.",
+      "properties": {
+        "x": {
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "title": "Y",
+          "type": "number"
+        },
+        "w": {
+          "title": "W",
+          "type": "number"
+        },
+        "h": {
+          "title": "H",
+          "type": "number"
+        },
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Label"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "w",
+        "h"
+      ],
+      "title": "Box",
+      "type": "object"
+    },
+    "CategoryChangeRecord": {
+      "description": "One identifier category a run looked for otherwise than as it ships.",
+      "properties": {
+        "category": {
+          "title": "Category",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "enabled": {
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "severity": {
+          "title": "Severity",
+          "type": "string"
+        },
+        "shipped_enabled": {
+          "title": "Shipped Enabled",
+          "type": "boolean"
+        },
+        "shipped_severity": {
+          "title": "Shipped Severity",
+          "type": "string"
+        }
+      },
+      "required": [
+        "category",
+        "label",
+        "enabled",
+        "severity",
+        "shipped_enabled",
+        "shipped_severity"
+      ],
+      "title": "CategoryChangeRecord",
+      "type": "object"
+    },
+    "CategorySummary": {
+      "description": "The categories file a run read, and each change it made.\n\nA category with `enabled` false is reported nowhere; the run still looked for it, so\nthat its values are masked in the report's text.",
+      "properties": {
+        "file": {
+          "title": "File",
+          "type": "string"
+        },
+        "changes": {
+          "items": {
+            "$ref": "#/$defs/CategoryChangeRecord"
+          },
+          "title": "Changes",
+          "type": "array"
+        },
+        "unknown": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Unknown",
+          "type": "array"
+        }
+      },
+      "required": [
+        "file"
+      ],
+      "title": "CategorySummary",
+      "type": "object"
+    },
+    "ChunkReport": {
+      "properties": {
+        "chunker": {
+          "title": "Chunker",
+          "type": "string"
+        },
+        "chunks": {
+          "items": {
+            "$ref": "#/$defs/InspectedChunk"
+          },
+          "title": "Chunks",
+          "type": "array"
+        },
+        "stats": {
+          "$ref": "#/$defs/ChunkStats"
+        },
+        "token_encoding": {
+          "title": "Token Encoding",
+          "type": "string"
+        },
+        "token_fidelity": {
+          "title": "Token Fidelity",
+          "type": "string"
+        },
+        "flag_counts": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Flag Counts",
+          "type": "object"
+        },
+        "flag_meanings": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Flag Meanings",
+          "type": "object"
+        },
+        "repeated_identifiers": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Repeated Identifiers",
+          "type": "object"
+        },
+        "facts": {
+          "items": {
+            "$ref": "#/$defs/FactLocation"
+          },
+          "title": "Facts",
+          "type": "array"
+        },
+        "retrieval": {
+          "items": {
+            "$ref": "#/$defs/QuestionResult"
+          },
+          "title": "Retrieval",
+          "type": "array"
+        },
+        "top_k": {
+          "default": 5,
+          "title": "Top K",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "chunker",
+        "chunks",
+        "stats",
+        "token_encoding",
+        "token_fidelity"
+      ],
+      "title": "ChunkReport",
+      "type": "object"
+    },
+    "ChunkStats": {
+      "properties": {
+        "count": {
+          "title": "Count",
+          "type": "integer"
+        },
+        "tokens_total": {
+          "title": "Tokens Total",
+          "type": "integer"
+        },
+        "tokens_min": {
+          "title": "Tokens Min",
+          "type": "integer"
+        },
+        "tokens_median": {
+          "title": "Tokens Median",
+          "type": "number"
+        },
+        "tokens_p95": {
+          "title": "Tokens P95",
+          "type": "number"
+        },
+        "tokens_max": {
+          "title": "Tokens Max",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "count",
+        "tokens_total",
+        "tokens_min",
+        "tokens_median",
+        "tokens_p95",
+        "tokens_max"
+      ],
+      "title": "ChunkStats",
+      "type": "object"
+    },
+    "ConceptFinding": {
+      "description": "A page a judgement model says holds one of your concepts.\n\nA whole page rather than a place on it: the model says whether, not where.\nReported at the `model` tier, the weakest of the four.",
+      "properties": {
+        "page": {
+          "title": "Page",
+          "type": "integer"
+        },
+        "concept": {
+          "title": "Concept",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "severity": {
+          "title": "Severity",
+          "type": "string"
+        },
+        "score": {
+          "title": "Score",
+          "type": "number"
+        }
+      },
+      "required": [
+        "page",
+        "concept",
+        "label",
+        "severity",
+        "score"
+      ],
+      "title": "ConceptFinding",
+      "type": "object"
+    },
+    "ConceptRule": {
+      "description": "One custom concept a run looked for, and how often it was found.",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "description": {
+          "title": "Description",
+          "type": "string"
+        },
+        "pattern": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pattern"
+        },
+        "severity": {
+          "default": "medium",
+          "title": "Severity",
+          "type": "string"
+        },
+        "judge": {
+          "default": false,
+          "title": "Judge",
+          "type": "boolean"
+        },
+        "found": {
+          "default": 0,
+          "title": "Found",
+          "type": "integer"
+        },
+        "judged": {
+          "default": 0,
+          "title": "Judged",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "description"
+      ],
+      "title": "ConceptRule",
+      "type": "object"
+    },
+    "ConceptSummary": {
+      "description": "The concepts file a run read, and each of its concepts.",
+      "properties": {
+        "file": {
+          "title": "File",
+          "type": "string"
+        },
+        "concepts": {
+          "items": {
+            "$ref": "#/$defs/ConceptRule"
+          },
+          "title": "Concepts",
+          "type": "array"
+        },
+        "judge": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Judge"
+        },
+        "unjudged": {
+          "default": 0,
+          "title": "Unjudged",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "file"
+      ],
+      "title": "ConceptSummary",
+      "type": "object"
+    },
+    "ContentFinding": {
+      "description": "A passage that is hidden from a reader, reads as an instruction to a model, or both.",
+      "properties": {
+        "page": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Page"
+        },
+        "visibility": {
+          "title": "Visibility",
+          "type": "string"
+        },
+        "instruction": {
+          "title": "Instruction",
+          "type": "string"
+        },
+        "severity": {
+          "title": "Severity",
+          "type": "string"
+        },
+        "excerpt": {
+          "title": "Excerpt",
+          "type": "string"
+        },
+        "characters": {
+          "title": "Characters",
+          "type": "integer"
+        },
+        "hidden_reasons": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Hidden Reasons",
+          "type": "array"
+        },
+        "instruction_reasons": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Instruction Reasons",
+          "type": "array"
+        },
+        "score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Score"
+        },
+        "in_loader_output": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "In Loader Output"
+        },
+        "fingerprint": {
+          "default": "",
+          "title": "Fingerprint",
+          "type": "string"
+        }
+      },
+      "required": [
+        "page",
+        "visibility",
+        "instruction",
+        "severity",
+        "excerpt",
+        "characters"
+      ],
+      "title": "ContentFinding",
+      "type": "object"
+    },
+    "DocumentCostEstimate": {
+      "properties": {
+        "path": {
+          "format": "path",
+          "title": "Path",
+          "type": "string"
+        },
+        "page_count": {
+          "title": "Page Count",
+          "type": "integer"
+        },
+        "page_count_known": {
+          "title": "Page Count Known",
+          "type": "boolean"
+        },
+        "has_text_layer": {
+          "title": "Has Text Layer",
+          "type": "boolean"
+        },
+        "mean_text_coverage_pct": {
+          "title": "Mean Text Coverage Pct",
+          "type": "number"
+        },
+        "pages": {
+          "items": {
+            "$ref": "#/$defs/PageFacts"
+          },
+          "title": "Pages",
+          "type": "array"
+        },
+        "models": {
+          "items": {
+            "$ref": "#/$defs/ModelCostEstimate"
+          },
+          "title": "Models",
+          "type": "array"
+        }
+      },
+      "required": [
+        "path",
+        "page_count",
+        "page_count_known",
+        "has_text_layer",
+        "mean_text_coverage_pct",
+        "pages"
+      ],
+      "title": "DocumentCostEstimate",
+      "type": "object"
+    },
+    "DocumentFormat": {
+      "enum": [
+        "pdf",
+        "image",
+        "docx",
+        "xlsx",
+        "pptx",
+        "html",
+        "markdown",
+        "text",
+        "email",
+        "other"
+      ],
+      "title": "DocumentFormat",
+      "type": "string"
+    },
+    "DocumentReport": {
+      "properties": {
+        "path": {
+          "format": "path",
+          "title": "Path",
+          "type": "string"
+        },
+        "relative_path": {
+          "title": "Relative Path",
+          "type": "string"
+        },
+        "sha256": {
+          "title": "Sha256",
+          "type": "string"
+        },
+        "format": {
+          "$ref": "#/$defs/DocumentFormat"
+        },
+        "page_count": {
+          "title": "Page Count",
+          "type": "integer"
+        },
+        "page_count_known": {
+          "title": "Page Count Known",
+          "type": "boolean"
+        },
+        "load_warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Load Warnings",
+          "type": "array"
+        },
+        "cost": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DocumentCostEstimate"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "readiness": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ReadinessReport"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "sensitive": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ScanResult"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "routing": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DocumentRouting"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "previews": {
+          "items": {
+            "$ref": "#/$defs/PagePreview"
+          },
+          "title": "Previews",
+          "type": "array"
+        },
+        "timing": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DocumentTiming"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "extracted_text": {
+          "items": {
+            "$ref": "#/$defs/PageText"
+          },
+          "title": "Extracted Text",
+          "type": "array"
+        },
+        "extractions": {
+          "items": {
+            "$ref": "#/$defs/ExtractorReading"
+          },
+          "title": "Extractions",
+          "type": "array"
+        },
+        "metadata_findings": {
+          "items": {
+            "$ref": "#/$defs/MetadataFinding"
+          },
+          "title": "Metadata Findings",
+          "type": "array"
+        },
+        "content_findings": {
+          "items": {
+            "$ref": "#/$defs/ContentFinding"
+          },
+          "title": "Content Findings",
+          "type": "array"
+        },
+        "concept_findings": {
+          "items": {
+            "$ref": "#/$defs/ConceptFinding"
+          },
+          "title": "Concept Findings",
+          "type": "array"
+        },
+        "concepts_unjudged": {
+          "default": 0,
+          "title": "Concepts Unjudged",
+          "type": "integer"
+        },
+        "verification": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DocumentVerification"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "visibility_checked": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Visibility Checked"
+        },
+        "visibility_note": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Visibility Note"
+        },
+        "ignored": {
+          "items": {
+            "$ref": "#/$defs/IgnoredFinding"
+          },
+          "title": "Ignored",
+          "type": "array"
+        },
+        "path_exposures": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Path Exposures",
+          "type": "array"
+        }
+      },
+      "required": [
+        "path",
+        "relative_path",
+        "sha256",
+        "format",
+        "page_count",
+        "page_count_known"
+      ],
+      "title": "DocumentReport",
+      "type": "object"
+    },
+    "DocumentRouting": {
+      "properties": {
+        "pages": {
+          "items": {
+            "$ref": "#/$defs/PageRoute"
+          },
+          "title": "Pages",
+          "type": "array"
+        }
+      },
+      "title": "DocumentRouting",
+      "type": "object"
+    },
+    "DocumentTiming": {
+      "description": "Wall clock spent on one document.",
+      "properties": {
+        "read_seconds": {
+          "title": "Read Seconds",
+          "type": "number"
+        },
+        "analyse_seconds": {
+          "title": "Analyse Seconds",
+          "type": "number"
+        },
+        "scan_seconds": {
+          "title": "Scan Seconds",
+          "type": "number"
+        },
+        "total_seconds": {
+          "title": "Total Seconds",
+          "type": "number"
+        },
+        "seconds_per_page": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Seconds Per Page"
+        },
+        "started_at": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Started At"
+        }
+      },
+      "required": [
+        "read_seconds",
+        "analyse_seconds",
+        "scan_seconds",
+        "total_seconds",
+        "seconds_per_page"
+      ],
+      "title": "DocumentTiming",
+      "type": "object"
+    },
+    "DocumentVerification": {
+      "description": "Every page of one document a vision model read again, and what it found.",
+      "properties": {
+        "model": {
+          "title": "Model",
+          "type": "string"
+        },
+        "scope": {
+          "title": "Scope",
+          "type": "string"
+        },
+        "pages_total": {
+          "title": "Pages Total",
+          "type": "integer"
+        },
+        "pages": {
+          "items": {
+            "$ref": "#/$defs/PageVerification"
+          },
+          "title": "Pages",
+          "type": "array"
+        },
+        "unreadable_pages": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Unreadable Pages",
+          "type": "array"
+        },
+        "sent_to": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Sent To",
+          "type": "array"
+        }
+      },
+      "required": [
+        "model",
+        "scope",
+        "pages_total"
+      ],
+      "title": "DocumentVerification",
+      "type": "object"
+    },
+    "ExtractorReading": {
+      "description": "What one extractor made of one document, totalled over its pages.",
+      "properties": {
+        "extractor": {
+          "title": "Extractor",
+          "type": "string"
+        },
+        "characters": {
+          "title": "Characters",
+          "type": "integer"
+        },
+        "mean_coverage_pct": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Mean Coverage Pct"
+        },
+        "seconds": {
+          "title": "Seconds",
+          "type": "number"
+        },
+        "granularity": {
+          "title": "Granularity",
+          "type": "string"
+        },
+        "reads_tables": {
+          "title": "Reads Tables",
+          "type": "boolean"
+        },
+        "similarity": {
+          "default": 1.0,
+          "title": "Similarity",
+          "type": "number"
+        },
+        "reordered": {
+          "default": false,
+          "title": "Reordered",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "extractor",
+        "characters",
+        "mean_coverage_pct",
+        "seconds",
+        "granularity",
+        "reads_tables"
+      ],
+      "title": "ExtractorReading",
+      "type": "object"
+    },
+    "FactCheck": {
+      "description": "Whether one expected fact appears in the text of each loader.",
+      "properties": {
+        "fact": {
+          "title": "Fact",
+          "type": "string"
+        },
+        "document": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Document"
+        },
+        "found": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": "Found",
+          "type": "object"
+        },
+        "scores": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Scores",
+          "type": "object"
+        },
+        "pages": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": "Pages",
+          "type": "object"
+        },
+        "documents": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": "Documents",
+          "type": "object"
+        },
+        "nearest": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": "Nearest",
+          "type": "object"
+        }
+      },
+      "required": [
+        "fact",
+        "document",
+        "found",
+        "scores",
+        "pages",
+        "documents"
+      ],
+      "title": "FactCheck",
+      "type": "object"
+    },
+    "FactLocation": {
+      "properties": {
+        "fact": {
+          "title": "Fact",
+          "type": "string"
+        },
+        "status": {
+          "title": "Status",
+          "type": "string"
+        },
+        "chunks": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Chunks",
+          "type": "array"
+        }
+      },
+      "required": [
+        "fact",
+        "status",
+        "chunks"
+      ],
+      "title": "FactLocation",
+      "type": "object"
+    },
+    "Factor": {
+      "description": "One input to the global score, and why it came out where it did.",
+      "properties": {
+        "key": {
+          "title": "Key",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Score"
+        },
+        "weight": {
+          "title": "Weight",
+          "type": "number"
+        },
+        "why": {
+          "title": "Why",
+          "type": "string"
+        }
+      },
+      "required": [
+        "key",
+        "name",
+        "score",
+        "weight",
+        "why"
+      ],
+      "title": "Factor",
+      "type": "object"
+    },
+    "FolderCostEstimate": {
+      "properties": {
+        "currency": {
+          "title": "Currency",
+          "type": "string"
+        },
+        "usd_to_report_rate": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Usd To Report Rate"
+        },
+        "headline_resolution": {
+          "title": "Headline Resolution",
+          "type": "string"
+        },
+        "resolutions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Resolutions",
+          "type": "array"
+        },
+        "documents": {
+          "items": {
+            "$ref": "#/$defs/DocumentCostEstimate"
+          },
+          "title": "Documents",
+          "type": "array"
+        },
+        "volume": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/VolumeExtrapolation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "models": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Models",
+          "type": "array"
+        },
+        "prices_as_of": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Prices As Of"
+        }
+      },
+      "required": [
+        "currency",
+        "usd_to_report_rate",
+        "headline_resolution",
+        "resolutions"
+      ],
+      "title": "FolderCostEstimate",
+      "type": "object"
+    },
+    "FormatComparison": {
+      "description": "The loaders compared on the documents of one file type.",
+      "properties": {
+        "format": {
+          "title": "Format",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "documents": {
+          "title": "Documents",
+          "type": "integer"
+        },
+        "loaders": {
+          "items": {
+            "$ref": "#/$defs/FormatLoaderRow"
+          },
+          "title": "Loaders",
+          "type": "array"
+        },
+        "skipped_by": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Skipped By",
+          "type": "array"
+        },
+        "facts": {
+          "default": 0,
+          "title": "Facts",
+          "type": "integer"
+        },
+        "recommended": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Recommended"
+        },
+        "verdict": {
+          "default": "",
+          "title": "Verdict",
+          "type": "string"
+        },
+        "ranked": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Ranked",
+          "type": "array"
+        }
+      },
+      "required": [
+        "format",
+        "label",
+        "documents",
+        "loaders"
+      ],
+      "title": "FormatComparison",
+      "type": "object"
+    },
+    "FormatLoaderRow": {
+      "description": "One loader's results on the documents of one file type.",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "documents": {
+          "title": "Documents",
+          "type": "integer"
+        },
+        "pages": {
+          "title": "Pages",
+          "type": "integer"
+        },
+        "characters": {
+          "title": "Characters",
+          "type": "integer"
+        },
+        "seconds": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Seconds"
+        },
+        "similarity": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Similarity"
+        },
+        "failures": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Failures",
+          "type": "object"
+        },
+        "facts_found": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Facts Found"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error"
+        }
+      },
+      "required": [
+        "name",
+        "documents",
+        "pages",
+        "characters",
+        "seconds",
+        "similarity"
+      ],
+      "title": "FormatLoaderRow",
+      "type": "object"
+    },
+    "IdentifierDifference": {
+      "description": "An identifier in some loaders' output and not in others'.\n\nMatched by where it was found, its category and its masked value, so the\nsame identifier read by two loaders is one row. Metadata findings are\nmatched regardless of key name, because loaders spell the same field\ndifferently: `producer` in one, `Producer` in another.",
+      "properties": {
+        "document": {
+          "title": "Document",
+          "type": "string"
+        },
+        "category": {
+          "title": "Category",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "severity": {
+          "title": "Severity",
+          "type": "string"
+        },
+        "evidence": {
+          "title": "Evidence",
+          "type": "string"
+        },
+        "value": {
+          "title": "Value",
+          "type": "string"
+        },
+        "location": {
+          "title": "Location",
+          "type": "string"
+        },
+        "keys": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Keys",
+          "type": "array"
+        },
+        "found_by": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Found By",
+          "type": "array"
+        },
+        "missed_by": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Missed By",
+          "type": "array"
+        }
+      },
+      "required": [
+        "document",
+        "category",
+        "label",
+        "severity",
+        "evidence",
+        "value",
+        "location",
+        "keys",
+        "found_by",
+        "missed_by"
+      ],
+      "title": "IdentifierDifference",
+      "type": "object"
+    },
+    "IgnoreRule": {
+      "description": "One entry of the ignore file, and what it did on this run.",
+      "properties": {
+        "finding": {
+          "title": "Finding",
+          "type": "string"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        },
+        "by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "By"
+        },
+        "until": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Until"
+        },
+        "paths": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Paths",
+          "type": "array"
+        },
+        "what": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "What"
+        },
+        "added": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Added"
+        },
+        "matched": {
+          "default": 0,
+          "title": "Matched",
+          "type": "integer"
+        },
+        "expired": {
+          "default": false,
+          "title": "Expired",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "finding",
+        "reason"
+      ],
+      "title": "IgnoreRule",
+      "type": "object"
+    },
+    "IgnoreSummary": {
+      "description": "The ignore file a run read, and each of its entries.",
+      "properties": {
+        "file": {
+          "title": "File",
+          "type": "string"
+        },
+        "rules": {
+          "items": {
+            "$ref": "#/$defs/IgnoreRule"
+          },
+          "title": "Rules",
+          "type": "array"
+        }
+      },
+      "required": [
+        "file"
+      ],
+      "title": "IgnoreSummary",
+      "type": "object"
+    },
+    "IgnoredFinding": {
+      "description": "A finding an ignore file set aside, with the reason it gave.\n\nKept in the report, so what was ignored stays visible, and out of every\ncount, limitation, quick win and rule, so it no longer fails a check.",
+      "properties": {
+        "fingerprint": {
+          "title": "Fingerprint",
+          "type": "string"
+        },
+        "kind": {
+          "title": "Kind",
+          "type": "string"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        },
+        "by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "By"
+        },
+        "until": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Until"
+        },
+        "identifier": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SensitiveMatch"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "content": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContentFinding"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "fingerprint",
+        "kind",
+        "reason"
+      ],
+      "title": "IgnoredFinding",
+      "type": "object"
+    },
+    "InspectedChunk": {
+      "properties": {
+        "index": {
+          "title": "Index",
+          "type": "integer"
+        },
+        "document": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Document"
+        },
+        "page": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Page"
+        },
+        "characters": {
+          "title": "Characters",
+          "type": "integer"
+        },
+        "tokens": {
+          "title": "Tokens",
+          "type": "integer"
+        },
+        "identifiers": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Identifiers",
+          "type": "array"
+        },
+        "hidden": {
+          "title": "Hidden",
+          "type": "integer"
+        },
+        "flags": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Flags",
+          "type": "array"
+        },
+        "metadata_keys": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Metadata Keys",
+          "type": "array"
+        },
+        "preview": {
+          "title": "Preview",
+          "type": "string"
+        },
+        "start": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Start"
+        },
+        "end": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "End"
+        },
+        "page_characters": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Page Characters"
+        }
+      },
+      "required": [
+        "index",
+        "document",
+        "page",
+        "characters",
+        "tokens",
+        "identifiers",
+        "hidden",
+        "flags",
+        "metadata_keys",
+        "preview"
+      ],
+      "title": "InspectedChunk",
+      "type": "object"
+    },
+    "Limitation": {
+      "description": "One thing this particular run did not or could not check.",
+      "properties": {
+        "area": {
+          "title": "Area",
+          "type": "string"
+        },
+        "statement": {
+          "title": "Statement",
+          "type": "string"
+        },
+        "affected": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Affected",
+          "type": "array"
+        },
+        "severity": {
+          "default": "info",
+          "title": "Severity",
+          "type": "string"
+        }
+      },
+      "required": [
+        "area",
+        "statement"
+      ],
+      "title": "Limitation",
+      "type": "object"
+    },
+    "LoaderComparison": {
+      "description": "Where several loaders' output differed, measured against the first.",
+      "properties": {
+        "baseline": {
+          "title": "Baseline",
+          "type": "string"
+        },
+        "loaders": {
+          "items": {
+            "$ref": "#/$defs/LoaderSummary"
+          },
+          "title": "Loaders",
+          "type": "array"
+        },
+        "identifier_differences": {
+          "items": {
+            "$ref": "#/$defs/IdentifierDifference"
+          },
+          "title": "Identifier Differences",
+          "type": "array"
+        },
+        "metadata_keys": {
+          "additionalProperties": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "title": "Metadata Keys",
+          "type": "object"
+        },
+        "documents": {
+          "additionalProperties": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "title": "Documents",
+          "type": "object"
+        },
+        "facts": {
+          "items": {
+            "$ref": "#/$defs/FactCheck"
+          },
+          "title": "Facts",
+          "type": "array"
+        },
+        "recommended": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Recommended"
+        },
+        "verdict": {
+          "default": "",
+          "title": "Verdict",
+          "type": "string"
+        },
+        "ranked": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Ranked",
+          "type": "array"
+        },
+        "formats": {
+          "items": {
+            "$ref": "#/$defs/FormatComparison"
+          },
+          "title": "Formats",
+          "type": "array"
+        },
+        "baselines": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Baselines",
+          "type": "object"
+        }
+      },
+      "required": [
+        "baseline",
+        "loaders"
+      ],
+      "title": "LoaderComparison",
+      "type": "object"
+    },
+    "LoaderRun": {
+      "description": "What an external loader did when complydoc ran it.",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "documents_returned": {
+          "title": "Documents Returned",
+          "type": "integer"
+        },
+        "seconds": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Seconds"
+        },
+        "network_attempts": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Network Attempts",
+          "type": "array"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error"
+        },
+        "metadata_keys": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Metadata Keys",
+          "type": "array"
+        },
+        "failures": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Failures",
+          "type": "object"
+        },
+        "cached_files": {
+          "default": 0,
+          "title": "Cached Files",
+          "type": "integer"
+        },
+        "network_allowed": {
+          "default": false,
+          "title": "Network Allowed",
+          "type": "boolean"
+        },
+        "tags": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Tags",
+          "type": "array"
+        },
+        "skipped": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Skipped",
+          "type": "array"
+        },
+        "formats": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Formats"
+        }
+      },
+      "required": [
+        "name",
+        "documents_returned",
+        "seconds"
+      ],
+      "title": "LoaderRun",
+      "type": "object"
+    },
+    "LoaderSummary": {
+      "description": "One loader's totals, in a comparison of several.",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "documents": {
+          "title": "Documents",
+          "type": "integer"
+        },
+        "pages": {
+          "title": "Pages",
+          "type": "integer"
+        },
+        "characters": {
+          "title": "Characters",
+          "type": "integer"
+        },
+        "seconds": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Seconds"
+        },
+        "network_allowed": {
+          "title": "Network Allowed",
+          "type": "boolean"
+        },
+        "network_attempts": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Network Attempts",
+          "type": "array"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Error"
+        },
+        "metadata_keys": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Metadata Keys",
+          "type": "array"
+        },
+        "identifiers_in_text": {
+          "title": "Identifiers In Text",
+          "type": "integer"
+        },
+        "identifiers_in_metadata": {
+          "title": "Identifiers In Metadata",
+          "type": "integer"
+        },
+        "documents_with_paths": {
+          "title": "Documents With Paths",
+          "type": "integer"
+        },
+        "readiness_score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Readiness Score"
+        },
+        "global_score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Global Score"
+        },
+        "text_path_usd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Text Path Usd"
+        },
+        "failures": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Failures",
+          "type": "object"
+        },
+        "cached_files": {
+          "default": 0,
+          "title": "Cached Files",
+          "type": "integer"
+        },
+        "facts_found": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Facts Found"
+        },
+        "parser_usd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parser Usd"
+        },
+        "tags": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Tags",
+          "type": "array"
+        },
+        "skipped": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Skipped",
+          "type": "array"
+        },
+        "formats": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Formats"
+        }
+      },
+      "required": [
+        "name",
+        "documents",
+        "pages",
+        "characters",
+        "seconds",
+        "network_allowed",
+        "network_attempts",
+        "error",
+        "metadata_keys",
+        "identifiers_in_text",
+        "identifiers_in_metadata",
+        "documents_with_paths",
+        "readiness_score",
+        "global_score",
+        "text_path_usd"
+      ],
+      "title": "LoaderSummary",
+      "type": "object"
+    },
+    "MaskingConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "reveal_tail_chars": {
+          "default": 4,
+          "title": "Reveal Tail Chars",
+          "type": "integer"
+        },
+        "mask_char": {
+          "default": "\u2022",
+          "title": "Mask Char",
+          "type": "string"
+        },
+        "never_reveal": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Never Reveal",
+          "type": "array"
+        }
+      },
+      "title": "MaskingConfig",
+      "type": "object"
+    },
+    "MetadataFinding": {
+      "description": "An identifier found in a document's metadata.\n\nLoaders attach metadata to every document they return, and it is usually\nstored beside the content \u2014 in a vector store, next to each chunk \u2014 so an\nidentifier there travels exactly as far as one in the text.",
+      "properties": {
+        "key": {
+          "title": "Key",
+          "type": "string"
+        },
+        "category": {
+          "title": "Category",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "severity": {
+          "title": "Severity",
+          "type": "string"
+        },
+        "evidence": {
+          "title": "Evidence",
+          "type": "string"
+        },
+        "masked": {
+          "title": "Masked",
+          "type": "string"
+        },
+        "revealed": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Revealed"
+        },
+        "page": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Page"
+        }
+      },
+      "required": [
+        "key",
+        "category",
+        "label",
+        "severity",
+        "evidence",
+        "masked"
+      ],
+      "title": "MetadataFinding",
+      "type": "object"
+    },
+    "ModelCostEstimate": {
+      "properties": {
+        "model_id": {
+          "title": "Model Id",
+          "type": "string"
+        },
+        "display_name": {
+          "title": "Display Name",
+          "type": "string"
+        },
+        "provider": {
+          "title": "Provider",
+          "type": "string"
+        },
+        "input_per_mtok_usd": {
+          "title": "Input Per Mtok Usd",
+          "type": "number"
+        },
+        "last_verified": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Last Verified"
+        },
+        "days_since_verified": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Days Since Verified"
+        },
+        "is_stale": {
+          "title": "Is Stale",
+          "type": "boolean"
+        },
+        "text_tokens": {
+          "title": "Text Tokens",
+          "type": "integer"
+        },
+        "text_token_fidelity": {
+          "title": "Text Token Fidelity",
+          "type": "string"
+        },
+        "text_token_note": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Text Token Note"
+        },
+        "text_path_input_usd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Text Path Input Usd"
+        },
+        "text_path_unavailable_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Text Path Unavailable Reason"
+        },
+        "vision_tokens_by_resolution": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Vision Tokens By Resolution",
+          "type": "object"
+        },
+        "vision_input_usd_by_resolution": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Vision Input Usd By Resolution",
+          "type": "object"
+        },
+        "vision_path_unavailable_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Vision Path Unavailable Reason"
+        },
+        "text_path_seconds": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Text Path Seconds"
+        },
+        "vision_formula": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Vision Formula"
+        },
+        "batch_input_per_mtok_usd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Batch Input Per Mtok Usd"
+        },
+        "batch_text_path_input_usd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Batch Text Path Input Usd"
+        },
+        "batch_vision_input_usd_by_resolution": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Batch Vision Input Usd By Resolution",
+          "type": "object"
+        },
+        "price_source": {
+          "default": "verified",
+          "title": "Price Source",
+          "type": "string"
+        },
+        "imported_on": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Imported On"
+        },
+        "tokenizer": {
+          "default": "",
+          "title": "Tokenizer",
+          "type": "string"
+        },
+        "supports_vision": {
+          "default": false,
+          "title": "Supports Vision",
+          "type": "boolean"
+        },
+        "vision_tokens_by_page": {
+          "additionalProperties": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "title": "Vision Tokens By Page",
+          "type": "object"
+        }
+      },
+      "required": [
+        "model_id",
+        "display_name",
+        "provider",
+        "input_per_mtok_usd",
+        "last_verified",
+        "days_since_verified",
+        "is_stale",
+        "text_tokens",
+        "text_token_fidelity",
+        "text_token_note",
+        "text_path_input_usd",
+        "text_path_unavailable_reason",
+        "vision_tokens_by_resolution",
+        "vision_input_usd_by_resolution",
+        "vision_path_unavailable_reason",
+        "text_path_seconds",
+        "vision_formula"
+      ],
+      "title": "ModelCostEstimate",
+      "type": "object"
+    },
+    "OverallReadiness": {
+      "description": "The folder, and every document in it, scored on all three factors.",
+      "properties": {
+        "score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Score"
+        },
+        "label": {
+          "default": "",
+          "title": "Label",
+          "type": "string"
+        },
+        "factors": {
+          "items": {
+            "$ref": "#/$defs/Factor"
+          },
+          "title": "Factors",
+          "type": "array"
+        },
+        "bands": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Bands",
+          "type": "object"
+        },
+        "by_document": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "By Document",
+          "type": "object"
+        },
+        "scored_documents": {
+          "default": 0,
+          "title": "Scored Documents",
+          "type": "integer"
+        },
+        "total_documents": {
+          "default": 0,
+          "title": "Total Documents",
+          "type": "integer"
+        }
+      },
+      "title": "OverallReadiness",
+      "type": "object"
+    },
+    "PageFacts": {
+      "properties": {
+        "number": {
+          "title": "Number",
+          "type": "integer"
+        },
+        "width_pt": {
+          "title": "Width Pt",
+          "type": "number"
+        },
+        "height_pt": {
+          "title": "Height Pt",
+          "type": "number"
+        },
+        "dpi": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Dpi"
+        },
+        "text_source": {
+          "title": "Text Source",
+          "type": "string"
+        },
+        "text_coverage_pct": {
+          "title": "Text Coverage Pct",
+          "type": "number"
+        },
+        "rendered": {
+          "additionalProperties": {
+            "$ref": "#/$defs/RenderedSize"
+          },
+          "title": "Rendered",
+          "type": "object"
+        }
+      },
+      "required": [
+        "number",
+        "width_pt",
+        "height_pt",
+        "dpi",
+        "text_source",
+        "text_coverage_pct",
+        "rendered"
+      ],
+      "title": "PageFacts",
+      "type": "object"
+    },
+    "PagePreview": {
+      "properties": {
+        "number": {
+          "title": "Number",
+          "type": "integer"
+        },
+        "width_pt": {
+          "title": "Width Pt",
+          "type": "number"
+        },
+        "height_pt": {
+          "title": "Height Pt",
+          "type": "number"
+        },
+        "rotation": {
+          "title": "Rotation",
+          "type": "integer"
+        },
+        "text_blocks": {
+          "items": {
+            "$ref": "#/$defs/Box"
+          },
+          "title": "Text Blocks",
+          "type": "array"
+        },
+        "image_blocks": {
+          "items": {
+            "$ref": "#/$defs/Box"
+          },
+          "title": "Image Blocks",
+          "type": "array"
+        },
+        "sensitive": {
+          "items": {
+            "$ref": "#/$defs/Box"
+          },
+          "title": "Sensitive",
+          "type": "array"
+        },
+        "gutters": {
+          "items": {
+            "$ref": "#/$defs/Box"
+          },
+          "title": "Gutters",
+          "type": "array"
+        },
+        "text_coverage_pct": {
+          "default": 0.0,
+          "title": "Text Coverage Pct",
+          "type": "number"
+        },
+        "image_coverage_pct": {
+          "default": 0.0,
+          "title": "Image Coverage Pct",
+          "type": "number"
+        },
+        "sensitive_count": {
+          "default": 0,
+          "title": "Sensitive Count",
+          "type": "integer"
+        },
+        "image_data_uri": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Image Data Uri"
+        },
+        "image": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Image"
+        },
+        "image_withheld": {
+          "default": 0,
+          "title": "Image Withheld",
+          "type": "integer"
+        },
+        "image_width_px": {
+          "default": 0,
+          "title": "Image Width Px",
+          "type": "integer"
+        },
+        "image_height_px": {
+          "default": 0,
+          "title": "Image Height Px",
+          "type": "integer"
+        },
+        "unlocated_sensitive": {
+          "default": 0,
+          "title": "Unlocated Sensitive",
+          "type": "integer"
+        },
+        "unreadable": {
+          "default": false,
+          "title": "Unreadable",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "number",
+        "width_pt",
+        "height_pt",
+        "rotation"
+      ],
+      "title": "PagePreview",
+      "type": "object"
+    },
+    "PageRoute": {
+      "properties": {
+        "number": {
+          "title": "Number",
+          "type": "integer"
+        },
+        "route": {
+          "title": "Route",
+          "type": "string"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        },
+        "characters": {
+          "title": "Characters",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "number",
+        "route",
+        "reason",
+        "characters"
+      ],
+      "title": "PageRoute",
+      "type": "object"
+    },
+    "PageText": {
+      "description": "The text read off one page, for checking extraction quality.",
+      "properties": {
+        "number": {
+          "title": "Number",
+          "type": "integer"
+        },
+        "source": {
+          "title": "Source",
+          "type": "string"
+        },
+        "characters": {
+          "title": "Characters",
+          "type": "integer"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "ocr_text": {
+          "default": "",
+          "title": "Ocr Text",
+          "type": "string"
+        },
+        "truncated": {
+          "default": false,
+          "title": "Truncated",
+          "type": "boolean"
+        },
+        "readings": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Readings",
+          "type": "object"
+        },
+        "kept": {
+          "default": "",
+          "title": "Kept",
+          "type": "string"
+        },
+        "costs": {
+          "additionalProperties": {
+            "$ref": "#/$defs/ReadingCost"
+          },
+          "title": "Costs",
+          "type": "object"
+        },
+        "seconds": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Seconds",
+          "type": "object"
+        },
+        "tokens": {
+          "additionalProperties": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object"
+          },
+          "title": "Tokens",
+          "type": "object"
+        },
+        "image_tokens": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Image Tokens",
+          "type": "object"
+        },
+        "vision_estimate": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ReadingCost"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "masked_text": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Masked Text"
+        },
+        "masked_ocr_text": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Masked Ocr Text"
+        },
+        "masked_readings": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Masked Readings"
+        }
+      },
+      "required": [
+        "number",
+        "source",
+        "characters",
+        "text"
+      ],
+      "title": "PageText",
+      "type": "object"
+    },
+    "PageVerification": {
+      "description": "One page read again by a vision model, and whether the two readings agree.",
+      "properties": {
+        "number": {
+          "title": "Number",
+          "type": "integer"
+        },
+        "status": {
+          "title": "Status",
+          "type": "string"
+        },
+        "why": {
+          "title": "Why",
+          "type": "string"
+        },
+        "similarity": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Similarity"
+        },
+        "coverage": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Coverage"
+        },
+        "missing": {
+          "default": "",
+          "title": "Missing",
+          "type": "string"
+        },
+        "cost": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ReadingCost"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error"
+        },
+        "seconds": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Seconds"
+        }
+      },
+      "required": [
+        "number",
+        "status",
+        "why"
+      ],
+      "title": "PageVerification",
+      "type": "object"
+    },
+    "QuestionResult": {
+      "properties": {
+        "question": {
+          "title": "Question",
+          "type": "string"
+        },
+        "fact": {
+          "title": "Fact",
+          "type": "string"
+        },
+        "status": {
+          "title": "Status",
+          "type": "string"
+        },
+        "rank": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Rank"
+        },
+        "answer_chunks": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Answer Chunks",
+          "type": "array"
+        },
+        "top_chunks": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Top Chunks",
+          "type": "array"
+        }
+      },
+      "required": [
+        "question",
+        "fact",
+        "status",
+        "rank",
+        "answer_chunks",
+        "top_chunks"
+      ],
+      "title": "QuestionResult",
+      "type": "object"
+    },
+    "QuickWin": {
+      "description": "One recommended action and the documents it applies to.",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "detail": {
+          "title": "Detail",
+          "type": "string"
+        },
+        "documents": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Documents",
+          "type": "array"
+        },
+        "actor": {
+          "title": "Actor",
+          "type": "string"
+        },
+        "effect": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Effect"
+        },
+        "saving_usd_per_1000": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Saving Usd Per 1000"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "detail",
+        "documents",
+        "actor"
+      ],
+      "title": "QuickWin",
+      "type": "object"
+    },
+    "ReadinessReport": {
+      "properties": {
+        "path": {
+          "format": "path",
+          "title": "Path",
+          "type": "string"
+        },
+        "format": {
+          "$ref": "#/$defs/DocumentFormat"
+        },
+        "signals": {
+          "items": {
+            "$ref": "#/$defs/SignalResult"
+          },
+          "title": "Signals",
+          "type": "array"
+        },
+        "score": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ReadinessScore"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "unconfigured_signals": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Unconfigured Signals",
+          "type": "array"
+        }
+      },
+      "required": [
+        "path",
+        "format"
+      ],
+      "title": "ReadinessReport",
+      "type": "object"
+    },
+    "ReadinessScore": {
+      "properties": {
+        "value": {
+          "title": "Value",
+          "type": "number"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "components": {
+          "items": {
+            "$ref": "#/$defs/ScoreComponent"
+          },
+          "title": "Components",
+          "type": "array"
+        },
+        "signals_counted": {
+          "title": "Signals Counted",
+          "type": "integer"
+        },
+        "signals_excluded": {
+          "title": "Signals Excluded",
+          "type": "integer"
+        },
+        "method": {
+          "title": "Method",
+          "type": "string"
+        },
+        "low_confidence": {
+          "title": "Low Confidence",
+          "type": "boolean"
+        },
+        "confidence_note": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Confidence Note"
+        }
+      },
+      "required": [
+        "value",
+        "label",
+        "components",
+        "signals_counted",
+        "signals_excluded",
+        "method",
+        "low_confidence",
+        "confidence_note"
+      ],
+      "title": "ReadinessScore",
+      "type": "object"
+    },
+    "ReadingCost": {
+      "description": "What one reading of one page cost to make.\n\nA reader that runs on this machine \u2014 a text-layer library, local OCR \u2014 costs\nmachine time and no money, and says so as `local` rather than borrowing a\nprice to look comparable. A hosted reader is `actual` when the provider's\nown token count came back with the reading, `estimated` when the figure is\nworked out from the page's size and the price table, and `unpriced` when\nno price for it is known.",
+      "properties": {
+        "usd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Usd"
+        },
+        "basis": {
+          "title": "Basis",
+          "type": "string"
+        },
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model"
+        },
+        "input_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Input Tokens"
+        },
+        "output_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Output Tokens"
+        }
+      },
+      "required": [
+        "usd",
+        "basis"
+      ],
+      "title": "ReadingCost",
+      "type": "object"
+    },
+    "RenderedSize": {
+      "properties": {
+        "width_px": {
+          "title": "Width Px",
+          "type": "integer"
+        },
+        "height_px": {
+          "title": "Height Px",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "width_px",
+        "height_px"
+      ],
+      "title": "RenderedSize",
+      "type": "object"
+    },
+    "RoutingSummary": {
+      "description": "How many pages take each route, and what that mix costs.",
+      "properties": {
+        "pages": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Pages",
+          "type": "object"
+        },
+        "documents": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Documents",
+          "type": "object"
+        },
+        "documents_routed": {
+          "default": 0,
+          "title": "Documents Routed",
+          "type": "integer"
+        },
+        "documents_without_pages": {
+          "default": 0,
+          "title": "Documents Without Pages",
+          "type": "integer"
+        },
+        "model_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model Id"
+        },
+        "model_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model Name"
+        },
+        "resolution": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Resolution"
+        },
+        "routed_usd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Routed Usd"
+        },
+        "text_layer_usd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Text Layer Usd"
+        },
+        "text_ocr_usd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Text Ocr Usd"
+        },
+        "vision_usd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Vision Usd"
+        },
+        "basis": {
+          "default": "",
+          "title": "Basis",
+          "type": "string"
+        }
+      },
+      "title": "RoutingSummary",
+      "type": "object"
+    },
+    "RunContext": {
+      "properties": {
+        "repository": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Repository"
+        },
+        "branch": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Branch"
+        },
+        "commit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Commit"
+        },
+        "dirty": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dirty"
+        },
+        "workflow": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Workflow"
+        },
+        "url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Url"
+        }
+      },
+      "title": "RunContext",
+      "type": "object"
+    },
+    "RunMetadata": {
+      "properties": {
+        "tool_version": {
+          "title": "Tool Version",
+          "type": "string"
+        },
+        "schema_version": {
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "started_at": {
+          "title": "Started At",
+          "type": "string"
+        },
+        "finished_at": {
+          "title": "Finished At",
+          "type": "string"
+        },
+        "duration_seconds": {
+          "title": "Duration Seconds",
+          "type": "number"
+        },
+        "target": {
+          "title": "Target",
+          "type": "string"
+        },
+        "components_run": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Components Run",
+          "type": "array"
+        },
+        "config_dir": {
+          "title": "Config Dir",
+          "type": "string"
+        },
+        "config_digest": {
+          "title": "Config Digest",
+          "type": "string"
+        },
+        "offline_guard": {
+          "title": "Offline Guard",
+          "type": "string"
+        },
+        "reveal_used": {
+          "title": "Reveal Used",
+          "type": "boolean"
+        },
+        "page_images_used": {
+          "title": "Page Images Used",
+          "type": "boolean"
+        },
+        "extracted_text_used": {
+          "title": "Extracted Text Used",
+          "type": "boolean"
+        },
+        "ocr_compare_used": {
+          "title": "Ocr Compare Used",
+          "type": "boolean"
+        },
+        "ocr_requested": {
+          "title": "Ocr Requested",
+          "type": "boolean"
+        },
+        "ocr_available": {
+          "title": "Ocr Available",
+          "type": "boolean"
+        },
+        "ner_available": {
+          "title": "Ner Available",
+          "type": "boolean"
+        },
+        "python_version": {
+          "title": "Python Version",
+          "type": "string"
+        },
+        "monthly_volume": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Monthly Volume"
+        },
+        "extractor": {
+          "default": "pdfplumber",
+          "title": "Extractor",
+          "type": "string"
+        },
+        "compare_extractors": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Compare Extractors",
+          "type": "array"
+        },
+        "compare_engines": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Compare Engines",
+          "type": "array"
+        },
+        "jobs": {
+          "default": 1,
+          "title": "Jobs",
+          "type": "integer"
+        },
+        "timeout_seconds": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Timeout Seconds"
+        },
+        "sampled_from": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sampled From"
+        },
+        "sample_size": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sample Size"
+        },
+        "password_used": {
+          "default": false,
+          "title": "Password Used",
+          "type": "boolean"
+        },
+        "report_detail": {
+          "default": "full",
+          "title": "Report Detail",
+          "type": "string"
+        },
+        "documents_read_after_worker_failure": {
+          "default": 0,
+          "title": "Documents Read After Worker Failure",
+          "type": "integer"
+        },
+        "context": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RunContext"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "content_sent_to": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Content Sent To",
+          "type": "array"
+        },
+        "classifier_missed_workers": {
+          "default": 0,
+          "title": "Classifier Missed Workers",
+          "type": "integer"
+        },
+        "classifier_calls": {
+          "default": 0,
+          "title": "Classifier Calls",
+          "type": "integer"
+        },
+        "verify_model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Verify Model"
+        },
+        "verify_scope": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Verify Scope"
+        },
+        "classifier_failures": {
+          "default": 0,
+          "title": "Classifier Failures",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "tool_version",
+        "schema_version",
+        "started_at",
+        "finished_at",
+        "duration_seconds",
+        "target",
+        "components_run",
+        "config_dir",
+        "config_digest",
+        "offline_guard",
+        "reveal_used",
+        "page_images_used",
+        "extracted_text_used",
+        "ocr_compare_used",
+        "ocr_requested",
+        "ocr_available",
+        "ner_available",
+        "python_version",
+        "monthly_volume"
+      ],
+      "title": "RunMetadata",
+      "type": "object"
+    },
+    "ScanResult": {
+      "properties": {
+        "path": {
+          "format": "path",
+          "title": "Path",
+          "type": "string"
+        },
+        "matches": {
+          "items": {
+            "$ref": "#/$defs/SensitiveMatch"
+          },
+          "title": "Matches",
+          "type": "array"
+        },
+        "silent": {
+          "items": {
+            "$ref": "#/$defs/SensitiveMatch"
+          },
+          "title": "Silent",
+          "type": "array"
+        },
+        "unscanned_categories": {
+          "items": {
+            "$ref": "#/$defs/UnscannedCategory"
+          },
+          "title": "Unscanned Categories",
+          "type": "array"
+        },
+        "unreadable_pages": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Unreadable Pages",
+          "type": "array"
+        },
+        "pages_scanned": {
+          "default": 0,
+          "title": "Pages Scanned",
+          "type": "integer"
+        },
+        "reveal_used": {
+          "default": false,
+          "title": "Reveal Used",
+          "type": "boolean"
+        },
+        "reveal_blocked_categories": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Reveal Blocked Categories",
+          "type": "array"
+        },
+        "models_used": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Models Used",
+          "type": "object"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "title": "ScanResult",
+      "type": "object"
+    },
+    "ScoreComponent": {
+      "properties": {
+        "signal_id": {
+          "title": "Signal Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "rating": {
+          "title": "Rating",
+          "type": "string"
+        },
+        "raw_weight": {
+          "title": "Raw Weight",
+          "type": "number"
+        },
+        "normalised_weight": {
+          "title": "Normalised Weight",
+          "type": "number"
+        },
+        "points": {
+          "title": "Points",
+          "type": "number"
+        },
+        "contribution": {
+          "title": "Contribution",
+          "type": "number"
+        }
+      },
+      "required": [
+        "signal_id",
+        "name",
+        "rating",
+        "raw_weight",
+        "normalised_weight",
+        "points",
+        "contribution"
+      ],
+      "title": "ScoreComponent",
+      "type": "object"
+    },
+    "SensitiveMatch": {
+      "description": "One reported hit. `revealed` is None unless --reveal was passed.",
+      "properties": {
+        "category": {
+          "title": "Category",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "severity": {
+          "title": "Severity",
+          "type": "string"
+        },
+        "page": {
+          "title": "Page",
+          "type": "integer"
+        },
+        "line": {
+          "title": "Line",
+          "type": "integer"
+        },
+        "column": {
+          "title": "Column",
+          "type": "integer"
+        },
+        "length": {
+          "title": "Length",
+          "type": "integer"
+        },
+        "masked": {
+          "title": "Masked",
+          "type": "string"
+        },
+        "revealed": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Revealed"
+        },
+        "evidence": {
+          "default": "pattern",
+          "enum": [
+            "confirmed",
+            "corroborated",
+            "pattern",
+            "model"
+          ],
+          "title": "Evidence",
+          "type": "string"
+        },
+        "confidence": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": 1.0,
+          "title": "Confidence"
+        },
+        "validators_passed": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Validators Passed",
+          "type": "array"
+        },
+        "context_term": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Context Term"
+        },
+        "fingerprint": {
+          "default": "",
+          "title": "Fingerprint",
+          "type": "string"
+        }
+      },
+      "required": [
+        "category",
+        "label",
+        "severity",
+        "page",
+        "line",
+        "column",
+        "length",
+        "masked"
+      ],
+      "title": "SensitiveMatch",
+      "type": "object"
+    },
+    "SignalResult": {
+      "description": "One row of the readiness table.",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/SignalStatus"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Value"
+        },
+        "display": {
+          "title": "Display",
+          "type": "string"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Unit"
+        },
+        "why": {
+          "title": "Why",
+          "type": "string"
+        },
+        "rating": {
+          "anyOf": [
+            {
+              "enum": [
+                "good",
+                "fair",
+                "poor"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Rating"
+        },
+        "weight": {
+          "title": "Weight",
+          "type": "number"
+        },
+        "detail": {
+          "additionalProperties": true,
+          "title": "Detail",
+          "type": "object"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Reason"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "status",
+        "value",
+        "display",
+        "unit",
+        "why",
+        "rating",
+        "weight",
+        "detail",
+        "reason"
+      ],
+      "title": "SignalResult",
+      "type": "object"
+    },
+    "SignalStatus": {
+      "enum": [
+        "measured",
+        "not_applicable",
+        "error"
+      ],
+      "title": "SignalStatus",
+      "type": "string"
+    },
+    "SkipRecord": {
+      "description": "A file complydoc could not open, or could not finish. Reported; the run continues.",
+      "properties": {
+        "path": {
+          "format": "path",
+          "title": "Path",
+          "type": "string"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        },
+        "detail": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Detail"
+        }
+      },
+      "required": [
+        "path",
+        "reason"
+      ],
+      "title": "SkipRecord",
+      "type": "object"
+    },
+    "StageDocument": {
+      "description": "Schema 18: what a stage passed on, or for an embedding or store stage was given, of\none document, so a document can be followed from its loader to where it was sent.",
+      "properties": {
+        "source": {
+          "title": "Source",
+          "type": "string"
+        },
+        "items": {
+          "title": "Items",
+          "type": "integer"
+        },
+        "characters": {
+          "title": "Characters",
+          "type": "integer"
+        },
+        "empty": {
+          "title": "Empty",
+          "type": "integer"
+        },
+        "identifiers": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Identifiers",
+          "type": "array"
+        }
+      },
+      "required": [
+        "source",
+        "items",
+        "characters",
+        "empty"
+      ],
+      "title": "StageDocument",
+      "type": "object"
+    },
+    "StageIdentifier": {
+      "description": "An identifier in what a stage passed on, or, for an embedding stage, sent.",
+      "properties": {
+        "fingerprint": {
+          "title": "Fingerprint",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "masked": {
+          "title": "Masked",
+          "type": "string"
+        },
+        "severity": {
+          "title": "Severity",
+          "type": "string"
+        },
+        "occurrences": {
+          "title": "Occurrences",
+          "type": "integer"
+        },
+        "evidence": {
+          "default": "pattern",
+          "title": "Evidence",
+          "type": "string"
+        }
+      },
+      "required": [
+        "fingerprint",
+        "label",
+        "masked",
+        "severity",
+        "occurrences"
+      ],
+      "title": "StageIdentifier",
+      "type": "object"
+    },
+    "StagePreview": {
+      "description": "One item a stage passed on, or for an embedding stage sent, as the viewer shows it.",
+      "properties": {
+        "source": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Source"
+        },
+        "page": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Page"
+        },
+        "characters": {
+          "title": "Characters",
+          "type": "integer"
+        },
+        "tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Tokens"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "metadata": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Metadata",
+          "type": "object"
+        }
+      },
+      "required": [
+        "source",
+        "page",
+        "characters",
+        "tokens",
+        "text"
+      ],
+      "title": "StagePreview",
+      "type": "object"
+    },
+    "StageWarning": {
+      "description": "Schema 18: something wrong with what a stage passed on that raised no error: a\ndocument that loaded no text, garbled text, near-empty chunks, a text too long for\nthe embedding model.",
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "sources": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Sources",
+          "type": "array"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "title": "StageWarning",
+      "type": "object"
+    },
+    "Thresholds": {
+      "description": "The lines complydoc draws, written into the report so a reader of it draws the same ones.\n\nSchema 17. The viewer bands scores and marks disagreeing readings on these,\nkeeping no copy of its own that could drift from them.",
+      "properties": {
+        "bands": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Bands",
+          "type": "object"
+        },
+        "similar_enough": {
+          "default": 0.95,
+          "title": "Similar Enough",
+          "type": "number"
+        }
+      },
+      "title": "Thresholds",
+      "type": "object"
+    },
+    "Trace": {
+      "description": "Schema 17, with schema 18's documents, warnings and tracebacks on each stage: an\ningestion pipeline observed with `cd.observe`, stage by stage.",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "scan": {
+          "title": "Scan",
+          "type": "string"
+        },
+        "seconds": {
+          "title": "Seconds",
+          "type": "number"
+        },
+        "overhead_seconds": {
+          "title": "Overhead Seconds",
+          "type": "number"
+        },
+        "stages": {
+          "items": {
+            "$ref": "#/$defs/TraceStage"
+          },
+          "title": "Stages",
+          "type": "array"
+        },
+        "kind": {
+          "default": "pipeline",
+          "title": "Kind",
+          "type": "string"
+        },
+        "connections_outside": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Connections Outside",
+          "type": "array"
+        },
+        "libraries": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Libraries",
+          "type": "object"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error"
+        },
+        "unscanned": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Unscanned",
+          "type": "object"
+        }
+      },
+      "required": [
+        "name",
+        "scan",
+        "seconds",
+        "overhead_seconds"
+      ],
+      "title": "Trace",
+      "type": "object"
+    },
+    "TraceStage": {
+      "description": "One step of an observed ingestion pipeline: a loader, a splitter, a transformer, an\nembedding call, or a function of the caller's own marked with `@cd.stage`.",
+      "properties": {
+        "index": {
+          "title": "Index",
+          "type": "integer"
+        },
+        "kind": {
+          "title": "Kind",
+          "type": "string"
+        },
+        "component": {
+          "title": "Component",
+          "type": "string"
+        },
+        "module": {
+          "title": "Module",
+          "type": "string"
+        },
+        "method": {
+          "title": "Method",
+          "type": "string"
+        },
+        "seconds": {
+          "title": "Seconds",
+          "type": "number"
+        },
+        "tags": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Tags",
+          "type": "array"
+        },
+        "parameters": {
+          "additionalProperties": true,
+          "title": "Parameters",
+          "type": "object"
+        },
+        "documents_in": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Documents In"
+        },
+        "documents_out": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Documents Out"
+        },
+        "characters_in": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Characters In"
+        },
+        "characters_out": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Characters Out"
+        },
+        "sources": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Sources",
+          "type": "array"
+        },
+        "scanned": {
+          "default": "off",
+          "title": "Scanned",
+          "type": "string"
+        },
+        "identifiers": {
+          "items": {
+            "$ref": "#/$defs/StageIdentifier"
+          },
+          "title": "Identifiers",
+          "type": "array"
+        },
+        "hidden": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Hidden"
+        },
+        "metadata_keys": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Metadata Keys",
+          "type": "array"
+        },
+        "metadata_keys_added": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Metadata Keys Added",
+          "type": "array"
+        },
+        "path_keys": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Path Keys",
+          "type": "array"
+        },
+        "connections": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Connections",
+          "type": "array"
+        },
+        "hosts": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Hosts",
+          "type": "array"
+        },
+        "vectors": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Vectors"
+        },
+        "dimensions": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dimensions"
+        },
+        "chunks": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Chunks"
+        },
+        "parent": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent"
+        },
+        "started": {
+          "default": 0.0,
+          "title": "Started",
+          "type": "number"
+        },
+        "tokens_in": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tokens In"
+        },
+        "tokens_out": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tokens Out"
+        },
+        "usd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Usd"
+        },
+        "usd_basis": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Usd Basis"
+        },
+        "previews": {
+          "items": {
+            "$ref": "#/$defs/StagePreview"
+          },
+          "title": "Previews",
+          "type": "array"
+        },
+        "finished": {
+          "default": true,
+          "title": "Finished",
+          "type": "boolean"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error"
+        },
+        "traceback": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Traceback"
+        },
+        "documents": {
+          "items": {
+            "$ref": "#/$defs/StageDocument"
+          },
+          "title": "Documents",
+          "type": "array"
+        },
+        "warnings": {
+          "items": {
+            "$ref": "#/$defs/StageWarning"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "required": [
+        "index",
+        "kind",
+        "component",
+        "module",
+        "method",
+        "seconds"
+      ],
+      "title": "TraceStage",
+      "type": "object"
+    },
+    "UnscannedCategory": {
+      "properties": {
+        "category": {
+          "title": "Category",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "category",
+        "label",
+        "reason"
+      ],
+      "title": "UnscannedCategory",
+      "type": "object"
+    },
+    "VerificationSummary": {
+      "description": "The folder against an independent vision read: pages checked, and pages that disagree.",
+      "properties": {
+        "model": {
+          "title": "Model",
+          "type": "string"
+        },
+        "scope": {
+          "title": "Scope",
+          "type": "string"
+        },
+        "min_coverage": {
+          "title": "Min Coverage",
+          "type": "number"
+        },
+        "documents": {
+          "title": "Documents",
+          "type": "integer"
+        },
+        "pages_total": {
+          "title": "Pages Total",
+          "type": "integer"
+        },
+        "pages_checked": {
+          "title": "Pages Checked",
+          "type": "integer"
+        },
+        "pages_agree": {
+          "title": "Pages Agree",
+          "type": "integer"
+        },
+        "pages_disagree": {
+          "title": "Pages Disagree",
+          "type": "integer"
+        },
+        "pages_filled": {
+          "title": "Pages Filled",
+          "type": "integer"
+        },
+        "pages_failed": {
+          "title": "Pages Failed",
+          "type": "integer"
+        },
+        "pages_unreadable": {
+          "title": "Pages Unreadable",
+          "type": "integer"
+        },
+        "usd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Usd"
+        },
+        "usd_basis": {
+          "title": "Usd Basis",
+          "type": "string"
+        },
+        "headline": {
+          "title": "Headline",
+          "type": "string"
+        }
+      },
+      "required": [
+        "model",
+        "scope",
+        "min_coverage",
+        "documents",
+        "pages_total",
+        "pages_checked",
+        "pages_agree",
+        "pages_disagree",
+        "pages_filled",
+        "pages_failed",
+        "pages_unreadable",
+        "usd",
+        "usd_basis",
+        "headline"
+      ],
+      "title": "VerificationSummary",
+      "type": "object"
+    },
+    "VolumeExtrapolation": {
+      "properties": {
+        "monthly_volume": {
+          "title": "Monthly Volume",
+          "type": "integer"
+        },
+        "documents_measured": {
+          "title": "Documents Measured",
+          "type": "integer"
+        },
+        "mean_text_path_usd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Mean Text Path Usd"
+        },
+        "mean_vision_path_usd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Mean Vision Path Usd"
+        },
+        "monthly_text_usd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Monthly Text Usd"
+        },
+        "monthly_vision_usd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Monthly Vision Usd"
+        },
+        "annual_text_usd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Annual Text Usd"
+        },
+        "annual_vision_usd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Annual Vision Usd"
+        },
+        "basis": {
+          "title": "Basis",
+          "type": "string"
+        }
+      },
+      "required": [
+        "monthly_volume",
+        "documents_measured",
+        "mean_text_path_usd",
+        "mean_vision_path_usd",
+        "monthly_text_usd",
+        "monthly_vision_usd",
+        "annual_text_usd",
+        "annual_vision_usd",
+        "basis"
+      ],
+      "title": "VolumeExtrapolation",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "run": {
+      "$ref": "#/$defs/RunMetadata"
+    },
+    "documents": {
+      "items": {
+        "$ref": "#/$defs/DocumentReport"
+      },
+      "title": "Documents",
+      "type": "array"
+    },
+    "skipped": {
+      "items": {
+        "$ref": "#/$defs/SkipRecord"
+      },
+      "title": "Skipped",
+      "type": "array"
+    },
+    "cost": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/FolderCostEstimate"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "aggregate": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Aggregate"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "limitations": {
+      "items": {
+        "$ref": "#/$defs/Limitation"
+      },
+      "title": "Limitations",
+      "type": "array"
+    },
+    "staleness_warnings": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Staleness Warnings",
+      "type": "array"
+    },
+    "signal_weights": {
+      "additionalProperties": {
+        "type": "number"
+      },
+      "title": "Signal Weights",
+      "type": "object"
+    },
+    "config_masking": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/MaskingConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "overall": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/OverallReadiness"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "quick_wins": {
+      "items": {
+        "$ref": "#/$defs/QuickWin"
+      },
+      "title": "Quick Wins",
+      "type": "array"
+    },
+    "loader": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/LoaderRun"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "loader_comparison": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/LoaderComparison"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "routing": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/RoutingSummary"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "verification": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/VerificationSummary"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "ignores": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/IgnoreSummary"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "concepts": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ConceptSummary"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "categories": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/CategorySummary"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "chunks": {
+      "anyOf": [
+        {
+          "items": {
+            "$ref": "#/$defs/ChunkReport"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Chunks"
+    },
+    "trace": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Trace"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "thresholds": {
+      "$ref": "#/$defs/Thresholds"
+    }
+  },
+  "required": [
+    "run"
+  ],
+  "type": "object"
+}

@@ -26,6 +26,11 @@ separately.
   say it outright, and `COMPLYDOC_CONTEXT=off` records nothing. The report JSON moves to
   schema 23, adding `run.context`.
 - `complydoc ui` answers `/api/health`, for whatever keeps a shared viewer running.
+- The report has a JSON Schema: every key a run writes, with its type, generated from
+  the code that writes it. `complydoc schema --json-schema` prints the one for the
+  version installed, and each schema version is published at an address of its own,
+  `https://complydoc.github.io/complydoc/docs/schema/report-23.json`, with `report.json`
+  beside it for the newest. `complydoc schema` still prints the summary.
 - A container image, built from the repository with `docker build`. It audits a folder
   mounted into it and, run with no command, serves the viewer on the reports, read-only.
   It runs as its own user and needs no network. A second target, `names`, carries the

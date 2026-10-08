@@ -53,12 +53,30 @@ def skill(
 
 
 @app.command(rich_help_panel="Information")
-def schema() -> None:
-    """Print the JSON schema of the report, for a caller that needs to parse it."""
+def schema(
+    json_schema: Annotated[
+        bool,
+        typer.Option(
+            "--json-schema",
+            help="Print the report's full JSON Schema, for a validator or a code generator, "
+            "in place of the summary.",
+        ),
+    ] = False,
+) -> None:
+    """Print the shape of the report JSON, for a caller that needs to parse it.
+
+    A summary by default: the keys, and what each holds. With --json-schema, the
+    whole shape as JSON Schema, generated from the code that writes the report.
+    """
     import json
 
     from complydoc.report.models import report_shape
 
+    if json_schema:
+        from complydoc.report.schema import report_json_schema
+
+        print(json.dumps(report_json_schema(), indent=2))
+        return
     # Printed rather than sent through the console: that wraps to the width of
     # the terminal, which breaks a long string across two lines and hands a
     # caller a document that will not parse.

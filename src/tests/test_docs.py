@@ -74,7 +74,10 @@ def test_the_site_content_builds_with_every_reference_page(tmp_path: Path):
         sys.path.remove(str(ROOT / "src" / "scripts"))
 
     out = tmp_path / "docs"
+    # The schema files are copied for the site; here, into the temporary folder.
+    build_docs.SCHEMAS = tmp_path / "schema"
     assert build_docs.build(out) > 20
+    assert (tmp_path / "schema" / "report.json").is_file()
     for page in ("cli", "api", "report", "configuration", "identifiers"):
         assert (out / "reference" / f"{page}.md").exists(), page
 
@@ -94,6 +97,13 @@ def test_the_site_content_builds_with_every_reference_page(tmp_path: Path):
         assert not re.search(r"\]\((?!https?:)[^)]*\.md[)#]", text), page
         for target in re.findall(r"\]\(/complydoc/docs/([^)#]*)", text):
             slug = target.strip("/") or "index"
+            if slug.startswith("schema/"):
+                # The report's JSON Schemas are served as files, not as pages.
+                served = slug.split("/", 1)[1]
+                assert (tmp_path / "schema" / served).is_file(), (
+                    f"{page.relative_to(out)} links to {target}"
+                )
+                continue
             assert slug in pages, f"{page.relative_to(out)} links to {target}"
 
 

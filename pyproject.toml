@@ -99,6 +99,8 @@ dev = [
     "pandas>=2.1",
     "types-pyyaml>=6.0",
     "cyclonedx-bom>=7.3.1",
+    # Checks that what a run writes is what the published JSON Schema describes.
+    "jsonschema>=4.20",
 ]
 pipelines = [
     "chromadb>=1.0",

@@ -108,6 +108,28 @@ def test_the_report_is_written_and_reads_back(pipeline, tmp_path: Path) -> None:
     assert report.chunks[0].chunker == splitter
 
 
+def test_a_trace_fits_the_published_schema(pipeline, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
+    """A pipeline's trace is a report like any other: every key it writes is described."""
+    import json
+
+    import jsonschema
+
+    from complydoc.report.schema import report_json_schema
+
+    from .test_report_schema import undescribed
+
+    pipeline()
+    schema = report_json_schema()
+    written = sorted(tmp_path.rglob("*.json"))
+    reports = [path for path in written if "run" in json.loads(path.read_text())]
+    assert reports, "the pipeline wrote no report"
+    for report in reports:
+        data = json.loads(report.read_text())
+        errors = list(jsonschema.Draft202012Validator(schema).iter_errors(data))
+        assert not errors, [f"{list(e.absolute_path)}: {e.message[:120]}" for e in errors[:5]]
+        assert not undescribed(data, schema, schema["$defs"])
+
+
 def test_scan_off_records_the_shape_only(pipeline) -> None:  # type: ignore[no-untyped-def]
     trace = pipeline(scan="off").report.trace
     assert all(stage.scanned == "off" and not stage.identifiers for stage in trace.stages)
