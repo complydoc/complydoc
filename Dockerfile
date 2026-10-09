@@ -4,8 +4,11 @@
 # reports to a team. It reaches no network when it runs, unless you give it a bucket to
 # write reports to or read them from.
 #
-#   docker build -t complydoc .                        # audits and the viewer
-#   docker build -t complydoc:names --target names .   # the same, with a name model
+#   docker pull ghcr.io/complydoc/complydoc             # each release, published
+#   docker pull ghcr.io/complydoc/complydoc:names       # the same, with a name model
+#
+#   docker build -t complydoc .                        # or built from this checkout
+#   docker build -t complydoc:names --target names .
 #
 #   docker run --rm -v "$PWD/documents:/documents:ro" -v "$PWD/reports:/reports" \
 #     complydoc audit /documents --out /reports
@@ -14,7 +17,8 @@
 # Run with no command, it serves the viewer on /reports, read-only.
 
 # The React viewer, which `complydoc ui` serves from inside the package.
-FROM node:22-slim AS viewer
+# Built on the machine doing the build whatever the image is for: its output is the same.
+FROM --platform=$BUILDPLATFORM node:22-slim AS viewer
 WORKDIR /viewer
 COPY viewer/package.json viewer/package-lock.json ./
 RUN npm ci
@@ -22,7 +26,7 @@ COPY viewer/ ./
 RUN VITE_SAMPLES=false npm run build
 
 # The wheel, with the viewer in it, as a release builds it.
-FROM python:3.12-slim AS wheel
+FROM --platform=$BUILDPLATFORM python:3.12-slim AS wheel
 RUN pip install --no-cache-dir build
 WORKDIR /src
 COPY pyproject.toml README.md LICENSE ./

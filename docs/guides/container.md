@@ -1,29 +1,52 @@
 # Run it in a container
 
-The repository builds a container image that audits a folder of documents and
+complydoc comes as a container image that audits a folder of documents and
 serves the [viewer](viewer.md) on the reports. It is how complydoc runs where
 nothing is installed by hand: a server your team shares, or a job in your own
 infrastructure. Nothing in the image reaches the network when it runs, unless
 you give it a bucket for the reports.
 
-## Build the image
+## Get the image
+
+Each release publishes it:
 
 ```bash
-git clone https://github.com/complydoc/complydoc
-cd complydoc
-docker build -t complydoc .
+docker pull ghcr.io/complydoc/complydoc
 ```
 
 That image reads documents, with OCR for scanned pages, and serves the viewer.
 A second one adds a name model, so person and organisation names are found:
 
 ```bash
-docker build -t complydoc:names --target names .
+docker pull ghcr.io/complydoc/complydoc:names
 ```
 
 The name model is the small English one, and it is inside the image, so a run
 downloads nothing. [Name detection models](name-detection-models.md) says what
 it finds and what it misses.
+
+`latest` and `names` follow the newest release. To stay on one, name it:
+`ghcr.io/complydoc/complydoc:0.7.0`, or `:0.7.0-names`. Both are built for Intel
+and Arm machines, and each carries signed build provenance.
+
+The commands below call the image `complydoc`. Give the one you pulled that
+name, or write its full name in its place:
+
+```bash
+docker tag ghcr.io/complydoc/complydoc complydoc
+```
+
+### Or build it yourself
+
+From a checkout of the repository, which is also how to try a change before it
+is released:
+
+```bash
+git clone https://github.com/complydoc/complydoc
+cd complydoc
+docker build -t complydoc .
+docker build -t complydoc:names --target names .
+```
 
 ## Audit a folder
 

@@ -42,10 +42,12 @@ separately.
   version installed, and each schema version is published at an address of its own,
   `https://complydoc.github.io/complydoc/docs/schema/report-23.json`, with `report.json`
   beside it for the newest. `complydoc schema` still prints the summary.
-- A container image, built from the repository with `docker build`. It audits a folder
-  mounted into it and, run with no command, serves the viewer on the reports, read-only.
-  It runs as its own user and needs no network. A second target, `names`, carries the
-  small English name model. The "Run it in a container" guide has the commands.
+- A container image, published with each release as `ghcr.io/complydoc/complydoc` and
+  buildable from the repository with `docker build`. It audits a folder mounted into it
+  and, run with no command, serves the viewer on the reports, read-only. It runs as its
+  own user and needs no network. A second one, `:names`, carries the small English name
+  model. Both are built for Intel and Arm machines and carry signed build provenance.
+  The "Run it in a container" guide has the commands.
 
 ## [0.6.8] — 2026-10-06
 
