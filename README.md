@@ -115,7 +115,7 @@ The [playground](https://github.com/complydoc/playground) has all of this ready 
 GitHub, the repository is also an action:
 
 ```yaml
-- uses: complydoc/complydoc@v0.6.8
+- uses: complydoc/complydoc@v0.7.0
   with:
     path: documents
     policy: policy.yaml
@@ -124,12 +124,28 @@ GitHub, the repository is also an action:
 See [GitHub Action](https://complydoc.github.io/complydoc/docs/guides/github-action/) and
 [Policy files](https://complydoc.github.io/complydoc/docs/guides/policy/).
 
+## For a team
+
+One place where everyone opens the same reports, inside your own infrastructure:
+
+```bash
+complydoc ui ./reports --host 0.0.0.0     # served to your team, read-only
+docker run -p 8500:8500 -v "$PWD/reports:/reports:ro" ghcr.io/complydoc/complydoc
+```
+
+Reports can live in a shared folder or a bucket (`--out s3://bucket/folder`), each run
+records the repository, branch and commit it came from, and a Compose file puts the viewer
+behind the sign-in your organisation already has. See
+[Run it for your team](https://complydoc.github.io/complydoc/docs/guides/team/) and
+[Run it in a container](https://complydoc.github.io/complydoc/docs/guides/container/).
+
 ## Privacy
 
 Outbound connections and DNS lookups are blocked for the whole run, and every report records
 that they were. Identifiers are masked in every output, the page text included. The only
-things that send data anywhere are ones you add yourself, such as a hosted parser or the
-optional `typesafe` and `assistant` extras, and they run only with `allow_network=True`. See
+things that send data anywhere are ones you add yourself: a hosted parser or the optional
+`typesafe` and `assistant` extras, which run only with `allow_network=True`, and a bucket you
+name as the place to keep reports, which receives the report and never the documents. See
 [Network isolation](https://complydoc.github.io/complydoc/docs/explanation/offline/).
 
 ## Optional extras
@@ -142,6 +158,7 @@ when they were missing.
 | `ocr` | ~80 MB | Reads scans and images |
 | `multilingual-names` | ~2 GB | Finds people and companies in European languages |
 | `ner` | ~50 MB | Finds names with spaCy's small English model |
+| `s3` | ~90 MB | Writes reports to a bucket and serves them from one |
 
 ```bash
 uv tool install "complydoc[ocr,multilingual-names]"

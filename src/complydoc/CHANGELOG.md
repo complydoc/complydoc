@@ -7,6 +7,17 @@ separately.
 
 ## [Unreleased]
 
+## [0.7.0] — 2026-10-09
+
+complydoc for a team. The viewer can be served to everyone who should see the reports,
+read-only, from a container, behind the sign-in an organisation already has, on reports
+kept in a shared folder or a bucket. Each run records the change it came from, and the
+report has a JSON Schema.
+
+Two parts are new enough to say so: the sign-in proxy in `deploy/compose.yaml` has not
+been run against a real identity provider, and bucket storage has been tested against a
+stand-in for S3, not against a cloud account. Tell us what you find.
+
 ### Added
 
 - `complydoc ui --host` serves the viewer to a team: given an address other than this
