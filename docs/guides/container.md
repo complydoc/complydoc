@@ -93,8 +93,9 @@ docker run -d --name complydoc -p 8500:8500 \
   complydoc
 ```
 
-Everyone who can reach port 8500 on that machine opens the same reports, and a
-report written into the folder appears when the page is reloaded. Served this
+Open `http://localhost:8500/` on that machine, or its name from another one.
+Everyone who can reach port 8500 on it opens the same reports, and a report
+written into the folder appears when the page is reloaded. Served this
 way the viewer is [read-only](viewer.md#serve-it-to-a-team): it has no sign-in
 of its own, so it changes no file, and the reports can be mounted read-only as
 above.

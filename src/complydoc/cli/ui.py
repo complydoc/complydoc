@@ -80,6 +80,11 @@ def ui(
     )
 
 
+def in_container() -> bool:
+    """Whether this is running in a container, where its own address is not the reader's."""
+    return Path("/.dockerenv").exists() or Path("/run/.containerenv").exists()
+
+
 def serve_viewer(
     folders: list[Path],
     *,
@@ -123,9 +128,16 @@ def serve_viewer(
             f"No reports in {escape(where)} yet. Run [bold]complydoc audit ./documents[/] "
             "and reload the page."
         )
-    console.print(
-        f"[bold]Viewer[/]  [link={viewer.url}]{viewer.url}[/link]  [dim]Ctrl+C stops it[/]"
-    )
+    if viewer.shared and in_container():
+        # Its own name and port mean nothing outside it: say what does.
+        console.print(
+            f"[bold]Viewer[/]  on port {viewer.port} of this container: open the address you "
+            f"published it on, such as http://localhost:{viewer.port}/"
+        )
+    else:
+        console.print(
+            f"[bold]Viewer[/]  [link={viewer.url}]{viewer.url}[/link]  [dim]Ctrl+C stops it[/]"
+        )
     if viewer.shared:
         edits = (
             "It is read-only."

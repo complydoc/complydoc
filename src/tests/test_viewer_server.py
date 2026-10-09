@@ -641,3 +641,24 @@ def test_it_says_it_is_up_and_what_it_serves(reports: Path, dist: Path):
         assert get(viewer.port, "/api/health", host="elsewhere.example")[0] == 403
     finally:
         viewer.stop()
+
+
+def test_in_a_container_the_command_points_at_the_published_address(
+    reports: Path, dist: Path, monkeypatch
+):
+    """The container's own name and port are not where anyone opens it."""
+    from complydoc.cli import ui
+    from complydoc.viewer import server
+
+    class Stopped(server.ViewerServer):
+        def wait(self) -> None:
+            return None
+
+    monkeypatch.setattr(server, "DIST", dist)
+    monkeypatch.setattr(server, "ViewerServer", Stopped)
+    monkeypatch.setattr(ui, "in_container", lambda: True)
+    result = runner.invoke(app, ["ui", str(reports), "--port", "0", "--host", "0.0.0.0"])
+    assert result.exit_code == 0, result.output
+    output = " ".join(result.output.split())
+    assert "of this container" in output
+    assert "published it on" in output
