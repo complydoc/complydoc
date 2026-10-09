@@ -247,6 +247,36 @@ def _cuts_too_many_words(words: list[Any], interior: list[float]) -> bool:
     return False
 
 
+def _read_by_position_if_rows_need_it(
+    page: Page, plumber_page: Any, found: list[tuple[TableInfo, Any]]
+) -> None:
+    """Read the page by position instead, when that is what keeps its tables' rows together.
+
+    The page's text follows the order the file stores, which is what reads columns of prose
+    correctly. A file may store a table column by column, though, and then that order puts
+    every cell on its own line. A ruled table is evidence of where the rows are, so when
+    sorting the characters by position keeps more of them intact, the page is read that way.
+    """
+    intact = sum(table.rows_intact or 0 for table in page.tables)
+    compared = sum(table.rows_compared or 0 for table in page.tables)
+    if not compared or intact == compared:
+        return
+    try:
+        by_position = plumber_page.extract_text() or ""
+    except Exception:
+        return
+    again = [_with_fidelity(info, table, by_position) for info, table in found]
+    if sum(table.rows_intact or 0 for table in again) <= intact:
+        return
+    page.text = by_position
+    page.tables[:] = again
+    if "pdfplumber" in page.readings:
+        page.readings["pdfplumber"] = by_position
+    page.notes.append(
+        "read by position on the page, because a table here is stored column by column"
+    )
+
+
 def _with_fidelity(info: TableInfo, table: Any, text: str) -> TableInfo:
     """The table with its rows checked against the text the run kept.
 
@@ -608,10 +638,14 @@ class PdfLoader:
         reads_tables = engine is None or engine.provides_tables
         if options.extract_tables and reads_tables:
             try:
-                for table in plumber_page.find_tables():
-                    info = _table_shape(table)
-                    if info is not None:
-                        page.tables.append(_with_fidelity(info, table, page.text))
+                found = [
+                    (info, table)
+                    for table in plumber_page.find_tables()
+                    if (info := _table_shape(table)) is not None
+                ]
+                page.tables.extend(_with_fidelity(info, table, page.text) for info, table in found)
+                if options.extractor == "pdfplumber":
+                    _read_by_position_if_rows_need_it(page, plumber_page, found)
                 if not page.tables:
                     page.tables.extend(_aligned_tables(plumber_page, words, page.text))
             except Exception as exc:

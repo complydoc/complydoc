@@ -7,6 +7,17 @@ separately.
 
 ## [Unreleased]
 
+### Fixed
+
+- A PDF's text is read in the order the file stores it, with the gap that counts as a space
+  scaled to the size of the type. Before, the default extractor sorted characters by where
+  they sat on the page, which read a two-column page straight across and joined words set
+  in small type. On a public parsing benchmark's reading tests the default reading now keeps
+  41% where it kept 7%; single-column documents read as they did. Where a ruled table is
+  stored column by column, the page is still read by position so that its rows stay together,
+  and the page says so in its notes. A two-column document's extracted text, chunks and the
+  position of findings in them change with this.
+
 ## [0.7.0] — 2026-10-09
 
 complydoc for a team. The viewer can be served to everyone who should see the reports,

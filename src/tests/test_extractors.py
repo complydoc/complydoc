@@ -10,6 +10,7 @@ reported, and are never allowed to change what the report concludes.
 
 from __future__ import annotations
 
+import pdfplumber
 import pytest
 
 from complydoc.audit.entry import extractor_readings
@@ -23,6 +24,7 @@ from complydoc.ingest.extractors.registry import (
 from complydoc.ingest.registry import load_document
 from complydoc.readiness.analyser import analyse
 from complydoc.report.models import DocumentReport, ExtractorReading
+from complydoc.utils.text import reading_similarity, words
 from tests.helpers import FIXTURES
 
 
@@ -188,21 +190,21 @@ def test_a_single_extractor_never_disagrees_with_itself():
     assert not document.extractors_disagree
 
 
-def test_a_scrambled_two_column_page_is_caught_end_to_end():
-    """The fixture that prompted the measure.
+def test_a_reading_straight_across_two_columns_is_caught():
+    """The case that prompted the measure.
 
-    pdfplumber reads the two columns in order; pdfium reads straight across
-    and interleaves them. Their character counts are within a few percent of
-    each other, so nothing about the size of the reading says they disagree.
+    Sorting a two-column page's characters by position reads straight across it and
+    interleaves every sentence with one from the other side. That reading has the same
+    words and nearly the same length as the one that goes down each column, so nothing
+    about its size says the two disagree. Their order does.
     """
-    document = load_document(
-        FIXTURES / "two_column.pdf",
-        IngestOptions(compare_extractors=("pdfium",)),
-    )
-    readings = extractor_readings(document)
-    counts = [r.characters for r in readings]
-    assert abs(counts[0] - counts[1]) / max(counts) < 0.10, "the counts do not give it away"
-    assert min(r.similarity for r in readings) < 0.6
+    document = load_document(FIXTURES / "two_column.pdf", IngestOptions())
+    down = document.pages[0].text
+    with pdfplumber.open(FIXTURES / "two_column.pdf") as opened:
+        across = opened.pages[0].extract_text() or ""
+    assert abs(len(down) - len(across)) / len(down) < 0.10, "the counts do not give it away"
+    similarity = reading_similarity(words(down), words(across))
+    assert similarity < 0.6
     report = DocumentReport(
         path=document.path,
         relative_path="two_column.pdf",
@@ -210,7 +212,7 @@ def test_a_scrambled_two_column_page_is_caught_end_to_end():
         format="pdf",
         page_count=1,
         page_count_known=True,
-        extractions=readings,
+        extractions=[reading("down", len(down)), reading("across", len(across), similarity)],
     )
     assert report.extractors_disagree
 
@@ -240,20 +242,18 @@ def test_the_signals_that_need_boxes_say_so_when_a_reader_has_none():
     assert any(s.rating is None for s in result.signals)
 
 
-def test_three_readers_agree_that_the_default_one_scrambles_two_columns():
-    """The finding this comparison exists to make.
+def test_three_readers_go_down_each_column_of_a_two_column_page():
+    """pdfplumber, pdfium and pypdf share no code, and all three read the columns in order.
 
-    pdfplumber walks the text layer in file order, which on this page runs
-    across both columns and interleaves every sentence with one from the other
-    side. pdfium and pypdf share no code with it or with each other, and both
-    read the columns in order.
+    pdfplumber only does so because it is asked to follow the order the file stores: left to
+    itself it sorts by position and reads across. See `complydoc.ingest.extractors.plumber`.
     """
     document = load_document(
         FIXTURES / "two_column.pdf",
         IngestOptions(compare_extractors=("pdfium", "pypdf"), keep_readings=True),
     )
     readings = document.pages[0].readings
-    others = [" ".join(readings[name].split()) for name in ("pdfium", "pypdf")]
-    assert others[0][:60] == others[1][:60], "the two independent readers agree"
-    assert " ".join(readings["pdfplumber"].split())[:60] != others[0][:60]
-    assert min(r.similarity for r in extractor_readings(document)) < 0.6
+    starts = [" ".join(readings[name].split())[:60] for name in ("pdfplumber", "pdfium", "pypdf")]
+    assert starts[0] == starts[1] == starts[2]
+    assert "1. The supplier shall provide" in starts[0]
+    assert min(r.similarity for r in extractor_readings(document)) > 0.9
