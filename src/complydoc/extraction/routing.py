@@ -33,6 +33,7 @@ thresholds are the ones in `readiness.yaml`, under `routing`.
 
 from __future__ import annotations
 
+import re
 import unicodedata
 from dataclasses import dataclass, field
 
@@ -45,7 +46,8 @@ __all__ = ["ROUTES", "DocumentRouting", "PageRoute", "plan_routes"]
 ROUTES = ("text", "ocr", "vision")
 """Cheapest first."""
 
-_EDGE_PUNCTUATION = ".,;:!?()\"'"
+_EDGE_PUNCTUATION = ".,;:!?()[]\"'"
+_NUMBER = re.compile(r"[\d][\d.,:/%\-]*")
 
 
 @dataclass(frozen=True, slots=True)
@@ -105,14 +107,26 @@ def _control_share(text: str) -> float:
     return odd / max(1, len(text))
 
 
-def _wordlike_share(text: str) -> float:
-    """Share of tokens that are plain words: two or more letters and nothing else.
+def _sensible_share(text: str) -> float:
+    """Share of tokens that are a word in any script, or a number.
 
-    Prose scores high in any alphabet. A layer that maps letters to punctuation, or an
-    embedded OCR layer that read noise, scores low.
+    A word is two or more characters of which at least four in five are letters or the
+    marks that attach to them, which covers scripts written without spaces and scripts that
+    stack marks on letters. A number is digits with the separators numbers are written
+    with. What is left is noise: stray punctuation, symbols, letters mapped to the wrong
+    glyphs. Counting only alphabetic words called pages of figures, and whole scripts, not
+    text.
     """
-    tokens = [token.strip(_EDGE_PUNCTUATION) for token in text.split()]
-    return sum(len(token) >= 2 and token.isalpha() for token in tokens) / max(1, len(tokens))
+
+    def sensible(token: str) -> bool:
+        token = token.strip(_EDGE_PUNCTUATION)
+        if _NUMBER.fullmatch(token):
+            return True
+        lettered = sum(unicodedata.category(c)[0] in "LM" for c in token)
+        return len(token) >= 2 and lettered / len(token) >= 0.8
+
+    tokens = text.split()
+    return sum(sensible(token) for token in tokens) / max(1, len(tokens))
 
 
 def _not_text(page: Page, settings: RoutingConfig) -> str | None:
@@ -123,9 +137,12 @@ def _not_text(page: Page, settings: RoutingConfig) -> str | None:
             f"{control:.0f}% of the text layer is control or unmapped characters, "
             "so its font does not map to text"
         )
-    wordlike = _wordlike_share(page.text) * 100
-    if wordlike < settings.min_wordlike_pct:
-        return f"only {wordlike:.0f}% of the text layer's tokens are words, so it is not text"
+    sensible = _sensible_share(page.text) * 100
+    if sensible < settings.min_wordlike_pct:
+        return (
+            f"only {sensible:.0f}% of the text layer's tokens are words or numbers, "
+            "so it is not text"
+        )
     return None
 
 

@@ -361,7 +361,7 @@ class RoutingConfig(_Base):
     max_control_char_pct: float = 2.0
     """Share of control or unmapped characters above which a text layer is not text."""
     min_wordlike_pct: float = 50.0
-    """Share of tokens that must be plain words for a text layer to count as text."""
+    """Share of tokens that must be a word, in any script, or a number for a layer to be text."""
     min_ocr_dpi: float = 200.0
     """Scan resolution below which OCR reads poorly. Only used with `vision` off, to say so."""
     min_ocr_confidence: float = 75.0

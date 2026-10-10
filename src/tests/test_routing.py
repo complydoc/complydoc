@@ -130,12 +130,25 @@ def test_a_text_layer_of_noise_is_not_text():
     noise = (".- -,,.;; ::: 1# -i' .:|r ' .:.' .::.: " * 12).strip()
     route, reason = route_of(page(text=noise, text_share=0.6))
     assert route == "vision"
-    assert "tokens are words" in reason
+    assert "tokens are words or numbers" in reason
 
 
 def test_prose_in_another_alphabet_is_text():
     greek = "Οι όροι προμήθειας μεταξύ των μερών που αναφέρονται παρακάτω ισχύουν. " * 5  # noqa: RUF001
     assert route_of(page(text=greek, text_share=0.6))[0] == "text"
+
+
+def test_a_page_of_figures_is_text():
+    """A statement of accounts is numbers with a few labels, and reads as written."""
+    figures = "Revenue 48,200 12,750 96,400 31,900 2025 2024 12.5% 8.1% 1,204.00 (318.50) " * 6
+    assert route_of(page(text=figures, text_share=0.6))[0] == "text"
+
+
+def test_scripts_without_spaces_or_with_stacked_marks_are_text():
+    japanese = "知名度の高いこの証券取引所は、サイバー犯罪者の格好の標的となっています。" * 6
+    hindi = "क्रम संख्या कार्य का विवरण दर रुपये प्रति कुंतल एक ही परिसर के भीतर " * 6
+    assert route_of(page(text=japanese, text_share=0.6))[0] == "text"
+    assert route_of(page(text=hindi, text_share=0.6))[0] == "text"
 
 
 def test_thresholds_come_from_the_configuration():

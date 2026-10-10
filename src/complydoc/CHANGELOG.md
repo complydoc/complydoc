@@ -13,7 +13,7 @@ separately.
   with no text layer goes to a vision model, where it went to OCR unless the scan was coarse
   or poorly read. A page whose text layer is not text, because its font does not map to
   characters or because it is an embedded OCR layer that read noise, goes to a vision model
-  too; `max_control_char_pct` and `min_wordlike_pct` under `routing` set where that starts. A
+  too, while pages of figures and text in any script count as text; `max_control_char_pct` and `min_wordlike_pct` under `routing` set where that starts. A
   plan made before this release will send more pages to vision.
 - `routing.vision: false` plans for a pipeline with no vision model: the text layer where
   there is one, OCR where there is not, and a note on the pages a vision model would read

@@ -34,7 +34,8 @@ With a vision model available, which is the default:
 | `vision` | No usable text layer, or plain text would lose the page |
 
 A page with a text layer takes the vision route when the layer is not text (a
-font that does not map to characters, or an embedded OCR layer that read noise),
+font that does not map to characters, or an embedded OCR layer that read noise;
+pages of figures and text in any script count as text),
 when it carries a table with merged or stacked header cells, or when it is mostly
 picture with a caption for a text layer. A page with no text layer always takes
 it. Every page carries the reason for its route, so a plan can be argued with.
