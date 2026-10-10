@@ -50,13 +50,21 @@ scoring:
 # Which extraction path each page needs. The numbers match the signals below, so a
 # page those call poor is a page routed somewhere more expensive.
 routing:
+  # Whether a vision model is available. With false, routing uses only what costs
+  # nothing: the text layer where there is one, and OCR where there is not.
+  vision: true
   # Below this many characters, a page counts as having no text layer.
   min_characters: 40
   # A page that is mostly picture and carries less text than this is a caption on
   # an image, not a page of text.
   min_text_coverage_pct: 30
   picture_share_pct: 50
-  # Under 200 dpi OCR returns characters that are not the ones on the page.
+  # A text layer is not text when its font does not map to characters, or when it
+  # is an embedded OCR layer that read noise.
+  max_control_char_pct: 2
+  min_wordlike_pct: 50
+  # Only with vision: false. Under 200 dpi, or under 75% confidence, OCR reads
+  # poorly, and the plan says so.
   min_ocr_dpi: 200
   min_ocr_confidence: 75
   # A table with merged or stacked header cells loses its shape in plain text.

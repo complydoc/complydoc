@@ -7,6 +7,18 @@ separately.
 
 ## [Unreleased]
 
+### Changed
+
+- Page routing follows the rules that kept the most on two public parsing benchmarks. A page
+  with no text layer goes to a vision model, where it went to OCR unless the scan was coarse
+  or poorly read. A page whose text layer is not text, because its font does not map to
+  characters or because it is an embedded OCR layer that read noise, goes to a vision model
+  too; `max_control_char_pct` and `min_wordlike_pct` under `routing` set where that starts. A
+  plan made before this release will send more pages to vision.
+- `routing.vision: false` plans for a pipeline with no vision model: the text layer where
+  there is one, OCR where there is not, and a note on the pages a vision model would read
+  better. `min_ocr_dpi` and `min_ocr_confidence` now apply only there.
+
 ### Fixed
 
 - A PDF's text is read in the order the file stores it, with the gap that counts as a space

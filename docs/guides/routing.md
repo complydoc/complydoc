@@ -10,15 +10,15 @@ complydoc routing ~/contracts --no-ocr
 
 ```
 Route   Pages  Documents
-text       13          9
-ocr         1          1
-vision      5          5
+text        7          7
+ocr         0          0
+vision      3          3
 
-Every page                             Cost
-by the route it needs               $0.0121
-from its text layer                 $0.0043
-text layer, scans through local OCR $0.0067
-as an image to a vision model       $0.0398
+Every page                              Cost
+by the route it needs                $0.0115
+from its text layer                  $0.0022
+text layer, scans through local OCR  $0.0022
+as an image to a vision model        $0.0320
 ```
 
 It writes `complydoc-routing.json`, a manifest an ingestion job can read, and
@@ -26,27 +26,46 @@ It writes `complydoc-routing.json`, a manifest an ingestion job can read, and
 
 ## How each page is decided
 
+With a vision model available, which is the default:
+
 | Route | When |
 | --- | --- |
 | `text` | A usable text layer, and nothing on the page that plain text loses |
-| `ocr` | No usable text layer, and a scan OCR can read |
-| `vision` | Plain text would lose the page |
+| `vision` | No usable text layer, or plain text would lose the page |
 
-A page takes the vision route when it carries a table with merged or stacked
-header cells, when it is mostly picture with a caption for a text layer, when it
-is a scan too coarse for OCR, or when OCR read it poorly. Every page carries the
-reason for its route, so a plan can be argued with.
+A page with a text layer takes the vision route when the layer is not text (a
+font that does not map to characters, or an embedded OCR layer that read noise),
+when it carries a table with merged or stacked header cells, or when it is mostly
+picture with a caption for a text layer. A page with no text layer always takes
+it. Every page carries the reason for its route, so a plan can be argued with.
 
-The thresholds are in `readiness.yaml` under `routing`, and match the readiness
-signals they come from:
+Without a vision model, set `vision: false` and routing uses only what costs
+nothing:
+
+| Route | When |
+| --- | --- |
+| `text` | A text layer, whatever its state |
+| `ocr` | No usable text layer |
+
+Where OCR will read a page poorly, a coarse scan or one it read with low
+confidence, the plan says a vision model would read it better.
+
+These rules are the ones that kept the most on two public parsing benchmarks,
+measured page by page against the cheapest reader that loses nothing. Two findings
+shaped them. On pages with no text layer, local OCR kept far less than a vision
+model. And a poor text layer still kept more than OCR, which is why the free plan
+reads it.
+
+The thresholds are in `readiness.yaml` under `routing`:
 
 ```yaml
 routing:
+  vision: true
   min_characters: 40
   min_text_coverage_pct: 30
   picture_share_pct: 50
-  min_ocr_dpi: 200
-  min_ocr_confidence: 75
+  max_control_char_pct: 2
+  min_wordlike_pct: 50
   vision_for_complex_tables: true
 ```
 
@@ -56,8 +75,8 @@ routing:
 {
   "model": "Claude Sonnet 5",
   "resolution": "medium",
-  "counts": { "pages": { "text": 13, "ocr": 1, "vision": 5 } },
-  "cost_usd": { "routed": 0.0121, "text_layer": 0.0043, "text_ocr": 0.0067, "vision": 0.0398 },
+  "counts": { "pages": { "text": 7, "ocr": 0, "vision": 3 } },
+  "cost_usd": { "routed": 0.0115, "text_layer": 0.0022, "text_ocr": 0.0022, "vision": 0.0320 },
   "documents": [
     {
       "document": "vendor-assessment.pdf",

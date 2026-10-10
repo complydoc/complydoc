@@ -1,31 +1,39 @@
 """Which extraction path each page needs: its text layer, OCR, or a vision model.
 
     plan = plan_routes(document, config.readiness.routing)
-    plan.counts  # {"text": 8, "ocr": 2, "vision": 1}
+    plan.counts  # {"text": 8, "ocr": 0, "vision": 3}
 
 Sending every page to a vision model reads anything and costs the most; reading
-the text layer costs the least and returns nothing for a scan. Most folders are a
-mix, and the mix is decided page by page:
+the text layer costs nothing and returns nothing for a scan. Most folders are a
+mix, and the mix is decided page by page.
+
+With a vision model available:
 
 | Route | When |
 | --- | --- |
 | `text` | A usable text layer, and nothing on the page that plain text loses |
-| `ocr` | No usable text layer, and a scan OCR can read |
-| `vision` | Plain text would lose the page |
+| `vision` | No usable text layer, or plain text would lose the page |
 
-A page takes the vision route when it carries a table with merged or stacked
-header cells, when it is mostly picture with a caption for a text layer, when it
-is a scan too coarse for OCR, or when OCR read it poorly.
+A page with a text layer takes the vision route when the layer is not text (a font
+with no usable mapping to characters, or an embedded OCR layer that read noise),
+when it carries a table with merged or stacked header cells, or when it is mostly
+picture with a caption for a text layer. A page with no text layer always does:
+on two public benchmarks OCR kept far less of such pages than a vision model.
+
+Without one (`vision: false`), routing uses only what costs nothing:
+
+| Route | When |
+| --- | --- |
+| `text` | A text layer, whatever its state: it kept more than OCR even when poor |
+| `ocr` | No usable text layer |
 
 Each page carries the reason for its route, so a plan can be argued with. The
 thresholds are the ones in `readiness.yaml`, under `routing`.
-
-Routes are decided while the document is open, because per-page tables, scan
-resolution and OCR confidence are not carried in the report.
 """
 
 from __future__ import annotations
 
+import unicodedata
 from dataclasses import dataclass, field
 
 from complydoc.config.schema import RoutingConfig
@@ -36,6 +44,8 @@ __all__ = ["ROUTES", "DocumentRouting", "PageRoute", "plan_routes"]
 
 ROUTES = ("text", "ocr", "vision")
 """Cheapest first."""
+
+_EDGE_PUNCTUATION = ".,;:!?()\"'"
 
 
 @dataclass(frozen=True, slots=True)
@@ -83,17 +93,59 @@ def _awkward_table(page: Page) -> bool:
     return any(table.merged_cells > 0 or table.header_depth > 1 for table in page.tables)
 
 
+def _control_share(text: str) -> float:
+    """Share of characters that are control codes, replacement marks or private-use glyphs.
+
+    A text layer whose font has no usable mapping to Unicode comes out as these.
+    """
+    odd = sum(
+        (unicodedata.category(c) in ("Cc", "Co", "Cn") and c not in "\r\n\t") or c == "\ufffd"
+        for c in text
+    )
+    return odd / max(1, len(text))
+
+
+def _wordlike_share(text: str) -> float:
+    """Share of tokens that are plain words: two or more letters and nothing else.
+
+    Prose scores high in any alphabet. A layer that maps letters to punctuation, or an
+    embedded OCR layer that read noise, scores low.
+    """
+    tokens = [token.strip(_EDGE_PUNCTUATION) for token in text.split()]
+    return sum(len(token) >= 2 and token.isalpha() for token in tokens) / max(1, len(tokens))
+
+
+def _not_text(page: Page, settings: RoutingConfig) -> str | None:
+    """Why this page's text layer is not text, or None when it reads as text."""
+    control = _control_share(page.text) * 100
+    if control > settings.max_control_char_pct:
+        return (
+            f"{control:.0f}% of the text layer is control or unmapped characters, "
+            "so its font does not map to text"
+        )
+    wordlike = _wordlike_share(page.text) * 100
+    if wordlike < settings.min_wordlike_pct:
+        return f"only {wordlike:.0f}% of the text layer's tokens are words, so it is not text"
+    return None
+
+
 def _page_route(page: Page, settings: RoutingConfig) -> tuple[str, str]:
     readable = page.text_source in ("native", "loader") and len(page.text.strip()) >= (
         settings.min_characters
     )
     image_share = _image_share(page)
     mostly_picture = image_share * 100 >= settings.picture_share_pct
+    text_share = _text_share(page)
+
+    if readable and not settings.vision:
+        return "text", f"a text layer covering {text_share * 100:.0f}% of the page"
 
     if readable:
+        broken = _not_text(page, settings)
+        if broken is not None:
+            return "vision", broken
         if settings.vision_for_complex_tables and _awkward_table(page):
             return "vision", "a table with merged or stacked header cells, which plain text loses"
-        text_share = _text_share(page)
         if mostly_picture and text_share * 100 < settings.min_text_coverage_pct:
             return (
                 "vision",
@@ -102,19 +154,28 @@ def _page_route(page: Page, settings: RoutingConfig) -> tuple[str, str]:
             )
         return "text", f"a text layer covering {text_share * 100:.0f}% of the page"
 
+    dpi = page.estimated_dpi() if mostly_picture else None
+    scan = f"a scan at {dpi:.0f} dpi" if dpi is not None else "a scan" if mostly_picture else None
+    if settings.vision:
+        if scan is not None:
+            return "vision", f"{scan} with no text layer"
+        return "vision", "no usable text layer"
+
     if page.ocr_confidence is not None and page.ocr_confidence * 100 < settings.min_ocr_confidence:
         return (
-            "vision",
-            f"OCR read this page with {page.ocr_confidence * 100:.0f}% confidence, "
-            f"below {settings.min_ocr_confidence:g}%",
+            "ocr",
+            f"no usable text layer; OCR read this page with "
+            f"{page.ocr_confidence * 100:.0f}% confidence, below {settings.min_ocr_confidence:g}%, "
+            "and a vision model would read it better",
         )
-
-    dpi = page.estimated_dpi() if mostly_picture else None
     if dpi is not None and dpi < settings.min_ocr_dpi:
-        return "vision", f"a scan at {dpi:.0f} dpi, below the {settings.min_ocr_dpi:g} OCR needs"
-    if mostly_picture:
-        where = f" at {dpi:.0f} dpi" if dpi is not None else ""
-        return "ocr", f"a scan{where} with no text layer"
+        return (
+            "ocr",
+            f"{scan}, below the {settings.min_ocr_dpi:g} OCR needs, "
+            "and a vision model would read it better",
+        )
+    if scan is not None:
+        return "ocr", f"{scan} with no text layer"
     return "ocr", "no usable text layer, so the page has to be recognised"
 
 

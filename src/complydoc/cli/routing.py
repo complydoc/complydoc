@@ -59,8 +59,9 @@ def routing(
     Writes a manifest an ingestion job can read, with a route and a reason for
     every page, and prices that mix against sending everything one way. Pages go
     to a vision model when plain text would lose them: a table with merged or
-    stacked headers, a page that is mostly picture, a scan too coarse for OCR, or
-    one OCR read poorly. The thresholds are in `readiness.yaml` under `routing`.
+    stacked headers, a page that is mostly picture, a text layer that is not text,
+    or a page with no text layer at all. The thresholds are in `readiness.yaml` under
+    `routing`.
     """
     from complydoc.report.json_writer import write_json
     from complydoc.report.routing import routing_manifest, write_routing_json

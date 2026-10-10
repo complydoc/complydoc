@@ -342,20 +342,30 @@ class OverallConfig(_Base):
 class RoutingConfig(_Base):
     """When a page needs OCR or a vision model instead of its own text layer.
 
-    The numbers match the readiness signals they come from, so a page the signals
-    call poor is a page routing sends somewhere more expensive.
+    The rules are the ones that kept the most on two public parsing benchmarks, measured
+    against the cheapest reader that loses nothing on each page.
     """
 
+    vision: bool = True
+    """Whether a vision model is available to send pages to.
+
+    Off, routing uses only what costs nothing: the text layer where there is one, and OCR
+    where there is not.
+    """
     min_characters: int = 40
     """Below this many characters, a page counts as having no text layer."""
     min_text_coverage_pct: float = 30.0
     """Coverage below which a page that is mostly picture reads as a caption."""
     picture_share_pct: float = 50.0
     """Image coverage at which a page counts as a picture rather than a page with pictures."""
+    max_control_char_pct: float = 2.0
+    """Share of control or unmapped characters above which a text layer is not text."""
+    min_wordlike_pct: float = 50.0
+    """Share of tokens that must be plain words for a text layer to count as text."""
     min_ocr_dpi: float = 200.0
-    """Scan resolution below which OCR is not worth running."""
+    """Scan resolution below which OCR reads poorly. Only used with `vision` off, to say so."""
     min_ocr_confidence: float = 75.0
-    """OCR confidence below which the recognised characters are not the page's."""
+    """OCR confidence below which a reading is poor. Only used with `vision` off, to say so."""
     vision_for_complex_tables: bool = True
     """Send a page with merged or stacked header cells to a vision model."""
     verify_min_coverage_pct: float = Field(default=90.0, ge=0.0, le=100.0)
