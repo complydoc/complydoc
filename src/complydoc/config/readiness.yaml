@@ -67,8 +67,10 @@ routing:
   # poorly, and the plan says so.
   min_ocr_dpi: 200
   min_ocr_confidence: 75
-  # A table with merged or stacked header cells loses its shape in plain text.
-  vision_for_complex_tables: true
+  # Which pages go to a vision model for their tables. broken: a ruled table whose
+  # rows do not survive in the text layer. all: every ruled table, when the table's
+  # structure matters. none: tables are read as text.
+  vision_for_tables: broken
   # With --verify: the share of what a vision model read off a page that the kept
   # reading must also hold, for the two to agree. Measured by word, in any order,
   # because a vision model lays a page out its own way.

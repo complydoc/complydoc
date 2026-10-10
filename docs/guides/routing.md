@@ -36,8 +36,8 @@ With a vision model available, which is the default:
 A page with a text layer takes the vision route when the layer is not text (a
 font that does not map to characters, or an embedded OCR layer that read noise;
 pages of figures and text in any script count as text),
-when it carries a table with merged or stacked header cells, or when it is mostly
-picture with a caption for a text layer. A page with no text layer always takes
+when it carries a ruled table whose rows do not survive in the text layer, or when
+it is mostly picture with a caption for a text layer. A page with no text layer always takes
 it. Every page carries the reason for its route, so a plan can be argued with.
 
 Without a vision model, set `vision: false` and routing uses only what costs
@@ -67,8 +67,20 @@ routing:
   picture_share_pct: 50
   max_control_char_pct: 2
   min_wordlike_pct: 50
-  vision_for_complex_tables: true
+  vision_for_tables: broken
 ```
+
+`vision_for_tables` decides which pages go to a vision model for their tables:
+
+| Value | Pages sent |
+| --- | --- |
+| `broken` | A ruled table whose rows do not survive in the text layer |
+| `all` | Every ruled table, for when the table's structure matters: plain text cannot carry it |
+| `none` | None; tables are read as text |
+
+On a sample of PDFs from the open web, about one page in seven with a text layer has a
+table whose rows break, and about one in three has a ruled table of any kind, so `all`
+sends more than twice as many pages to a vision model as `broken`.
 
 ## The manifest
 
@@ -84,7 +96,7 @@ routing:
       "route": "vision",
       "pages": [
         { "page": 1, "route": "text", "reason": "a text layer covering 41% of the page", "characters": 1875 },
-        { "page": 2, "route": "vision", "reason": "a table with merged or stacked header cells, which plain text loses", "characters": 640 }
+        { "page": 2, "route": "vision", "reason": "a table of which 2 of 6 rows survive in the text layer, so plain text loses it", "characters": 640 }
       ]
     }
   ]

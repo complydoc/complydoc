@@ -16,8 +16,8 @@ With a vision model available:
 
 A page with a text layer takes the vision route when the layer is not text (a font
 with no usable mapping to characters, or an embedded OCR layer that read noise),
-when it carries a table with merged or stacked header cells, or when it is mostly
-picture with a caption for a text layer. A page with no text layer always does:
+when it carries a ruled table whose rows do not survive in the text, or when it is
+mostly picture with a caption for a text layer. A page with no text layer always does:
 on two public benchmarks OCR kept far less of such pages than a vision model.
 
 Without one (`vision: false`), routing uses only what costs nothing:
@@ -90,9 +90,25 @@ def _text_share(page: Page) -> float:
     return coverage_fraction([b.bbox for b in page.text_blocks], page.width_pt, page.height_pt)
 
 
-def _awkward_table(page: Page) -> bool:
-    """A table whose shape is the information: merged cells, or stacked headers."""
-    return any(table.merged_cells > 0 or table.header_depth > 1 for table in page.tables)
+def _table_needs_vision(page: Page, wanted: str) -> str | None:
+    """Why this page's tables need a vision model under the `wanted` setting, or None.
+
+    Only ruled tables count. A table found from how text is aligned is a guess, and on
+    pages set in columns it is often not a table at all.
+    """
+    ruled = [table for table in page.tables if table.detected_by == "lines"]
+    if wanted == "none" or not ruled:
+        return None
+    if wanted == "all":
+        return "a ruled table, whose structure plain text cannot carry"
+    compared = sum(table.rows_compared or 0 for table in ruled)
+    intact = sum(table.rows_intact or 0 for table in ruled)
+    if compared and intact < compared:
+        return (
+            f"a table of which {intact} of {compared} rows survive in the text layer, "
+            "so plain text loses it"
+        )
+    return None
 
 
 def _control_share(text: str) -> float:
@@ -161,8 +177,9 @@ def _page_route(page: Page, settings: RoutingConfig) -> tuple[str, str]:
         broken = _not_text(page, settings)
         if broken is not None:
             return "vision", broken
-        if settings.vision_for_complex_tables and _awkward_table(page):
-            return "vision", "a table with merged or stacked header cells, which plain text loses"
+        table = _table_needs_vision(page, settings.vision_for_tables)
+        if table is not None:
+            return "vision", table
         if mostly_picture and text_share * 100 < settings.min_text_coverage_pct:
             return (
                 "vision",

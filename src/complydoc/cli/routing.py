@@ -58,8 +58,8 @@ def routing(
 
     Writes a manifest an ingestion job can read, with a route and a reason for
     every page, and prices that mix against sending everything one way. Pages go
-    to a vision model when plain text would lose them: a table with merged or
-    stacked headers, a page that is mostly picture, a text layer that is not text,
+    to a vision model when plain text would lose them: a table whose rows
+    break in the text layer, a page that is mostly picture, a text layer that is not text,
     or a page with no text layer at all. The thresholds are in `readiness.yaml` under
     `routing`.
     """

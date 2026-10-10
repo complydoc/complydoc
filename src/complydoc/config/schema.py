@@ -366,8 +366,29 @@ class RoutingConfig(_Base):
     """Scan resolution below which OCR reads poorly. Only used with `vision` off, to say so."""
     min_ocr_confidence: float = 75.0
     """OCR confidence below which a reading is poor. Only used with `vision` off, to say so."""
-    vision_for_complex_tables: bool = True
-    """Send a page with merged or stacked header cells to a vision model."""
+    vision_for_tables: Literal["all", "broken", "none"] = "broken"
+    """Which pages go to a vision model for their tables.
+
+    `broken`: a page with a ruled table whose rows do not survive in the text layer. `all`:
+    every page with a ruled table, for when the table's structure matters, since plain text
+    cannot carry it. `none`: tables are read as text. On a public benchmark `broken` kept more
+    of the tables and of the running text than picking tables by merged or stacked headers,
+    for the same number of pages.
+    """
+
+    @model_validator(mode="before")
+    @classmethod
+    def _old_table_setting(cls, values: Any) -> Any:
+        """Read `vision_for_complex_tables`, the setting this one replaced.
+
+        True was its default and now means the default; false asked for no table rule.
+        """
+        if isinstance(values, dict) and "vision_for_complex_tables" in values:
+            values = dict(values)
+            wanted = values.pop("vision_for_complex_tables")
+            values.setdefault("vision_for_tables", "broken" if wanted else "none")
+        return values
+
     verify_min_coverage_pct: float = Field(default=90.0, ge=0.0, le=100.0)
     """Share of a vision reading's words the kept reading must hold for a page to agree.
 

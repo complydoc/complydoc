@@ -72,21 +72,62 @@ def test_a_page_with_a_text_layer_reads_from_the_text_layer():
     assert "text layer covering 60%" in reason
 
 
-def test_a_table_with_merged_cells_goes_to_a_vision_model():
-    table = TableInfo(rows=4, cols=3, header_depth=1, merged_cells=2)
-    route, reason = route_of(page(text=PROSE, text_share=0.6, tables=[table]))
+def table(*, intact: int | None, compared: int | None, found_by: str = "lines") -> TableInfo:
+    """A six-row table of which `intact` of `compared` rows survive in the page's text."""
+    return TableInfo(
+        rows=6,
+        cols=3,
+        header_depth=1,
+        merged_cells=0,
+        detected_by=found_by,  # type: ignore[arg-type]
+        rows_intact=intact,
+        rows_compared=compared,
+    )
+
+
+def test_a_table_whose_rows_broke_in_the_text_goes_to_a_vision_model():
+    broken = table(intact=2, compared=5)
+    route, reason = route_of(page(text=PROSE, text_share=0.6, tables=[broken]))
     assert route == "vision"
-    assert "merged or stacked header cells" in reason
+    assert "2 of 5 rows survive" in reason
 
 
-def test_stacked_headers_go_to_a_vision_model_too():
-    table = TableInfo(rows=6, cols=4, header_depth=2, merged_cells=0)
-    assert route_of(page(text=PROSE, text_share=0.5, tables=[table]))[0] == "vision"
+def test_a_table_whose_rows_survived_stays_on_the_text_layer():
+    whole = table(intact=5, compared=5)
+    assert route_of(page(text=PROSE, text_share=0.5, tables=[whole]))[0] == "text"
 
 
-def test_a_plain_table_stays_on_the_text_layer():
-    table = TableInfo(rows=6, cols=2, header_depth=1, merged_cells=0)
-    assert route_of(page(text=PROSE, text_share=0.5, tables=[table]))[0] == "text"
+def test_a_table_with_merged_cells_is_judged_by_its_rows_like_any_other():
+    """The shape of a table did not predict what plain text loses; its rows do."""
+    merged = TableInfo(
+        rows=4, cols=3, header_depth=2, merged_cells=2, rows_intact=3, rows_compared=3
+    )
+    assert route_of(page(text=PROSE, text_share=0.6, tables=[merged]))[0] == "text"
+
+
+def test_a_table_guessed_from_alignment_is_not_grounds_for_a_vision_model():
+    guessed = table(intact=0, compared=5, found_by="alignment")
+    assert route_of(page(text=PROSE, text_share=0.5, tables=[guessed]))[0] == "text"
+
+
+def test_every_ruled_table_can_be_sent_to_a_vision_model():
+    whole = table(intact=5, compared=5)
+    built = page(text=PROSE, text_share=0.5, tables=[whole])
+    [decided] = plan_routes(document(built), RoutingConfig(vision_for_tables="all")).pages
+    assert decided.route == "vision"
+    assert "structure plain text cannot carry" in decided.reason
+
+
+def test_tables_can_be_left_to_the_text_layer():
+    broken = table(intact=0, compared=5)
+    built = page(text=PROSE, text_share=0.5, tables=[broken])
+    [decided] = plan_routes(document(built), RoutingConfig(vision_for_tables="none")).pages
+    assert decided.route == "text"
+
+
+@pytest.mark.parametrize(("old", "new"), [(True, "broken"), (False, "none")])
+def test_the_setting_this_one_replaced_is_still_read(old, new):
+    assert RoutingConfig(vision_for_complex_tables=old).vision_for_tables == new
 
 
 CAPTION = "Figure 1. Quarterly revenue by product line, in thousands of pounds."
@@ -183,9 +224,9 @@ def test_without_a_vision_model_a_poor_scan_says_what_would_read_it_better():
 def test_without_a_vision_model_a_text_layer_is_read_whatever_its_state():
     """A poor layer still kept more than OCR on the pages measured."""
     noise = (".- -,,.;; ::: 1# -i' .:|r ' .:.' .::.: " * 12).strip()
-    merged = TableInfo(rows=4, cols=3, merged_cells=2, header_depth=1)
+    broken = table(intact=1, compared=5)
     routing = plan_routes(
-        document(page(1, text=noise, text_share=0.6), page(2, text=PROSE, tables=[merged])), FREE
+        document(page(1, text=noise, text_share=0.6), page(2, text=PROSE, tables=[broken])), FREE
     )
     assert [p.route for p in routing.pages] == ["text", "text"]
     assert routing.counts["vision"] == 0

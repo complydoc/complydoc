@@ -15,6 +15,12 @@ separately.
   characters or because it is an embedded OCR layer that read noise, goes to a vision model
   too, while pages of figures and text in any script count as text; `max_control_char_pct` and `min_wordlike_pct` under `routing` set where that starts. A
   plan made before this release will send more pages to vision.
+- `routing.vision_for_tables` replaces `vision_for_complex_tables` and takes `broken`, `all`
+  or `none`. The default, `broken`, sends a page to a vision model when a ruled table's rows
+  do not survive in its text layer, where the old rule looked for merged or stacked header
+  cells. On a public benchmark the new rule kept more of the tables and of the running text
+  for the same number of pages. `all` sends every ruled table, for when structure matters. The
+  old key is still read: true means `broken`, false means `none`.
 - `routing.vision: false` plans for a pipeline with no vision model: the text layer where
   there is one, OCR where there is not, and a note on the pages a vision model would read
   better. `min_ocr_dpi` and `min_ocr_confidence` now apply only there.
