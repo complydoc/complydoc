@@ -85,7 +85,7 @@ runs:
   using: composite
   steps:
     - name: Set up uv
-      uses: astral-sh/setup-uv@v6
+      uses: astral-sh/setup-uv@v10.3.0
 
     - name: Install complydoc
       shell: bash

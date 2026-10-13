@@ -87,7 +87,7 @@ the model before the check. The weights go to the Hugging Face cache, which the
 check reads from:
 
 ```yaml
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@v10.3.0
       - uses: actions/cache@v4
         with:
           path: ~/.cache/huggingface

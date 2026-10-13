@@ -31,8 +31,7 @@ install-dev: ## Install base plus the dev group
 
 .PHONY: install-all
 install-all: ## Install everything, including OCR and the local NER model
-	$(UV) sync --extra ocr --extra ner --group dev
-	$(PYTHON) python -m spacy download en_core_web_sm
+	$(UV) sync --extra ocr --extra ner --group dev --group spacy-model
 
 .PHONY: tool
 tool: ## Install (or update) complydoc on PATH, with OCR and name detection

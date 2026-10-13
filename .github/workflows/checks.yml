@@ -46,7 +46,7 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: viewer/package-lock.json
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@v10.3.0
         with:
           enable-cache: true
           python-version: "3.12"
@@ -74,7 +74,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@v10.3.0
         with:
           enable-cache: true
       - run: uv sync --extra ocr --extra ner --group dev --group docs
@@ -95,7 +95,7 @@ jobs:
         python: ["3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@v5
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@v10.3.0
         with:
           enable-cache: true
           python-version: ${{ matrix.python }}
@@ -108,14 +108,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@v10.3.0
         with:
           enable-cache: true
           python-version: "3.12"
-      - run: uv sync --extra ocr --extra ner --group dev
-      # Downloading the model is a build step. complydoc itself never reaches
-      # the network, which the offline guard tests assert on every run.
-      - run: uv run python -m spacy download en_core_web_sm
+      - run: uv sync --extra ocr --extra ner --group dev --group spacy-model
+      # The model is a pinned wheel in the spacy-model group, installed with
+      # the environment and cached by uv. complydoc itself never reaches the
+      # network, which the offline guard tests assert on every run.
+      - name: the locked model loads
+        run: uv run python -c "import spacy; spacy.load('en_core_web_sm')"
       - name: tests
         run: uv run pytest -q
 
@@ -124,7 +126,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@v10.3.0
         with:
           enable-cache: true
           python-version: "3.12"
@@ -141,7 +143,7 @@ jobs:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
     steps:
       - uses: actions/checkout@v5
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@v10.3.0
         with:
           enable-cache: true
           python-version: "3.12"
@@ -159,7 +161,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@v10.3.0
         with:
           enable-cache: true
       - run: uv sync --group dev

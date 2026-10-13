@@ -26,7 +26,7 @@ jobs:
       version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v5
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@v10.3.0
         with:
           enable-cache: true
       # A tag that disagrees with the version the tool reports would put the
@@ -52,13 +52,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@v10.3.0
         with:
           enable-cache: true
-      - run: uv sync --extra ocr --extra ner --group dev
+      - run: uv sync --extra ocr --extra ner --group dev --group spacy-model
       - run: uv run ruff check src/complydoc src/tests
       - run: uv run ruff format --check src/complydoc src/tests
       - run: uv run mypy src/complydoc
+      - run: uv run python -c "import spacy; spacy.load('en_core_web_sm')"
       - run: uv run pytest -q
 
   build:
@@ -73,7 +74,7 @@ jobs:
       attestations: write
     steps:
       - uses: actions/checkout@v5
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@v10.3.0
         with:
           enable-cache: true
       - run: uv sync --group dev
