@@ -5,6 +5,15 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
+## Unreleased
+
+### Added
+
+- What PDF loaders let through: a page in the docs comparing what pypdf, pdfplumber,
+  pdfium, pymupdf, Docling, Unstructured and OpenDataLoader PDF return from six one-page
+  files, each with one thing a reader does not see, and what the audit flags.
+  `examples/loader-benchmark` writes the files and repeats the readings.
+
 ## [0.7.5] — 2026-10-15
 
 `cd.observe` traces more of the pipelines people write: Docling read directly, embedding

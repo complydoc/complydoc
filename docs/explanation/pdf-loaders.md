@@ -74,14 +74,15 @@ agree on the other five files.
 | --- | --- |
 | White text | High. Confirmed white text, and the sentence matches an instruction pattern. |
 | Type at 0.4pt | Medium. Confirmed, font size below 1pt. |
-| Type at 0pt | Nothing. |
+| Type at 0pt | Nothing in 0.7.5. From 0.7.6, medium: confirmed, font size below 1pt. |
 | Text behind an image | Nothing. The sentence is in the reading, and it is not marked hidden. |
 | Text off the page | Medium. Confirmed, outside the visible page area. |
 | Two columns | Nothing. |
 | Footer email and IBAN | The line is suspected hidden text, medium. The email is medium. The IBAN is high, because the checksum matches. |
 
 [Hidden content](hidden-content.md) is how those levels are decided. Two of the
-rows are misses, and they are marked as such below.
+rows were misses in 0.7.5. The 0pt sentence is flagged from 0.7.6; the sentence
+behind an image still is not, for the reason given below.
 
 ## White text
 
@@ -112,8 +113,9 @@ The 0pt sentence is the first miss. pypdf and pdfplumber return it whole.
 pymupdf returns the same characters, one per line. docling returns a scatter of
 single letters. unstructured and OpenDataLoader PDF drop it. complydoc's reader
 is pdfium, and pdfium does not return it. The hidden-text check reads that same
-text page and does not report the sentence either. It is in the file, two of
-the loaders will pass it on, and the audit neither extracts it nor flags it.
+text page, and in 0.7.5 did not report the sentence either. From 0.7.6 it reads
+the words pdfium left out from the page content and flags them, medium,
+confirmed, font size below 1pt. The default reader still does not return them.
 
 ## Text behind an image
 
@@ -125,10 +127,14 @@ A person sees the picture. complydoc, pypdf, pdfplumber, pymupdf, unstructured
 and OpenDataLoader PDF all return the sentence. docling does not: it writes
 `<!-- image -->` where the picture is and leaves the sentence out.
 
-This is the second miss. The audit does not flag the sentence. The check looks
-at the pixels under each glyph, and the picture is not a flat colour, so the
-glyphs are treated as visible. Text in the layer, covered by a picture that has
-some contrast in it, gets through unmarked.
+This is the second miss, and it stays one. The check looks at the pixels under
+each glyph, and the picture is not a flat colour, so the glyphs look visible.
+From 0.7.6 the check also reads the picture's own opacity, but text under a
+picture is reported only when it reads as an instruction to a model. On real
+documents most covered text is a figure painted over its own labels, or text a
+blend mode leaves visible, and calling all of it hidden buried the real cases.
+An ordinary sentence like this one, covered by a picture with contrast in it,
+still gets through unmarked.
 
 ## Text off the page
 
