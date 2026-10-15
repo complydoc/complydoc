@@ -14,15 +14,13 @@ export function Hero() {
   return (
     <section id="top" aria-labelledby="hero-title" className="overflow-hidden">
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-10 px-6 pt-16 pb-20 text-center md:pt-24 md:pb-28">
-        <div className="flex max-w-4xl flex-col items-center gap-6">
+        <div className="flex max-w-3xl flex-col items-center gap-6">
           <p className="font-mono text-xs text-muted-foreground">open source · runs on your machine</p>
-          <h1 id="hero-title" className="text-3xl font-semibold tracking-tight text-balance md:text-5xl">
-            An open-source, offline audit for documents before they're indexed. Diff your loaders, catch hidden
-            text and personal data, and gate it in CI.
+          <h1 id="hero-title" className="text-4xl font-semibold tracking-tight text-balance md:text-6xl">
+            Know your documents before they reach an LLM.
           </h1>
           <p className="max-w-2xl text-lg text-pretty text-muted-foreground">
-            Agents are traced from the model call onwards. complydoc traces what comes before: every step that loads,
-            cleans, splits, embeds and stores your documents.
+            An open-source, offline audit for documents before they're indexed.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <ButtonGroup>
