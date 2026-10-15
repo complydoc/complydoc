@@ -109,7 +109,10 @@ def check(
     ] = None,
     policy: Annotated[
         Path | None,
-        typer.Option("--policy", help="A YAML file of rules the documents must meet."),
+        typer.Option(
+            "--policy",
+            help="A YAML file of rules, or a shipped pack: finance, legal, hr.",
+        ),
     ] = None,
     report: Annotated[
         Path | None,
@@ -143,7 +146,8 @@ def check(
 ) -> None:
     """Check documents against a policy file, and exit non-zero when they fail it.
 
-    Each rule is one of the checks `cd.expect` offers, named in YAML. Every rule
+    Each rule is one of the checks `cd.expect` offers, named in YAML. A shipped
+    pack can be named in place of a file: finance, legal or hr. Every rule
     runs, so one run lists everything that failed rather than the first thing.
     Exits 1 when a rule of level `error` fails, 2 when the policy or the path
     cannot be read.
@@ -157,7 +161,10 @@ def check(
     )
 
     if policy is None:
-        errors.print("[bold red]No policy given.[/] Pass --policy policy.yaml.")
+        errors.print(
+            "[bold red]No policy given.[/] Pass --policy policy.yaml, "
+            "or a pack: finance, legal, hr."
+        )
         raise typer.Exit(code=2)
     if (target is None) == (report is None):
         errors.print("[bold red]Pass a path to audit, or --report with a report JSON.[/]")

@@ -5,6 +5,13 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
+## [Unreleased]
+
+### Added
+
+- Three policy packs for `complydoc check`: `finance`, `legal` and `hr`. They ship in the
+  package, so `--policy finance` and the action input `policy: finance` use them.
+
 ## [0.7.5] — 2026-10-15
 
 `cd.observe` traces more of the pipelines people write: Docling read directly, embedding

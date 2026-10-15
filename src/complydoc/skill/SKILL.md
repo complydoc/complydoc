@@ -33,7 +33,7 @@ take a path, so use `complydoc audit <path>` for anything else.
 | `complydoc compare-readers <path>` | Every installed PDF reader and OCR engine on the same pages |
 | `complydoc compare-loaders <file.yaml>` | Several document loaders (LangChain, LlamaIndex, Docling…) on the same files, from a YAML description |
 | `complydoc chunks <path> --splitter module:attr` | Chunks a text splitter makes: sizes, cut sentences and tables, identifiers, facts |
-| `complydoc check <path> --policy policy.yaml` | Rules written in YAML; exits 1 when one fails and 2 when the policy will not load; `--markdown`, `--sarif` |
+| `complydoc check <path> --policy policy.yaml` | Rules written in YAML; exits 1 when one fails and 2 when the policy will not load; `--markdown`, `--sarif`. Shipped packs: `finance`, `legal`, `hr` |
 | `complydoc diff <old.json> <new.json>` | Changes between two reports; exits 1 when something got worse |
 | `complydoc clean <path> --out <dir>` | Safe copies: identifiers masked, metadata removed, `--rasterise` for PDFs; `--show` lists what changed |
 | `complydoc assist --report <report.json>` | Drafts quick wins from a finished report with a hosted chat model. **Sends the report to that model**; needs the `assistant` extra |

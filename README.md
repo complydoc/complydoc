@@ -141,6 +141,8 @@ GitHub, the repository is also an action:
     policy: policy.yaml
 ```
 
+`policy` can be a file, or a pack that ships with the tool: `finance`, `legal`, `hr`.
+
 See [GitHub Action](https://complydoc.github.io/complydoc/docs/guides/github-action/) and
 [Policy files](https://complydoc.github.io/complydoc/docs/guides/policy/).
 
