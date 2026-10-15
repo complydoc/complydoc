@@ -56,6 +56,9 @@ with cd.observe("contracts-ingest"):
     vector_store.add_documents(chunks)
 ```
 
+Open the run with `complydoc ui`. [Langfuse and Phoenix](https://complydoc.github.io/complydoc/docs/guides/langfuse-phoenix/)
+is how an LLM trace points at the same run.
+
 Compare loaders on your own documents, page by page:
 
 ```python
@@ -193,6 +196,7 @@ publishes how often each finds and misses names.
 
 - [Documentation](https://complydoc.github.io/complydoc/docs/)
 - [Playground](https://github.com/complydoc/playground): runnable examples, with a CI workflow
+- [Langfuse and Phoenix](https://complydoc.github.io/complydoc/docs/guides/langfuse-phoenix/): the ingestion report beside an LLM trace
 - [Command line](https://complydoc.github.io/complydoc/docs/reference/cli/) and
   [Python API](https://complydoc.github.io/complydoc/docs/reference/api/) references
 - [Changelog](https://github.com/complydoc/complydoc/blob/main/src/complydoc/CHANGELOG.md)
