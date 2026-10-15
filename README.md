@@ -109,6 +109,8 @@ The audit keeps both readings and flags the white sentence. The check fails on i
 
 <img alt="Viewer document page: complydoc and pypdf side by side, with the white sentence in the text" src="https://raw.githubusercontent.com/complydoc/complydoc/main/docs/assets/hidden-clause-documents.png">
 
+Six pages of the same kind, and what each loader returns from them, are in [What PDF loaders let through](https://complydoc.github.io/complydoc/docs/explanation/pdf-loaders/).
+
 ## What it shows
 
 - **Pipeline traces**: each LangChain or LlamaIndex loader, splitter and embedding call as a

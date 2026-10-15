@@ -99,6 +99,7 @@ export default defineConfig({
             "explanation/not-measured",
             "explanation/evidence",
             "explanation/hidden-content",
+            "explanation/pdf-loaders",
             "explanation/accuracy",
           ],
         },
