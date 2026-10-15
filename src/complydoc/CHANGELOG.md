@@ -5,6 +5,63 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
+## [0.7.6] — 2026-10-15
+
+Where a value is still held in a vector store, and the call that removes it. `complydoc check`
+takes a shipped policy, `finance`, `legal` or `hr`, in place of a file. Text set at 0pt, and
+text covered by an opaque image, are flagged. A page compares what PDF loaders let
+through on six one-page files, and a guide puts a Langfuse or Phoenix span next to an
+ingestion trace.
+
+### Added
+
+- Erasure: where a value is still in the index. `complydoc find`, the viewer's Find a value
+  page and `cd.find_value` name, for each vector store a recorded pipeline wrote to, the
+  items holding the value under the IDs the store gave them, and the call that removes
+  them: LangChain's `delete(ids=...)` or LlamaIndex's `delete_nodes(node_ids=...)`.
+  A trace keeps the IDs each store returned or was given; the report JSON moves to
+  schema 25, adding `ids` to a store step's identifiers
+  ([#12](https://github.com/complydoc/complydoc/pull/12)).
+- Three policy packs for `complydoc check`: `finance`, `legal` and `hr`. They ship in the
+  package, so `--policy finance` and the action input `policy: finance` use them. Finance
+  is invoices, statements and tax filings; legal is contracts and filings; HR is personnel
+  files. The policy guide lists what each one fails on
+  ([#23](https://github.com/complydoc/complydoc/pull/23)).
+- What PDF loaders let through. Six one-page files, each with one extra thing in the text
+  layer: white text, tiny and zero-size type, text behind an image, text off the page, two
+  columns, or an email and an IBAN under a black bar. `examples/loader-benchmark` writes
+  the files. The audit compares pypdf, pdfplumber and pdfium; pymupdf, Docling, Unstructured
+  and OpenDataLoader PDF are read when they are installed. The page records those readings,
+  measured on 0.7.5, including the two cases the audit did not flag
+  ([#19](https://github.com/complydoc/complydoc/pull/19)).
+- Langfuse and Phoenix next to an ingestion trace. complydoc keeps the report on disk and
+  opens it with `complydoc ui`. There is no exporter. The guide's example records a small
+  pipeline with `cd.observe`, gates it with `no_identifiers_sent`, and shows a Langfuse or
+  Phoenix span opened after that block, carrying the run name and the report path. Those
+  clients belong outside the block: the network guard is back once `cd.observe` ends
+  ([#20](https://github.com/complydoc/complydoc/pull/20)).
+
+### Fixed
+
+- Text set at a font size of zero is reported as hidden. It is below the minimum font
+  size. The text page was leaving it out, so the check reads it from the page content.
+  The default reader still does not return that sentence; pdfium leaves it out of the text
+  page, and the finding is reported anyway
+  ([#22](https://github.com/complydoc/complydoc/pull/22)).
+- Text fully covered by an opaque image is reported as hidden. The page render treats a
+  photograph or a gradient as ink, so the image's own pixels are what decide. A transparent
+  image, one that covers only part of the text, and an image behind the text are not.
+  A gradient drawn as a shading, rather than as an image, is caught only when the pixels
+  under the text are uniform
+  ([#22](https://github.com/complydoc/complydoc/pull/22)).
+
+### Changed
+
+- The description no longer says observability. It is an open-source, offline audit for
+  documents before they are indexed, and a diff of document loaders. The tagline stays
+  "Know your documents before they reach an LLM"
+  ([#21](https://github.com/complydoc/complydoc/pull/21)).
+
 ## [0.7.5] — 2026-10-15
 
 `cd.observe` traces more of the pipelines people write: Docling read directly, embedding

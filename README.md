@@ -135,7 +135,7 @@ The audit keeps both readings and flags the white sentence. The check fails on i
 GitHub, the repository is also an action:
 
 ```yaml
-- uses: complydoc/complydoc@v0.7.5
+- uses: complydoc/complydoc@v0.7.6
   with:
     path: documents
     policy: policy.yaml

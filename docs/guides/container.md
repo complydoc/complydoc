@@ -26,7 +26,7 @@ downloads nothing. [Name detection models](name-detection-models.md) says what
 it finds and what it misses.
 
 `latest` and `names` follow the newest release. To stay on one, name it:
-`ghcr.io/complydoc/complydoc:0.7.5`, or `:0.7.5-names`. Both are built for Intel
+`ghcr.io/complydoc/complydoc:0.7.6`, or `:0.7.6-names`. Both are built for Intel
 and Arm machines, and each carries signed build provenance.
 
 The commands below call the image `complydoc`. Give the one you pulled that
