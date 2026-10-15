@@ -20,6 +20,19 @@ export default defineConfig({
           tag: "script",
           attrs: { "data-goatcounter": "https://complydoc.goatcounter.com/count", async: true, src: "https://gc.zgo.at/count.js" },
         },
+        // The card a shared docs link shows. Same image as the landing page, served from the site root.
+        {
+          tag: "meta",
+          attrs: { property: "og:image", content: "https://complydoc.github.io/complydoc/og.png" },
+        },
+        {
+          tag: "meta",
+          attrs: { name: "twitter:card", content: "summary_large_image" },
+        },
+        {
+          tag: "meta",
+          attrs: { name: "twitter:image", content: "https://complydoc.github.io/complydoc/og.png" },
+        },
       ],
       social: [{ icon: "github", label: "GitHub", href: "https://github.com/complydoc/complydoc" }],
       editLink: { baseUrl: "https://github.com/complydoc/complydoc/edit/main/docs/" },

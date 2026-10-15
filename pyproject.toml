@@ -6,7 +6,21 @@ readme = "README.md"
 requires-python = ">=3.11,<3.14"
 license = { text = "MIT" }
 authors = [{ name = "Duarte Cardoso", email = "caldasdcardoso@gmail.com" }]
-keywords = ["pdf", "ocr", "pii", "prompt-injection", "langchain", "document-loaders", "llm", "offline"]
+keywords = [
+    "pdf",
+    "ocr",
+    "pii",
+    "prompt-injection",
+    "langchain",
+    "document-loaders",
+    "llm",
+    "offline",
+    "rag",
+    "observability",
+    "llamaindex",
+    "embeddings",
+    "ingestion",
+]
 
 # How the package is filed and found on PyPI. Kept to the ones that are true:
 # a long list of aspirational classifiers is noise on the page.
@@ -20,6 +34,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Text Processing",
     "Topic :: Text Processing :: Markup :: HTML",
     "Topic :: Utilities",
