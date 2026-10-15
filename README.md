@@ -24,7 +24,7 @@
 
 <br>
 
-<img alt="complydoc audit flagging a white-text clause in a contract PDF that every loader passed to the model." src="https://raw.githubusercontent.com/complydoc/complydoc/main/docs/assets/hidden-clause.gif" width="100%">
+<img alt="complydoc audit flagging a white-text clause in a contract PDF that the loaders passed to the model." src="https://raw.githubusercontent.com/complydoc/complydoc/main/docs/assets/hidden-clause.gif" width="100%">
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/complydoc/complydoc/main/.github/images/viewer-trace-dark.webp">
@@ -32,8 +32,8 @@
 </picture>
 
 A PDF can say one thing to a person and another to your model. White text, tiny type,
-words under a picture, an IBAN behind a black bar: it's all still in the text layer, and
-most loaders pass it straight through. complydoc shows you what your loaders actually
+an IBAN behind a black bar: it's all still in the text layer, and most loaders pass it
+straight through. complydoc shows you what your loaders actually
 extracted, page by page, flags the hidden text and the personal and financial identifiers
 before they're embedded, and can fail a CI check when a document breaks your policy. It
 also traces every ingestion step with its time and cost, and nothing leaves your machine
@@ -41,12 +41,14 @@ unless you ask.
 
 ## Try it in 30 seconds
 
+A one-page contract with a clause in white text:
+
 ```bash
 uv tool install complydoc
-complydoc audit examples/hidden_clause.pdf
+curl -LO https://raw.githubusercontent.com/complydoc/complydoc/main/examples/hidden_clause.pdf
+complydoc audit hidden_clause.pdf
+complydoc ui
 ```
-
-<!-- Bake-off table goes here once #19 merges. -->
 
 ## Quickstart
 
