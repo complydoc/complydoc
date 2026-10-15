@@ -5,6 +5,7 @@
   </picture>
 
   <h3>Know your documents before they reach an LLM.</h3>
+  <p>An open-source, offline audit for documents before they're indexed.</p>
 
   <a href="https://pypi.org/project/complydoc/"><img src="https://img.shields.io/pypi/v/complydoc?color=1a7f4b&label=pypi" alt="PyPI"></a>
   <a href="https://github.com/complydoc/complydoc/actions/workflows/checks.yml"><img src="https://github.com/complydoc/complydoc/actions/workflows/checks.yml/badge.svg?branch=main" alt="Tests"></a>
@@ -23,21 +24,29 @@
 
 <br>
 
+<img alt="complydoc audit flagging a white-text clause in a contract PDF that every loader passed to the model." src="https://raw.githubusercontent.com/complydoc/complydoc/main/docs/assets/hidden-clause.gif" width="100%">
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/complydoc/complydoc/main/.github/images/viewer-trace-dark.webp">
   <img alt="The complydoc viewer: a LangChain ingestion pipeline's runs, and one run traced step by step, each loader, splitter, vector store and embedding call on a time axis with its time, cost and the identifiers it passed on, and warnings on a scanned file that loaded no text" src="https://raw.githubusercontent.com/complydoc/complydoc/main/.github/images/viewer-trace-light.webp" width="100%">
 </picture>
 
-An open-source, offline audit for documents before they're indexed. Diff your
-loaders, catch hidden text and personal data, and gate it in CI. It traces every step
-between your documents and your vector store (loading, cleaning, splitting, embedding,
-storing) with what each one cost, how long it took and what it passed on, and follows
-each document through them. It warns of the failures that raise no error, such as a scan
-that loaded no text, puts different loaders' readings of the same document side by side,
-and flags the personal or financial identifiers, and instructions hidden for a model,
-that make it through.
+A PDF can say one thing to a person and another to your model. White text, tiny type,
+words under a picture, an IBAN behind a black bar: it's all still in the text layer, and
+most loaders pass it straight through. complydoc shows you what your loaders actually
+extracted, page by page, flags the hidden text and the personal and financial identifiers
+before they're embedded, and can fail a CI check when a document breaks your policy. It
+also traces every ingestion step with its time and cost, and nothing leaves your machine
+unless you ask.
 
-It runs on your machine, and nothing leaves it unless you ask.
+## Try it in 30 seconds
+
+```bash
+uv tool install complydoc
+complydoc audit examples/hidden_clause.pdf
+```
+
+<!-- Bake-off table goes here once #19 merges. -->
 
 ## Quickstart
 
