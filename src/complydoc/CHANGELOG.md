@@ -5,6 +5,14 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
+## Unreleased
+
+### Changed
+
+- complydoc is described as an open-source, offline audit for documents before they are
+  indexed, and a diff of document loaders, on the landing page, the docs, the package and
+  the container image. The tagline stays "Know your documents before they reach an LLM".
+
 ## [0.7.5] — 2026-10-15
 
 `cd.observe` traces more of the pipelines people write: Docling read directly, embedding
