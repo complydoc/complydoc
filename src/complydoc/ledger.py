@@ -58,6 +58,9 @@ class StepSighting:
     """Where the step sent what it was given, when it sent it anywhere."""
     ids: list[str] = field(default_factory=list)
     """For a vector store, the IDs of the stored items holding the value."""
+    withheld: int = 0
+    """Items holding the value whose ID was itself a path or an identifier, so the report
+    does not carry it: they are counted, and found by their content instead."""
     store: str | None = None
     """For a vector store, the collection or index it named, where its settings say."""
     delete: str | None = None
@@ -123,19 +126,30 @@ _STORE_KEYS = ("collection_name", "index_name", "table_name", "namespace", "pers
 """Settings a vector store names where it keeps its items under, most telling first."""
 
 
+def _stored(stage: dict[str, Any], found: list[dict[str, Any]]) -> tuple[list[str], int]:
+    """The IDs of the stored items holding the value, and how many more were withheld."""
+    ids = [str(i) for i in stage.get("ids") or []]
+    positions = sorted({p for i in found for p in i.get("items") or [] if 0 <= p < len(ids)})
+    named = [ids[p] for p in positions if ids[p]]
+    return list(dict.fromkeys(named)), len(positions) - len(named)
+
+
 def _step_sightings(trace: dict[str, Any], wanted: set[str]) -> list[StepSighting]:
     steps: list[StepSighting] = []
-    last: tuple[Any, Any, Any] | None = None
+    last: tuple[Any, ...] | None = None
     for stage in trace.get("stages") or []:
         if stage.get("parent") is not None:
             continue
         found = [i for i in stage.get("identifiers") or [] if i.get("fingerprint") in wanted]
         held = sum(int(identifier.get("occurrences") or 1) for identifier in found)
         hosts = list(stage.get("hosts") or [])
-        ids = list(
-            dict.fromkeys(str(i) for identifier in found for i in identifier.get("ids") or [])
-        )
-        same = (stage.get("kind"), stage.get("component"), stage.get("method"))
+        ids, withheld = _stored(stage, found)
+        parameters = stage.get("parameters") or {}
+        store = None
+        if stage.get("kind") == "store":
+            store = next((str(parameters[k]) for k in _STORE_KEYS if parameters.get(k)), None)
+        # Two collections are two places to delete from, however alike the calls.
+        same = (stage.get("kind"), stage.get("component"), stage.get("method"), store)
         if steps and same == last:
             before = steps[-1]
             ids = list(dict.fromkeys([*before.ids, *ids]))
@@ -145,11 +159,10 @@ def _step_sightings(trace: dict[str, Any], wanted: set[str]) -> list[StepSightin
                 occurrences=before.occurrences + held,
                 hosts=list(dict.fromkeys([*before.hosts, *hosts])),
                 ids=ids,
+                withheld=before.withheld + withheld,
                 delete=_delete_call(stage, ids),
             )
         else:
-            parameters = stage.get("parameters") or {}
-            store = next((str(parameters[k]) for k in _STORE_KEYS if parameters.get(k)), None)
             steps.append(
                 StepSighting(
                     len(steps) + 1,
@@ -159,7 +172,8 @@ def _step_sightings(trace: dict[str, Any], wanted: set[str]) -> list[StepSightin
                     held,
                     hosts,
                     ids=ids,
-                    store=store if stage.get("kind") == "store" else None,
+                    withheld=withheld,
+                    store=store,
                     delete=_delete_call(stage, ids),
                 )
             )
@@ -167,12 +181,15 @@ def _step_sightings(trace: dict[str, Any], wanted: set[str]) -> list[StepSightin
     return steps
 
 
+_LLAMA_INDEX_ADDS = ("add", "async_add")
+"""What a LlamaIndex vector store is given its nodes by; LangChain's are named otherwise."""
+
+
 def _delete_call(stage: dict[str, Any], ids: list[str]) -> str | None:
     """The call that removes these items from the store, as the store's framework writes it."""
     if stage.get("kind") != "store" or not ids:
         return None
-    module = str(stage.get("module") or "")
-    if module.startswith("llama_index"):
+    if stage.get("method") in _LLAMA_INDEX_ADDS:
         return f"vector_store.delete_nodes(node_ids={ids!r})"
     return f"vector_store.delete(ids={ids!r})"
 

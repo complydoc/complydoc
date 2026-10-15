@@ -85,6 +85,11 @@ def find(
                     console.print(
                         f"      [dim]to remove them:[/] {escape(step.delete or '')}", soft_wrap=True
                     )
+                if step.withheld:
+                    console.print(
+                        f"      [dim]{count(step.withheld, 'more item')} stored under an ID "
+                        "that holds a path or an identifier, so not named here[/]"
+                    )
             else:
                 console.print(f"  [dim]{step.step:>2}  {escape(step.component)}  not there[/]")
         if run.sent_to:

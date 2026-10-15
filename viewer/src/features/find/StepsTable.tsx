@@ -32,9 +32,10 @@ export function StepsTable({ run }: { run: RunSighting }) {
           const held = step.occurrences > 0;
           const last = step.step === run.reached && step.step < run.steps.length;
           const ids = held ? (step.ids ?? []) : [];
+          const withheld = held ? (step.withheld ?? 0) : 0;
           return (
             <Fragment key={step.step}>
-              <TableRow className={cn(!held && "text-muted-foreground", ids.length > 0 && "border-b-0")}>
+              <TableRow className={cn(!held && "text-muted-foreground", (ids.length > 0 || withheld > 0) && "border-b-0")}>
                 <TableCell className="text-right tabular-nums text-muted-foreground">{step.step}</TableCell>
                 <TableCell>
                   <span className="flex items-center gap-2">
@@ -55,17 +56,27 @@ export function StepsTable({ run }: { run: RunSighting }) {
                   {held && step.hosts.length > 0 ? step.hosts.join(", ") : "—"}
                 </TableCell>
               </TableRow>
-              {ids.length > 0 && (
+              {(ids.length > 0 || withheld > 0) && (
                 // Where the value stays: the items holding it, and how to take them out.
                 <TableRow className="hover:bg-transparent">
                   <TableCell />
                   <TableCell colSpan={5} className="pb-4 whitespace-normal">
                     <div className="flex flex-col gap-2">
-                      <p className="text-xs text-muted-foreground">
-                        Stored as {plural(ids.length, "item")}
-                        {step.store ? ` in ${step.store}` : ""}. To take the value out of the index:
-                      </p>
-                      <CodeBlock title="Remove them" lines={[step.delete ?? ids.join("\n")]} />
+                      {ids.length > 0 && (
+                        <>
+                          <p className="text-xs text-muted-foreground">
+                            Stored as {plural(ids.length, "item")}
+                            {step.store ? ` in ${step.store}` : ""}. To take the value out of the index:
+                          </p>
+                          <CodeBlock title="Remove them" lines={[step.delete ?? ids.join("\n")]} />
+                        </>
+                      )}
+                      {withheld > 0 && (
+                        <p className="text-xs text-muted-foreground">
+                          {plural(withheld, ids.length > 0 ? "more item" : "item")} stored under an ID that holds a path
+                          or an identifier, so not named here.
+                        </p>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

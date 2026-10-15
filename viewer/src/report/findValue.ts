@@ -36,6 +36,8 @@ export interface StepSighting {
   hosts: string[];
   /** For a vector store, the IDs of the stored items holding the value. Absent before 0.7.6. */
   ids?: string[];
+  /** Items holding the value stored under an ID that is itself a path or an identifier. */
+  withheld?: number;
   /** For a vector store, the collection or index it named. */
   store?: string | null;
   /** For a vector store whose IDs are known, the call that removes those items. */

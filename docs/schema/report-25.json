@@ -4343,11 +4343,11 @@
           "title": "Evidence",
           "type": "string"
         },
-        "ids": {
+        "items": {
           "items": {
-            "type": "string"
+            "type": "integer"
           },
-          "title": "Ids",
+          "title": "Items",
           "type": "array"
         }
       },
@@ -4693,6 +4693,13 @@
             "type": "string"
           },
           "title": "Hosts",
+          "type": "array"
+        },
+        "ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Ids",
           "type": "array"
         },
         "vectors": {

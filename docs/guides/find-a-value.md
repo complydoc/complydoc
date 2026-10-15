@@ -38,13 +38,18 @@ IDs the store gave them, and the call that removes them:
 ```
 
 The call is LangChain's `delete(ids=...)` or LlamaIndex's `delete_nodes(node_ids=...)`,
-whichever the store is. Run it on the store your pipeline wrote to; complydoc changes
+whichever the store is. A few LlamaIndex stores have no `delete_nodes`; for those, delete
+by the source document with `vector_store.delete(ref_doc_id)`, which removes every node
+read from it. Run the call on the store your pipeline wrote to; complydoc changes
 nothing outside its own files. The viewer's **Find a value** page shows the same items
 and the call, with a button to copy it.
 
 The IDs are the ones the store returned, the ones given to it as `ids=`, or the ones the
-documents carried themselves. A store that says none of these is named without IDs
-rather than with a guess. Only runs recorded from 0.7.6 on keep the IDs, and the search
+documents carried themselves, as text, numbers or UUIDs. A value in an item's metadata
+counts as well as one in its text. A store that says none of these is named without IDs
+rather than with a guess. An ID that is itself a path or holds an identifier is not kept
+in the report, so the value does not end up there too: such items are counted instead,
+and found again by their content. Two collections are two steps, each with its own call. Only runs recorded from 0.7.6 on keep the IDs, and the search
 covers what a recorded run stored: chunks added to the index by other means are not in it.
 
 ## What is searched
