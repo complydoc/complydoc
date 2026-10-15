@@ -5,7 +5,7 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
-## [Unreleased]
+## Unreleased
 
 ### Added
 
