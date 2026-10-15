@@ -5,6 +5,10 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+
+# The base test jobs install no framework; a store to erase from needs one.
+pytest.importorskip("langchain_core")
+
 from langchain_core.documents import Document
 from langchain_core.embeddings import DeterministicFakeEmbedding
 from langchain_core.vectorstores import InMemoryVectorStore
