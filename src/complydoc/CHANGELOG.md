@@ -5,6 +5,17 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
+## [Unreleased]
+
+### Fixed
+
+- Text set at a font size of zero is reported as hidden. It is below the minimum
+  font size. The text page was leaving it out, so the check reads it from the page
+  content.
+- Text fully covered by an opaque image is reported as hidden. The page render
+  treats a photograph or a gradient as ink, so the image's own pixels are what
+  decide. A transparent image, or one that covers only part of the text, is not.
+
 ## [0.7.5] — 2026-10-15
 
 `cd.observe` traces more of the pipelines people write: Docling read directly, embedding

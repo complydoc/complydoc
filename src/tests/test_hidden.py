@@ -134,6 +134,207 @@ def test_a_visible_instruction_phrase_is_low(pdf_report):
     )
 
 
+def _ensure_font() -> None:
+    if FONT not in pdfmetrics.getRegisteredFontNames():
+        pdfmetrics.registerFont(
+            TTFont(FONT, str(Path(reportlab.__file__).parent / "fonts" / "Vera.ttf"))
+        )
+
+
+def _gradient(width: int, height: int, alpha: int | None = None) -> Image.Image:
+    """A picture that is not a flat colour, so the page render has contrast under the text."""
+    xs = np.linspace(20, 230, width, dtype=np.uint8)
+    ys = np.linspace(30, 210, height, dtype=np.uint8)
+    rgb = np.empty((height, width, 3), dtype=np.uint8)
+    rgb[..., 0] = xs[None, :]
+    rgb[..., 1] = ys[:, None]
+    rgb[..., 2] = 160
+    if alpha is None:
+        return Image.fromarray(rgb, "RGB")
+    plane = np.full((height, width), alpha, dtype=np.uint8)
+    return Image.fromarray(np.dstack([rgb, plane]), "RGBA")
+
+
+def _covered_pdf(
+    path: Path,
+    *,
+    image_first: bool = False,
+    box: tuple[float, float, float, float] = (40, 350, 420, 40),
+    alpha: int | None = None,
+    clip: tuple[float, float, float, float] | None = None,
+) -> Path:
+    """A sentence, and a picture. `box` is x, y, width, height in page points."""
+    _ensure_font()
+    c = canvas.Canvas(str(path), pagesize=A4)
+    _text(c, 60, 780, "Payment terms are thirty days from the invoice date.")
+    x, y, width, height = box
+    picture = ImageReader(_gradient(80, 40, alpha))
+
+    def draw_picture() -> None:
+        if clip is not None:
+            c.saveState()
+            area = c.beginPath()
+            area.rect(*clip)
+            c.clipPath(area, stroke=0, fill=0)
+        c.drawImage(picture, x, y, width=width, height=height, mask="auto")
+        if clip is not None:
+            c.restoreState()
+
+    def draw_sentence() -> None:
+        _text(c, 72, 372, "Additional term: delivery is included in the price.")
+
+    if image_first:
+        draw_picture()
+        draw_sentence()
+    else:
+        draw_sentence()
+        draw_picture()
+    c.save()
+    return path
+
+
+def test_zero_point_text_is_hidden(tmp_path, config):
+    """Set at 0pt. The text page omits it; the sentence is still below the minimum size."""
+    _ensure_font()
+    path = tmp_path / "zero.pdf"
+    c = canvas.Canvas(str(path), pagesize=A4)
+    _text(c, 60, 780, "Payment terms are thirty days from the invoice date.")
+    _text(c, 60, 120, "Additional term: interest on late payment runs at nine percent.", size=0.4)
+    _text(c, 60, 100, "Additional term: the deposit is refundable on cancellation.", size=0)
+    c.save()
+
+    check = check_content(path, [(1, "")], config)
+    tiny = passage(check.findings, "nine percent")
+    zero = passage(check.findings, "refundable on cancellation")
+    assert (tiny.visibility, tiny.hidden_reasons) == ("confirmed", ["font size below 1pt"])
+    assert (zero.visibility, zero.hidden_reasons) == ("confirmed", ["font size below 1pt"])
+    assert not any("payment terms" in f.excerpt.lower() for f in check.findings)
+    assert sum("nine percent" in f.excerpt.lower() for f in check.findings) == 1
+
+
+def test_a_page_that_is_only_zero_point_text_is_hidden(tmp_path, config):
+    """Nothing else on the page, so the text page is empty and the sentence is still found."""
+    _ensure_font()
+    path = tmp_path / "only-zero.pdf"
+    c = canvas.Canvas(str(path), pagesize=A4)
+    _text(c, 60, 100, "Additional term: the deposit is refundable on cancellation.", size=0)
+    c.save()
+
+    check = check_content(path, [(1, "")], config)
+    finding = passage(check.findings, "refundable on cancellation")
+    assert finding.visibility == "confirmed"
+    assert finding.hidden_reasons == ["font size below 1pt"]
+
+
+def test_text_drawn_at_zero_scale_is_hidden(tmp_path, config):
+    """Font size 12, text matrix all zeroes: nothing is drawn, and the text page omits it."""
+    _ensure_font()
+    path = tmp_path / "scaled-away.pdf"
+    c = canvas.Canvas(str(path), pagesize=A4)
+    _text(c, 60, 780, "Payment terms are thirty days from the invoice date.")
+    c.saveState()
+    c.transform(0, 0, 0, 0, 60, 100)
+    _text(c, 0, 0, "Additional term: the deposit is refundable on cancellation.")
+    c.restoreState()
+    c.save()
+
+    check = check_content(path, [(1, "")], config)
+    finding = passage(check.findings, "refundable on cancellation")
+    assert finding.visibility == "confirmed"
+    assert finding.hidden_reasons == ["font size below 1pt"]
+
+
+def test_text_under_an_opaque_picture_is_hidden(tmp_path, config):
+    check = check_content(_covered_pdf(tmp_path / "covered.pdf"), [(1, "")], config)
+    finding = passage(check.findings, "included in the price")
+    assert finding.visibility == "confirmed"
+    assert finding.hidden_reasons == ["covered by an opaque image"]
+    assert not any("payment terms" in f.excerpt.lower() for f in check.findings)
+
+
+def test_text_under_a_transparent_picture_is_not_hidden(tmp_path, config):
+    check = check_content(_covered_pdf(tmp_path / "clear.pdf", alpha=80), [(1, "")], config)
+    excerpts = " ".join(f.excerpt.lower() for f in check.findings)
+    assert "included in the price" not in excerpts
+
+
+def test_invisible_text_under_a_picture_is_not_hidden(tmp_path, config):
+    """A scan can be painted after its OCR layer. The words are the picture."""
+    _ensure_font()
+    path = tmp_path / "scan.pdf"
+    c = canvas.Canvas(str(path), pagesize=A4)
+    _text(c, 72, 372, "Additional term: delivery is included in the price.", mode=3)
+    x, y, width, height = (40, 350, 420, 40)
+    c.drawImage(ImageReader(_gradient(80, 40)), x, y, width=width, height=height, mask="auto")
+    c.save()
+
+    check = check_content(path, [(1, "")], config)
+    excerpts = " ".join(f.excerpt.lower() for f in check.findings)
+    assert "included in the price" not in excerpts
+
+
+def test_text_painted_over_a_picture_is_not_hidden(tmp_path, config):
+    check = check_content(_covered_pdf(tmp_path / "over.pdf", image_first=True), [(1, "")], config)
+    excerpts = " ".join(f.excerpt.lower() for f in check.findings)
+    assert "included in the price" not in excerpts
+
+
+def test_a_picture_that_covers_only_part_of_a_sentence_does_not_hide_it(tmp_path, config):
+    """The image sits on the first letter or two. The sentence is still on the page."""
+    check = check_content(
+        _covered_pdf(tmp_path / "partial.pdf", box=(70, 368, 10, 16)), [(1, "")], config
+    )
+    excerpts = " ".join(f.excerpt.lower() for f in check.findings)
+    assert "included in the price" not in excerpts
+    assert "delivery" not in excerpts
+
+
+def test_a_clip_that_misses_the_text_does_not_hide_it(tmp_path, config):
+    """The image's box covers the sentence; the clip leaves the sentence outside it."""
+    check = check_content(
+        _covered_pdf(tmp_path / "clipped.pdf", clip=(430, 700, 40, 40)),
+        [(1, "")],
+        config,
+    )
+    excerpts = " ".join(f.excerpt.lower() for f in check.findings)
+    assert "included in the price" not in excerpts
+
+
+def test_a_clip_around_the_sentence_still_hides_it(tmp_path, config):
+    check = check_content(
+        _covered_pdf(tmp_path / "clipped-over.pdf", clip=(30, 340, 450, 60)),
+        [(1, "")],
+        config,
+    )
+    finding = passage(check.findings, "included in the price")
+    assert (finding.visibility, finding.hidden_reasons) == (
+        "confirmed",
+        ["covered by an opaque image"],
+    )
+
+
+def test_text_on_the_opaque_part_of_a_picture_is_hidden(tmp_path, config):
+    """Opaque along the bottom, where the sentence sits, and transparent above it."""
+    _ensure_font()
+    path = tmp_path / "band.pdf"
+    picture = _gradient(80, 40)
+    rgba = np.dstack([np.asarray(picture), np.zeros((40, 80), dtype=np.uint8)])
+    rgba[20:, :, 3] = 255
+    c = canvas.Canvas(str(path), pagesize=A4)
+    _text(c, 72, 360, "Additional term: delivery is included in the price.")
+    c.drawImage(
+        ImageReader(Image.fromarray(rgba, "RGBA")), 40, 348, width=420, height=80, mask="auto"
+    )
+    c.save()
+
+    check = check_content(path, [(1, "")], config)
+    finding = passage(check.findings, "included in the price")
+    assert (finding.visibility, finding.hidden_reasons) == (
+        "confirmed",
+        ["covered by an opaque image"],
+    )
+
+
 def test_the_matrix_limitations_and_quick_wins(pdf_report):
     aggregate = pdf_report.aggregate
     assert aggregate.content_matrix["pattern"]["confirmed"] == 1
