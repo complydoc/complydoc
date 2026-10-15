@@ -89,6 +89,26 @@ complydoc ui
 
 The [playground](https://github.com/complydoc/playground) has all of this ready to run.
 
+## Demo
+
+`examples/hidden_clause.pdf` is one page: two columns, and a sentence in white.
+`examples/hidden_clause.py` writes it.
+
+```bash
+complydoc audit examples/hidden_clause.pdf --compare-extractor pypdf
+complydoc check examples/hidden_clause.pdf --policy examples/hidden_clause.yaml
+complydoc ui
+```
+
+The audit keeps both readings and flags the white sentence. The check fails on it.
+`complydoc ui` opens the report.
+
+<img alt="Terminal: complydoc audit reports one high hidden passage, then complydoc check fails on the white sentence" src="https://raw.githubusercontent.com/complydoc/complydoc/main/docs/assets/hidden-clause.gif">
+
+<img alt="Viewer security page: the white sentence, marked high, confirmed, white text" src="https://raw.githubusercontent.com/complydoc/complydoc/main/docs/assets/hidden-clause-security.png">
+
+<img alt="Viewer document page: complydoc and pypdf side by side, with the white sentence in the text" src="https://raw.githubusercontent.com/complydoc/complydoc/main/docs/assets/hidden-clause-documents.png">
+
 ## What it shows
 
 - **Pipeline traces**: each LangChain or LlamaIndex loader, splitter and embedding call as a
