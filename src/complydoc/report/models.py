@@ -66,7 +66,7 @@ __all__ = [
     "VerificationSummary",
 ]
 
-SCHEMA_VERSION = 24
+SCHEMA_VERSION = 25
 
 
 def report_shape() -> dict[str, object]:
@@ -1088,6 +1088,9 @@ class StageIdentifier:
     evidence: str = "pattern"
     """As a match's: `model` where the name model found it, which a stage scanned by
     patterns alone could not have, so it is not missing from such a stage."""
+    ids: list[str] = field(default_factory=list)
+    """For a vector store's step, the IDs it stored the items holding this identifier
+    under: what to delete to take it out of the index. Empty where the store gave none."""
 
 
 @dataclass(frozen=True, slots=True)

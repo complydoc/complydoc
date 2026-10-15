@@ -275,6 +275,8 @@ def _stage(
         if matches is None:
             matches = [m for text in texts for m in scans.matches(text, config, reveal)]
         identifiers = _by_fingerprint(matches)
+        if recording.kind == "store":
+            identifiers = _with_ids(identifiers, recording, config, reveal, scans)
         hidden = sum(scans.hidden(text, config) for text in texts)
         if report is not None:
             scans.unavailable.update(_audit_unscanned(report))
@@ -558,6 +560,43 @@ def _report_matches(report: AuditReport) -> list[SensitiveMatch] | None:
 
 def _key(match: SensitiveMatch) -> str:
     return match.fingerprint or f"{match.category}:{match.masked}"
+
+
+def _with_ids(
+    identifiers: list[StageIdentifier],
+    recording: Recording,
+    config: Config,
+    reveal: bool,
+    scans: _Scans,
+) -> list[StageIdentifier]:
+    """Each identifier with the IDs a store kept the items holding it under.
+
+    A store returns the IDs in the order it was given the items, and a LangChain document
+    or a LlamaIndex node that carries its own ID is stored under it. Where neither says,
+    the identifier is listed without IDs rather than with a guess.
+    """
+    items = list(recording.inputs or [])
+    ids = recording.ids or _own_ids(items)
+    if not ids or len(ids) != len(items):
+        return identifiers
+    holding: dict[str, list[str]] = {}
+    for item, stored in zip(items, ids, strict=True):
+        try:
+            text, _ = document_content(item)
+        except TypeError:
+            continue
+        for match in scans.matches(text, config, reveal):
+            holding.setdefault(_key(match), []).append(stored)
+    return [
+        dataclasses.replace(i, ids=list(dict.fromkeys(holding.get(i.fingerprint, []))))
+        for i in identifiers
+    ]
+
+
+def _own_ids(items: list[Any]) -> list[str] | None:
+    """The IDs items carry themselves: a document's `id`, a node's `node_id`."""
+    found = [getattr(item, "id", None) or getattr(item, "node_id", None) for item in items]
+    return [str(i) for i in found] if found and all(found) else None
 
 
 def _by_fingerprint(matches: Iterable[SensitiveMatch]) -> list[StageIdentifier]:

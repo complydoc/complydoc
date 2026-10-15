@@ -34,6 +34,12 @@ export interface StepSighting {
   /** How many times the value was in what the step passed on; zero where it was not. */
   occurrences: number;
   hosts: string[];
+  /** For a vector store, the IDs of the stored items holding the value. Absent before 0.7.6. */
+  ids?: string[];
+  /** For a vector store, the collection or index it named. */
+  store?: string | null;
+  /** For a vector store whose IDs are known, the call that removes those items. */
+  delete?: string | null;
 }
 
 /**

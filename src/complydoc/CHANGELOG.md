@@ -5,6 +5,17 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
+## Unreleased
+
+### Added
+
+- Erasure: where a value is still in the index. `complydoc find`, the viewer's Find a value
+  page and `cd.find_value` name, for each vector store a recorded pipeline wrote to, the
+  items holding the value under the IDs the store gave them, and the call that removes
+  them: LangChain's `delete(ids=...)` or LlamaIndex's `delete_nodes(node_ids=...)`.
+  A trace keeps the IDs each store returned or was given; the report JSON moves to
+  schema 25, adding `ids` to a store step's identifiers.
+
 ## [0.7.5] — 2026-10-15
 
 `cd.observe` traces more of the pipelines people write: Docling read directly, embedding

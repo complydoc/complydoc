@@ -8,6 +8,8 @@ export interface StageIdentifier {
   occurrences: number;
   /** `model` where only the name model found it, which a stage scanned by patterns could not. */
   evidence?: string;
+  /** Schema 25: for a vector store's step, the IDs of the stored items holding it. */
+  ids?: string[];
 }
 
 /** One item a stage passed on, or for an embedding stage sent, masked. */

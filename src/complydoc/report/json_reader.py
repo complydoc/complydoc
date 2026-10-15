@@ -45,6 +45,7 @@ READABLE_SCHEMA_VERSIONS = (
     21,
     22,
     23,
+    24,
     SCHEMA_VERSION,
 )
 """Schema versions `load_report` reads. Versions that only added fields are included."""

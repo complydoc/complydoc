@@ -73,6 +73,8 @@ class Recording:
     outputs: list[Any] | None = None
     vectors: int | None = None
     dimensions: int | None = None
+    ids: list[str] | None = None
+    """For a vector store, the IDs it stored what it was given under, in the same order."""
     seconds: float = 0.0
     connections: list[str] = field(default_factory=list)
     finished: bool = True
@@ -343,6 +345,9 @@ def finish(recording: Recording, result: Any) -> None:
     if recording.kind == "store":
         if isinstance(result, list | tuple):
             recording.vectors = len(result)
+            # What `add_documents` and `add` return: the ID each item was stored under.
+            if result and all(isinstance(item, str) for item in result):
+                recording.ids = list(result)
         return
     if recording.kind == "embed":
         # A list of vectors from a framework; from a provider's SDK, a response holding them.
