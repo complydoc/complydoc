@@ -11,7 +11,8 @@ export default defineConfig({
   integrations: [
     starlight({
       title: "complydoc",
-      description: "The observability layer for AI ingestion pipelines.",
+      description:
+        "An open-source, offline audit for documents before they're indexed. Diff your loaders, catch hidden text and personal data, and gate it in CI.",
       logo: { light: "./public/mark.svg", dark: "./public/mark-dark.svg", alt: "complydoc" },
       favicon: "/favicon.svg",
       // Visits are counted without cookies and nothing is stored in the browser.

@@ -28,7 +28,8 @@
   <img alt="The complydoc viewer: a LangChain ingestion pipeline's runs, and one run traced step by step, each loader, splitter, vector store and embedding call on a time axis with its time, cost and the identifiers it passed on, and warnings on a scanned file that loaded no text" src="https://raw.githubusercontent.com/complydoc/complydoc/main/.github/images/viewer-trace-light.webp" width="100%">
 </picture>
 
-complydoc is the observability layer for AI ingestion pipelines. It traces every step
+An open-source, offline audit for documents before they're indexed. Diff your
+loaders, catch hidden text and personal data, and gate it in CI. It traces every step
 between your documents and your vector store (loading, cleaning, splitting, embedding,
 storing) with what each one cost, how long it took and what it passed on, and follows
 each document through them. It warns of the failures that raise no error, such as a scan
