@@ -5,6 +5,13 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
+## Unreleased
+
+### Changed
+
+- Model prices refreshed (2026-10-12). Claude Sonnet 5.5, Haiku 5.5 and Fable 5.1 are
+  compared with the same vision formula and token-count note as the other Claude models.
+
 ## [0.7.5] — 2026-10-15
 
 `cd.observe` traces more of the pipelines people write: Docling read directly, embedding
