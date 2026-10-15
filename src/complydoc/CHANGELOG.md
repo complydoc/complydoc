@@ -5,6 +5,14 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
+## Unreleased
+
+### Added
+
+- A guide to complydoc beside Langfuse or Arize Phoenix: record the ingestion with
+  `cd.observe`, then open the model call's span after the block, carrying the run's name
+  and the report's path. There is no exporter; the report stays on disk.
+
 ## [0.7.5] — 2026-10-15
 
 `cd.observe` traces more of the pipelines people write: Docling read directly, embedding
