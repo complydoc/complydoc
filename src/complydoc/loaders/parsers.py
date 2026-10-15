@@ -39,6 +39,7 @@ __all__ = [
     "azure_document_intelligence",
     "docling",
     "llamaparse",
+    "opendataloader_pdf",
     "unstructured",
 ]
 
@@ -128,6 +129,26 @@ def docling(export: Literal["markdown", "chunks"] = "markdown", **options: Any) 
         price_key="docling",
         tags=("LangChain", "Docling"),
         formats=extensions(("pdf", "docx", "xlsx", "pptx", "html", "markdown", "image")),
+    )
+
+
+def opendataloader_pdf(**options: Any) -> LoaderSpec:
+    """OpenDataLoader PDF through `langchain-opendataloader-pdf`, run locally.
+
+    Java 11+ must be on the PATH. `options` are passed to
+    `OpenDataLoaderPDFLoader`; its default uses the local Java engine.
+    """
+
+    def factory(path: str) -> _WithSource:
+        module = _require("langchain_opendataloader_pdf", "langchain-opendataloader-pdf")
+        loader = module.OpenDataLoaderPDFLoader(file_path=path, **options)
+        return _WithSource(loader.load, path)
+
+    return LoaderSpec(
+        name="opendataloader",
+        factory=factory,
+        tags=("LangChain", "OpenDataLoader PDF"),
+        formats=extensions(("pdf",)),
     )
 
 
