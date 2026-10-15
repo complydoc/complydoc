@@ -31,13 +31,15 @@ box and text below `visibility.min_font_size_pt` is `confirmed` whatever the
 pixels show. A font size of zero is below that minimum. The text page leaves
 it out, so the words are read from the page content.
 
-Text fully covered by an opaque image is `confirmed` as well. The image has to
-be painted after the text and contain the glyph, and the image's own pixels
-there have to be opaque, soft masks and constant transparency included. That
-is read from the image. A photograph or a gradient has contrast, so the page
-render cannot see the text under it. A transparent image does not count, nor
-does one that leaves part of the glyph outside it, nor an image painted behind
-the text.
+Text fully covered by an opaque image is `suspected`. The image has to be
+painted after the text and contain the glyph, and the image's own pixels there
+have to be opaque, soft masks and constant transparency included. That is read
+from the image. A photograph or a gradient has contrast, so the page render
+cannot see the text under it. A transparent image does not count, nor does one
+that leaves part of the glyph outside it, nor an image painted behind the text,
+nor an image over half the page or more, which is a scan's picture of its own
+text layer. Such text is reported only when it reads as an instruction to a
+model: a figure painted over its own labels is covered text too, and common.
 
 Invisible render mode over an image of the same words, as on a scanned page
 with an OCR layer, has ink under it and is not reported. That stays the case

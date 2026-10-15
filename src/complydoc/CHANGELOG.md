@@ -5,16 +5,18 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
-## [Unreleased]
+## Unreleased
 
 ### Fixed
 
 - Text set at a font size of zero is reported as hidden. It is below the minimum
   font size. The text page was leaving it out, so the check reads it from the page
   content.
-- Text fully covered by an opaque image is reported as hidden. The page render
-  treats a photograph or a gradient as ink, so the image's own pixels are what
-  decide. A transparent image, or one that covers only part of the text, is not.
+- An instruction to a model hidden under an opaque image is reported, suspected. The
+  page render treats a photograph or a gradient as ink, so the image's own pixels are
+  what decide. A transparent image, one that covers only part of the text, and an
+  image over half the page or more (a scan's picture of its own text) do not count;
+  covered text that gives no instruction, such as a figure's own labels, is left out.
 
 ## [0.7.5] — 2026-10-15
 

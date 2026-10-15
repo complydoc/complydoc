@@ -17,13 +17,15 @@ so a letter drawn smaller than that font's letters would be counts too. A font
 size of zero is below the minimum as well. The text page omits it, so the words
 are read from the page content instead.
 
-An image painted over a glyph hides it when the image is opaque there. The page
-render cannot say so: a photograph or a gradient has contrast, and that looks
-like ink. The image's own pixels are what decide, masks included. An image
+An image painted over a glyph may hide it when the image is opaque there. The
+page render cannot say so: a photograph or a gradient has contrast, and that
+looks like ink. The image's own pixels are what decide, masks included. An image
 behind the text does not count, and neither does one that is transparent or
-that leaves part of the glyph outside it. Invisible text is left out of this:
-a scan's OCR layer is invisible, and the picture of the page may be painted
-after it.
+that leaves part of the glyph outside it. Such text is suspected, not confirmed,
+and reported only when it reads as an instruction to a model: a figure painted
+over its own labels looks the same, and is common. Invisible text is left out
+of this, and so is an image over half the page or more: that is a scan's picture
+painted over its own text layer.
 
 A glyph a pixel or two tall leaves too little ink at the page's resolution to
 tell from none, so small glyphs that look blank are drawn again, larger, before
@@ -34,6 +36,7 @@ from __future__ import annotations
 
 import contextlib
 import ctypes
+import functools
 import math
 from collections import Counter
 from dataclasses import dataclass, field
@@ -85,6 +88,8 @@ _OPAQUE_ALPHA = 250
 """Alpha, out of 255, at or above which an image pixel counts as opaque."""
 _OPAQUE_SHARE = 0.98
 """Share of the glyph's footprint that must be opaque before the image hides it."""
+_SCAN_SHARE = 0.5
+"""Share of the page an image may cover and still be a cover; past it, it is a scan's picture."""
 _MAX_IMAGE_PIXELS = 16_000_000
 """Display size past which an image's opacity is left unread, and the text not called covered."""
 
@@ -249,8 +254,9 @@ def _page_runs(
                     and order is not None
                     and _under_opaque_image(covers, order, (x0, y0, x1, y1))
                 ):
+                    # Suspected, not confirmed: a figure painted over its own labels, or a
+                    # picture of the very words under it, looks the same as a cover.
                     reasons.append(_COVERED)
-                    confirming = True
                     covered = True
                 elif blank and not tiny:
                     if explained:
@@ -369,6 +375,8 @@ def _page_objects(
         if obj:
             seen.add(_handle(obj))
 
+    left, bottom, right, top = page.get_cropbox()
+    page_area = max((right - left) * (top - bottom), 1.0)
     covers: list[_ImageCover] = []
     text_order: dict[int, int] = {}
     skipped: list[tuple[float, float]] = []
@@ -386,7 +394,11 @@ def _page_objects(
         elif obj.type == raw.FPDF_PAGEOBJ_IMAGE:
             bounds = _visible_image_bounds(raw, obj)
             if bounds is not None:
-                covers.append(_ImageCover(order, bounds, obj))
+                # An image over most of the page is a scan's picture of the page, painted
+                # over its own text layer: that text is what the picture shows.
+                x0, y0, x1, y1 = bounds
+                if (x1 - x0) * (y1 - y0) < _SCAN_SHARE * page_area:
+                    covers.append(_ImageCover(order, bounds, obj))
     return covers, text_order, skipped
 
 
@@ -394,11 +406,16 @@ def _skipped_origin(obj: Any, config: VisibilityConfig) -> tuple[float, float] |
     """Where a text object the text page left out was drawn, when it is below the minimum size."""
     try:
         size = float(obj.get_font_size())
-        left, bottom, right, top = obj.get_bounds()
+        left, bottom, _right, _top = obj.get_bounds()
+        a, b, c, d, _e, _f = obj.get_matrix().get()
     except Exception:
         return None
-    drawn = max(abs(right - left), abs(top - bottom))
-    if size >= config.min_font_size_pt and drawn >= _TALLEST_LETTER * config.min_font_size_pt:
+    # The size the text is drawn at: its font size times the object's own scale. Its
+    # box says nothing here, since an empty text object, which many PDFs carry on
+    # every page, has an empty box too, and reading the page again for each of those
+    # cost more than the rest of the check.
+    drawn = size * max(math.hypot(a, b), math.hypot(c, d))
+    if drawn >= config.min_font_size_pt:
         return None
     return (float(left), float(bottom))
 
@@ -574,6 +591,20 @@ def _hidden_glyphs(text: str, reason: str) -> list[Glyph]:
     return glyphs
 
 
+@functools.lru_cache(maxsize=2)
+def _pypdf_reader(path: str, password: str, modified: int) -> Any:
+    """The file opened once for every page that needs it, not once a page.
+
+    `modified` keys the cache, so a file changed on disk is read again.
+    """
+    import pypdf
+
+    reader = pypdf.PdfReader(path)
+    if reader.is_encrypted:
+        reader.decrypt(password or "")
+    return reader
+
+
 def _tiny_segments(
     path: Path, number: int, password: str, config: VisibilityConfig
 ) -> list[tuple[float, float, str]]:
@@ -582,13 +613,8 @@ def _tiny_segments(
     This is the text the text page does not carry. Anything large enough to be in
     the text page is left out, so it is not reported twice.
     """
-    import pypdf
-
     try:
-        reader = pypdf.PdfReader(str(path))
-        if reader.is_encrypted:
-            reader.decrypt(password or "")
-        content = reader.pages[number - 1]
+        content = _pypdf_reader(str(path), password, path.stat().st_mtime_ns).pages[number - 1]
     except Exception:
         return []
 
@@ -779,9 +805,10 @@ def runs_from_chars(
                     text=" ".join("".join(glyph.char for glyph in members).split()),
                     visibility="confirmed" if confirmed else "suspected",
                     reasons=reasons,
-                    # A line that ran off the page is layout, not hiding: worth a word only
-                    # if what is off the page reads as an instruction.
-                    only_if_instruction=_overflows(glyphs, start, reasons),
+                    # A line that ran off the page is layout, not hiding, and text under a
+                    # picture is most often a figure's own labels under the figure: each is
+                    # worth a word only if it reads as an instruction.
+                    only_if_instruction=_overflows(glyphs, start, reasons) or reasons == [_COVERED],
                 )
             )
         i = end + 1
