@@ -164,6 +164,41 @@ def test_language_declines_to_guess_on_a_page_of_figures(loader, config):
     assert signal.status is SignalStatus.NOT_APPLICABLE
 
 
+def test_one_stray_page_in_a_long_document_is_not_a_second_language(loader, config, monkeypatch):
+    """A detector guessing at a title page named a different language in each of four books."""
+    import copy
+
+    from complydoc.readiness.signals import language
+
+    document = loader("native_text.pdf")
+    first = document.pages[0]
+    document.pages = [copy.copy(first) for _ in range(100)]
+    for number, page in enumerate(document.pages, start=1):
+        page.number = number
+    answers = iter(["pcm"] + ["en"] * 99)
+    monkeypatch.setattr(language, "detect_language", lambda text: next(answers))
+    signal = measure(document, config, "language_count")
+    assert signal.value == 1
+    assert signal.display == "en"
+    assert signal.detail["not_counted"] == ["pcm"]
+    assert signal.detail["counts"] == {"pcm": 1, "en": 99}
+
+
+def test_a_second_language_on_one_page_of_a_short_document_counts(loader, config, monkeypatch):
+    import copy
+
+    from complydoc.readiness.signals import language
+
+    document = loader("native_text.pdf")
+    first = document.pages[0]
+    document.pages = [copy.copy(first) for _ in range(10)]
+    for number, page in enumerate(document.pages, start=1):
+        page.number = number
+    answers = iter(["de"] + ["en"] * 9)
+    monkeypatch.setattr(language, "detect_language", lambda text: next(answers))
+    assert measure(document, config, "language_count").value == 2
+
+
 # --- calibration -----------------------------------------------------------
 
 

@@ -40,6 +40,9 @@ def test_the_public_surface_is_exactly_what_was_promised():
         "security_audit",
         "cost_audit",
         "readiness_audit",
+        # where a value went, across runs
+        "find_value",
+        "Trail",
         # a pipeline observed as it runs
         "observe",
         "stage",

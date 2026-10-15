@@ -27,6 +27,7 @@ from types import TracebackType
 from typing import TYPE_CHECKING, Any, Literal, ParamSpec, TypeVar
 
 from complydoc import offline, storage
+from complydoc.observe import adapters
 from complydoc.observe.parameters import parameters_of
 
 if TYPE_CHECKING:
@@ -301,7 +302,7 @@ def begin(
         parent=within.index if within is not None else None,
         started=round((started if started_at is None else started_at) - observation._started, 4),
         owner=id(component) if component is not None else None,
-        inputs=list(inputs) if isinstance(inputs, list | tuple) else None,
+        inputs=adapters.listed(inputs),
     )
     with _lock:
         recording.index = len(observation.recordings)
@@ -344,13 +345,18 @@ def finish(recording: Recording, result: Any) -> None:
             recording.vectors = len(result)
         return
     if recording.kind == "embed":
-        if isinstance(result, list):
-            recording.vectors = len(result)
-            first = result[0] if result else None
+        # A list of vectors from a framework; from a provider's SDK, a response holding them.
+        sdk = type(result).__module__.startswith("openai")
+        vectors = getattr(result, "data", None) if sdk else result
+        if isinstance(vectors, list):
+            recording.vectors = len(vectors)
+            first = vectors[0] if vectors else None
+            first = getattr(first, "embedding", first)
             recording.dimensions = len(first) if isinstance(first, Sequence) else None
         return
-    if isinstance(result, list | tuple):
-        recording.outputs = list(result)
+    documents = adapters.listed(result)
+    if documents is not None:
+        recording.outputs = documents
 
 
 def stage(

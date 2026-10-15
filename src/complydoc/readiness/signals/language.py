@@ -11,6 +11,12 @@ from complydoc.utils.text import detect_language
 
 _MIN_LETTERS = 60
 _MIN_LETTER_RATIO = 0.5
+_MIN_PAGES = 2
+_MIN_SHARE = 0.02
+"""A language counts when it is the main one, or is found on this many pages, or on this
+share of the pages measured. One page in a hundred called another language is the detector
+guessing at a title page or a listing: on four books it named a different stray language in
+each."""
 
 
 @signal
@@ -45,16 +51,23 @@ class LanguageCountSignal:
             )
 
         counts = Counter(per_page.values())
+        main = counts.most_common(1)[0][0]
+        counted = sorted(
+            language
+            for language, pages in counts.items()
+            if language == main or pages >= _MIN_PAGES or pages / len(per_page) >= _MIN_SHARE
+        )
         return Measurement(
-            value=len(counts),
+            value=len(counted),
             display=(
-                f"{next(iter(counts))}"
-                if len(counts) == 1
-                else f"{len(counts)} languages: {', '.join(sorted(counts))}"
+                counted[0]
+                if len(counted) == 1
+                else f"{len(counted)} languages: {', '.join(counted)}"
             ),
             detail={
                 "per_page": per_page,
                 "counts": dict(counts),
+                "not_counted": sorted(set(counts) - set(counted)),
                 "pages_measured": len(per_page),
                 "pages_skipped_as_not_prose": skipped,
                 "model": "py3langid, run locally",

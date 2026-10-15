@@ -15,13 +15,31 @@ from collections.abc import Callable
 __all__ = ["FORMAT_ONLY", "VALIDATORS", "iban_mod97", "luhn", "validate", "vat_mod97"]
 
 FORMAT_ONLY: frozenset[str] = frozenset(
-    {"sort_code", "uk_postcode", "uk_phone", "plausible_dob", "in_pan"}
+    {
+        "sort_code",
+        "uk_postcode",
+        "uk_phone",
+        "plausible_dob",
+        "in_pan",
+        "card_issuer",
+        "card_grouping",
+        "dk_cpr",
+        "e164_phone",
+        "eu_vat",
+        "nanp_phone",
+        "ni_prefix",
+        "us_ein",
+        "us_ssn",
+    }
 )
 """Validators that check a shape rather than compute a check digit.
 
 Most formats here carry a checksum, and passing one is close to proof: a card
-number that satisfies Luhn and an issuer prefix is a card number. These five
-establish much less. Six digits that are not all the same is what a sort code
+number that satisfies Luhn and an issuer prefix is a card number. These
+establish much less. A phone number, a VAT number outside the UK, a US social
+security or employer number and a Danish CPR have no check digit at all, and
+were once counted as if they had: a run of digits in a table of results came
+out `confirmed`. Six digits that are not all the same is what a sort code
 looks like, and `plausible_dob` asks only whether a date could belong to someone
 alive, which every contract date also is. Reporting those as `confirmed` said a
 checksum had passed when none exists, so they earn a tier from what sits near
@@ -107,6 +125,23 @@ def card_issuer(value: str) -> bool:
         if len(prefix) == len(low) and low <= prefix <= high and len(digits) in lengths:
             return True
     return False
+
+
+_CARD_GROUPS = frozenset({(4, 4, 4, 4), (4, 6, 5), (4, 6, 4), (4, 4, 4, 4, 3), (4, 4, 4, 1)})
+"""How a card number is written when it is broken up: Visa and Mastercard, American Express,
+Diners Club, and the 19 and 13 digit numbers some issuers use."""
+
+
+def card_grouping(value: str) -> bool:
+    """Whether the digits are written as a card number is: unbroken, or in a card's groups.
+
+    Luhn passes one digit string in ten and issuer prefixes are wide, so the figures of a
+    table row, read left to right, pass both now and then: `1,909 2,825 -916` in a list of
+    subsidiaries came out as a confirmed card. No card is printed in groups of three.
+    """
+    groups = tuple(len(part) for part in re.split(r"[ -]", value.strip()) if part)
+    # OCR spaces a card number oddly, `4 111 1111 1111 1111`, but still leaves its fours.
+    return len(groups) == 1 or groups in _CARD_GROUPS or groups.count(4) >= 3
 
 
 def iban_mod97(value: str) -> bool:
@@ -296,57 +331,140 @@ def de_steuer_id(value: str) -> bool:
     return check == int(digits[10])
 
 
+_EU_VAT_BODIES = {
+    "AT": r"U\d{8}",
+    "BE": r"[01]\d{9}",
+    "BG": r"\d{9,10}",
+    "CY": r"\d{8}[A-Z]",
+    "CZ": r"\d{8,10}",
+    "DE": r"\d{9}",
+    "DK": r"\d{8}",
+    "EE": r"\d{9}",
+    "EL": r"\d{9}",
+    "ES": r"[A-Z0-9]\d{7}[A-Z0-9]",
+    "FI": r"\d{8}",
+    "FR": r"[A-HJ-NP-Z0-9]{2}\d{9}",
+    "HR": r"\d{11}",
+    "HU": r"\d{8}",
+    "IE": r"\d{7}[A-Z]{1,2}|\d[A-Z+*]\d{5}[A-Z]",
+    "IT": r"\d{11}",
+    "LT": r"\d{9}|\d{12}",
+    "LU": r"\d{8}",
+    "LV": r"\d{11}",
+    "MT": r"\d{8}",
+    "NL": r"\d{9}B\d{2}",
+    "PL": r"\d{10}",
+    "PT": r"\d{9}",
+    "RO": r"\d{2,10}",
+    "SE": r"\d{12}",
+    "SI": r"\d{8}",
+    "SK": r"\d{10}",
+}
+"""What follows the country code in each member state's VAT number, as VIES lists them."""
+
+
 def eu_vat(value: str) -> bool:
-    """Any EU or UK VAT number by country prefix and length."""
-    cleaned = "".join(value.split()).upper().replace("-", "")
-    if len(cleaned) < 4 or not cleaned[:2].isalpha():
+    """Any EU or UK VAT number, by its country's own shape.
+
+    The country code has to be written in capitals, as a VAT number is: patterns match without
+    regard to case, and a word that starts with two letters of a country code is not one. A
+    reader of research papers found `benchmark163` reported as a Belgian number, when length
+    was all that was checked.
+    """
+    written = "".join(value.split()).replace("-", "")
+    if len(written) < 4 or not written[:2].isalpha() or not written[:2].isupper():
         return False
-    country, body = cleaned[:2], cleaned[2:]
-    lengths = {
-        "AT": (9,),
-        "BE": (10,),
-        "BG": (9, 10),
-        "CY": (9,),
-        "CZ": (8, 9, 10),
-        "DE": (9,),
-        "DK": (8,),
-        "EE": (9,),
-        "EL": (9,),
-        "ES": (9,),
-        "FI": (8,),
-        "FR": (11,),
-        "GB": (9, 12),
-        "HR": (11,),
-        "HU": (8,),
-        "IE": (8, 9),
-        "IT": (11,),
-        "LT": (9, 12),
-        "LU": (8,),
-        "LV": (11,),
-        "MT": (8,),
-        "NL": (12,),
-        "PL": (10,),
-        "PT": (9,),
-        "RO": tuple(range(2, 11)),
-        "SE": (12,),
-        "SI": (8,),
-        "SK": (10,),
-    }
-    if country not in lengths or len(body) not in lengths[country]:
-        return False
+    country, body = written[:2], written[2:].upper()
     if country == "GB":
-        return vat_mod97(body)
-    return any(c.isdigit() for c in body)
+        return len(body) in (9, 12) and vat_mod97(body)
+    shape = _EU_VAT_BODIES.get(country)
+    return shape is not None and re.fullmatch(shape, body) is not None
 
 
 def _plausible_date(day: int, month: int) -> bool:
     return 1 <= month <= 12 and 1 <= day <= 31
 
 
+_TWO_DIGIT_COUNTRY_CODES = frozenset(
+    [
+        "20",
+        "27",
+        "30",
+        "31",
+        "32",
+        "33",
+        "34",
+        "36",
+        "39",
+        "40",
+        "41",
+        "43",
+        "44",
+        "45",
+        "46",
+        "47",
+        "48",
+        "49",
+        "51",
+        "52",
+        "53",
+        "54",
+        "55",
+        "56",
+        "57",
+        "58",
+        "60",
+        "61",
+        "62",
+        "63",
+        "64",
+        "65",
+        "66",
+        "81",
+        "82",
+        "84",
+        "86",
+        "90",
+        "91",
+        "92",
+        "93",
+        "94",
+        "95",
+        "98",
+    ]
+)
+"""The ITU country calling codes that are two digits long. One and seven stand alone, and
+every other code is three digits."""
+
+
+def _country_code_is_whole(value: str) -> bool:
+    """Whether the digits before the first separator can be a country calling code.
+
+    A number is never written with a separator inside its country code. `+3.33) 0.74 17.34`,
+    out of a table of score changes, starts with `+3`, which is no country's code.
+    """
+    lead = re.match(r"\+(\d+)", value.strip())
+    if lead is None:
+        return False
+    first = lead.group(1)
+    if len(first) > 3:
+        return True  # written without a separator after the code, which cannot be checked
+    if len(first) == 1:
+        return first in "17"
+    if len(first) == 2:
+        return first in _TWO_DIGIT_COUNTRY_CODES
+    return first[0] not in "17" and first[:2] not in _TWO_DIGIT_COUNTRY_CODES
+
+
 def e164_phone(value: str) -> bool:
     """An international number with a country code, other than +44, of 8 to 15 digits."""
     digits = _digits(value)
-    return value.strip().startswith("+") and 8 <= len(digits) <= 15 and not digits.startswith("44")
+    return (
+        value.strip().startswith("+")
+        and 8 <= len(digits) <= 15
+        and not digits.startswith("44")
+        and _country_code_is_whole(value)
+    )
 
 
 def nanp_phone(value: str) -> bool:
@@ -520,6 +638,7 @@ VALIDATORS: dict[str, Callable[[str], bool]] = {
     "fr_nir": fr_nir,
     "de_steuer_id": de_steuer_id,
     "eu_vat": eu_vat,
+    "card_grouping": card_grouping,
     "e164_phone": e164_phone,
     "nanp_phone": nanp_phone,
     "it_codice_fiscale": it_codice_fiscale,

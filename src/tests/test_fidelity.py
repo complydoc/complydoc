@@ -94,3 +94,32 @@ def test_an_alignment_detected_table_is_not_scored(config):
     signal = next(s for s in report.documents[0].readiness.signals if s.id == "table_fidelity")
     assert signal.value is None
     assert "alignment" in (signal.reason or "")
+
+
+ANNOTATORS = """AnnotatorA - 0.72 0.74 - 0.56 0.56
+AnnotatorB 0.72 - 0.78 0.56 - 0.56"""
+
+
+def test_rows_merged_into_one_grid_row_are_compared_one_by_one():
+    merged = [["- 0.72 0.74\n0.72 - 0.78", "- 0.56 0.56\n0.56 - 0.56"]]
+    assert compare_rows(merged, ANNOTATORS) == (2, 2)
+
+
+def test_merged_rows_that_the_text_split_are_still_broken():
+    merged = [["Acme 1\nBolt 2", "North 3\nSouth 4"]]
+    assert compare_rows(merged, "Acme 1\nNorth 3\nBolt 2\nSouth 4") == (0, 2)
+
+
+def test_a_cell_that_wraps_beside_single_line_cells_is_one_row():
+    grid = [["Supplier\nname", "Rating"], ["Acme", "B"]]
+    assert compare_rows(grid, "Supplier name Rating\nAcme B") == (2, 2)
+
+
+def test_a_dash_for_an_empty_value_does_not_stop_merged_rows_being_split():
+    merged = [["Acme\nBolt", "-\n0.56", "0.72\n0.78"]]
+    assert compare_rows(merged, "Acme - 0.72\nBolt 0.56 0.78") == (2, 2)
+
+
+def test_a_row_whose_cells_all_wrap_is_compared_line_by_line():
+    grid = [["Supplier\nname", "Credit\nrating"]]
+    assert compare_rows(grid, "Supplier Credit\nname rating") == (2, 2)

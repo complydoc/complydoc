@@ -4,7 +4,7 @@ import type { Report } from "./types";
  * What a run can hold. Every page is always shown; a page whose content the run
  * did not produce says so and names the command that would.
  */
-export type Content = "readiness" | "cost" | "sensitive" | "loaders" | "chunks" | "documents" | "trace";
+export type Content = "readiness" | "cost" | "sensitive" | "loaders" | "chunks" | "documents" | "trace" | "evals";
 
 const COMPONENTS: readonly Content[] = ["readiness", "cost", "sensitive"];
 
@@ -17,6 +17,7 @@ export function measured(report: Report, content: Content): boolean {
   }
   if (content === "loaders") return report.loader_comparison !== null;
   if (content === "chunks") return (report.chunks?.length ?? 0) > 0;
+  if (content === "evals") return (report.evals?.checks.length ?? 0) > 0;
   // A pipeline recorded with cd.observe carries its trace; an audit's is made from its timings.
   if (content === "trace")
     return (
@@ -48,5 +49,7 @@ export function commandFor(report: Report, content: Content): string {
       return `complydoc audit ${target}`;
     case "trace":
       return 'with cd.observe("my-pipeline"):';
+    case "evals":
+      return `complydoc audit ${target}`;
   }
 }

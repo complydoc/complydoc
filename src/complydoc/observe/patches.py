@@ -20,13 +20,13 @@ from collections.abc import AsyncIterator, Callable, Iterator
 from dataclasses import dataclass
 from typing import Any, Final
 
-from complydoc.observe import readers, session
+from complydoc.observe import adapters, readers, session
 
 __all__ = ["install", "uninstall"]
 
 _OBSERVED: Final = "__complydoc_observed__"
 
-_LAZY: Final = frozenset({"lazy_load", "lazy_load_data"})
+_LAZY: Final = frozenset({"lazy_load", "lazy_load_data", "convert_all", "chunk"})
 """Methods returning an iterator, whose stage lasts until the iterator is exhausted."""
 
 _INPUT: Final = {
@@ -52,6 +52,8 @@ _INPUT: Final = {
     "afrom_documents": "documents",
     "from_texts": "texts",
     "afrom_texts": "texts",
+    "chunk": "dl_doc",
+    "create": "input",
 }
 """The argument holding what a method is given, by method."""
 
@@ -67,6 +69,8 @@ class _Target:
     distribution: str | None
     exclude: tuple[tuple[str, str], ...] = ()
     """Subclasses observed by another target, and so left alone by this one."""
+    label: str | None = None
+    """The step's name, where the class's own would not say what it is."""
 
 
 _TARGETS: Final = (
@@ -147,6 +151,38 @@ _TARGETS: Final = (
         ("add", "async_add"),
         "store",
         "llama-index-core",
+    ),
+    # Docling read directly: a converter reads files, a chunker splits what it read.
+    _Target(
+        "docling.document_converter",
+        "DocumentConverter",
+        ("convert", "convert_all"),
+        "load",
+        "docling",
+    ),
+    _Target(
+        "docling_core.transforms.chunker.base",
+        "BaseChunker",
+        ("chunk",),
+        "split",
+        "docling-core",
+    ),
+    # An embedding model called through its provider's own SDK, not a framework's class.
+    _Target(
+        "openai.resources.embeddings",
+        "Embeddings",
+        ("create",),
+        "embed",
+        "openai",
+        label="OpenAI embeddings",
+    ),
+    _Target(
+        "openai.resources.embeddings",
+        "AsyncEmbeddings",
+        ("create",),
+        "embed",
+        "openai",
+        label="OpenAI embeddings",
     ),
     # Any other step of an ingestion pipeline, such as a metadata extractor.
     _Target(
@@ -244,13 +280,13 @@ def _wrap_class(cls: type, target: _Target) -> None:
         original = cls.__dict__.get(method)
         if isinstance(original, classmethod) and _wrappable(original.__func__):
             # Called on the class: the class is the component.
-            wrapped: Any = classmethod(_observed(original.__func__, method, kind_of))
+            wrapped: Any = classmethod(_observed(original.__func__, method, kind_of, target.label))
             setattr(cls, method, wrapped)
             _installed.append((cls, method, original))
             continue
         if not _wrappable(original):
             continue
-        setattr(cls, method, _observed(original, method, kind_of))
+        setattr(cls, method, _observed(original, method, kind_of, target.label))
         _installed.append((cls, method, original))
 
 
@@ -344,19 +380,28 @@ def _inputs(method: str, args: tuple[Any, ...], kwargs: dict[str, Any]) -> Any:
     argument = _INPUT.get(method)
     if argument is None:
         return None
-    return args[0] if args else kwargs.get(argument)
+    given = args[0] if args else kwargs.get(argument)
+    # An SDK's embedding call takes one text as readily as a list of them.
+    return [given] if isinstance(given, str) and method == "create" else adapters.listed(given)
 
 
-def _observed(original: Any, method: str, kind_of: Callable[[Any], str]) -> Any:
+def _observed(
+    original: Any, method: str, kind_of: Callable[[Any], str], name: str | None = None
+) -> Any:
     """`original`, recording a stage each time it is called in a block and not in a stage."""
 
     def begin(self: Any, args: tuple[Any, ...], kwargs: dict[str, Any]) -> Any:
         # A class method's `self` is the class: it names the step, not its metaclass.
         on_class = isinstance(self, type)
         module = self.__module__ if on_class else type(self).__module__
-        label = self.__name__ if on_class else None
+        label = name or (self.__name__ if on_class else None)
         inputs = _inputs(method, args, kwargs)
-        return session.begin(kind_of(self), self, module, method, inputs, label=label)
+        kind = kind_of(self)
+        recording = session.begin(kind, self, module, method, inputs, label=label)
+        # A model named in the call, as an SDK takes it, prices the call as a setting would.
+        if recording is not None and kind == "embed" and isinstance(kwargs.get("model"), str):
+            recording.parameters["model"] = kwargs["model"]
+        return recording
 
     if inspect.isasyncgenfunction(original):
 
@@ -375,7 +420,7 @@ def _observed(original: Any, method: str, kind_of: Callable[[Any], str]) -> Any:
                 if item is _DONE:
                     recording.finished = True
                     return
-                recording.outputs.append(item)
+                recording.outputs.extend(adapters.documents_of(item))
                 yield item
 
         wrapped: Any = agenerator
@@ -402,7 +447,14 @@ def _observed(original: Any, method: str, kind_of: Callable[[Any], str]) -> Any:
             if recording is None:
                 return original(self, *args, **kwargs)
             if method in _LAZY:
-                return _lazily(recording, lambda: original(self, *args, **kwargs))
+                with session.running(recording):
+                    result = original(self, *args, **kwargs)
+                # Most return an iterator, read as the caller takes from it; one that
+                # returns a list has done its work, and the caller gets the list itself.
+                if isinstance(result, list | tuple):
+                    session.finish(recording, result)
+                    return result
+                return _lazily(recording, result)
             with session.running(recording):
                 result = original(self, *args, **kwargs)
             session.finish(recording, result)
@@ -414,16 +466,16 @@ def _observed(original: Any, method: str, kind_of: Callable[[Any], str]) -> Any:
     return wrapped
 
 
-def _lazily(recording: session.Recording, start: Callable[[], Any]) -> Iterator[Any]:
+def _lazily(recording: session.Recording, returned: Any) -> Iterator[Any]:
     """Items as the caller takes them, the stage running only while one is being made."""
     recording.finished, recording.outputs = False, []
     with session.running(recording):
-        iterator = iter(start())
+        iterator = iter(returned)
     while True:
         with session.running(recording):
             item = next(iterator, _DONE)
         if item is _DONE:
             recording.finished = True
             return
-        recording.outputs.append(item)
+        recording.outputs.extend(adapters.documents_of(item))
         yield item

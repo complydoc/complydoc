@@ -6,7 +6,21 @@ readme = "README.md"
 requires-python = ">=3.11,<3.14"
 license = { text = "MIT" }
 authors = [{ name = "Duarte Cardoso", email = "caldasdcardoso@gmail.com" }]
-keywords = ["pdf", "ocr", "pii", "prompt-injection", "langchain", "document-loaders", "llm", "offline"]
+keywords = [
+    "pdf",
+    "ocr",
+    "pii",
+    "prompt-injection",
+    "langchain",
+    "document-loaders",
+    "llm",
+    "offline",
+    "rag",
+    "observability",
+    "llamaindex",
+    "embeddings",
+    "ingestion",
+]
 
 # How the package is filed and found on PyPI. Kept to the ones that are true:
 # a long list of aspirational classifiers is noise on the page.
@@ -20,6 +34,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Text Processing",
     "Topic :: Text Processing :: Markup :: HTML",
     "Topic :: Utilities",
@@ -107,6 +122,14 @@ dev = [
     # A stand-in for a bucket, so the storage tests need no account and no network.
     "boto3>=1.28",
     "moto[s3,server]>=5.0",
+]
+# The small English model the NER tests load. A pinned wheel, so `uv sync`
+# installs it from the lockfile and the uv cache keeps it. `spacy download`
+# asks a compatibility endpoint before it fetches anything, and a reset there
+# fails the job. Kept out of the `ner` extra: a direct URL in an extra is
+# rejected by PyPI, and `pip install "complydoc[ner]"` would stop working.
+spacy-model = [
+    "en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl",
 ]
 pipelines = [
     "chromadb>=1.0",

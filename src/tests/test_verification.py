@@ -269,8 +269,8 @@ def test_each_reading_carries_its_cost_and_local_readers_are_free(one_pdf):
         compare_extractors=["pypdf"],
     )
     page = report.documents[0].extracted_text[0]
-    assert page.kept == "pdfplumber"
-    assert page.costs["pdfplumber"] == ReadingCost(0.0, "local")
+    assert page.kept == "complydoc"
+    assert page.costs["complydoc"] == ReadingCost(0.0, "local")
     assert page.costs["pypdf"] == ReadingCost(0.0, "local")
     assert page.costs["vision:claude-opus-5"].basis == "actual"
     assert "vision:claude-opus-5" in page.readings
@@ -390,8 +390,8 @@ def test_every_reading_is_counted_so_a_page_can_be_priced_on_any_model(one_pdf):
     formulas = {m["vision_formula"] for m in models if m["supports_vision"]}
 
     # Every reader, once per way of counting the models compared use.
-    assert set(page.tokens) >= {"pdfplumber", "pypdf"}
-    assert set(page.tokens["pdfplumber"]) == tokenizers
+    assert set(page.tokens) >= {"complydoc", "pypdf"}
+    assert set(page.tokens["complydoc"]) == tokenizers
     # And the page as an image, once per formula a vision model uses.
     assert set(page.image_tokens) == formulas
     # What pricing one page takes, kept in the summary JSON too.
@@ -402,7 +402,7 @@ def test_every_reading_is_counted_so_a_page_can_be_priced_on_any_model(one_pdf):
 def test_every_reader_is_timed_on_every_page_it_read(one_pdf):
     report = cd.full_audit(one_pdf, extracted_text=True, compare_extractors=["pypdf"])
     page = report.documents[0].extracted_text[0]
-    assert set(page.seconds) >= {"pdfplumber", "pypdf"}
+    assert set(page.seconds) >= {"complydoc", "pypdf"}
     assert all(seconds >= 0 for seconds in page.seconds.values())
 
 

@@ -97,7 +97,7 @@ categories:
     severity: high
     patterns:
       - '\b(?:\d[ -]?){12,18}\d\b'
-    validators: [luhn, card_issuer]
+    validators: [luhn, card_issuer, card_grouping]
     context_terms: ["card", "visa", "mastercard", "amex", "pan", "card number"]
     gdpr_note: >
       Payment card data. Validated with the Luhn checksum and the issuing
@@ -111,7 +111,7 @@ categories:
     detector: regex
     severity: medium
     patterns:
-      - '\b[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}\b'
+      - '\b(?-i:[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2})\b(?![-/]\w)'
     validators: [uk_postcode]
     context_terms: ["postcode", "post code", "address"]
     gdpr_note: >
@@ -126,9 +126,12 @@ categories:
     severity: medium
     patterns:
       # English: 12 High Street
-      - '\b\d+[A-Za-z]?[ ,]+(?:[A-Z][A-Za-z''-]+[ ]){1,4}(?:Road|Rd|Street|St|Avenue|Ave|Lane|Ln|Close|Drive|Dr|Way|Court|Ct|Place|Pl|Crescent|Terrace|Gardens|Grove|Hill|Park|Square|Sq)\b'
+      - '\b\d+[A-Za-z]?[ ,]+(?-i:(?:[A-Z][A-Za-z''-]+[ ]){1,4}(?:Road|Rd|Street|St|Avenue|Ave|Lane|Ln|Close|Drive|Dr|Way|Court|Ct|Place|Pl|Crescent|Terrace|Gardens|Grove|Hill|Park|Square|Sq))\b'
       # Portuguese, Spanish, Catalan, Italian: Rua Augusta, 12 / Calle Mayor 5
-      - '\b(?:Rua|Avenida|Travessa|Largo|Calle|Avda\.|Paseo|Plaza|Carrer|Via|Viale|Piazza|Corso)\s+(?:[A-ZÀ-Ý][\wÀ-ÿ''’.-]*\s?){1,5},?\s*(?:n\.?º?\s*)?\d{1,4}[A-Za-z]?\b'
+      - '\b(?-i:(?:Rua|Avenida|Travessa|Largo|Calle|Avda\.|Paseo|Plaza|Carrer|Via|Viale|Piazza|Corso)\s+(?:[A-ZÀ-Ý][\wÀ-ÿ''’.-]*\s?){1,5}),?\s*(?:n\.?\s?[ºo°]?\s*)?\d{1,4}[A-Za-z]?\b'
+      # The same street words in lower case, as Italian and Portuguese addresses are often
+      # written, count only with a postal code after the number: "via" is also a word.
+      - '\b(?-i:rua|avenida|calle|via|viale|piazza|corso)\s+(?:[\wÀ-ÿ''’.-]+\s?){1,5},?\s*\d{1,4}[A-Za-z]?\s*,\s*\d{4,5}(?:-\d{3})?\b'
       # French: 12 rue de la Paix
       - '\b\d{1,4}(?:\s?(?:bis|ter))?,?\s+(?:rue|avenue|boulevard|place|chemin|allée|impasse|quai)\s+(?:[\wÀ-ÿ''’-]+\s?){1,5}'
       # German, Dutch: Hauptstraße 5 / Kerkstraat 12
@@ -366,7 +369,7 @@ categories:
     detector: regex
     severity: high
     patterns:
-      - '\b[XYZ]?\d{7,8}[-]?[A-HJ-NP-TV-Z]\b'
+      - '\b(?-i:[XYZ]?\d{7,8}[-]?[A-HJ-NP-TV-Z])\b'
     validators: [es_dni]
     context_terms: ["dni", "nie", "documento nacional"]
     gdpr_note: >
@@ -465,7 +468,7 @@ categories:
     detector: regex
     severity: medium
     patterns:
-      - '\b[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z][ -]?\d[ABCEGHJ-NPRSTV-Z]\d\b'
+      - '\b(?-i:[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z][ -]?\d[ABCEGHJ-NPRSTV-Z]\d)\b'
     gdpr_note: >
       A letter-digit pattern distinctive enough to report without a label.
 

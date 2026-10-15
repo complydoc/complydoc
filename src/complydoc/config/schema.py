@@ -358,6 +358,13 @@ class RoutingConfig(_Base):
     """Coverage below which a page that is mostly picture reads as a caption."""
     picture_share_pct: float = 50.0
     """Image coverage at which a page counts as a picture rather than a page with pictures."""
+    max_caption_chars: int = 500
+    """Typeset text at or above this length is a page of text over a background picture.
+
+    A page that is mostly picture goes to a vision model when its text is an OCR layer, which
+    is drawn invisibly, or is shorter than this. A designed page, with a full-page image
+    behind several hundred words, is read from its text layer.
+    """
     max_control_char_pct: float = 2.0
     """Share of control or unmapped characters above which a text layer is not text."""
     min_wordlike_pct: float = 50.0
@@ -366,27 +373,32 @@ class RoutingConfig(_Base):
     """Scan resolution below which OCR reads poorly. Only used with `vision` off, to say so."""
     min_ocr_confidence: float = 75.0
     """OCR confidence below which a reading is poor. Only used with `vision` off, to say so."""
-    vision_for_tables: Literal["all", "broken", "none"] = "broken"
+    vision_for_tables: Literal["all", "complex", "broken", "none"] = "complex"
     """Which pages go to a vision model for their tables.
 
-    `broken`: a page with a ruled table whose rows do not survive in the text layer. `all`:
-    every page with a ruled table, for when the table's structure matters, since plain text
-    cannot carry it. `none`: tables are read as text. On a public benchmark `broken` kept more
-    of the tables and of the running text than picking tables by merged or stacked headers,
-    for the same number of pages.
+    `complex`: a page with a ruled table that has merged or stacked header cells. `broken`: a
+    page with a ruled table whose rows do not survive in the text layer. `all`: every page with
+    a ruled table, for when the table's structure matters, since plain text cannot carry it.
+    `none`: tables are read as text.
+
+    On a public benchmark, the more table pages go to a vision model the more of the tables is
+    kept. `complex` and `broken` send a similar number of pages and could not be told apart on
+    held-out pages; `all` keeps the most and sends about twice as many.
+
+    Whether the default repays its cost depends on the documents. On held-out enterprise
+    documents, dropping it lost 2.5 points of what was kept while sending 8 points fewer pages
+    to a vision model. On questions about plainly laid out company filings it sent 42% of the
+    pages to a vision model and answered no more than the text layer, so `none` suits those.
     """
 
     @model_validator(mode="before")
     @classmethod
     def _old_table_setting(cls, values: Any) -> Any:
-        """Read `vision_for_complex_tables`, the setting this one replaced.
-
-        True was its default and now means the default; false asked for no table rule.
-        """
+        """Read `vision_for_complex_tables`, the setting this one replaced."""
         if isinstance(values, dict) and "vision_for_complex_tables" in values:
             values = dict(values)
             wanted = values.pop("vision_for_complex_tables")
-            values.setdefault("vision_for_tables", "broken" if wanted else "none")
+            values.setdefault("vision_for_tables", "complex" if wanted else "none")
         return values
 
     verify_min_coverage_pct: float = Field(default=90.0, ge=0.0, le=100.0)

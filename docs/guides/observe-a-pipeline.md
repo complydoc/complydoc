@@ -18,6 +18,8 @@ Nothing in your pipeline changes. Outside the block, nothing is touched.
 | LangChain | document loaders (`load`, `lazy_load`, `aload`, `alazy_load`), document transformers, text splitters (`split_documents`, `create_documents`), embedding models (`embed_documents`, `aembed_documents`) and vector stores (`add_documents`, `add_texts` and their async forms) |
 | LlamaIndex | readers (`load_data`, `lazy_load_data` and their async forms), node parsers (`get_nodes_from_documents`), embedding models (`get_text_embedding_batch`), vector stores (`add`, `async_add`), and any other transform component an `IngestionPipeline` runs |
 | PDF libraries | a file read with pypdf's `PdfReader` or PyMuPDF's `Document` in your own code, page by page |
+| Docling | the converter (`DocumentConverter.convert`, `convert_all`) and its chunkers (`chunk`), called directly or through Docling's LangChain loader |
+| Embedding SDKs | OpenAI's `client.embeddings.create`, sync and async, priced by the model the call names |
 | complydoc | its pipeline steps, such as `MaskIdentifiers` and `StripPathMetadata` |
 | Your code | any function marked `@cd.stage` |
 
@@ -47,6 +49,24 @@ def dedupe(documents):
 
 The first argument of a marked function, when it is a list, is what the step was
 given, and a list it returns is what it passed on.
+
+Docling's converter returns a result holding the whole document; its step is read as one
+document a page, named by the file, as LangChain's PDF loaders give them. A chunk keeps
+Docling's provenance, so its page is known. What your code receives is Docling's own.
+
+Unstructured's `partition` functions are plain functions your code imports before the
+block opens, so they are not observed by themselves. Mark the function that calls them,
+and its elements are read as documents, metadata included:
+
+```python
+from unstructured.partition.auto import partition
+
+@cd.stage("partition", kind="load")
+def read(path):
+    return partition(filename=path)
+```
+
+Unstructured used through LangChain's or LlamaIndex's loader is observed as that loader.
 
 ## When the block ends
 

@@ -49,6 +49,7 @@ __all__ = [
     "DocumentReport",
     "DocumentTiming",
     "DocumentVerification",
+    "EvalSummary",
     "ExtractorReading",
     "FactCheck",
     "IdentifierDifference",
@@ -65,7 +66,7 @@ __all__ = [
     "VerificationSummary",
 ]
 
-SCHEMA_VERSION = 23
+SCHEMA_VERSION = 24
 
 
 def report_shape() -> dict[str, object]:
@@ -92,6 +93,7 @@ def report_shape() -> dict[str, object]:
             "ignores",
             "concepts",
             "categories",
+            "evals",
             "chunks",
             "trace",
             "limitations",
@@ -262,6 +264,11 @@ def report_shape() -> dict[str, object]:
             "enabled, severity, shipped_enabled, shipped_severity), unknown[] (names the "
             "file gave that are no category). A category with enabled false is not "
             "reported; its values are still masked"
+        ),
+        "evals": (
+            "null unless an evals file was read: file, readers[] (each loader, or the "
+            "audit's own reader), checks[] (fact, document, found, scores, pages, documents, "
+            "nearest, as loader_comparison.facts), each keyed by reader"
         ),
         "ignores": (
             "null unless an ignore file was read: file, rules[] (finding, reason, by, "
@@ -865,6 +872,19 @@ class CategorySummary:
 
 
 @dataclass(slots=True)
+class EvalSummary:
+    """The evals file a run read, and whether each reading kept what it expects."""
+
+    file: str
+    readers: list[str] = field(default_factory=list)
+    """Whose text was checked: each loader compared, or the audit's own reader."""
+    checks: list[FactCheck] = field(default_factory=list)
+    """One per expected fact, with what each reader found."""
+    error: str | None = None
+    """Why the file could not be read, when it could not. Nothing was checked then."""
+
+
+@dataclass(slots=True)
 class IgnoredFinding:
     """A finding an ignore file set aside, with the reason it gave.
 
@@ -1257,6 +1277,9 @@ class AuditReport:
     categories: CategorySummary | None = None
     """Schema 21: the categories this run looked for otherwise than as shipped. None without
     a categories file."""
+    evals: EvalSummary | None = None
+    """Schema 24: the evals file this run read, and what each reading kept of it. None
+    without one."""
     chunks: list[ChunkReport] | None = None
     """Schema 17: each text splitter `complydoc chunks` ran, and what it made of the text.
 

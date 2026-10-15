@@ -16,8 +16,8 @@ With a vision model available:
 
 A page with a text layer takes the vision route when the layer is not text (a font
 with no usable mapping to characters, or an embedded OCR layer that read noise),
-when it carries a ruled table whose rows do not survive in the text, or when it is
-mostly picture with a caption for a text layer. A page with no text layer always does:
+when it carries a table with merged or stacked header cells, or when it is mostly
+picture with a caption for a text layer. A page with no text layer always does:
 on two public benchmarks OCR kept far less of such pages than a vision model.
 
 Without one (`vision: false`), routing uses only what costs nothing:
@@ -101,6 +101,10 @@ def _table_needs_vision(page: Page, wanted: str) -> str | None:
         return None
     if wanted == "all":
         return "a ruled table, whose structure plain text cannot carry"
+    if wanted == "complex":
+        if any(table.merged_cells > 0 or table.header_depth > 1 for table in ruled):
+            return "a table with merged or stacked header cells, which plain text loses"
+        return None
     compared = sum(table.rows_compared or 0 for table in ruled)
     intact = sum(table.rows_intact or 0 for table in ruled)
     if compared and intact < compared:
@@ -126,22 +130,25 @@ def _control_share(text: str) -> float:
 def _sensible_share(text: str) -> float:
     """Share of tokens that are a word in any script, or a number.
 
-    A word is two or more characters of which at least four in five are letters or the
-    marks that attach to them, which covers scripts written without spaces and scripts that
-    stack marks on letters. A number is digits with the separators numbers are written
-    with. What is left is noise: stray punctuation, symbols, letters mapped to the wrong
-    glyphs. Counting only alphabetic words called pages of figures, and whole scripts, not
-    text.
+    A word is two or more characters of which at least four in five are letters, the marks
+    that attach to them, or digits, which covers scripts written without spaces, scripts
+    that stack marks on letters, and names such as `x12` or `B2B`. A number is digits with
+    the separators numbers are written with. What is left is noise: symbols, letters mapped
+    to the wrong glyphs. Counting only alphabetic words called pages of figures, and whole
+    scripts, not text.
+
+    A token that is only punctuation is not counted either way. The dots that lead to a page
+    number in a table of contents are not noise, and counting them sent tables of contents
+    to a vision model.
     """
 
     def sensible(token: str) -> bool:
-        token = token.strip(_EDGE_PUNCTUATION)
         if _NUMBER.fullmatch(token):
             return True
-        lettered = sum(unicodedata.category(c)[0] in "LM" for c in token)
-        return len(token) >= 2 and lettered / len(token) >= 0.8
+        written = sum(unicodedata.category(c)[0] in "LMN" for c in token)
+        return len(token) >= 2 and written / len(token) >= 0.8
 
-    tokens = text.split()
+    tokens = [stripped for token in text.split() if (stripped := token.strip(_EDGE_PUNCTUATION))]
     return sum(sensible(token) for token in tokens) / max(1, len(tokens))
 
 
@@ -162,6 +169,18 @@ def _not_text(page: Page, settings: RoutingConfig) -> str | None:
     return None
 
 
+def _typeset_over_a_background(page: Page, settings: RoutingConfig) -> bool:
+    """Whether a page that is mostly picture is a page of typeset text with a picture behind it.
+
+    Two things say so: the text is drawn, where an OCR layer over a scan is invisible, and
+    there is more of it than a caption. Annual reports are laid out this way, and their pages
+    were going to a vision model. When the page does not say how its text is drawn, the
+    picture rule stands.
+    """
+    hidden = page.invisible_text_share
+    return hidden is not None and hidden < 0.5 and len(page.text) >= settings.max_caption_chars
+
+
 def _page_route(page: Page, settings: RoutingConfig) -> tuple[str, str]:
     readable = page.text_source in ("native", "loader") and len(page.text.strip()) >= (
         settings.min_characters
@@ -180,7 +199,11 @@ def _page_route(page: Page, settings: RoutingConfig) -> tuple[str, str]:
         table = _table_needs_vision(page, settings.vision_for_tables)
         if table is not None:
             return "vision", table
-        if mostly_picture and text_share * 100 < settings.min_text_coverage_pct:
+        if (
+            mostly_picture
+            and text_share * 100 < settings.min_text_coverage_pct
+            and not _typeset_over_a_background(page, settings)
+        ):
             return (
                 "vision",
                 f"mostly picture ({image_share * 100:.0f}% of the page) with "

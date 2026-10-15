@@ -1,8 +1,8 @@
 # complydoc landing page
 
-The page that introduces complydoc to AI engineers and researchers: a document
-audit tool that shows the security, cost, time and content problems in their
-documents and in what their loaders made of them. It is a static site on the
+The page that introduces complydoc to AI engineers and researchers:
+observability for the pipeline that loads, cleans, splits, embeds and stores
+their documents. It is a static site on the
 viewer's stack and theme (React, Tailwind v4, shadcn/ui), so the two look like
 one product.
 
@@ -17,25 +17,28 @@ npm run build    # static files in dist/
 
 | Section | Says |
 | --- | --- |
-| Hero and tour | What complydoc is, and the viewer: Diff, Pages, Cost & time, Security |
-| Providers | The loaders it reads the output of, and the model providers it prices |
-| The problem | Loaders get chosen without checking what they extract, on four counts |
-| Questions | Four questions, each with a short answer and one example |
-| The page router | Every sample page, the route it needs and why, and what that saves |
-| Prompt injection | Hidden text revealed, the question complydoc asks a System One model, and the finding |
+| Hero | What complydoc is in a sentence, the install command, the command for a coding agent, and a trace |
+| What to know first | Runs on your machine, network blocked, no account, MIT, and the loaders it works with |
+| Quickstart | Install, wrap a pipeline in `cd.observe`, open the viewer |
+| Features | One row a feature, text beside the thing itself: read, compare, expect, follow, protect, route |
+| Measured | Four figures complydoc prints or its changelog records, each linked to where it is measured |
+| For a team | The viewer shared from a container, and the policy gate |
 | Integrations | LangChain, LlamaIndex, Docling, Unstructured, LlamaParse, Azure, pytest, CI |
+| Questions | What a reader asks before installing: where documents go, overhead, loaders, accounts, cost |
 
 ## Where the content comes from
 
-Nothing on the page is invented. The examples and output are from complydoc run
-on the six sample documents in [`viewer/sample/documents`](../viewer/sample/documents):
+Nothing on the page is invented.
 
 | On the page | From |
 | --- | --- |
-| The section 7 example | pdfplumber's reading of page 4 of `master-services-agreement.pdf`, as the audit fixture holds it |
-| The page router and `src/data/routing.ts` | `complydoc routing ./documents`, the `complydoc-routing.json` it writes |
-| The prompt injection demo | An oblique passage from `src/complydoc/benchmark/corpus.yaml` that no pattern matches. Jev's score is illustrative, within the range [Detection accuracy](../docs/explanation/accuracy.md) measured |
-| The System One call | `src/complydoc/integrations/typesafe.py` |
+| The recordings in `src/assets/recordings` | The viewer with its sidebar folded, driven with a real mouse and rendered by `scripts/recordings/render.py`. `scenes.mjs` records Find a value, on the bundled sample documents observed twice with and without masking, and the diff, on `viewer/sample/documents/master-services-agreement.pdf` loaded with LangChain's `PyPDFLoader` and `PDFPlumberLoader` through `cd.compare_loaders`; `expect.mjs` records the evals. Recordings are kept for what has to be seen happening; each plays once it is on screen and stays a still picture for a reader who asked for less motion |
+| The screenshots in `src/assets/screens` | From `scripts/recordings/shots.mjs`: the trace as a whole window, and one whole panel each for the reading of `employee-record.pdf` and for the Security page of `viewer/sample/documents` |
+| The page router and `src/data/routing.ts` | `complydoc routing ./documents` on `viewer/sample/documents`, the `complydoc-routing.json` it writes |
+| 98% of reported identifiers real | The changelog, 0.7.3: measured on 4,200 pages |
+| 53 of 53, 91.4% precision | `complydoc benchmark` |
+| The policy file | `docs/guides/policy.md` |
+| The quickstart's pipeline | `docs/examples/observe_a_pipeline.py`, with the reader's own loader, splitter and store in place of the example's |
 
 When a release changes what these print, run them again and update the page.
 

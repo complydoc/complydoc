@@ -24,10 +24,13 @@ A hosted preset only runs with `allow_network=True`.
 from __future__ import annotations
 
 import importlib
+import os
+import sys
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any, Literal
 
+from complydoc import offline
 from complydoc.loaders.formats import extensions
 from complydoc.loaders.inspection import SOURCE_KEYS
 
@@ -83,6 +86,22 @@ def _require(module: str, package: str) -> Any:
         raise ImportError(f"this preset needs {package}: pip install {package}") from exc
 
 
+def _use_downloaded_models() -> None:
+    """Tell the Hugging Face hub client to use what is on disk while the network is blocked.
+
+    Docling's models come from the hub, and with them already downloaded the client still asks
+    the hub whether they are current. complydoc refuses that connection, so the conversion
+    failed on every file with the models sitting in the cache. Offline mode skips the question.
+    The client reads the switch as it is imported, so one imported earlier is told directly.
+    """
+    if not offline.blocking():
+        return
+    os.environ.setdefault("HF_HUB_OFFLINE", "1")
+    constants = getattr(sys.modules.get("huggingface_hub"), "constants", None)
+    if constants is not None and not getattr(constants, "HF_HUB_OFFLINE", False):
+        constants.HF_HUB_OFFLINE = True
+
+
 def docling(export: Literal["markdown", "chunks"] = "markdown", **options: Any) -> LoaderSpec:
     """Docling through `langchain-docling`, run locally.
 
@@ -91,6 +110,7 @@ def docling(export: Literal["markdown", "chunks"] = "markdown", **options: Any) 
     """
 
     def factory(path: str) -> _WithSource:
+        _use_downloaded_models()
         # The `local` extra is what converts on this machine; without it the
         # package can only reach a Docling service.
         loader_module = _require("langchain_docling.loader", '"langchain-docling[local]"')

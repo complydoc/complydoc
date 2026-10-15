@@ -110,6 +110,7 @@ from complydoc.ingest.extractors.registry import all_extractors
 from complydoc.ingest.extractors.registry import register as register_extractor
 from complydoc.ingest.registry import register as register_loader
 from complydoc.ingest.registry import supported_extensions
+from complydoc.ledger import Trail, find_value
 from complydoc.loaders import parsers
 from complydoc.loaders.compare import compare_loaders
 from complydoc.loaders.inspection import inspect_documents
@@ -211,6 +212,7 @@ __all__ = [
     "TextScan",
     "Trace",
     "TraceStage",
+    "Trail",
     "UnknownModelError",
     "VisionModel",
     "VisionPage",
@@ -228,6 +230,7 @@ __all__ = [
     "expect",
     "extract_text",
     "find_hidden",
+    "find_value",
     "full_audit",
     "inspect_chunks",
     "inspect_documents",

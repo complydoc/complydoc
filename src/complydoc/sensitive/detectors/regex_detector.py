@@ -41,6 +41,28 @@ def _nearby_term(
     return None
 
 
+def _inside_a_number(text: str, start: int, end: int) -> bool:
+    """Whether a match made of digits is a piece of something longer.
+
+    A pattern for a phone or a card number finds its digits inside a decimal, a figure with
+    thousands separators or a number in scientific notation: `037 154 165 20` out of
+    `3,037 154 165 20`, or the mantissa of `1.64780994e-01`. A separator with a digit on its
+    other side says the number goes on. So does a slash with no space before the match: the
+    tail of a DOI, `10.52202/079017-2340`, is not a phone number.
+    """
+    if text[start].isdigit() and start >= 2:
+        before, earlier = text[start - 1], text[start - 2]
+        if (before in ".," and earlier.isdigit()) or (before == "/" and earlier.isalnum()):
+            return True
+    last = end - 1
+    return (
+        text[last].isdigit()
+        and end + 1 < len(text)
+        and text[end] in ".,"
+        and text[end + 1].isdigit()
+    )
+
+
 @detector
 class RegexDetector:
     id = "regex"
@@ -55,7 +77,7 @@ class RegexDetector:
             labelled = "label" in compiled.groupindex
             for match in compiled.finditer(text):
                 start, end = match.span("value") if valued else match.span()
-                if start < 0 or start == end:
+                if start < 0 or start == end or _inside_a_number(text, start, end):
                     continue
                 label = match.group("label") if labelled else None
                 findings.append(
@@ -74,7 +96,7 @@ class RegexDetector:
                     term = _nearby_term(
                         text, match.start(), match.end(), terms, config.context_window_chars
                     )
-                    if term is None:
+                    if term is None or _inside_a_number(text, match.start(), match.end()):
                         continue
                     findings.append(
                         Finding(

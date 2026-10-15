@@ -43,6 +43,7 @@ from complydoc.audit.discovery import discover
 from complydoc.config.schema import Config, TokenizerSpec
 from complydoc.cost.tokenizer import count_tokens
 from complydoc.ingest.base import Document, IngestOptions, SkipRecord
+from complydoc.ingest.extractors.registry import DEFAULT_EXTRACTOR
 from complydoc.ingest.registry import load_document
 from complydoc.sensitive.base import EVIDENCE_ORDER, SensitiveMatch
 from complydoc.sensitive.scanner import ScanResult, scan
@@ -439,7 +440,7 @@ def extract_text(
 
     files, skipped = discover(root, recurse=recurse)
     spec = tokenizer_for(settings, model)
-    options = IngestOptions(ocr=ocr, password=password, extractor=extractor or "pdfplumber")
+    options = IngestOptions(ocr=ocr, password=password, extractor=extractor or DEFAULT_EXTRACTOR)
 
     warnings = _skipped_warnings(skipped, root)
     chunks: list[Chunk] = []

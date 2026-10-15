@@ -76,6 +76,8 @@ export interface Report {
   concepts?: ConceptSummary | null;
   /** Schema 21: the categories the run looked for otherwise than as shipped. Null or absent without a categories file. */
   categories?: CategorySummary | null;
+  /** Schema 24: the evals file the run read, and what each reading kept of it. */
+  evals?: EvalSummary | null;
   /** The lines complydoc judged this report by. Filled in by `parseReport` for reports older than schema 17. */
   thresholds: Thresholds;
 }
@@ -116,6 +118,27 @@ export interface RunMetadata {
   reveal_used?: boolean;
   /** Schema 23: where the run came from, as CI or git told it. */
   context?: RunContext | null;
+}
+
+/** One expected fact, with what each reader found: `exact`, `fuzzy` for a near miss, or null. */
+export interface EvalCheck {
+  fact: string;
+  /** The document it was expected in; null or absent for any document. */
+  document?: string | null;
+  found: Record<string, string | null>;
+  scores: Record<string, number>;
+  pages?: Record<string, number | null>;
+  /** Reader to the passage that came closest, where the fact was not found exactly. */
+  nearest?: Record<string, string | null>;
+}
+
+export interface EvalSummary {
+  file: string;
+  /** Whose text was checked: each loader compared, or the audit's own reader. */
+  readers: string[];
+  checks: EvalCheck[];
+  /** Why the file could not be read, when it could not. Nothing was checked then. */
+  error?: string | null;
 }
 
 export interface RunContext {

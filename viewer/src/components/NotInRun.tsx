@@ -1,4 +1,5 @@
 import {
+  FlaskConicalIcon,
   CheckIcon,
   CoinsIcon,
   CopyIcon,
@@ -61,6 +62,13 @@ const COPY: Record<Content, Copy> = {
       "This page follows an ingestion pipeline stage by stage: what each loader, splitter and embedding model was given and passed on, its settings, the identifiers in its output, and the hosts it sent text to.",
     note: "Wrap your ingestion code in the block, in Python, with complydoc imported as cd. The run is written to .complydoc when the block ends.",
   },
+  evals: {
+    icon: FlaskConicalIcon,
+    title: "No evals in this run",
+    shows:
+      "This page scores each reading of your documents on the passages you expect it to keep, and shows what a missed one came out as.",
+    note: "Add passages to .complydoc-evals.yaml in the folder first, then run this.",
+  },
   chunks: {
     icon: ScissorsIcon,
     title: "No chunks in this run",
@@ -111,6 +119,7 @@ const GUIDE_PAGE: Record<Content, Page> = {
   chunks: "chunks",
   documents: "documents",
   trace: "pipeline",
+  evals: "evals",
 };
 
 interface NotInRunProps {

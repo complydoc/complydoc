@@ -85,29 +85,49 @@ def table(*, intact: int | None, compared: int | None, found_by: str = "lines") 
     )
 
 
-def test_a_table_whose_rows_broke_in_the_text_goes_to_a_vision_model():
-    broken = table(intact=2, compared=5)
-    route, reason = route_of(page(text=PROSE, text_share=0.6, tables=[broken]))
+BROKEN_ROWS = RoutingConfig(vision_for_tables="broken")
+
+
+def test_a_table_with_merged_cells_goes_to_a_vision_model():
+    merged = TableInfo(rows=4, cols=3, header_depth=1, merged_cells=2)
+    route, reason = route_of(page(text=PROSE, text_share=0.6, tables=[merged]))
     assert route == "vision"
-    assert "2 of 5 rows survive" in reason
+    assert "merged or stacked header cells" in reason
 
 
-def test_a_table_whose_rows_survived_stays_on_the_text_layer():
-    whole = table(intact=5, compared=5)
-    assert route_of(page(text=PROSE, text_share=0.5, tables=[whole]))[0] == "text"
+def test_stacked_headers_go_to_a_vision_model_too():
+    stacked = TableInfo(rows=6, cols=4, header_depth=2, merged_cells=0)
+    assert route_of(page(text=PROSE, text_share=0.5, tables=[stacked]))[0] == "vision"
 
 
-def test_a_table_with_merged_cells_is_judged_by_its_rows_like_any_other():
-    """The shape of a table did not predict what plain text loses; its rows do."""
+def test_a_plain_table_stays_on_the_text_layer():
+    plain = table(intact=2, compared=5)
+    assert route_of(page(text=PROSE, text_share=0.5, tables=[plain]))[0] == "text"
+
+
+def test_tables_can_be_sent_when_their_rows_broke_in_the_text():
+    built = page(text=PROSE, text_share=0.6, tables=[table(intact=2, compared=5)])
+    [decided] = plan_routes(document(built), BROKEN_ROWS).pages
+    assert decided.route == "vision"
+    assert "2 of 5 rows survive" in decided.reason
+
+
+def test_under_that_setting_shape_does_not_matter_when_the_rows_survived():
+    whole = page(text=PROSE, text_share=0.5, tables=[table(intact=5, compared=5)])
     merged = TableInfo(
         rows=4, cols=3, header_depth=2, merged_cells=2, rows_intact=3, rows_compared=3
     )
-    assert route_of(page(text=PROSE, text_share=0.6, tables=[merged]))[0] == "text"
+    second = page(2, text=PROSE, text_share=0.5, tables=[merged])
+    routing = plan_routes(document(whole, second), BROKEN_ROWS)
+    assert [p.route for p in routing.pages] == ["text", "text"]
 
 
-def test_a_table_guessed_from_alignment_is_not_grounds_for_a_vision_model():
+@pytest.mark.parametrize("setting", ["complex", "broken", "all"])
+def test_a_table_guessed_from_alignment_is_not_grounds_for_a_vision_model(setting):
     guessed = table(intact=0, compared=5, found_by="alignment")
-    assert route_of(page(text=PROSE, text_share=0.5, tables=[guessed]))[0] == "text"
+    built = page(text=PROSE, text_share=0.5, tables=[guessed])
+    [decided] = plan_routes(document(built), RoutingConfig(vision_for_tables=setting)).pages
+    assert decided.route == "text"
 
 
 def test_every_ruled_table_can_be_sent_to_a_vision_model():
@@ -125,7 +145,7 @@ def test_tables_can_be_left_to_the_text_layer():
     assert decided.route == "text"
 
 
-@pytest.mark.parametrize(("old", "new"), [(True, "broken"), (False, "none")])
+@pytest.mark.parametrize(("old", "new"), [(True, "complex"), (False, "none")])
 def test_the_setting_this_one_replaced_is_still_read(old, new):
     assert RoutingConfig(vision_for_complex_tables=old).vision_for_tables == new
 
@@ -185,6 +205,57 @@ def test_a_page_of_figures_is_text():
     assert route_of(page(text=figures, text_share=0.6))[0] == "text"
 
 
+def test_typeset_text_over_a_background_picture_is_text():
+    """A designed report: a full-page image behind hundreds of words. From annual reports."""
+    prose = "Tangible assets are stated at cost, less accumulated depreciation. " * 20
+    designed = page(text=prose, text_share=0.2, image_share=1.0, dpi=96)
+    designed.invisible_text_share = 0.0
+    route, reason = route_of(designed)
+    assert route == "text"
+    assert "text layer" in reason
+
+
+def test_an_ocr_layer_over_a_scan_still_goes_to_vision():
+    """The same geometry, but the text is drawn invisibly: a machine's reading of the picture."""
+    prose = "Tangible assets are stated at cost, less accumulated depreciation. " * 20
+    scan = page(text=prose, text_share=0.2, image_share=1.0, dpi=200)
+    scan.invisible_text_share = 1.0
+    assert route_of(scan)[0] == "vision"
+
+
+def test_a_caption_on_a_picture_still_goes_to_vision():
+    captioned = page(
+        text="Figure 3. Installed capacity by technology, 2025.", text_share=0.05, image_share=0.9
+    )
+    captioned.invisible_text_share = 0.0
+    route, reason = route_of(captioned)
+    assert route == "vision"
+    assert "mostly picture" in reason
+
+
+def test_the_picture_rule_stands_when_how_the_text_is_drawn_is_unknown():
+    prose = "Tangible assets are stated at cost, less accumulated depreciation. " * 20
+    assert route_of(page(text=prose, text_share=0.2, image_share=1.0, dpi=96))[0] == "vision"
+
+
+def test_a_table_of_contents_is_text():
+    """Dot leaders are punctuation, not noise. Found on four books, where they went to vision."""
+    line = "1.2 Historical Development and Key Milestones " + ". " * 40 + "6\r\n"
+    assert route_of(page(text=line * 30, text_share=0.6))[0] == "text"
+
+
+def test_a_listing_of_names_with_digits_is_text():
+    """Feature names printed by a program, as a book on machine learning is full of."""
+    listing = "'x1 x3', 'x1 x4', 'x1 x10', 'x2^2', 'x2 x3', 'x2 x12', 'x3^2', 'x3 x4',\r\n" * 20
+    assert route_of(page(text=listing, text_share=0.6))[0] == "text"
+
+
+def test_a_scan_whose_only_text_is_its_file_name_has_no_text_layer():
+    route, reason = route_of(page(text="scan003.TIF", text_share=0.01, image_share=0.9, dpi=203))
+    assert route == "vision"
+    assert "no text layer" in reason
+
+
 def test_scripts_without_spaces_or_with_stacked_marks_are_text():
     japanese = "知名度の高いこの証券取引所は、サイバー犯罪者の格好の標的となっています。" * 6
     hindi = "क्रम संख्या कार्य का विवरण दर रुपये प्रति कुंतल एक ही परिसर के भीतर " * 6
@@ -224,9 +295,9 @@ def test_without_a_vision_model_a_poor_scan_says_what_would_read_it_better():
 def test_without_a_vision_model_a_text_layer_is_read_whatever_its_state():
     """A poor layer still kept more than OCR on the pages measured."""
     noise = (".- -,,.;; ::: 1# -i' .:|r ' .:.' .::.: " * 12).strip()
-    broken = table(intact=1, compared=5)
+    merged = TableInfo(rows=4, cols=3, merged_cells=2, header_depth=1)
     routing = plan_routes(
-        document(page(1, text=noise, text_share=0.6), page(2, text=PROSE, tables=[broken])), FREE
+        document(page(1, text=noise, text_share=0.6), page(2, text=PROSE, tables=[merged])), FREE
     )
     assert [p.route for p in routing.pages] == ["text", "text"]
     assert routing.counts["vision"] == 0

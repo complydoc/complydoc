@@ -5,11 +5,12 @@ import { useTheme } from "@/hooks/useTheme";
 import { links, VERSION } from "@/links";
 
 const SECTIONS = [
-  { href: "#problem", label: "Problem" },
-  { href: "#questions", label: "Questions" },
-  { href: "#router", label: "Page router" },
-  { href: "#injection", label: "Prompt injection" },
+  { href: "#quickstart", label: "Quickstart" },
+  { href: "#features", label: "Features" },
+  { href: "#numbers", label: "Measured" },
+  { href: "#team", label: "For a team" },
   { href: "#integrations", label: "Integrations" },
+  { href: "#faq", label: "FAQ" },
 ];
 
 /** A thin bar across the top, as in the viewer: the mark, where to go, the theme at the right. */

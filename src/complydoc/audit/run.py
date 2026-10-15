@@ -81,6 +81,7 @@ from complydoc.report.models import (
     ConceptRule,
     ConceptSummary,
     DocumentReport,
+    EvalSummary,
     RunMetadata,
     build_aggregate,
 )
@@ -419,7 +420,7 @@ def run_audit(
         verify_scope=verify_scope if verify_name is not None else None,
     )
 
-    return assemble_report(
+    report = assemble_report(
         config,
         requested,
         documents,
@@ -434,6 +435,32 @@ def run_audit(
             None if not judging else judge_spec or getattr(judge_concepts, "__name__", "your own")
         ),
     )
+    report.evals = _evals(Path(target), report, extracted_text)
+    return report
+
+
+def _evals(target: Path, report: AuditReport, extracted_text: bool) -> EvalSummary | None:
+    """What the folder's evals file expects, checked against this run's own reading.
+
+    None without the file. With it but without the text kept, the file is named and
+    nothing is checked, since there is nothing to check it against. A file that cannot
+    be read is named with the reason, and the run is kept.
+    """
+    from complydoc.evals import EvalError, find_evals_file, load_evals, readings_of
+    from complydoc.extraction.facts import evaluate_facts
+
+    file = find_evals_file(target)
+    if file is None:
+        return None
+    try:
+        facts = load_evals(file).as_facts()
+    except EvalError as exc:
+        # The documents have all been read by now: the run is kept, and says what is wrong.
+        return EvalSummary(str(file), [report.run.extractor], [], error=str(exc))
+    if not extracted_text:
+        return EvalSummary(str(file), [report.run.extractor], [])
+    readings = readings_of(report)
+    return EvalSummary(str(file), list(readings), evaluate_facts(readings, facts))
 
 
 def assemble_report(

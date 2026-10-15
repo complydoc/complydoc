@@ -11,8 +11,13 @@ same words. There is ink under it there, so it is not reported. A reason read
 from the file raises a passage from suspected to confirmed only once the page
 shows nothing where it is.
 
-Text outside the page's crop box and text below the minimum font size are
-hidden whatever the pixels show.
+Text outside the page's crop box and text drawn below the minimum font size are
+hidden whatever the pixels show. A file can scale text down from any font size,
+so a letter drawn smaller than that font's letters would be counts too.
+
+A glyph a pixel or two tall leaves too little ink at the page's resolution to
+tell from none, so small glyphs that look blank are drawn again, larger, before
+they are called hidden.
 """
 
 from __future__ import annotations
@@ -38,6 +43,22 @@ _MAX_VISIBLE_GAP = 2
 Anti-aliasing from a neighbouring line can leave a few pixels under a hidden
 glyph. Splitting on each of those would report one sentence as several.
 """
+
+
+_SMALL_GLYPH_PX = 4
+"""Height in pixels below which a glyph that looks blank is drawn again, larger."""
+_TALLEST_LETTER = 0.5
+"""Share of a font's size its tallest letters are sure to reach.
+
+Capitals stand about seven tenths of the size tall and the smallest letters about
+half, so text whose tallest letter is under half the minimum is under the minimum.
+"""
+_CLOSER_SCALE = 4
+"""How many times larger the second drawing is."""
+_CLOSER_MAX_PIXELS = 16_000_000
+"""Size one second drawing may reach."""
+_CLOSER_SPLITS = 4
+"""Times the glyphs are halved to keep each drawing under that size at full scale."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -119,12 +140,19 @@ def _page_runs(page: Any, number: int, config: VisibilityConfig) -> list[HiddenR
             return []
         left, bottom, right, top = page.get_cropbox()
         scale = config.render_dpi / 72.0
-        image = np.asarray(page.render(scale=scale, grayscale=True).to_pil().convert("L"))
+        bitmap = page.render(scale=scale, grayscale=True)
+        try:
+            image = np.asarray(bitmap.to_pil().convert("L"))
+        finally:
+            with contextlib.suppress(Exception):
+                bitmap.close()
         height, width = image.shape
         white = int(config.near_white * 255)
         r, g, b, a = (ctypes.c_uint() for _ in range(4))
 
+        tallest = _tallest_letters(raw, textpage, count)
         glyphs: list[Glyph] = []
+        doubtful: dict[int, tuple[float, float, float, float]] = {}
         for i in range(count):
             code = raw.FPDFText_GetUnicode(textpage.raw, i)
             char = chr(code) if 0 < code < 0x110000 and code != 0xFFFE else " "
@@ -141,14 +169,17 @@ def _page_runs(page: Any, number: int, config: VisibilityConfig) -> list[HiddenR
                 reasons.append(_OUTSIDE)
                 confirming = True
 
+            text_object = raw.FPDFText_GetTextObject(textpage.raw, i)
+            drawn = tallest.get(ctypes.addressof(text_object.contents)) if text_object else None
             size = raw.FPDFText_GetFontSize(textpage.raw, i)
-            tiny = 0 < size < config.min_font_size_pt
+            tiny = 0 < size < config.min_font_size_pt or (
+                drawn is not None and 0 < drawn < _TALLEST_LETTER * config.min_font_size_pt
+            )
             if tiny:
                 reasons.append(f"font size below {config.min_font_size_pt:g}pt")
                 confirming = True
 
             explained: list[str] = []
-            text_object = raw.FPDFText_GetTextObject(textpage.raw, i)
             mode = raw.FPDFTextObj_GetTextRenderMode(text_object) if text_object else -1
             if mode in _INVISIBLE_MODES:
                 explained.append(_INVISIBLE_MODES[mode])
@@ -177,6 +208,8 @@ def _page_runs(page: Any, number: int, config: VisibilityConfig) -> list[HiddenR
                         confirming = True
                     else:
                         reasons.append(_BLANK)
+                        if (y1 - y0) * scale < _SMALL_GLYPH_PX:
+                            doubtful[len(glyphs)] = (x0, y0, x1, y1)
 
             glyphs.append(
                 Glyph(
@@ -186,6 +219,10 @@ def _page_runs(page: Any, number: int, config: VisibilityConfig) -> list[HiddenR
                     confirming=confirming,
                 )
             )
+        # A second drawing that fails leaves the first verdicts standing.
+        with contextlib.suppress(Exception):
+            for at in _drawn_after_all(page, doubtful, scale, config):
+                glyphs[at] = Glyph(glyphs[at].char)
         return runs_from_chars(glyphs, number, config)
     finally:
         with contextlib.suppress(Exception):
@@ -193,6 +230,91 @@ def _page_runs(page: Any, number: int, config: VisibilityConfig) -> list[HiddenR
 
 
 _OUTSIDE = "outside the visible page area"
+
+
+def _tallest_letters(raw: Any, textpage: Any, count: int) -> dict[int, float]:
+    """The largest letter or digit drawn by each text object, in points.
+
+    A file can set a font at 12pt and scale the text down to a hundredth of that, so
+    the font's own size says little, and neither does the text's scale: some fonts
+    carry their size in the glyphs. The glyph's box is what was drawn. One letter
+    says little either, since an "e" is half the height of an "E", so the tallest
+    in the text object stands for all of it.
+    """
+    tallest: dict[int, float] = {}
+    for i in range(count):
+        code = raw.FPDFText_GetUnicode(textpage.raw, i)
+        if not (0 < code < 0x110000 and chr(code).isalnum()):
+            continue
+        text_object = raw.FPDFText_GetTextObject(textpage.raw, i)
+        if not text_object:
+            continue
+        x0, y0, x1, y1 = textpage.get_charbox(i)
+        key = ctypes.addressof(text_object.contents)
+        tallest[key] = max(tallest.get(key, 0.0), x1 - x0, y1 - y0)
+    return tallest
+
+
+def _drawn_after_all(
+    page: Any,
+    boxes: dict[int, tuple[float, float, float, float]],
+    scale: float,
+    config: VisibilityConfig,
+    splits: int = _CLOSER_SPLITS,
+) -> list[int]:
+    """The small glyphs that looked blank and show ink once drawn larger.
+
+    Only the part of the page that holds them is drawn again, so a page of
+    thumbnails does not cost a full page at the larger scale. Glyphs spread over
+    more of a large page than one drawing may cover are drawn in halves.
+    """
+    if not boxes:
+        return []
+    left, bottom, right, top = page.get_cropbox()
+    x0 = max(left, min(box[0] for box in boxes.values()) - 1)
+    y0 = max(bottom, min(box[1] for box in boxes.values()) - 1)
+    x1 = min(right, max(box[2] for box in boxes.values()) + 1)
+    y1 = min(top, max(box[3] for box in boxes.values()) + 1)
+    if x1 <= x0 or y1 <= y0:
+        return []
+    wanted = scale * _CLOSER_SCALE
+    closer = min(wanted, (_CLOSER_MAX_PIXELS / ((x1 - x0) * (y1 - y0))) ** 0.5)
+    if closer < wanted and splits > 0 and len(boxes) > 1:
+        axis = 0 if x1 - x0 >= y1 - y0 else 1
+        middle = (x0 + x1) / 2 if axis == 0 else (y0 + y1) / 2
+        halves: tuple[dict[int, Any], dict[int, Any]] = ({}, {})
+        for at, box in boxes.items():
+            halves[(box[axis] + box[axis + 2]) / 2 >= middle][at] = box
+        if halves[0] and halves[1]:
+            return [
+                at
+                for half in halves
+                for at in _drawn_after_all(page, half, scale, config, splits - 1)
+            ]
+    if closer <= scale:
+        return []
+
+    bitmap = page.render(
+        scale=closer, grayscale=True, crop=(x0 - left, y0 - bottom, right - x1, top - y1)
+    )
+    try:
+        image = np.asarray(bitmap.to_pil().convert("L"))
+    finally:
+        with contextlib.suppress(Exception):
+            bitmap.close()
+    height, width = image.shape
+    drawn: list[int] = []
+    for at, (gx0, gy0, gx1, gy1) in boxes.items():
+        px0 = max(0, int((gx0 - x0) * closer))
+        px1 = min(width, int(np.ceil((gx1 - x0) * closer)))
+        py0 = max(0, int((y1 - gy1) * closer))
+        py1 = min(height, int(np.ceil((y1 - gy0) * closer)))
+        if px1 <= px0 or py1 <= py0:
+            continue
+        region = image[py0:py1, px0:px1]
+        if int(region.max()) - int(region.min()) >= config.min_contrast:
+            drawn.append(at)
+    return drawn
 
 
 def _overflows(glyphs: list[Glyph], start: int, reasons: list[str]) -> bool:

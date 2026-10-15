@@ -71,7 +71,7 @@ def test_comparing_does_not_change_what_was_kept():
     )
     assert compared.full_text == alone.full_text
     assert len(compared.pages[0].text_blocks) == len(alone.pages[0].text_blocks)
-    assert [s.extractor for s in compared.pages[0].extractions] == ["pdfplumber", "pdfium"]
+    assert [s.extractor for s in compared.pages[0].extractions] == ["complydoc", "pdfium"]
 
 
 def test_a_leaner_extractor_reports_what_it_could_not_measure():
@@ -242,18 +242,46 @@ def test_the_signals_that_need_boxes_say_so_when_a_reader_has_none():
     assert any(s.rating is None for s in result.signals)
 
 
-def test_three_readers_go_down_each_column_of_a_two_column_page():
-    """pdfplumber, pdfium and pypdf share no code, and all three read the columns in order.
+def test_every_reader_goes_down_each_column_of_a_two_column_page():
+    """pdfplumber, pdfium and pypdf share no code, and all read the columns in order.
 
     pdfplumber only does so because it is asked to follow the order the file stores: left to
     itself it sorts by position and reads across. See `complydoc.ingest.extractors.plumber`.
+    complydoc's own reading takes its text from pdfium.
     """
     document = load_document(
         FIXTURES / "two_column.pdf",
-        IngestOptions(compare_extractors=("pdfium", "pypdf"), keep_readings=True),
+        IngestOptions(compare_extractors=("pdfplumber", "pdfium", "pypdf"), keep_readings=True),
     )
     readings = document.pages[0].readings
-    starts = [" ".join(readings[name].split())[:60] for name in ("pdfplumber", "pdfium", "pypdf")]
-    assert starts[0] == starts[1] == starts[2]
+    starts = [
+        " ".join(readings[name].split())[:60]
+        for name in ("complydoc", "pdfplumber", "pdfium", "pypdf")
+    ]
+    assert len(set(starts)) == 1
     assert "1. The supplier shall provide" in starts[0]
     assert min(r.similarity for r in extractor_readings(document)) > 0.9
+
+
+def test_the_default_reading_is_pdfiums_text_with_pdfplumbers_boxes():
+    """What is kept by default: one library's text and another's geometry."""
+    own = load_document(FIXTURES / "dense_text.pdf", IngestOptions())
+    plumber = load_document(FIXTURES / "dense_text.pdf", IngestOptions(extractor="pdfplumber"))
+    pdfium = load_document(FIXTURES / "dense_text.pdf", IngestOptions(extractor="pdfium"))
+    assert " ".join(own.full_text.split()) == " ".join(pdfium.full_text.split())
+    assert len(own.pages[0].text_blocks) == len(plumber.pages[0].text_blocks)
+    assert own.pages[0].raw_chars == plumber.pages[0].raw_chars
+
+
+def test_a_word_split_across_two_lines_is_put_back_together():
+    from complydoc.ingest.extractors.own import rejoined
+
+    assert rejoined("the com\ufffe\r\nplement of the set") == "the complement of the set"
+    assert rejoined("soft\u00adhyphen and a \ufb01gure") == "softhyphen and a figure"
+
+
+def test_a_compound_that_broke_at_its_own_hyphen_keeps_it():
+    from complydoc.ingest.extractors.own import rejoined
+
+    assert rejoined("Soft Prompt-Based Fine￾\r\nTuning") == "Soft Prompt-Based Fine-Tuning"
+    assert rejoined("GPT￾\r\n4 and fine￾\r\ntuning") == "GPT-4 and finetuning"

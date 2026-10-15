@@ -96,10 +96,12 @@ complydoc audit ~/contracts --compare-extractor pypdf
 Findings come from the first reader only. The others are measured and reported;
 the viewer's document view shows each reader's text with the differences marked.
 
-Readings are compared by word order. On a two-column page
-pdfplumber walks the text layer in file order, crossing both columns, and
-returns the same character count as a reader that follows the columns. The
-report labels this `same words, different order`.
+The default reader is complydoc's own: text through pdfium, word boxes and tables
+through pdfplumber. `complydoc extractors` lists the others.
+
+Readings are compared by word order. A reader that sorts words by position reads
+across a two-column page and returns the same character count as one that goes
+down each column. The report labels this `same words, different order`.
 
 ## Documents that never finish
 

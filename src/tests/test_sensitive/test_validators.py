@@ -138,6 +138,17 @@ def test_national_identifier_checksums(checker, good, bad):
         ("NL123456789B01", True),
         ("XX123", False),
         ("FR1234567890", False),
+        ("FRXX123456789", True),
+        ("ATU12345678", True),
+        ("AT123456789", False),
+        ("ESX1234567X", True),
+        ("IE1234567WA", True),
+        ("BE0123456789", True),
+        # A word that happens to start with a country code, as research papers are full of.
+        ("benchmark163", False),
+        ("BENCHMARK163", False),
+        ("detection2024", False),
+        ("de123456789", False),
     ],
 )
 def test_eu_vat_country_rules(value, expected):
@@ -204,3 +215,60 @@ def test_a_pdf_timestamp_is_not_reported_as_a_card_number(config):
 
     matches, _ = scan_text("D:20260909103836+01'00'", config.sensitive)
     assert not [m for m in matches if m.category == "card_number"]
+
+
+def _by_pattern(matches) -> list[str]:
+    """Labels found by a rule, in order. Names come from a model where one is installed, and
+    what it makes of `Curran Associates` is not what these tests are about."""
+    return sorted(match.label for match in matches if match.evidence != "model")
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        # From a reader's research papers, each once reported as an identifier.
+        "Similar to the earlier MATH23K benchmark163 and the hybrid MWP dataset,164 SVAMP85",
+        "Die Bahn kommt bei20Minuten Verspätung an.",
+        "Claude ZS Exp 0.89 9.79 (+3.83) 30.00(+3.33) 0.74 17.34 (−4.53) 52.94(−12.75)",  # noqa: RUF001
+        "The concept of self-education via CoT reasoning69 suggests that LLMs",
+        "tasks implemented via ConceptNet 5.5,183 an open graph",
+        "Curran Associates, Inc. (2024). https://doi.org/10.52202/079017-2340.",
+        # From annual reports and technical books.
+        "Energética Sostenible, S.A. Bilbao 60,000 EUR 3,191 3,037 154 165 20 100%",
+        "SunE Solar IV LLC Delaware -943,796 USD 1,909 2,825 -916 141 71 1,182 161",
+        "1.64780994e-01, 6.02803867e-05, 1.96041560e-03",
+        "R = {a1a5, a1a2a5, a1a5a6, a1a2a5a6}",
+        "In October 2024, the Court ordered that official certificates be obtained",
+        "the 18 stores expected to take place until 30 April",
+        "63669.05791727153 {'max_features': 2, 'n_estimators': 3}",
+    ],
+)
+def test_text_that_only_looks_like_an_identifier_is_not_reported(text):
+    import complydoc as cd
+
+    assert _by_pattern(cd.scan_text(text).matches) == []
+
+
+def test_the_identifiers_those_rules_guard_are_still_found():
+    import complydoc as cd
+
+    text = (
+        "Call +351 21 001 2834 or (+33) 1 42 68 53 00. Card number: 4 111 1111 1111 1111. "
+        "Offices at 5000 Forbes Avenue and Via Machiavelli 35, Manchester M1 9BB."
+    )
+    assert _by_pattern(cd.scan_text(text).matches) == [
+        "International phone number",
+        "International phone number",
+        "Payment card number",
+        "Street address",
+        "Street address",
+        "UK postcode",
+    ]
+
+
+def test_a_format_check_is_not_a_checksum():
+    """A phone number has no check digit, so on its own it is a pattern, not confirmed."""
+    import complydoc as cd
+
+    [match] = cd.scan_text("Reach us on +351 21 001 2834.").matches
+    assert match.evidence == "pattern"

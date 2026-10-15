@@ -57,3 +57,24 @@ def test_an_empty_fact_is_rejected():
     report = cd.inspect_documents([{"page_content": CLAUSE}])
     with pytest.raises(ValueError, match="cannot be empty"):
         cd.check_facts(report, ["  "])
+
+
+def test_a_passage_is_found_on_a_page_that_masks_part_of_it():
+    """A report keeps a dot for each character it masked, as for a word taken for a name."""
+    from complydoc.extraction.facts import _find_reported
+
+    page = [
+        (
+            1,
+            "TERMS AND " + "\u2022" * 6 + "IONS\n1. The supplier shall provide the services",
+        )
+    ]
+    assert _find_reported(page, "Terms and conditions", 0.85).kind == "exact"
+    assert _find_reported(page, "Terms and conclusions", 0.85).kind != "exact"
+
+
+def test_a_passage_hidden_almost_whole_is_not_found_under_a_mask():
+    from complydoc.extraction.facts import _find_under_masks
+
+    dots = "\u2022" * 18
+    assert _find_under_masks([(1, f"Account {dots} on file")], "GB82WEST1234569876") is None

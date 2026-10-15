@@ -49,6 +49,7 @@ from complydoc.audit.run import COMPONENTS, vision_setup
 from complydoc.config.loader import load_config
 from complydoc.config.schema import Config, ParserPricing, TokenizerSpec
 from complydoc.cost.estimator import resolve_models
+from complydoc.evals import find_evals_file, load_evals
 from complydoc.extraction.extract import mask_matches
 from complydoc.extraction.facts import FUZZY_THRESHOLD, Fact, as_facts, evaluate_facts
 from complydoc.loaders.cache import LoaderCache
@@ -78,6 +79,7 @@ from complydoc.loaders.verdict import (
 from complydoc.report.models import (
     AuditReport,
     DocumentReport,
+    EvalSummary,
     ExtractorReading,
     FactCheck,
     FormatComparison,
@@ -178,7 +180,9 @@ def compare_loaders(
         for name, value in named
     ]
     networks = [_network(name, value, allow_network) for name, value in named]
-    fact_list = as_facts(facts or ())
+    # Facts not given are the folder's own: what its evals file says a reading must hold.
+    evals_file = _evals_file(paths, files) if facts is None else None
+    fact_list = load_evals(evals_file).as_facts() if evals_file else as_facts(facts or ())
     specs = {name: value for name, value in named if isinstance(value, LoaderSpec)}
     # Every loader's paths relative to one folder, the one the compared files share.
     shared_root = common_root([file.resolve() for file in files]) if files else None
@@ -310,12 +314,27 @@ def compare_loaders(
         formats=by_format,
     )
     report.loader_comparison = comparison
+    if evals_file is not None:
+        report.evals = EvalSummary(
+            str(evals_file), [i.loader.name for i in inspections], fact_checks
+        )
     report.limitations[:0] = [
         *_comparison_limitations(comparison, report, other_reports),
         *_price_limitations(specs, settings),
     ]
     report.quick_wins = quick_wins(report)
     return report
+
+
+def _evals_file(
+    paths: str | os.PathLike[str] | Sequence[str | os.PathLike[str]] | None,
+    files: list[Path] | None,
+) -> Path | None:
+    """The evals file of the folder compared: the one named, else the one the files share."""
+    if isinstance(paths, str | os.PathLike) and Path(paths).expanduser().is_dir():
+        return find_evals_file(Path(paths).expanduser().resolve())
+    root = common_root([file.resolve() for file in files]) if files else None
+    return find_evals_file(root) if root is not None else None
 
 
 def _attach_pictures(entries: list[DocumentReport], settings: Config, reveal: bool) -> None:

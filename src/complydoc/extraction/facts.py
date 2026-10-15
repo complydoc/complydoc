@@ -145,11 +145,53 @@ def _as_reported(text: str) -> str:
     return mask_matches(text, matches)[0]
 
 
+_MASK = "\u2022"
+_MASK_RUN = re.compile(f"{_MASK}+")
+_MIN_SHOWN = 0.5
+"""Share of a fact's characters a masked page must still show for the fact to be found in it."""
+
+
+def _find_under_masks(pages: Sequence[tuple[int | None, str]], text: str) -> Match | None:
+    """Where `text` is on a page that covers part of it with a mask.
+
+    A report keeps a dot for each character of an identifier, so a passage that
+    holds one, or a word a name model took for a name, is not in the text as
+    written. It is found where every character the page still shows is the
+    passage's own, as long as the page shows at least half of them: a passage
+    hidden almost whole could be anything.
+    """
+    target = normalise(text)
+    if not target:
+        return None
+    for number, page_text in pages:
+        haystack = normalise(page_text)
+        if _MASK not in haystack:
+            continue
+        tried: set[int] = set()
+        for run in _MASK_RUN.finditer(haystack):
+            first = max(0, run.start() - len(target) + 1)
+            last = min(run.end() - 1, len(haystack) - len(target))
+            for start in range(first, last + 1):
+                if start in tried:
+                    continue
+                tried.add(start)
+                window = haystack[start : start + len(target)]
+                shown = sum(1 for have in window if have != _MASK)
+                if shown >= _MIN_SHOWN * len(target) and all(
+                    have in (want, _MASK) for have, want in zip(window, target, strict=True)
+                ):
+                    return Match("exact", 1.0, number)
+    return None
+
+
 def _find_reported(pages: Sequence[tuple[int | None, str]], text: str, threshold: float) -> Match:
     """`find_fact` against page text that may be masked."""
     match = find_fact(pages, text, threshold)
     if match.kind == "exact":
         return match
+    under = _find_under_masks(pages, text)
+    if under is not None:
+        return under
     masked = _as_reported(text)
     if masked == text:
         return match

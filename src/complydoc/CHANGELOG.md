@@ -5,33 +5,159 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
-## [Unreleased]
+## [0.7.5] — 2026-10-15
+
+`cd.observe` traces more of the pipelines people write: Docling read directly, embedding
+calls made through OpenAI's own SDK, and Unstructured's elements.
+
+### Added
+
+- `cd.observe` traces Docling read directly: the converter is a load step, one document a
+  page named by its file, and each chunker a split step whose chunks keep their page.
+  Through Docling's LangChain loader, the converter and chunkers now show as steps inside it.
+- An embedding model called through OpenAI's SDK, `client.embeddings.create`, is an
+  embedding step: the texts sent, the vectors back, the host, and the cost of the model the
+  call names.
+- Unstructured's elements are read as documents wherever a step passes them on, so a
+  function marked `@cd.stage` that calls `partition` or `chunk_by_title` is traced with
+  its text, metadata and identifiers.
+
+## [0.7.4] — 2026-10-14
+
+Evals on your own documents, and a way to ask where a value went. Mark the passages a
+reading must keep by selecting them in the viewer, and every reader and loader is scored
+on them; give an identifier, and get every document, pipeline step and host it reached.
+Two reports from a reader running complydoc on research papers are fixed
+([#5](https://github.com/complydoc/complydoc/issues/5),
+[#6](https://github.com/complydoc/complydoc/issues/6)).
+
+### Added
+
+- Evals on your own documents. Select a passage in the viewer's document view and press
+  "Expect this passage", or write passages in `.complydoc-evals.yaml` at the top of the
+  folder. Each is checked against the text every reader returned: an audit scores its own
+  reader and any second one whose text it kept, `compare-loaders` scores every loader, and
+  the viewer's Evals page has the scoreboard and shows a lost passage beside the nearest
+  thing the reader did return. An audit prints a line per reader. The report JSON moves to
+  schema 24, adding `evals`. The "Evals on your own documents" guide has the rest.
+- `complydoc find` and the viewer's "Find a value" page say where an identifier went: every
+  document it was read from, every step of a recorded pipeline that still held it, and every
+  host it was sent to, across the runs in a folder. The value is hashed to search and is
+  written nowhere. `cd.find_value` does the same from Python.
+
+### Fixed
+
+- "Table rows that survived" no longer counts a row as broken because the table reader merged
+  it with its neighbours. A table with no lines between its rows can come back as one row
+  whose cells each hold every row's value, a line apiece, and that never matched a line of the
+  page. Each of those lines is now compared as the row it is
+  ([#6](https://github.com/complydoc/complydoc/issues/6)).
+- Very small text that is drawn is no longer reported as hidden. A glyph a pixel or two tall
+  leaves too little ink at the resolution the page is checked at, so parts of the page
+  thumbnails in a paper's figure came out as text "a reader does not see". Small glyphs that
+  look blank are now drawn again four times larger before they are called hidden; small text
+  with nothing drawn under it is reported as before
+  ([#5](https://github.com/complydoc/complydoc/issues/5)).
+- Text scaled down from an ordinary font size counts as below the minimum font size. The rule
+  read the font's own size, which a file can set at 12pt and then shrink to nothing; it now
+  also looks at the size the letters are drawn at.
+
+## [0.7.3] — 2026-10-13
+
+Identifier detection reported far too much that was not an identifier, on research papers
+above all. On 4,200 pages of papers, annual reports, filings and books, 66% of what it reported
+was real; with these fixes 98% is, and nothing real stopped being found. Reported by a reader
+running complydoc on research papers ([#3](https://github.com/complydoc/complydoc/issues/3),
+[#4](https://github.com/complydoc/complydoc/issues/4)).
+
+### Fixed
+
+- Rules written with capital letters now need them. Patterns are matched without regard to
+  case, so `via CoT reasoning69` was a street address, `2024, the Court` another, and
+  `benchmark163` an EU VAT number. The address, postcode and identity-number rules insist on
+  the capitals they were written with, and a VAT number has to match its country's format.
+- `confirmed` means a checksum passed. Phone numbers, EU VAT numbers, US social security and
+  employer numbers, the Danish CPR and the National Insurance prefix have no check digit, and
+  were counted as if they had. They are `pattern` now, or `corroborated` beside a label.
+- Digits that are part of something longer are not an identifier: a piece of a decimal, of a
+  figure with thousands separators, or the tail of a DOI.
+- An international phone number starts with a country code written whole. `+3.33) 0.74 17.34`,
+  from a table of score changes, does not.
+- A card number is written as cards are: unbroken or in a card's groups. A row of figures in
+  groups of three that passed the checksum by chance was reported as a confirmed card.
+- A Portuguese address written `n.o 7` is found, and one in lower case, `via Roma 12, 00100`,
+  when a postal code follows it.
+- `cd.parsers.docling()` works with the network blocked once Docling's models are downloaded.
+  The hub client asked whether they were current, complydoc refused the call, and every file
+  failed. The preset now puts the client in offline mode whenever the network is blocked.
+
+## [0.7.2] — 2026-10-13
+
+Found by running 0.7.1 on four company annual reports: pages of typeset text over a background
+picture were being sent to a vision model, and rendering pages held far more memory than the
+pictures it kept. A routing plan for designed reports now sends fewer pages to vision.
+
+### Fixed
+
+- A page of typeset text with a picture behind it is read from its text layer. Designed
+  reports put a full-page background image on every page, and such pages went to a vision
+  model as "mostly picture": 120 of the 1,379 pages of four annual reports. A page that is
+  mostly picture still goes to a vision model when its text is an OCR layer, which is drawn
+  invisibly, or is shorter than `routing.max_caption_chars` (500). On two public parsing
+  benchmarks the change costs under a tenth of a point of what is kept.
+- Pages rendered for OCR and the skew check are closed as soon as their picture is taken, and
+  pages read through pdfium as soon as they are read. Reading four annual reports peaked at
+  2.2 GB; fifty rendered pages of one of them held 2 GB on their own.
+
+## [0.7.1] — 2026-10-12
+
+How a PDF is read and where each page is sent now follow what was measured on two public
+parsing benchmarks, and were then checked on four books against 0.7.0. The same file can give
+different text, character counts and routes than it did, and a routing plan sends more pages
+to a vision model. `--extractor pdfplumber` and the settings under `routing` give the
+earlier behaviour back.
 
 ### Changed
 
+- The text kept for a page with a text layer is now read through pdfium, with words that
+  were split across two lines put back together, while word boxes and tables still come from
+  pdfplumber. On two public parsing benchmarks this reading kept more of a page than any
+  other reading of the text layer. It is a new extractor, `complydoc`, and the default;
+  `--extractor pdfplumber` gives the reading earlier releases kept. Reports name the reader
+  that was kept, so a report from this release says `complydoc` where an older one says
+  `pdfplumber`, and text, character counts and findings on the same file can differ. A word
+  hyphenated to fit a line is rejoined; a compound that broke at its own hyphen keeps it.
 - Page routing follows the rules that kept the most on two public parsing benchmarks. A page
   with no text layer goes to a vision model, where it went to OCR unless the scan was coarse
   or poorly read. A page whose text layer is not text, because its font does not map to
   characters or because it is an embedded OCR layer that read noise, goes to a vision model
-  too, while pages of figures and text in any script count as text; `max_control_char_pct` and `min_wordlike_pct` under `routing` set where that starts. A
-  plan made before this release will send more pages to vision.
-- `routing.vision_for_tables` replaces `vision_for_complex_tables` and takes `broken`, `all`
-  or `none`. The default, `broken`, sends a page to a vision model when a ruled table's rows
-  do not survive in its text layer, where the old rule looked for merged or stacked header
-  cells. On a public benchmark the new rule kept more of the tables and of the running text
-  for the same number of pages. `all` sends every ruled table, for when structure matters. The
-  old key is still read: true means `broken`, false means `none`.
+  too, while pages of figures and text in any script count as text; `max_control_char_pct`
+  and `min_wordlike_pct` under `routing` set where that starts. Tokens that are only
+  punctuation are not counted, and a name such as `x12` counts as a word, so a table of
+  contents with dot leaders and a listing of variable names stay text. A plan made before
+  this release will send more pages to vision.
+- `routing.vision_for_tables` replaces `vision_for_complex_tables` and takes `complex`,
+  `broken`, `all` or `none`. `complex`, the default, is what the old setting did when true: a
+  ruled table with merged or stacked header cells sends its page to a vision model. `broken`
+  sends a page when a ruled table's rows do not survive in its text layer, `all` sends every
+  ruled table, for when structure matters, and `none` reads tables as text. Only ruled tables
+  count now; a table guessed from how text is aligned no longer sends a page. The old key is
+  still read: true means `complex`, false means `none`.
 - `routing.vision: false` plans for a pipeline with no vision model: the text layer where
   there is one, OCR where there is not, and a note on the pages a vision model would read
   better. `min_ocr_dpi` and `min_ocr_confidence` now apply only there.
 
 ### Fixed
 
+- `language_count` no longer counts a language found on a single page of a long document.
+  A language counts when it is the main one, is found on two pages, or on 2% of the pages
+  measured; the rest are listed under `not_counted`. On four books the detector had named a
+  different stray language for one page of each.
 - A PDF's text is read in the order the file stores it, with the gap that counts as a space
-  scaled to the size of the type. Before, the default extractor sorted characters by where
-  they sat on the page, which read a two-column page straight across and joined words set
-  in small type. On a public parsing benchmark's reading tests the default reading now keeps
-  41% where it kept 7%; single-column documents read as they did. Where a ruled table is
+  scaled to the size of the type. Before, text was sorted by where it sat on the page, which
+  read a two-column page straight across and joined words set in small type. On a public
+  parsing benchmark's reading tests the kept text now passes 48% where it passed 7%, and the
+  `pdfplumber` extractor 41%; single-column documents read as they did. Where a ruled table is
   stored column by column, the page is still read by position so that its rows stay together,
   and the page says so in its notes. A two-column document's extracted text, chunks and the
   position of findings in them change with this.

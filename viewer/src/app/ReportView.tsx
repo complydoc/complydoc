@@ -13,6 +13,8 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/s
 import { ChunksPage } from "@/features/chunks/ChunksPage";
 import { CostPage } from "@/features/cost/CostPage";
 import { DocumentsPage } from "@/features/documents/DocumentsPage";
+import { EvalsPage } from "@/features/evals/EvalsPage";
+import { FindPage } from "@/features/find/FindPage";
 import { PipelinePage } from "@/features/pipeline/PipelinePage";
 import { ReviewQueue } from "@/features/security/ReviewQueue";
 import { SecurityPage } from "@/features/security/SecurityPage";
@@ -23,6 +25,7 @@ import { ModeToggle } from "@/components/ModeToggle";
 import { PlanBar } from "@/components/PlanBar";
 import { ReadOnlyBadge } from "@/components/ReadOnlyBadge";
 import { PlanProvider } from "@/components/PlanProvider";
+import { EvalsProvider } from "@/components/EvalsProvider";
 import { IgnoreProvider } from "@/components/IgnoreProvider";
 import { GoTo } from "@/components/GoTo";
 import { Hint } from "@/components/Hint";
@@ -181,82 +184,87 @@ export function ReportView({
           open: (id) => onSelect({ collection: selection.collection, run: id }),
         }}
       >
-        <SidebarProvider {...sidebar}>
-          <AppSidebar
-            report={report}
-            page={page}
-            switcher={switcher}
-            search={<GoTo report={report} onShortcuts={() => setShortcuts(true)} />}
-          />
-          {/* min-w-0 lets the page shrink to the space beside the sidebar instead of widening to its widest chart. */}
-          <SidebarInset className="min-w-0">
-            <header className="sticky top-0 z-10 flex h-12 shrink-0 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur">
-              <Hint label="Collapse or expand the sidebar" keys={[shortcut("").trim(), "B"]}>
-                <SidebarTrigger className="-ml-1" />
-              </Hint>
-              <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
-              {/* One line that gives way to the plan controls: it truncates rather than wraps under the bar. */}
-              <Breadcrumb className="min-w-0 flex-1">
-                <BreadcrumbList className="flex-nowrap overflow-hidden whitespace-nowrap [&>li]:min-w-0 [&>li]:truncate">
-                  <BreadcrumbItem className="hidden xl:block">{name}</BreadcrumbItem>
-                  <BreadcrumbSeparator className="hidden xl:block" />
-                  <BreadcrumbItem>
-                    {open ? (
-                      <BreadcrumbLink href={`#${page}`}>{PAGE_INFO[page].label}</BreadcrumbLink>
-                    ) : (
-                      <BreadcrumbPage>{PAGE_INFO[page].label}</BreadcrumbPage>
-                    )}
-                  </BreadcrumbItem>
-                  {open && (
-                    <>
-                      <BreadcrumbSeparator />
-                      <BreadcrumbItem>
-                        <BreadcrumbPage>{fileName(open.relative_path)}</BreadcrumbPage>
-                      </BreadcrumbItem>
-                    </>
-                  )}
-                </BreadcrumbList>
-              </Breadcrumb>
-              {/* The plan's pickers give up width before the page scrolls sideways. */}
-              <div className="ml-auto flex min-w-0 items-center gap-2">
-                {PRICED.includes(page) && <PlanBar />}
-                <ReadOnlyBadge />
-                <ModeToggle dark={dark} onToggle={onToggleTheme} />
-              </div>
-            </header>
-            <main
-              className={cn(
-                "mx-auto w-full",
-                // The trace takes the window: most of what it shows is the trace itself.
-                "p-4 md:p-6",
-                page === "documents" || page === "pipeline" ? "max-w-none" : "max-w-7xl",
-              )}
-            >
-              {/* Keyed by page and run, so moving on from a page that failed shows the next one. */}
-              <PageErrorBoundary key={`${run.id}:${page}:${detail ?? ""}`}>
-                <IgnoreProvider report={report} {...(run.source ? { source: run.source } : {})}>
-                  {/* Remounted with the page by the boundary's key, so each page fades in. */}
-                  <div className="animate-page-in">
-                    {page === "home" && <HomePage report={report} />}
-                    {page === "pipeline" && <PipelinePage report={report} />}
-                    {page === "security" &&
-                      (detail?.startsWith("review") ? (
-                        <ReviewQueue report={report} at={Number(detail.split("/")[1] ?? 0) || 0} />
+        {/* Above the sidebar too: it lists Evals once the folder expects something. Keyed by run, so one run's scores are never shown for another. */}
+        <EvalsProvider key={run.id} {...(run.source ? { source: run.source } : {})}>
+          <SidebarProvider {...sidebar}>
+            <AppSidebar
+              report={report}
+              page={page}
+              switcher={switcher}
+              search={<GoTo report={report} onShortcuts={() => setShortcuts(true)} />}
+            />
+            {/* min-w-0 lets the page shrink to the space beside the sidebar instead of widening to its widest chart. */}
+            <SidebarInset className="min-w-0">
+              <header className="sticky top-0 z-10 flex h-12 shrink-0 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur">
+                <Hint label="Collapse or expand the sidebar" keys={[shortcut("").trim(), "B"]}>
+                  <SidebarTrigger className="-ml-1" />
+                </Hint>
+                <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
+                {/* One line that gives way to the plan controls: it truncates rather than wraps under the bar. */}
+                <Breadcrumb className="min-w-0 flex-1">
+                  <BreadcrumbList className="flex-nowrap overflow-hidden whitespace-nowrap [&>li]:min-w-0 [&>li]:truncate">
+                    <BreadcrumbItem className="hidden xl:block">{name}</BreadcrumbItem>
+                    <BreadcrumbSeparator className="hidden xl:block" />
+                    <BreadcrumbItem>
+                      {open ? (
+                        <BreadcrumbLink href={`#${page}`}>{PAGE_INFO[page].label}</BreadcrumbLink>
                       ) : (
-                        <SecurityPage report={report} />
-                      ))}
-                    {page === "cost" && <CostPage report={report} />}
-                    {page === "documents" && <DocumentsPage report={report} open={detail} />}
-                    {page === "chunks" && <ChunksPage report={report} />}
-                    {page === "settings" && (
-                      <SettingsPage report={report} {...(run.source ? { source: run.source } : {})} />
+                        <BreadcrumbPage>{PAGE_INFO[page].label}</BreadcrumbPage>
+                      )}
+                    </BreadcrumbItem>
+                    {open && (
+                      <>
+                        <BreadcrumbSeparator />
+                        <BreadcrumbItem>
+                          <BreadcrumbPage>{fileName(open.relative_path)}</BreadcrumbPage>
+                        </BreadcrumbItem>
+                      </>
                     )}
-                  </div>
-                </IgnoreProvider>
-              </PageErrorBoundary>
-            </main>
-          </SidebarInset>
-        </SidebarProvider>
+                  </BreadcrumbList>
+                </Breadcrumb>
+                {/* The plan's pickers give up width before the page scrolls sideways. */}
+                <div className="ml-auto flex min-w-0 items-center gap-2">
+                  {PRICED.includes(page) && <PlanBar />}
+                  <ReadOnlyBadge />
+                  <ModeToggle dark={dark} onToggle={onToggleTheme} />
+                </div>
+              </header>
+              <main
+                className={cn(
+                  "mx-auto w-full",
+                  // The trace takes the window: most of what it shows is the trace itself.
+                  "p-4 md:p-6",
+                  page === "documents" || page === "pipeline" ? "max-w-none" : "max-w-7xl",
+                )}
+              >
+                {/* Keyed by page and run, so moving on from a page that failed shows the next one. */}
+                <PageErrorBoundary key={`${run.id}:${page}:${detail ?? ""}`}>
+                  <IgnoreProvider report={report} {...(run.source ? { source: run.source } : {})}>
+                    {/* Remounted with the page by the boundary's key, so each page fades in. */}
+                    <div className="animate-page-in">
+                      {page === "home" && <HomePage report={report} />}
+                      {page === "pipeline" && <PipelinePage report={report} />}
+                      {page === "security" &&
+                        (detail?.startsWith("review") ? (
+                          <ReviewQueue report={report} at={Number(detail.split("/")[1] ?? 0) || 0} />
+                        ) : (
+                          <SecurityPage report={report} />
+                        ))}
+                      {page === "cost" && <CostPage report={report} />}
+                      {page === "documents" && <DocumentsPage report={report} open={detail} />}
+                      {page === "chunks" && <ChunksPage report={report} />}
+                      {page === "find" && <FindPage />}
+                      {page === "evals" && <EvalsPage report={report} />}
+                      {page === "settings" && (
+                        <SettingsPage report={report} {...(run.source ? { source: run.source } : {})} />
+                      )}
+                    </div>
+                  </IgnoreProvider>
+                </PageErrorBoundary>
+              </main>
+            </SidebarInset>
+          </SidebarProvider>
+        </EvalsProvider>
         <ShortcutsDialog open={shortcuts} onOpenChange={setShortcuts} />
       </FolderRunsContext.Provider>
     </PlanProvider>

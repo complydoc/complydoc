@@ -11,9 +11,12 @@ and the question this answers is whether that grid is still legible in the text:
                                  Acme
 
 A row counts as intact when its non-empty cells appear on one line of the text,
-in the order the grid has them. Broken tables are a common cause of wrong answers
-downstream, and this is the cheapest honest measurement of it: the grid comes from
-the extractor that found the table, and the text is the one the run kept.
+in the order the grid has them. A grid row whose cells each stack the same number
+of lines is several rows the extractor merged, and each is compared on its own.
+
+Broken tables are a common cause of wrong answers downstream, and this is the
+cheapest honest measurement of it: the grid comes from the extractor that found
+the table, and the text is the one the run kept.
 
 Both come from the same extractor, because only an extractor that reads table
 structure detects a table at all. So this measures how well that extractor's own
@@ -74,10 +77,28 @@ def compare_rows(grid: Sequence[Sequence[str | None]], text: str) -> tuple[int, 
     lines = [line for line in lines if line]
     intact = compared = 0
     for row in grid:
-        cells = [_tokens(str(cell)) for cell in row if cell and str(cell).strip()]
-        cells = [cell for cell in cells if cell]
-        if len(cells) < 2:
-            continue
-        compared += 1
-        intact += _row_is_intact(cells, lines)
+        for cells in _rows_in(row):
+            if len(cells) < 2:
+                continue
+            compared += 1
+            intact += _row_is_intact(cells, lines)
     return intact, compared
+
+
+def _rows_in(row: Sequence[str | None]) -> list[list[list[str]]]:
+    """One grid row's cells as tokens, or several rows where the grid merged them.
+
+    A table drawn without lines between its rows can come back as one row whose
+    cells each hold every row's value, a line apiece. When every cell has the same
+    number of lines, each line is compared as the row it is on the page.
+    """
+    filled = [str(cell) for cell in row if cell and str(cell).strip()]
+    stacked = [[line for line in cell.splitlines() if line.strip()] for cell in filled]
+    depth = len(stacked[0]) if stacked else 0
+    # A row whose cells all wrap to the same number of lines looks the same, and is
+    # split too, on purpose: the page's text sets such a row one line at a time.
+    if len(stacked) >= 2 and depth >= 2 and all(len(cell) == depth for cell in stacked):
+        split = [[_tokens(cell[i]) for cell in stacked] for i in range(depth)]
+        # A line that is only a dash is an empty value, as an empty cell is.
+        return [[tokens for tokens in cells if tokens] for cells in split]
+    return [[tokens for tokens in map(_tokens, filled) if tokens]]

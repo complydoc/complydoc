@@ -16,6 +16,7 @@ import {
   SidebarRail,
   SidebarSeparator,
 } from "@/components/ui/sidebar";
+import { useEvalsState } from "@/hooks/useEvals";
 import { FolderRunsContext } from "@/hooks/useFolderRuns";
 import { cn } from "@/lib/utils";
 import { guideFor } from "@/report/docs";
@@ -37,8 +38,8 @@ interface AppSidebarProps {
 /** The report's pages, grouped by what they are for. */
 const GROUPS: { label: string; pages: Page[] }[] = [
   { label: "Overview", pages: ["home", "pipeline"] },
-  { label: "Findings", pages: ["security", "documents"] },
-  { label: "Ingestion", pages: ["chunks", "cost"] },
+  { label: "Findings", pages: ["security", "documents", "find"] },
+  { label: "Ingestion", pages: ["evals", "chunks", "cost"] },
 ];
 
 const FOLDED_KEY = "complydoc-sidebar-missing-open";
@@ -113,6 +114,7 @@ function readFolded(): boolean {
  */
 export function AppSidebar({ report, page, switcher, search }: AppSidebarProps) {
   const { runs } = useContext(FolderRunsContext);
+  const expected = (useEvalsState().facts?.length ?? 0) > 0;
   const [missingOpen, setMissingOpen] = useState(readFolded);
   const toggleMissing = () => {
     const next = !missingOpen;
@@ -126,6 +128,8 @@ export function AppSidebar({ report, page, switcher, search }: AppSidebarProps) 
   const has = (id: Page) => {
     // Traces lists every run of the folder or pipeline, a way to the others from any one.
     if (id === "pipeline" && runs.length > 1) return true;
+    // Passages expected since the run are scored on the text it kept, so the page has them.
+    if (id === "evals" && expected) return true;
     const content = PAGE_CONTENT[id];
     return !report || content === undefined || measured(report, content);
   };
@@ -134,9 +138,12 @@ export function AppSidebar({ report, page, switcher, search }: AppSidebarProps) 
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="gap-3">
-        {/* Collapsed, the mark sits in a square like the page buttons below it, centred and at their icons' size. */}
-        <div className="flex h-8 items-center px-2 group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:[&_svg]:h-auto group-data-[collapsible=icon]:[&_svg]:w-5">
+      {/* Folded to its icons, the rail keeps one rhythm: the same step between every button,
+          and a hairline where a group's name would be. */}
+      <SidebarHeader className="gap-3 group-data-[collapsible=icon]:gap-1">
+        {/* Collapsed, the mark sits in a square like the page buttons below it, centred and at their icons' size,
+            with room under it so it reads as the mark and not as the first button. */}
+        <div className="flex h-8 items-center px-2 group-data-[collapsible=icon]:mb-3 group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:[&_svg]:h-auto group-data-[collapsible=icon]:[&_svg]:w-5">
           <Logo size={22} withName={false} />
           <span className="ml-2 text-base font-semibold tracking-tight group-data-[collapsible=icon]:hidden">
             complydoc
@@ -152,10 +159,13 @@ export function AppSidebar({ report, page, switcher, search }: AppSidebarProps) 
             const pages = group.pages.filter(has);
             if (pages.length === 0) return null;
             return (
-              <SidebarGroup key={group.label}>
+              <SidebarGroup
+                key={group.label}
+                className="group-data-[collapsible=icon]:border-t group-data-[collapsible=icon]:border-sidebar-border group-data-[collapsible=icon]:py-1.5"
+              >
                 <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
                 <SidebarGroupContent>
-                  <SidebarMenu>
+                  <SidebarMenu className="group-data-[collapsible=icon]:gap-1">
                     {pages.map((id) => (
                       <PageLink key={id} id={id} page={page} count={countFor(report, id, runs.length)} />
                     ))}
@@ -196,7 +206,7 @@ export function AppSidebar({ report, page, switcher, search }: AppSidebarProps) 
       {report && (
         <SidebarFooter>
           <SidebarSeparator className="mx-0" />
-          <SidebarMenu>
+          <SidebarMenu className="group-data-[collapsible=icon]:gap-1">
             <SidebarMenuItem>
               <SidebarMenuButton asChild isActive={page === "settings"} tooltip={PAGE_INFO.settings.label}>
                 <a href="#settings" aria-current={page === "settings" ? "page" : undefined}>

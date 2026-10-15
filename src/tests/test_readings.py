@@ -52,11 +52,11 @@ def test_a_default_run_keeps_no_extra_readings():
 def test_comparing_extractors_keeps_what_each_read():
     document = load_document(
         FIXTURES / "dense_text.pdf",
-        IngestOptions(compare_extractors=("pdfium",), keep_readings=True),
+        IngestOptions(compare_extractors=("pdfplumber",), keep_readings=True),
     )
     readings = document.pages[0].readings
-    assert set(readings) == {"pdfplumber", "pdfium"}
-    assert readings["pdfplumber"] != readings["pdfium"], "or there is nothing to compare"
+    assert set(readings) == {"complydoc", "pdfplumber"}
+    assert readings["complydoc"] != readings["pdfplumber"], "or there is nothing to compare"
     assert all(text.strip() for text in readings.values())
 
 
@@ -66,7 +66,7 @@ def test_the_kept_reading_is_the_one_the_findings_use():
         IngestOptions(compare_extractors=("pdfium",), keep_readings=True),
     )
     page = document.pages[0]
-    assert page.text == page.readings["pdfplumber"]
+    assert page.text == page.readings["complydoc"]
 
 
 def test_measuring_without_keeping_text_keeps_no_text(config):
@@ -113,7 +113,7 @@ def test_the_readings_reach_the_report(config):
         compare_extractors=("pdfium",),
     )
     page = report.documents[0].extracted_text[0]
-    assert set(page.readings) == {"pdfplumber", "pdfium"}
+    assert set(page.readings) == {"complydoc", "pdfium"}
     assert report.run.compare_extractors == ["pdfium"]
 
 

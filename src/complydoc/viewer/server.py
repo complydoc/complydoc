@@ -82,12 +82,13 @@ API = "api"
 
 CONFIG_ELEMENT = "complydoc-local"
 
-_KEPT = ("ignores", "concepts", "categories")
+_KEPT = ("ignores", "concepts", "categories", "evals")
 """The files beside the documents that the viewer may read and change."""
 
 _IGNORE_FIELDS = ("finding", "reason", "what", "paths", "until")
 _CONCEPT_FIELDS = ("id", "label", "description", "pattern", "severity", "judge")
 _CATEGORY_FIELDS = ("enabled", "severity")
+_EVAL_FIELDS = ("text", "document")
 """What the viewer may set; who made a change, and when, is the server's to say."""
 """The id of the script element that tells the viewer where to find the reports."""
 
@@ -262,9 +263,11 @@ def _file_for(report_path: Path, kind: str) -> Path | None:
     """
     from complydoc.categories import CATEGORIES_FILENAME, CategoryError, load_categories
     from complydoc.concepts import CONCEPTS_FILENAME, ConceptError, load_concepts
+    from complydoc.evals import EVALS_FILENAME, EvalError, load_evals
     from complydoc.ignores import IGNORE_FILENAME, IgnoreError, load_ignores
 
     filename, load, error = {
+        "evals": (EVALS_FILENAME, load_evals, EvalError),
         "ignores": (IGNORE_FILENAME, load_ignores, IgnoreError),
         "concepts": (CONCEPTS_FILENAME, load_concepts, ConceptError),
         "categories": (CATEGORIES_FILENAME, load_categories, CategoryError),
@@ -460,6 +463,12 @@ class _Handler(BaseHTTPRequestHandler):
                 },
             )
             return
+        if kind == "evals":
+            from complydoc.evals import load_evals
+
+            facts = [fact.model_dump(mode="json") for fact in load_evals(file).facts]
+            self._json(HTTPStatus.OK, {"file": str(file), "facts": facts})
+            return
         if kind == "ignores":
             entries = [entry.model_dump(mode="json") for entry in load_ignores(file).ignores]
         else:
@@ -489,12 +498,22 @@ class _Handler(BaseHTTPRequestHandler):
             return
         kind, file = found
         try:
-            length = min(int(self.headers.get("Content-Length") or 0), 64_000)
+            length = max(0, min(int(self.headers.get("Content-Length") or 0), 64_000))
             body = json.loads(self.rfile.read(length) or b"{}")
             if not isinstance(body, dict):
                 raise ValueError("expected an object")
             given = {key: value for key, value in body.items() if value not in (None, "")}
-            if kind == "ignores" and self.command == "DELETE":
+            if kind == "evals":
+                from complydoc.evals import ExpectedFact, add_fact, remove_fact
+
+                fact = ExpectedFact.model_validate(
+                    {key: given[key] for key in _EVAL_FIELDS if key in given}
+                )
+                if self.command == "DELETE":
+                    remove_fact(file, fact.text, fact.document)
+                else:
+                    add_fact(file, fact)
+            elif kind == "ignores" and self.command == "DELETE":
                 remove_ignore(file, str(body.get("finding", "")))
             elif kind == "ignores":
                 add_ignore(
@@ -526,7 +545,53 @@ class _Handler(BaseHTTPRequestHandler):
             return
         self._listing(kind, file)
 
+    def _score(self, path: str) -> None:
+        """The folder's facts as they are now, checked against the text this run kept.
+
+        Nothing is read again and nothing is written, so a read-only viewer answers it.
+        """
+        import dataclasses
+
+        from complydoc.evals import EvalError, score_report
+        from complydoc.report.json_reader import load_report
+
+        wanted = path.removeprefix(f"/{API}/reports/").partition("/")[0]
+        report = next((r for r in find_reports(*self.server.sources) if r.id == wanted), None)
+        found = self._kept_file(path)
+        if report is None or found is None:
+            self._error(HTTPStatus.NOT_FOUND, "no such report, or its folder is gone")
+            return
+        try:
+            scored = score_report(load_report(report.path), found[1])
+        except (EvalError, ValueError, OSError) as exc:
+            self._error(HTTPStatus.CONFLICT, str(exc))
+            return
+        self._json(HTTPStatus.OK, dataclasses.asdict(scored))
+
+    def _find(self) -> None:
+        """Where a value went, across every report served. It changes no file, so a
+        read-only viewer answers it too; like a write, it must come from the viewer's page."""
+        from complydoc.ledger import find_value
+
+        if not self._local_host() or not self._same_origin():
+            self._error(HTTPStatus.FORBIDDEN, "only the viewer's own page can ask this")
+            return
+        try:
+            length = max(0, min(int(self.headers.get("Content-Length") or 0), 4_000))
+            body = json.loads(self.rfile.read(length) or b"{}")
+            value = body.get("value") if isinstance(body, dict) else None
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError("give the value to find")
+        except ValueError as exc:
+            self._error(HTTPStatus.BAD_REQUEST, str(exc))
+            return
+        self.server.refresh()
+        self._json(HTTPStatus.OK, find_value(value, *self.server.sources).to_dict())
+
     def do_POST(self) -> None:
+        if unquote(urlsplit(self.path).path) == f"/{API}/find":
+            self._find()
+            return
         self._write()
 
     def do_DELETE(self) -> None:
@@ -564,6 +629,8 @@ class _Handler(BaseHTTPRequestHandler):
             reports = [report.to_dict() for report in find_reports(*server.sources)]
             body = json.dumps({"reports": reports, "sources": server.source_names}).encode("utf-8")
             self._send(HTTPStatus.OK, body, "application/json")
+        elif path.startswith(f"/{API}/reports/") and path.endswith("/evals/score"):
+            self._score(path.removesuffix("/score"))
         elif path.startswith(f"/{API}/reports/") and path.endswith(tuple(f"/{k}" for k in _KEPT)):
             found = self._kept_file(path)
             if found is None:

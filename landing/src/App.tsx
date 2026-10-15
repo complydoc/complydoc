@@ -1,14 +1,15 @@
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Faq } from "@/sections/Faq";
+import { Features } from "@/sections/Features";
 import { Footer } from "@/sections/Footer";
 import { GetStarted } from "@/sections/GetStarted";
 import { Hero } from "@/sections/Hero";
-import { Injection } from "@/sections/Injection";
 import { Integrations } from "@/sections/Integrations";
 import { Nav } from "@/sections/Nav";
-import { PageRouter } from "@/sections/PageRouter";
-import { Problem } from "@/sections/Problem";
-import { Providers } from "@/sections/Providers";
-import { Questions } from "@/sections/Questions";
+import { Numbers } from "@/sections/Numbers";
+import { Quickstart } from "@/sections/Quickstart";
+import { Team } from "@/sections/Team";
+import { Trust } from "@/sections/Trust";
 
 export function App() {
   return (
@@ -16,12 +17,13 @@ export function App() {
       <Nav />
       <main>
         <Hero />
-        <Providers />
-        <Problem />
-        <Questions />
-        <PageRouter />
-        <Injection />
+        <Trust />
+        <Quickstart />
+        <Features />
+        <Numbers />
+        <Team />
         <Integrations />
+        <Faq />
         <GetStarted />
       </main>
       <Footer />

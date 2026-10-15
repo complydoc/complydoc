@@ -5,7 +5,7 @@ interface ScreenshotProps {
   /** One picture, or one for each theme, shown as the page's theme is. */
   src: string | { dark: string; light: string };
   alt: string;
-  /** Width over height of the picture. The viewer's screenshots are 16:10. */
+  /** Width over height of the picture: a whole window is 16:10, a panel is its own shape. */
   ratio?: number;
   className?: string | undefined;
 }

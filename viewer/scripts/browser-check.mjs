@@ -33,7 +33,14 @@ const ANSWER_WITHIN_MS = 8000;
 
 class Hung extends Error {}
 
-async function browser(width, height, port) {
+const START_WITHIN_MS = 45000;
+const LAUNCHES = 3;
+
+// One Chrome, and the page it opened. A cold machine can take far longer to start Chrome the
+// first time than any later time, and now and then Chrome dies on the way up: a launch that
+// exits, or does not answer in time, is tried again in a fresh profile. What Chrome wrote to
+// its error stream goes into the failure, so a real cause is not reported as a slow start.
+async function launch(width, height, port) {
   const profile = mkdtempSync(join(tmpdir(), "complydoc-check-"));
   const chrome = spawn(
     CHROME,
@@ -46,20 +53,57 @@ async function browser(width, height, port) {
       "--no-default-browser-check",
       "--no-sandbox",
       "--disable-gpu",
+      "--disable-dev-shm-usage",
       "about:blank",
     ],
-    { stdio: "ignore" },
+    { stdio: ["ignore", "ignore", "pipe"] },
   );
-  let target;
-  for (let tries = 0; tries < 75 && !target; tries++) {
+  let said = "";
+  let exited = false;
+  chrome.stderr.on("data", (chunk) => {
+    said = (said + chunk).slice(-1500);
+  });
+  chrome.on("exit", () => {
+    exited = true;
+  });
+  chrome.on("error", () => {
+    exited = true;
+  });
+  const stop = () => {
+    chrome.kill("SIGKILL");
+    try {
+      rmSync(profile, { recursive: true, force: true });
+    } catch {
+      // The profile is in the temporary folder either way.
+    }
+  };
+  const began = Date.now();
+  while (!exited && Date.now() - began < START_WITHIN_MS) {
     await sleep(200);
     try {
-      target = (await (await fetch(`http://127.0.0.1:${port}/json`)).json()).find((t) => t.type === "page");
+      const target = (await (await fetch(`http://127.0.0.1:${port}/json`)).json()).find((t) => t.type === "page");
+      if (target) return { target, stop };
     } catch {
       // Chrome is still starting.
     }
   }
-  if (!target) throw new Error("Chrome did not start");
+  stop();
+  const why = exited ? "exited while starting" : `did not answer in ${START_WITHIN_MS / 1000} s`;
+  throw new Error(`Chrome ${why}${said.trim() ? `: ${said.trim().split("\n").slice(-3).join(" | ")}` : ""}`);
+}
+
+async function browser(width, height, port) {
+  let started;
+  const failures = [];
+  for (let attempt = 1; attempt <= LAUNCHES && !started; attempt++) {
+    try {
+      started = await launch(width, height, port);
+    } catch (error) {
+      failures.push(`launch ${attempt}: ${error.message}`);
+    }
+  }
+  if (!started) throw new Error(`Chrome did not start. ${failures.join("; ")}`);
+  const { target, stop } = started;
   const socket = new WebSocket(target.webSocketDebuggerUrl);
   await new Promise((resolve, reject) => {
     socket.onopen = resolve;
@@ -88,15 +132,7 @@ async function browser(width, height, port) {
     if (reply.result?.exceptionDetails) throw new Error(reply.result.exceptionDetails.exception?.description ?? "script failed");
     return reply.result?.result?.value;
   };
-  const close = () => {
-    chrome.kill("SIGKILL");
-    try {
-      rmSync(profile, { recursive: true, force: true });
-    } catch {
-      // The profile is in the temporary folder either way.
-    }
-  };
-  return { send, evaluate, close };
+  return { send, evaluate, close: stop };
 }
 
 // What the page is asked, as scripts run in it. Each returns a small value to check.

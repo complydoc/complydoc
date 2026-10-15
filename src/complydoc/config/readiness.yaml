@@ -59,6 +59,9 @@ routing:
   # an image, not a page of text.
   min_text_coverage_pct: 30
   picture_share_pct: 50
+  # Unless its text is typeset and at least this long: then it is a page of text
+  # with a picture behind it, as in a designed report, and is read as text.
+  max_caption_chars: 500
   # A text layer is not text when its font does not map to characters, or when it
   # is an embedded OCR layer that read noise.
   max_control_char_pct: 2
@@ -67,10 +70,11 @@ routing:
   # poorly, and the plan says so.
   min_ocr_dpi: 200
   min_ocr_confidence: 75
-  # Which pages go to a vision model for their tables. broken: a ruled table whose
-  # rows do not survive in the text layer. all: every ruled table, when the table's
-  # structure matters. none: tables are read as text.
-  vision_for_tables: broken
+  # Which pages go to a vision model for their tables. complex: a ruled table with
+  # merged or stacked header cells. broken: one whose rows do not survive in the text
+  # layer. all: every ruled table, when the table's structure matters. none: tables
+  # are read as text.
+  vision_for_tables: complex
   # With --verify: the share of what a vision model read off a page that the kept
   # reading must also hold, for the two to agree. Measured by word, in any order,
   # because a vision model lays a page out its own way.

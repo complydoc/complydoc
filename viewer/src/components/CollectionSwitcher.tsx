@@ -57,7 +57,8 @@ export function CollectionSwitcher({ collections, selection, onSelect, onAdd, on
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton size="lg" tooltip={current?.name ?? "All folders"} aria-label="Switch folder">
-              <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-sidebar-accent">
+              {/* Tinted, so that folded to an icon it reads as which folder is open, not as a page that is. */}
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary ring-1 ring-primary/20 ring-inset">
                 {!current ? (
                   <LayoutGridIcon className="size-4" />
                 ) : current.id.startsWith("pipeline:") ? (

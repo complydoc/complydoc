@@ -89,6 +89,11 @@ def _blocked_getaddrinfo(host: Any, port: Any, *args: Any, **kwargs: Any) -> Any
     raise _refuse(f"attempted DNS lookup of {host!r}")
 
 
+def blocking() -> bool:
+    """Whether outbound connections are being refused right now."""
+    return _armed
+
+
 def arm() -> None:
     """Install the guard. Idempotent."""
     global _armed

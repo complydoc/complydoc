@@ -248,7 +248,7 @@ def _cuts_too_many_words(words: list[Any], interior: list[float]) -> bool:
 
 
 def _read_by_position_if_rows_need_it(
-    page: Page, plumber_page: Any, found: list[tuple[TableInfo, Any]]
+    page: Page, plumber_page: Any, found: list[tuple[TableInfo, Any]], kept: str
 ) -> None:
     """Read the page by position instead, when that is what keeps its tables' rows together.
 
@@ -270,8 +270,8 @@ def _read_by_position_if_rows_need_it(
         return
     page.text = by_position
     page.tables[:] = again
-    if "pdfplumber" in page.readings:
-        page.readings["pdfplumber"] = by_position
+    if kept in page.readings:
+        page.readings[kept] = by_position
     page.notes.append(
         "read by position on the page, because a table here is stored column by column"
     )
@@ -355,13 +355,39 @@ def _aligned_tables(plumber_page: Any, words: list[Any], text: str = "") -> list
     return found
 
 
+_INVISIBLE = 3
+"""The PDF text render mode that paints nothing."""
+
+
+def _invisible_text_share(native: Any) -> float | None:
+    """Share of a pdfium page's text objects drawn invisibly, or None when it cannot be told."""
+    if native is None:
+        return None
+    try:
+        import pypdfium2.raw as raw
+
+        objects = native.get_objects(filter=[raw.FPDF_PAGEOBJ_TEXT], max_depth=6)
+        modes = [raw.FPDFTextObj_GetTextRenderMode(found.raw) for found in objects]
+    except Exception:
+        return None
+    return sum(mode == _INVISIBLE for mode in modes) / len(modes) if modes else None
+
+
+def _close(native: Any) -> None:
+    """Close a pdfium document or page, which also closes what was opened from it."""
+    if native is None:
+        return
+    with contextlib.suppress(Exception):
+        native.close()
+
+
 def _wants_pdfium(options: IngestOptions) -> bool:
     """Whether any extractor asked for reads through pdfium."""
     from complydoc.ingest.extractors.registry import extractor_by_id
 
     for name in (options.extractor, *options.compare_extractors):
         engine = extractor_by_id(name)
-        if engine is not None and getattr(engine, "id", "") == "pdfium":
+        if engine is not None and getattr(engine, "needs_pdfium", False):
             return True
     return False
 
@@ -395,11 +421,20 @@ def _render_pages(path: Path, password: str, indices: list[int], dpi: int) -> di
     try:
         scale = dpi / 72.0
         for index in indices:
+            page = bitmap = None
             try:
-                bitmap = pdf[index].render(scale=scale, grayscale=True)
+                page = pdf[index]
+                bitmap = page.render(scale=scale, grayscale=True)
+                # `convert` copies, so the picture outlives the bitmap it was read from.
                 rendered[index] = bitmap.to_pil().convert("L")
             except Exception:
                 continue
+            finally:
+                # pdfium keeps a page's decoded content and its bitmap until they are
+                # closed. Left open, fifty pages of a designed report held 2 GB, of
+                # which the pictures kept are under a quarter.
+                _close(bitmap)
+                _close(page)
     finally:
         with contextlib.suppress(Exception):
             pdf.close()
@@ -501,6 +536,11 @@ class PdfLoader:
                 # has been copied into `page` by now, and a worker holding one
                 # document at a time keeps memory bounded per worker.
                 _release(plumber_page)
+                # The same holds for pdfium: an open page keeps its parsed content and
+                # its text page until it is closed. Left open, four annual reports
+                # used two thirds more memory than with pdfplumber alone.
+                _close(native)
+        _close(pdfium_doc)
 
         rasters = _render_pages(path, password, needs_raster, options.render_dpi)
         for index, image in rasters.items():
@@ -596,6 +636,7 @@ class PdfLoader:
             number=index + 1,
         )
         kept = self._extract(page, source, width, height, options)
+        page.invisible_text_share = _invisible_text_share(pdfium_page)
         page.text = kept.text
         page.text_source = "native" if page.text.strip() else "none"
         page.text_blocks.extend(kept.blocks)
@@ -644,8 +685,7 @@ class PdfLoader:
                     if (info := _table_shape(table)) is not None
                 ]
                 page.tables.extend(_with_fidelity(info, table, page.text) for info, table in found)
-                if options.extractor == "pdfplumber":
-                    _read_by_position_if_rows_need_it(page, plumber_page, found)
+                _read_by_position_if_rows_need_it(page, plumber_page, found, options.extractor)
                 if not page.tables:
                     page.tables.extend(_aligned_tables(plumber_page, words, page.text))
             except Exception as exc:

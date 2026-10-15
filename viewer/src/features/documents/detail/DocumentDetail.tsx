@@ -3,6 +3,7 @@ import { DocumentDiff } from "@/features/documents/diff/DocumentDiff";
 import { useHashParam } from "@/hooks/useHashRoute";
 import { useIsIgnored } from "@/hooks/useIgnores";
 import type { InlineFindings, InlineMark } from "@/hooks/useInlineMarks";
+import { ExpectSelection } from "@/features/evals/ExpectSelection";
 import { FolderRunsContext } from "@/hooks/useFolderRuns";
 import { usePlan } from "@/hooks/usePlan";
 import { chunkLayers } from "@/report/chunkPlaces";
@@ -236,6 +237,7 @@ export function DocumentDetail({
 
       <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row">
         <PageNav pages={pages.map((p) => p.number)} current={page.number} findings={open} onPick={goTo} />
+        <ExpectSelection document={document.relative_path} />
         <div className="flex h-[80svh] min-h-0 min-w-0 flex-col lg:h-auto lg:flex-1">
           {compared ? (
             <DocumentDiff

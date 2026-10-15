@@ -14,8 +14,8 @@ from complydoc.utils.imports import import_package_modules
 
 __all__ = ["DEFAULT_EXTRACTOR", "all_extractors", "extractor_by_id", "register"]
 
-DEFAULT_EXTRACTOR: Final = "pdfplumber"
-"""The richest of them: a box per word, and it finds ruled tables."""
+DEFAULT_EXTRACTOR: Final = "complydoc"
+"""complydoc's own reading: pdfium's text, pdfplumber's boxes and tables."""
 
 _EXTRACTORS: Final[dict[str, Extractor]] = {}
 _discovered = False
