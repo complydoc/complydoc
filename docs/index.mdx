@@ -1,13 +1,9 @@
 ---
-title: The observability layer for AI ingestion pipelines
-description: Know your documents before they reach an LLM.
+title: Know your documents before they reach an LLM.
+description: "An open-source, offline audit for documents before they're indexed. Diff your loaders, catch hidden text and personal data, and gate it in CI."
 template: splash
 hero:
-  tagline: >-
-    Know your documents before they reach an LLM. complydoc traces every step between
-    your documents and your vector store (loading, cleaning, splitting, embedding) and
-    shows what each one cost, how long it took, what it extracted, and which identifiers
-    it let through. It runs on your machine.
+  tagline: "An open-source, offline audit for documents before they're indexed."
   actions:
     - text: Observe a pipeline
       link: /complydoc/docs/guides/observe-a-pipeline/
@@ -73,6 +69,11 @@ A full report on the documents bundled with complydoc, opened in the viewer.
     title="Trace a pipeline"
     description="Every call a LangChain or LlamaIndex pipeline makes, with its settings, time, tokens, cost, and the identifiers it passed on."
     href="/complydoc/docs/guides/observe-a-pipeline/"
+  />
+  <LinkCard
+    title="Link it to Langfuse or Phoenix"
+    description="The ingestion report stays local. The LLM span carries the run name and the report path."
+    href="/complydoc/docs/guides/langfuse-phoenix/"
   />
   <LinkCard
     title="Compare loaders"
