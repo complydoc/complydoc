@@ -14,6 +14,12 @@ separately.
   files, each with one thing a reader does not see, and what the audit flags.
   `examples/loader-benchmark` writes the files and repeats the readings.
 
+### Changed
+
+- Model prices refreshed (2026-10-12). Claude Sonnet 5.5, Haiku 5.5 and Fable 5.1 are
+  compared with the same vision formula and token-count note as the other Claude models.
+
+
 ## [0.7.5] — 2026-10-15
 
 `cd.observe` traces more of the pipelines people write: Docling read directly, embedding
