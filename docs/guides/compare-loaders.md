@@ -103,8 +103,9 @@ A loader's file types come from, in order:
 1. `formats={"name": [...]}` passed to `compare_loaders`, as extensions (`.pdf`)
    or format names (`pdf`, `docx`, `xlsx`, `pptx`, `html`, `markdown`, `text`,
    `email`, `image`);
-2. a parser preset's own list: `docling` and `azure_document_intelligence` know
-   theirs, `unstructured` and `llamaparse` take every file;
+2. a parser preset's own list: `docling`, `opendataloader_pdf` and
+   `azure_document_intelligence` know theirs, `unstructured` and `llamaparse`
+   take every file;
 3. the class name, for loaders known to read one type: `PyPDFLoader`,
    `PDFPlumberLoader`, `PyMuPDFLoader`, `Docx2txtLoader`,
    `UnstructuredExcelLoader`, LlamaIndex's `PDFReader` and others.
@@ -151,12 +152,15 @@ Results are in `report.loader_comparison.facts`, each loader's count in
 | Preset | Library | Hosted | Price entry |
 | --- | --- | --- | --- |
 | `parsers.docling(export="markdown")` | `langchain-docling[local]` | no | `docling` |
+| `parsers.opendataloader_pdf()` | `langchain-opendataloader-pdf` (Java 11+ on PATH) | no | none |
 | `parsers.unstructured(api=False)` | `langchain-unstructured` | when `api=True` | `unstructured_api` |
 | `parsers.llamaparse(tier="cost_effective")` | `llama-parse` | yes | `llamaparse_<tier>` |
 | `parsers.azure_document_intelligence(endpoint=..., api_key=...)` | `azure-ai-documentintelligence` | yes | `azure_read`, `azure_layout` |
 
 The libraries are not dependencies; a preset reports what to install when its
 library is missing. A hosted preset raises unless `allow_network=True`.
+OpenDataLoader PDF reads PDFs locally by default; its safety filters do not replace
+an audit of the extracted text before indexing.
 
 A preset's price comes from `parsers` in `pricing.yaml`. The comparison reports
 `parser_usd`, the page count times the price per page. The shipped prices are not

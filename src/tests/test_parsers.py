@@ -96,6 +96,11 @@ def test_parser_cost_comes_from_pricing(folder):
     ("preset", "module", "package"),
     [
         (lambda: parsers.docling(), "langchain_docling.loader", "langchain-docling"),
+        (
+            lambda: parsers.opendataloader_pdf(),
+            "langchain_opendataloader_pdf",
+            "langchain-opendataloader-pdf",
+        ),
         (lambda: parsers.unstructured(), "langchain_unstructured", "langchain-unstructured"),
         (lambda: parsers.llamaparse(), "llama_parse", "llama-parse"),
     ],
@@ -108,6 +113,12 @@ def test_a_missing_library_says_what_to_install(monkeypatch, preset, module, pac
 
 def test_presets_declare_network_and_price():
     assert not parsers.docling().network
+    opendataloader = parsers.opendataloader_pdf()
+    assert (opendataloader.network, opendataloader.price_key, opendataloader.formats) == (
+        False,
+        None,
+        (".pdf",),
+    )
     assert parsers.unstructured().price_key is None
     assert parsers.unstructured(api=True).network
     assert parsers.llamaparse(tier="agentic").price_key == "llamaparse_agentic"
@@ -120,6 +131,31 @@ def test_presets_declare_network_and_price():
 def test_documents_without_a_source_get_the_file_path():
     loaded = parsers._WithSource(lambda: [Document("text")], "/tmp/x.pdf").load()
     assert loaded[0].metadata == {"source": "/tmp/x.pdf"}
+
+
+def test_opendataloader_runs_per_pdf_and_preserves_source(monkeypatch, folder):
+    requests: list[dict[str, object]] = []
+
+    class FakeLoader:
+        def __init__(self, file_path: str, **options: object) -> None:
+            requests.append({"file_path": file_path, **options})
+
+        def load(self) -> list[Document]:
+            return [Document("Terms apply."), Document("More terms.", {"source": "original.pdf"})]
+
+    monkeypatch.setitem(
+        sys.modules,
+        "langchain_opendataloader_pdf",
+        types.SimpleNamespace(OpenDataLoaderPDFLoader=FakeLoader),
+    )
+    preset = parsers.opendataloader_pdf(format="markdown")
+    for pdf in (folder / "a.pdf", folder / "b.pdf"):
+        documents = preset.factory(str(pdf)).load()
+        assert [d.metadata["source"] for d in documents] == [str(pdf), "original.pdf"]
+    assert requests == [
+        {"file_path": str(folder / "a.pdf"), "format": "markdown"},
+        {"file_path": str(folder / "b.pdf"), "format": "markdown"},
+    ]
 
 
 class _FakeAzure:
