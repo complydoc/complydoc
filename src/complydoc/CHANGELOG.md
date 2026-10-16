@@ -7,6 +7,20 @@ separately.
 
 ## Unreleased
 
+### Added
+
+- A guide to complydoc beside Langfuse or Arize Phoenix: record the ingestion with
+  `cd.observe`, then open the model call's span after the block, carrying the run's name
+  and the report's path. There is no exporter; the report stays on disk.
+
+### Changed
+
+- complydoc is described as an open-source, offline audit for documents before they are
+  indexed, and a diff of document loaders, on the landing page, the docs, the package and
+  the container image. The tagline stays "Know your documents before they reach an LLM".
+- Model prices refreshed (2026-10-12). Claude Sonnet 5.5, Haiku 5.5 and Fable 5.1 are
+  compared with the same vision formula and token-count note as the other Claude models.
+
 ### Fixed
 
 - Text set at a font size of zero is reported as hidden. It is below the minimum
@@ -17,6 +31,7 @@ separately.
   what decide. A transparent image, one that covers only part of the text, and an
   image over half the page or more (a scan's picture of its own text) do not count;
   covered text that gives no instruction, such as a figure's own labels, is left out.
+
 
 ## [0.7.5] — 2026-10-15
 
