@@ -19,6 +19,26 @@ separately.
   to schema 25: a store step lists its `ids` once, and each identifier the `items` that
   hold it.
 
+### Changed
+
+- complydoc is described as an open-source, offline audit for documents before they are
+  indexed, and a diff of document loaders, on the landing page, the docs, the package and
+  the container image. The tagline stays "Know your documents before they reach an LLM".
+- Model prices refreshed (2026-10-12). Claude Sonnet 5.5, Haiku 5.5 and Fable 5.1 are
+  compared with the same vision formula and token-count note as the other Claude models.
+
+### Fixed
+
+- Text set at a font size of zero is reported as hidden. It is below the minimum
+  font size. The text page was leaving it out, so the check reads it from the page
+  content.
+- An instruction to a model hidden under an opaque image is reported, suspected. The
+  page render treats a photograph or a gradient as ink, so the image's own pixels are
+  what decide. A transparent image, one that covers only part of the text, and an
+  image over half the page or more (a scan's picture of its own text) do not count;
+  covered text that gives no instruction, such as a figure's own labels, is left out.
+
+
 ## [0.7.5] — 2026-10-15
 
 `cd.observe` traces more of the pipelines people write: Docling read directly, embedding

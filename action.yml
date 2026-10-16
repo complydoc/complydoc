@@ -23,7 +23,10 @@ inputs:
     required: false
     default: "."
   policy:
-    description: Policy file of rules the documents must meet. See https://complydoc.github.io/complydoc/docs/guides/policy/
+    description: >-
+      Policy file of rules the documents must meet, or a shipped pack:
+      finance, legal, hr.
+      See https://complydoc.github.io/complydoc/docs/guides/policy/
     required: true
   version:
     description: >-

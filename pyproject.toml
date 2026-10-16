@@ -1,7 +1,7 @@
 [project]
 name = "complydoc"
 dynamic = ["version"]
-description = "Observability for AI ingestion pipelines: a trace of every loading, splitting and embedding step, with token cost, extraction readiness, identifiers and hidden text in your documents."
+description = "An open-source, offline audit for documents before they're indexed. Diff your loaders, catch hidden text and personal data, and gate it in CI."
 readme = "README.md"
 requires-python = ">=3.11,<3.14"
 license = { text = "MIT" }

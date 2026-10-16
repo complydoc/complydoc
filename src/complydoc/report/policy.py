@@ -28,6 +28,10 @@ does not write Python can still gate a pipeline.
 A rule with no parameters is written as `true`. `level: warning` reports a rule
 without failing the gate; the default is `error`. Relative paths in a rule, such
 as a baseline, are resolved from the policy file's own directory.
+
+`finance`, `legal` and `hr` are policy files shipped in the package. Pass the
+name to `read_policy`, to `complydoc check --policy`, or to the action's
+`policy` input.
 """
 
 from __future__ import annotations
@@ -48,6 +52,7 @@ from complydoc.report.models import AuditReport
 from complydoc.utils.files import write_text
 
 __all__ = [
+    "PACKS",
     "RULES",
     "Policy",
     "PolicyResult",
@@ -79,6 +84,9 @@ _PATH_PARAMETERS = {"baseline"}
 """Parameters holding a path, resolved from the policy file's directory."""
 
 LEVELS = ("error", "warning")
+
+PACKS = ("finance", "legal", "hr")
+"""Policy files shipped in the package, under `complydoc/policies`."""
 
 
 class Policy(BaseModel):
@@ -126,8 +134,12 @@ class Policy(BaseModel):
 
 
 def read_policy(path: str | os.PathLike[str]) -> Policy:
-    """The validated policy at `path`. Raises `ConfigError` when it will not load."""
-    source = Path(path).expanduser()
+    """The validated policy at `path`.
+
+    `finance`, `legal` and `hr` name the packs shipped in the package. A path to
+    a file is that file. Raises `ConfigError` when it will not load.
+    """
+    source = _locate(path)
     try:
         data = yaml.safe_load(source.read_text(encoding="utf-8"))
     except (OSError, yaml.YAMLError) as exc:
@@ -139,6 +151,47 @@ def read_policy(path: str | os.PathLike[str]) -> Policy:
     except ValueError as exc:
         raise ConfigError(f"{source} is invalid:\n{exc}") from exc
     return _resolve_paths(policy, source.parent)
+
+
+def _locate(path: str | os.PathLike[str]) -> Path:
+    """`path` when it is a file, otherwise a shipped pack named by a bare name."""
+    source = Path(path).expanduser()
+    if source.is_file():
+        return source
+    name = _pack_name(source)
+    if name is None:
+        return source
+    shipped = _shipped_policy(name)
+    return shipped if shipped is not None else source
+
+
+def _pack_name(source: Path) -> str | None:
+    """`finance`, `legal` or `hr`, with no directory. A path stays a path."""
+    if source.is_absolute():
+        return None
+    parts = source.parts
+    if len(parts) == 2 and parts[0] == ".":
+        leaf = parts[1]
+    elif len(parts) == 1:
+        leaf = parts[0]
+    else:
+        return None
+    return leaf if leaf in PACKS else None
+
+
+def _shipped_policy(name: str) -> Path | None:
+    """The pack in the package, or None when this install cannot hand back a file.
+
+    Resolving the package directory works for a normal install, where the wheel
+    is unpacked. A zipimported install does not, same as the sample documents.
+    """
+    from importlib.resources import files
+
+    try:
+        candidate = Path(str(files("complydoc"))) / "policies" / f"{name}.yaml"
+    except (TypeError, ModuleNotFoundError):  # pragma: no cover - a zipimported install
+        return None
+    return candidate if candidate.is_file() else None
 
 
 def _resolve_paths(policy: Policy, folder: Path) -> Policy:
