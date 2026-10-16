@@ -154,3 +154,9 @@ What the pipeline raises is raised as usual, after the trace is written with the
 step that raised it and its traceback. The traceback's file paths are shortened, to
 the package or to the folder the run read, and identifiers in its message masked. If complydoc fails to record the pipeline, the pipeline's
 result stands: complydoc warns, and `run.error` says why.
+
+## Beside an LLM trace
+
+Langfuse and Phoenix record the model call that follows this pipeline. complydoc
+does not export to them. [Langfuse and Phoenix](langfuse-phoenix.md) keeps this
+report and puts its path on the span that covers the call.

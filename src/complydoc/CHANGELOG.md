@@ -7,11 +7,20 @@ separately.
 
 ## Unreleased
 
+### Added
+
+- A guide to complydoc beside Langfuse or Arize Phoenix: record the ingestion with
+  `cd.observe`, then open the model call's span after the block, carrying the run's name
+  and the report's path. There is no exporter; the report stays on disk.
+
 ### Changed
 
 - complydoc is described as an open-source, offline audit for documents before they are
   indexed, and a diff of document loaders, on the landing page, the docs, the package and
   the container image. The tagline stays "Know your documents before they reach an LLM".
+- Model prices refreshed (2026-10-12). Claude Sonnet 5.5, Haiku 5.5 and Fable 5.1 are
+  compared with the same vision formula and token-count note as the other Claude models.
+
 
 ## [0.7.5] — 2026-10-15
 
