@@ -8,6 +8,8 @@ export interface StageIdentifier {
   occurrences: number;
   /** `model` where only the name model found it, which a stage scanned by patterns could not. */
   evidence?: string;
+  /** Schema 25: for a vector store's step, which stored items hold it, as positions in the step's `ids`. */
+  items?: number[];
 }
 
 /** One item a stage passed on, or for an embedding stage sent, masked. */
@@ -62,6 +64,8 @@ export interface TraceStage {
   connections: string[];
   hosts: string[];
   vectors: number | null;
+  /** Schema 25: for a vector store, the ID it stored each item under, in order; empty where withheld. */
+  ids?: string[];
   dimensions: number | null;
   /** For a split stage, its place in the report's `chunks`. */
   chunks: number | null;

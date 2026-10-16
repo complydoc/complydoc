@@ -75,6 +75,21 @@ def find(
                     f"  [dim]{step.step:>2}[/]  {escape(step.component)}  "
                     f"[dim]{step.kind}, {count(step.occurrences, 'time')}[/]{sent}"
                 )
+                if step.ids:
+                    where = f" in {escape(step.store)}" if step.store else ""
+                    console.print(
+                        f"      [dim]stored as {count(len(step.ids), 'item')}{where}:[/] "
+                        + escape(", ".join(step.ids))
+                    )
+                    # On one line however narrow the terminal, so it can be copied whole.
+                    console.print(
+                        f"      [dim]to remove them:[/] {escape(step.delete or '')}", soft_wrap=True
+                    )
+                if step.withheld:
+                    console.print(
+                        f"      [dim]{count(step.withheld, 'more item')} stored under an ID "
+                        "that holds a path or an identifier, so not named here[/]"
+                    )
             else:
                 console.print(f"  [dim]{step.step:>2}  {escape(step.component)}  not there[/]")
         if run.sent_to:

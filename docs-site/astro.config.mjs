@@ -52,6 +52,7 @@ export default defineConfig({
           label: "Observe",
           items: [
             "guides/observe-a-pipeline",
+            "guides/langfuse-phoenix",
             "guides/viewer",
             "guides/inspect-a-loader",
             "guides/compare-loaders",
@@ -100,6 +101,7 @@ export default defineConfig({
             "explanation/not-measured",
             "explanation/evidence",
             "explanation/hidden-content",
+            "explanation/pdf-loaders",
             "explanation/accuracy",
           ],
         },

@@ -42,11 +42,14 @@ rules:
     level: warning
 ```
 
+`policy` can be a [pack](policy.md#packs): `finance`, `legal` or `hr`. Copy one out
+of the package, edit it, and point `policy` at that file to use your own.
+
 ## Inputs
 
 | Input | Default | |
 | --- | --- | --- |
-| `policy` | required | The [policy file](policy.md) |
+| `policy` | required | The [policy file](policy.md), or a shipped pack: `finance`, `legal`, `hr` |
 | `path` | `.` | File or folder to check, from the repository root |
 | `version` | the tag | complydoc to install. Empty installs the version in the tag the action was used at (`@v0.7.5` installs 0.7.5), or the latest release for any other ref |
 | `extras` | `ocr` | Optional extras, comma separated. `multilingual-names` finds names in European languages and is a large download |

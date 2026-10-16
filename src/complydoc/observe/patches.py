@@ -401,6 +401,11 @@ def _observed(
         # A model named in the call, as an SDK takes it, prices the call as a setting would.
         if recording is not None and kind == "embed" and isinstance(kwargs.get("model"), str):
             recording.parameters["model"] = kwargs["model"]
+        # IDs given to a store, as `from_documents(..., ids=...)` takes them: a store built
+        # by a class method returns itself, not the IDs.
+        ids = kwargs.get("ids")
+        if recording is not None and kind == "store" and isinstance(ids, list | tuple):
+            recording.ids = [str(i) for i in ids]
         return recording
 
     if inspect.isasyncgenfunction(original):

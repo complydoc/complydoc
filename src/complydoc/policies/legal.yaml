@@ -1,0 +1,35 @@
+# Contracts, pleadings and filings.
+# Hidden text and anything written as an instruction fail at any severity.
+# Visible text that reads as an instruction is low; hidden text is medium or
+# high. National identity numbers are the strict identifiers, plus the personal
+# tax numbers that identify someone on a filing (NIF, Steuer-ID, CPF).
+version: 1
+rules:
+  no_hidden:
+    severity: low
+  no_identifiers:
+    severity: high
+    categories:
+      - ni_number
+      - us_ssn
+      - ie_pps
+      - nl_bsn
+      - es_dni
+      - fr_nir
+      - it_codice_fiscale
+      - be_national_number
+      - pl_pesel
+      - se_personnummer
+      - dk_cpr
+      - ch_ahv
+      - in_aadhaar
+      - ca_sin
+      - br_cpf
+      - pt_nif
+      - de_steuer_id
+  no_network: true
+  no_failures: true
+  readiness_at_least:
+    score: 60
+  all_categories_scanned:
+    level: warning

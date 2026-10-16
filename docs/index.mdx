@@ -71,6 +71,11 @@ A full report on the documents bundled with complydoc, opened in the viewer.
     href="/complydoc/docs/guides/observe-a-pipeline/"
   />
   <LinkCard
+    title="Link it to Langfuse or Phoenix"
+    description="The ingestion report stays local. The LLM span carries the run name and the report path."
+    href="/complydoc/docs/guides/langfuse-phoenix/"
+  />
+  <LinkCard
     title="Compare loaders"
     description="Several loaders on the same files, one decision per file type, and a diff of each document they read differently."
     href="/complydoc/docs/guides/compare-loaders/"
@@ -104,7 +109,7 @@ from your machine. A trace shows the calls in a tree with each one's input and o
 a document shows every page with the chunks drawn over its text and each finding in
 place; two readers of a document show as a diff. See [The report viewer](guides/viewer.md).
 
-The report itself is JSON, carrying `schema_version`, currently 24. Identifiers are
+The report itself is JSON, carrying `schema_version`, currently 25. Identifiers are
 masked everywhere in it, including the page text, unless the run used `--reveal`;
 `--page-images` adds a picture of each page, which shows them, kept in a `.parts`
 folder beside the report rather than inside it.

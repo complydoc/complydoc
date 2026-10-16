@@ -68,6 +68,9 @@ with cd.observe("contracts-ingest"):
     vector_store.add_documents(chunks)
 ```
 
+Open the run with `complydoc ui`. [Langfuse and Phoenix](https://complydoc.github.io/complydoc/docs/guides/langfuse-phoenix/)
+is how an LLM trace points at the same run.
+
 Compare loaders on your own documents, page by page:
 
 ```python
@@ -121,6 +124,8 @@ The audit keeps both readings and flags the white sentence. The check fails on i
 
 <img alt="Viewer document page: complydoc and pypdf side by side, with the white sentence in the text" src="https://raw.githubusercontent.com/complydoc/complydoc/main/docs/assets/hidden-clause-documents.png">
 
+Six pages of the same kind, and what each loader returns from them, are in [What PDF loaders let through](https://complydoc.github.io/complydoc/docs/explanation/pdf-loaders/).
+
 ## What it shows
 
 - **Pipeline traces**: each LangChain or LlamaIndex loader, splitter and embedding call as a
@@ -152,6 +157,8 @@ GitHub, the repository is also an action:
     path: documents
     policy: policy.yaml
 ```
+
+`policy` can be a file, or a pack that ships with the tool: `finance`, `legal`, `hr`.
 
 See [GitHub Action](https://complydoc.github.io/complydoc/docs/guides/github-action/) and
 [Policy files](https://complydoc.github.io/complydoc/docs/guides/policy/).
@@ -205,6 +212,7 @@ publishes how often each finds and misses names.
 
 - [Documentation](https://complydoc.github.io/complydoc/docs/)
 - [Playground](https://github.com/complydoc/playground): runnable examples, with a CI workflow
+- [Langfuse and Phoenix](https://complydoc.github.io/complydoc/docs/guides/langfuse-phoenix/): the ingestion report beside an LLM trace
 - [Command line](https://complydoc.github.io/complydoc/docs/reference/cli/) and
   [Python API](https://complydoc.github.io/complydoc/docs/reference/api/) references
 - [Changelog](https://github.com/complydoc/complydoc/blob/main/src/complydoc/CHANGELOG.md)
