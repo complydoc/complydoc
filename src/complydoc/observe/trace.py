@@ -584,8 +584,8 @@ def _with_ids(
     A store returns the IDs in the order it was given the items, and a LangChain document
     or a LlamaIndex node that carries its own ID is stored under it. Where neither says,
     the identifier is listed without items rather than with a guess. An ID that is a path
-    or holds an identifier is kept empty: the report never carries the value, and the
-    item is counted rather than named.
+    or in which a pattern finds an identifier is kept empty: the report never carries the
+    value, and the item is counted rather than named.
     """
     items = list(recording.inputs or [])
     ids = recording.ids or _own_ids(items)
@@ -600,12 +600,20 @@ def _with_ids(
         for part in (text, _values(metadata)):
             for match in scans.matches(part, config, reveal):
                 holding.setdefault(_key(match), []).append(position)
-    kept = ["" if ABSOLUTE_PATH.match(i) or scans.matches(i, config, reveal) else i for i in ids]
+    kept = [
+        "" if ABSOLUTE_PATH.match(i) or _holds_value(i, config, reveal, scans) else i for i in ids
+    ]
     with_items = [
         dataclasses.replace(i, items=sorted(set(holding.get(i.fingerprint, []))))
         for i in identifiers
     ]
     return with_items, kept
+
+
+def _holds_value(item_id: str, config: Config, reveal: bool, scans: _Scans) -> bool:
+    """Whether a pattern finds an identifier in an ID. The name model's guesses are left
+    out: read alone, a short ID such as `doc-2` can look like a name to it."""
+    return any(m.evidence != "model" for m in scans.matches(item_id, config, reveal))
 
 
 def _values(metadata: dict[str, Any]) -> str:

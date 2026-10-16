@@ -216,6 +216,7 @@ def test_the_schema_command_emits_json_a_caller_can_parse():
     """
     import json
     import pathlib
+    import shutil
     import subprocess
     import sys
 
@@ -223,6 +224,9 @@ def test_the_schema_command_emits_json_a_caller_can_parse():
     # console wrapping to that width, so calling the function directly would
     # not reproduce it.
     script = pathlib.Path(sys.executable).with_name("complydoc")
+    if not script.exists():
+        # `uv run --with` runs an overlay interpreter; the project's script is on PATH.
+        script = pathlib.Path(shutil.which("complydoc") or script)
     result = subprocess.run(
         [str(script), "schema"],
         capture_output=True,
