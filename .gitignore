@@ -24,6 +24,9 @@ models/
 # every page, so they are document content, not just metadata. `.complydoc` is
 # where a run writes when nobody passes --out.
 .complydoc/
+# Written by examples/loader-benchmark. The script rebuilds both.
+/examples/loader-benchmark/pdfs/
+/examples/loader-benchmark/out/
 reports/
 # What the documentation examples write when they are run.
 /audit.html
