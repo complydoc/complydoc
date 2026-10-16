@@ -33,30 +33,35 @@
 
 A PDF can say one thing to a person and another to your model. White text, tiny type,
 an IBAN behind a black bar: it's all still in the text layer, and most loaders pass it
-straight through. complydoc shows you what your loaders actually
-extracted, page by page, flags the hidden text and the personal and financial identifiers
-before they're embedded, and can fail a CI check when a document breaks your policy. It
-also traces every ingestion step with its time and cost, and nothing leaves your machine
-unless you ask.
+straight through. complydoc shows you what your loaders actually extracted, page by page,
+flags the hidden text and the personal and financial identifiers before they're embedded,
+and can fail a CI check when a document breaks your policy. It also traces every
+ingestion step with its time and cost, and nothing leaves your machine unless you ask.
 
 ## Try it in 30 seconds
 
-A one-page contract with a clause in white text:
+A one-page contract in two columns, with one sentence in white:
 
 ```bash
 uv tool install complydoc
 curl -LO https://raw.githubusercontent.com/complydoc/complydoc/main/examples/hidden_clause.pdf
-complydoc audit hidden_clause.pdf
+complydoc audit hidden_clause.pdf --compare-extractor pypdf
+complydoc check hidden_clause.pdf --policy finance
 complydoc ui
 ```
 
+The audit keeps both readings and flags the white sentence, the check fails on it, and
+`complydoc ui` opens the report.
+
+<img alt="Viewer security page: the white sentence, marked high, confirmed, white text" src="https://raw.githubusercontent.com/complydoc/complydoc/main/docs/assets/hidden-clause-security.png">
+
+<img alt="Viewer document page: complydoc and pypdf side by side, with the white sentence in the text" src="https://raw.githubusercontent.com/complydoc/complydoc/main/docs/assets/hidden-clause-documents.png">
+
+Six pages of the same kind, and what each loader returns from them, are in [What PDF loaders let through](https://complydoc.github.io/complydoc/docs/explanation/pdf-loaders/).
+
 ## Quickstart
 
-```bash
-uv tool install complydoc        # or: pip install complydoc
-```
-
-Observe an ingestion pipeline as it runs, every loader, splitter, embedding call and
+Install with `uv tool install complydoc` or `pip install complydoc`. Observe an ingestion pipeline as it runs, every loader, splitter, embedding call and
 vector store a step:
 
 ```python
@@ -90,41 +95,15 @@ cd.write_json(report, ".complydoc/loaders.json", detail="full")
   <img alt="The complydoc viewer: two readers' readings of the same page side by side, with the page itself beside them" src="https://raw.githubusercontent.com/complydoc/complydoc/main/.github/images/viewer-diff-light.webp" width="100%">
 </picture>
 
-Or audit a folder from the command line:
+Or audit a folder from the command line, then open it all in the viewer, served from your
+machine:
 
 ```bash
 complydoc audit ./contracts
-```
-
-Then open it all in the viewer, served from your machine:
-
-```bash
 complydoc ui
 ```
 
 The [playground](https://github.com/complydoc/playground) has all of this ready to run.
-
-## Demo
-
-`examples/hidden_clause.pdf` is one page: two columns, and a sentence in white.
-`examples/hidden_clause.py` writes it.
-
-```bash
-complydoc audit examples/hidden_clause.pdf --compare-extractor pypdf
-complydoc check examples/hidden_clause.pdf --policy examples/hidden_clause.yaml
-complydoc ui
-```
-
-The audit keeps both readings and flags the white sentence. The check fails on it.
-`complydoc ui` opens the report.
-
-<img alt="Terminal: complydoc audit reports one high hidden passage, then complydoc check fails on the white sentence" src="https://raw.githubusercontent.com/complydoc/complydoc/main/docs/assets/hidden-clause.gif">
-
-<img alt="Viewer security page: the white sentence, marked high, confirmed, white text" src="https://raw.githubusercontent.com/complydoc/complydoc/main/docs/assets/hidden-clause-security.png">
-
-<img alt="Viewer document page: complydoc and pypdf side by side, with the white sentence in the text" src="https://raw.githubusercontent.com/complydoc/complydoc/main/docs/assets/hidden-clause-documents.png">
-
-Six pages of the same kind, and what each loader returns from them, are in [What PDF loaders let through](https://complydoc.github.io/complydoc/docs/explanation/pdf-loaders/).
 
 ## What it shows
 
