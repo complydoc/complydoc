@@ -66,7 +66,7 @@ __all__ = [
     "VerificationSummary",
 ]
 
-SCHEMA_VERSION = 24
+SCHEMA_VERSION = 25
 
 
 def report_shape() -> dict[str, object]:
@@ -1088,6 +1088,9 @@ class StageIdentifier:
     evidence: str = "pattern"
     """As a match's: `model` where the name model found it, which a stage scanned by
     patterns alone could not have, so it is not missing from such a stage."""
+    items: list[int] = field(default_factory=list)
+    """For a vector store's step, which of the items it stored hold this identifier, as
+    positions in the step's `ids`: what to delete to take it out of the index."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -1170,6 +1173,10 @@ class TraceStage:
     connections: list[str] = field(default_factory=list)
     """Lookups and connections made while the stage ran."""
     hosts: list[str] = field(default_factory=list)
+    ids: list[str] = field(default_factory=list)
+    """For a vector store, the ID it stored each item under, in the order it was given
+    them. An ID that holds a path or an identifier is kept as an empty string, so the
+    report does not carry the value; empty where the store gave none."""
     vectors: int | None = None
     dimensions: int | None = None
     chunks: int | None = None

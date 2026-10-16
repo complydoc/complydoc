@@ -1,10 +1,9 @@
 # complydoc landing page
 
-The page that introduces complydoc to AI engineers and researchers:
-observability for the pipeline that loads, cleans, splits, embeds and stores
-their documents. It is a static site on the
-viewer's stack and theme (React, Tailwind v4, shadcn/ui), so the two look like
-one product.
+The page that introduces complydoc to AI engineers and researchers: an open-source,
+offline audit for documents before they're indexed. Diff your loaders, catch hidden
+text and personal data, and gate it in CI. It is a static site on the viewer's stack
+and theme (React, Tailwind v4, shadcn/ui), so the two look like one product.
 
 ```bash
 npm install

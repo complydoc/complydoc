@@ -5,6 +5,7 @@
   </picture>
 
   <h3>Know your documents before they reach an LLM.</h3>
+  <p>An open-source, offline audit for documents before they're indexed.</p>
 
   <a href="https://pypi.org/project/complydoc/"><img src="https://img.shields.io/pypi/v/complydoc?color=1a7f4b&label=pypi" alt="PyPI"></a>
   <a href="https://github.com/complydoc/complydoc/actions/workflows/checks.yml"><img src="https://github.com/complydoc/complydoc/actions/workflows/checks.yml/badge.svg?branch=main" alt="Tests"></a>
@@ -23,20 +24,31 @@
 
 <br>
 
+<img alt="complydoc audit flagging a white-text clause in a contract PDF that the loaders passed to the model." src="https://raw.githubusercontent.com/complydoc/complydoc/main/docs/assets/hidden-clause.gif" width="100%">
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/complydoc/complydoc/main/.github/images/viewer-trace-dark.webp">
   <img alt="The complydoc viewer: a LangChain ingestion pipeline's runs, and one run traced step by step, each loader, splitter, vector store and embedding call on a time axis with its time, cost and the identifiers it passed on, and warnings on a scanned file that loaded no text" src="https://raw.githubusercontent.com/complydoc/complydoc/main/.github/images/viewer-trace-light.webp" width="100%">
 </picture>
 
-complydoc is the observability layer for AI ingestion pipelines. It traces every step
-between your documents and your vector store (loading, cleaning, splitting, embedding,
-storing) with what each one cost, how long it took and what it passed on, and follows
-each document through them. It warns of the failures that raise no error, such as a scan
-that loaded no text, puts different loaders' readings of the same document side by side,
-and flags the personal or financial identifiers, and instructions hidden for a model,
-that make it through.
+A PDF can say one thing to a person and another to your model. White text, tiny type,
+an IBAN behind a black bar: it's all still in the text layer, and most loaders pass it
+straight through. complydoc shows you what your loaders actually
+extracted, page by page, flags the hidden text and the personal and financial identifiers
+before they're embedded, and can fail a CI check when a document breaks your policy. It
+also traces every ingestion step with its time and cost, and nothing leaves your machine
+unless you ask.
 
-It runs on your machine, and nothing leaves it unless you ask.
+## Try it in 30 seconds
+
+A one-page contract with a clause in white text:
+
+```bash
+uv tool install complydoc
+curl -LO https://raw.githubusercontent.com/complydoc/complydoc/main/examples/hidden_clause.pdf
+complydoc audit hidden_clause.pdf
+complydoc ui
+```
 
 ## Quickstart
 
@@ -55,6 +67,9 @@ with cd.observe("contracts-ingest"):
     chunks = splitter.split_documents(documents)
     vector_store.add_documents(chunks)
 ```
+
+Open the run with `complydoc ui`. [Langfuse and Phoenix](https://complydoc.github.io/complydoc/docs/guides/langfuse-phoenix/)
+is how an LLM trace points at the same run.
 
 Compare loaders on your own documents, page by page:
 
@@ -109,6 +124,8 @@ The audit keeps both readings and flags the white sentence. The check fails on i
 
 <img alt="Viewer document page: complydoc and pypdf side by side, with the white sentence in the text" src="https://raw.githubusercontent.com/complydoc/complydoc/main/docs/assets/hidden-clause-documents.png">
 
+Six pages of the same kind, and what each loader returns from them, are in [What PDF loaders let through](https://complydoc.github.io/complydoc/docs/explanation/pdf-loaders/).
+
 ## What it shows
 
 - **Pipeline traces**: each LangChain or LlamaIndex loader, splitter and embedding call as a
@@ -140,6 +157,8 @@ GitHub, the repository is also an action:
     path: documents
     policy: policy.yaml
 ```
+
+`policy` can be a file, or a pack that ships with the tool: `finance`, `legal`, `hr`.
 
 See [GitHub Action](https://complydoc.github.io/complydoc/docs/guides/github-action/) and
 [Policy files](https://complydoc.github.io/complydoc/docs/guides/policy/).
@@ -193,6 +212,7 @@ publishes how often each finds and misses names.
 
 - [Documentation](https://complydoc.github.io/complydoc/docs/)
 - [Playground](https://github.com/complydoc/playground): runnable examples, with a CI workflow
+- [Langfuse and Phoenix](https://complydoc.github.io/complydoc/docs/guides/langfuse-phoenix/): the ingestion report beside an LLM trace
 - [Command line](https://complydoc.github.io/complydoc/docs/reference/cli/) and
   [Python API](https://complydoc.github.io/complydoc/docs/reference/api/) references
 - [Changelog](https://github.com/complydoc/complydoc/blob/main/src/complydoc/CHANGELOG.md)

@@ -25,6 +25,33 @@ your shell history. `--in` names report files or folders to search, and defaults
 to `.complydoc`. `--json` prints the result as JSON. In the viewer, the **Find a
 value** page asks the same question of every run it serves.
 
+## Taking a value out of the index
+
+A request to erase someone's data reaches the vector store too. For each store a
+recorded pipeline wrote to, the search names the items holding the value, under the
+IDs the store gave them, and the call that removes them:
+
+```text
+   3  Chroma  store, 1 time
+      stored as 1 item in contracts: f5c9c9bf-dc77-4c03-bed8-edecf5d1c54d
+      to remove them: vector_store.delete(ids=['f5c9c9bf-dc77-4c03-bed8-edecf5d1c54d'])
+```
+
+The call is LangChain's `delete(ids=...)` or LlamaIndex's `delete_nodes(node_ids=...)`,
+whichever the store is. A few LlamaIndex stores have no `delete_nodes`; for those, delete
+by the source document with `vector_store.delete(ref_doc_id)`, which removes every node
+read from it. Run the call on the store your pipeline wrote to; complydoc changes
+nothing outside its own files. The viewer's **Find a value** page shows the same items
+and the call, with a button to copy it.
+
+The IDs are the ones the store returned, the ones given to it as `ids=`, or the ones the
+documents carried themselves, as text, numbers or UUIDs. A value in an item's metadata
+counts as well as one in its text. A store that says none of these is named without IDs
+rather than with a guess. An ID that is itself a path or holds an identifier is not kept
+in the report, so the value does not end up there too: such items are counted instead,
+and found again by their content. Two collections are two steps, each with its own call. Only runs recorded from 0.7.6 on keep the IDs, and the search
+covers what a recorded run stored: chunks added to the index by other means are not in it.
+
 ## What is searched
 
 Reports do not hold the values they found, only a fingerprint of each one: a

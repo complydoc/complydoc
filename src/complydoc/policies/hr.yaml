@@ -1,0 +1,46 @@
+# Personnel files.
+# Personal identity numbers, names, email and phone numbers, and date of birth.
+# There is no category for a diagnosis or a medical record. Date of birth is the
+# health-adjacent identifier, and several of the numbers below encode birth date
+# or sex (French NIR, Belgian national number, PESEL, personnummer, CPR).
+# Names are medium severity, so the floor is medium.
+# A street or a postcode is left out: the firm's own address is on every letter.
+version: 1
+rules:
+  no_identifiers:
+    severity: medium
+    categories:
+      - person_name
+      - date_of_birth
+      - email_address
+      - phone_number
+      - international_phone
+      - us_phone
+      - ni_number
+      - us_ssn
+      - ie_pps
+      - nl_bsn
+      - es_dni
+      - fr_nir
+      - it_codice_fiscale
+      - be_national_number
+      - pl_pesel
+      - se_personnummer
+      - dk_cpr
+      - ch_ahv
+      - in_aadhaar
+      - ca_sin
+      - br_cpf
+      - pt_nif
+      - de_steuer_id
+  no_hidden:
+    severity: medium
+  no_network: true
+  no_failures: true
+  readiness_at_least:
+    score: 60
+  # Person names need a model. Labelled names are still found without one.
+  # A category that could not be scanned is reported, and does not fail the gate
+  # on a runner that has not fetched the model.
+  all_categories_scanned:
+    level: warning

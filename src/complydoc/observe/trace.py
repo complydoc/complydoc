@@ -267,6 +267,7 @@ def _stage(
     tokens_out = None if sends or recording.outputs is None else measurer.tokens(texts)
     usd, basis = measurer.cost(recording, tokens_in)
 
+    stored_ids: list[str] = []
     if config is None:
         identifiers: list[StageIdentifier] = []
         hidden = None
@@ -274,7 +275,17 @@ def _stage(
         matches = _report_matches(report) if report is not None else None
         if matches is None:
             matches = [m for text in texts for m in scans.matches(text, config, reveal)]
+        if recording.kind == "store":
+            # A store keeps each item's metadata beside its text, so a value in either
+            # stays in the index.
+            matches = matches + [
+                m
+                for _, metadata in passed
+                for m in scans.matches(_values(metadata), config, reveal)
+            ]
         identifiers = _by_fingerprint(matches)
+        if recording.kind == "store":
+            identifiers, stored_ids = _with_ids(identifiers, recording, config, reveal, scans)
         hidden = sum(scans.hidden(text, config) for text in texts)
         if report is not None:
             scans.unavailable.update(_audit_unscanned(report))
@@ -311,6 +322,7 @@ def _stage(
         connections=list(dict.fromkeys(recording.connections)),
         hosts=_hosts(recording.connections),
         vectors=recording.vectors,
+        ids=stored_ids,
         dimensions=recording.dimensions,
         chunks=chunks,
         parent=recording.parent,
@@ -558,6 +570,53 @@ def _report_matches(report: AuditReport) -> list[SensitiveMatch] | None:
 
 def _key(match: SensitiveMatch) -> str:
     return match.fingerprint or f"{match.category}:{match.masked}"
+
+
+def _with_ids(
+    identifiers: list[StageIdentifier],
+    recording: Recording,
+    config: Config,
+    reveal: bool,
+    scans: _Scans,
+) -> tuple[list[StageIdentifier], list[str]]:
+    """Each identifier with the stored items holding it, and the IDs those items have.
+
+    A store returns the IDs in the order it was given the items, and a LangChain document
+    or a LlamaIndex node that carries its own ID is stored under it. Where neither says,
+    the identifier is listed without items rather than with a guess. An ID that is a path
+    or holds an identifier is kept empty: the report never carries the value, and the
+    item is counted rather than named.
+    """
+    items = list(recording.inputs or [])
+    ids = recording.ids or _own_ids(items)
+    if not ids or len(ids) != len(items):
+        return identifiers, []
+    holding: dict[str, list[int]] = {}
+    for position, item in enumerate(items):
+        try:
+            text, metadata = document_content(item)
+        except TypeError:
+            continue
+        for part in (text, _values(metadata)):
+            for match in scans.matches(part, config, reveal):
+                holding.setdefault(_key(match), []).append(position)
+    kept = ["" if ABSOLUTE_PATH.match(i) or scans.matches(i, config, reveal) else i for i in ids]
+    with_items = [
+        dataclasses.replace(i, items=sorted(set(holding.get(i.fingerprint, []))))
+        for i in identifiers
+    ]
+    return with_items, kept
+
+
+def _values(metadata: dict[str, Any]) -> str:
+    """A metadata's plain values as one text, to be scanned as a store keeps them."""
+    return "\n".join(str(v) for v in metadata.values() if isinstance(v, str | int | float))
+
+
+def _own_ids(items: list[Any]) -> list[str] | None:
+    """The IDs items carry themselves: a document's `id`, a node's `node_id`."""
+    found = [getattr(item, "id", None) or getattr(item, "node_id", None) for item in items]
+    return [str(i) for i in found] if found and all(found) else None
 
 
 def _by_fingerprint(matches: Iterable[SensitiveMatch]) -> list[StageIdentifier]:

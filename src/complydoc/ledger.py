@@ -1,4 +1,5 @@
-"""Where a value went: every document, pipeline stage and host a given identifier reached.
+"""Where a value went: every document, pipeline stage and host a given identifier reached,
+and for a vector store, the IDs of the items holding it, to delete for an erasure request.
 
     trail = cd.find_value("PT50 0002 0123 1234 5678 9015 4", ".complydoc")
     for run in trail.runs:
@@ -17,6 +18,7 @@ It reads the reports in a folder, on this machine.
 
 from __future__ import annotations
 
+import dataclasses
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -54,6 +56,15 @@ class StepSighting:
     sent. Zero where it was not."""
     hosts: list[str] = field(default_factory=list)
     """Where the step sent what it was given, when it sent it anywhere."""
+    ids: list[str] = field(default_factory=list)
+    """For a vector store, the IDs of the stored items holding the value."""
+    withheld: int = 0
+    """Items holding the value whose ID was itself a path or an identifier, so the report
+    does not carry it: they are counted, and found by their content instead."""
+    store: str | None = None
+    """For a vector store, the collection or index it named, where its settings say."""
+    delete: str | None = None
+    """For a vector store whose IDs are known, the call that removes those items."""
 
     @property
     def held(self) -> bool:
@@ -111,28 +122,45 @@ def candidate_fingerprints(value: str, config: Config) -> set[str]:
     return {identifier_fingerprint(category, value) for category in config.sensitive.categories}
 
 
+_STORE_KEYS = ("collection_name", "index_name", "table_name", "namespace", "persist_directory")
+"""Settings a vector store names where it keeps its items under, most telling first."""
+
+
+def _stored(stage: dict[str, Any], found: list[dict[str, Any]]) -> tuple[list[str], int]:
+    """The IDs of the stored items holding the value, and how many more were withheld."""
+    ids = [str(i) for i in stage.get("ids") or []]
+    positions = sorted({p for i in found for p in i.get("items") or [] if 0 <= p < len(ids)})
+    named = [ids[p] for p in positions if ids[p]]
+    return list(dict.fromkeys(named)), len(positions) - len(named)
+
+
 def _step_sightings(trace: dict[str, Any], wanted: set[str]) -> list[StepSighting]:
     steps: list[StepSighting] = []
-    last: tuple[Any, Any, Any] | None = None
+    last: tuple[Any, ...] | None = None
     for stage in trace.get("stages") or []:
         if stage.get("parent") is not None:
             continue
-        held = sum(
-            int(identifier.get("occurrences") or 1)
-            for identifier in stage.get("identifiers") or []
-            if identifier.get("fingerprint") in wanted
-        )
+        found = [i for i in stage.get("identifiers") or [] if i.get("fingerprint") in wanted]
+        held = sum(int(identifier.get("occurrences") or 1) for identifier in found)
         hosts = list(stage.get("hosts") or [])
-        same = (stage.get("kind"), stage.get("component"), stage.get("method"))
+        ids, withheld = _stored(stage, found)
+        parameters = stage.get("parameters") or {}
+        store = None
+        if stage.get("kind") == "store":
+            store = next((str(parameters[k]) for k in _STORE_KEYS if parameters.get(k)), None)
+        # Two collections are two places to delete from, however alike the calls.
+        same = (stage.get("kind"), stage.get("component"), stage.get("method"), store)
         if steps and same == last:
             before = steps[-1]
-            steps[-1] = StepSighting(
-                before.step,
-                before.kind,
-                before.component,
-                before.calls + 1,
-                before.occurrences + held,
-                list(dict.fromkeys([*before.hosts, *hosts])),
+            ids = list(dict.fromkeys([*before.ids, *ids]))
+            steps[-1] = dataclasses.replace(
+                before,
+                calls=before.calls + 1,
+                occurrences=before.occurrences + held,
+                hosts=list(dict.fromkeys([*before.hosts, *hosts])),
+                ids=ids,
+                withheld=before.withheld + withheld,
+                delete=_delete_call(stage, ids),
             )
         else:
             steps.append(
@@ -143,10 +171,27 @@ def _step_sightings(trace: dict[str, Any], wanted: set[str]) -> list[StepSightin
                     1,
                     held,
                     hosts,
+                    ids=ids,
+                    withheld=withheld,
+                    store=store,
+                    delete=_delete_call(stage, ids),
                 )
             )
         last = same
     return steps
+
+
+_LLAMA_INDEX_ADDS = ("add", "async_add")
+"""What a LlamaIndex vector store is given its nodes by; LangChain's are named otherwise."""
+
+
+def _delete_call(stage: dict[str, Any], ids: list[str]) -> str | None:
+    """The call that removes these items from the store, as the store's framework writes it."""
+    if stage.get("kind") != "store" or not ids:
+        return None
+    if stage.get("method") in _LLAMA_INDEX_ADDS:
+        return f"vector_store.delete_nodes(node_ids={ids!r})"
+    return f"vector_store.delete(ids={ids!r})"
 
 
 def _folder(target: Any) -> str:

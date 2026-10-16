@@ -1,0 +1,39 @@
+# Invoices, statements and tax filings.
+# Card numbers, IBANs, sort codes, account and routing numbers, and tax
+# identifiers. UK and EU VAT numbers and the Brazilian CNPJ are filed at low
+# severity, so the floor is low: a high floor would let a VAT number through.
+# A US Social Security number is here because it is a taxpayer identifier.
+version: 1
+rules:
+  no_identifiers:
+    severity: low
+    categories:
+      - iban
+      - card_number
+      - sort_code
+      - bank_account_number
+      - us_routing_number
+      - vat_number
+      - eu_vat_number
+      - utr
+      - us_ein
+      - us_ssn
+      - de_steuer_id
+      - pt_nif
+      - in_pan
+      - au_tfn
+      - br_cpf
+      - br_cnpj
+  # Hidden payment instructions. A low-severity turn of phrase on a visible
+  # letter is left alone; hidden text starts at medium.
+  no_hidden:
+    severity: medium
+  no_network: true
+  no_failures: true
+  # Below this the text is not reliable enough to trust the identifier check.
+  readiness_at_least:
+    score: 60
+  # A name model is often absent, and this pack does not ask for names.
+  # The gap is reported.
+  all_categories_scanned:
+    level: warning

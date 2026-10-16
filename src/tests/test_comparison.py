@@ -63,11 +63,15 @@ def test_reach_never_exceeds_the_folder(comparisons):
             assert 0 <= architecture.documents_served <= architecture.documents_total
 
 
-def test_cost_scales_with_price(comparisons):
+def test_cost_scales_with_price(comparisons, config):
     by_id = {c.model_id: c for c in comparisons}
-    opus = by_id["claude-opus-5-5"].by_key("vision").folder_usd
-    haiku = by_id["claude-haiku-4-5"].by_key("vision").folder_usd
-    assert opus == pytest.approx(haiku * 4, rel=1e-6)
+    # Same vision formula, same tokens: the cost moves with the input price alone.
+    opus, haiku = by_id["claude-opus-5-5"], by_id["claude-haiku-5-5"]
+    prices = {m.id: m.input_per_mtok_usd for m in config.pricing.models}
+    ratio = prices["claude-opus-5-5"] / prices["claude-haiku-5-5"]
+    assert opus.by_key("vision").folder_usd == pytest.approx(
+        haiku.by_key("vision").folder_usd * ratio, rel=1e-6
+    )
 
 
 def test_annual_needs_a_volume(config):
