@@ -208,7 +208,7 @@
   }
  },
  "embeddings_source_url": "https://github.com/BerriAI/litellm",
- "imported": "2026-10-12",
+ "imported": "2026-10-19",
  "models": {
   "claude-fable-5": {
    "accepts_image": true,
@@ -442,13 +442,13 @@
    "accepts_image": true,
    "accepts_pdf": false,
    "batch_input_per_mtok_usd": null,
-   "display_name": "DeepSeek V4.1 Flash",
+   "display_name": "DeepSeek V4.1 Flash 1017",
    "family": "deepseek-flash",
    "input_per_mtok_usd": 0.15,
    "max_input_tokens": 1000000,
    "output_per_mtok_usd": 0.6,
    "provider": "deepseek",
-   "release_date": "2026-09-10"
+   "release_date": "2026-10-17"
   },
   "deepseek-v4-flash": {
    "accepts_image": true,
@@ -460,7 +460,7 @@
    "max_input_tokens": 1000000,
    "output_per_mtok_usd": 0.6,
    "provider": "deepseek",
-   "release_date": "2026-09-10"
+   "release_date": "2026-10-17"
   },
   "deepseek-v4-flash-vision-exp": {
    "accepts_image": true,
@@ -472,7 +472,7 @@
    "max_input_tokens": 1000000,
    "output_per_mtok_usd": 0.6,
    "provider": "deepseek",
-   "release_date": "2026-09-10"
+   "release_date": "2026-10-17"
   },
   "deepseek-v4-pro": {
    "accepts_image": false,
@@ -785,6 +785,18 @@
    "output_per_mtok_usd": 3.75,
    "provider": "gemini",
    "release_date": "2026-09-02"
+  },
+  "gemini-4-argon": {
+   "accepts_image": true,
+   "accepts_pdf": true,
+   "batch_input_per_mtok_usd": 1.0,
+   "display_name": "Gemini 4 Argon",
+   "family": "gemini-4-argon",
+   "input_per_mtok_usd": 2.0,
+   "max_input_tokens": 1048576,
+   "output_per_mtok_usd": 10.0,
+   "provider": "gemini",
+   "release_date": "2026-10-13"
   },
   "gemini-flash-latest": {
    "accepts_image": true,
