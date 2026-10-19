@@ -124,6 +124,19 @@ def test_bare_numbers_without_a_label_are_not_reported(text):
     }
 
 
+@pytest.mark.parametrize("sep", [" ", "-", ".", ""])
+def test_a_norwegian_identifier_is_found_with_any_usual_separator(sep):
+    found = {m.category for m in cd.scan_text(f"Fødselsnummer: 010190{sep}10046").matches}
+    assert "no_fnr" in found
+
+
+@pytest.mark.parametrize("sep", ["+", ",", "("])
+def test_a_norwegian_identifier_is_not_read_across_other_characters(sep):
+    # The separator is a space, a hyphen or a full stop: not a range of characters between them.
+    found = {m.category for m in cd.scan_text(f"Fødselsnummer: 010190{sep}10046").matches}
+    assert "no_fnr" not in found
+
+
 def test_a_document_with_a_norwegian_identifier_is_flagged():
     report = cd.security_audit(FIXTURES / "contract_no.pdf")
     [document] = report.documents
