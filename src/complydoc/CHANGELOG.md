@@ -11,6 +11,10 @@ separately.
 
 - `cd.parsers.opendataloader_pdf()` compares PDFs through the local OpenDataLoader PDF
   loader in `langchain-opendataloader-pdf`. Requires Java 11+ on PATH.
+- Norwegian identity numbers (fødselsnummer, D-numbers included) are found next to a label
+  such as "fødselsnummer" or "fnr" and checked against both check digits, and the legal and HR
+  packs fail on them. Written with a space, a hyphen, a full stop or nothing between the date
+  and the rest.
 
 ## [0.7.6] — 2026-10-16
 

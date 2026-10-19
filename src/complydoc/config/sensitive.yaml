@@ -577,7 +577,7 @@ categories:
     detector: regex
     severity: high
     context_patterns:
-      - '\b\d{6}[ -.]?\d{5}\b'
+      - '\b\d{6}[ .-]?\d{5}\b'
     validators: [no_fnr]
     context_terms: ["fødselsnummer", "fodselsnummer", "fnr", "personnummer", "d-nummer"]
     gdpr_note: >
