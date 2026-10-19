@@ -142,7 +142,7 @@ def opendataloader_pdf(**options: Any) -> LoaderSpec:
     def factory(path: str) -> _WithSource:
         module = _require("langchain_opendataloader_pdf", "langchain-opendataloader-pdf")
         loader = module.OpenDataLoaderPDFLoader(file_path=path, **options)
-        return _WithSource(loader.load, path)
+        return _WithSource(lambda: _numbered_from_one(loader.load()), path)
 
     return LoaderSpec(
         name="opendataloader",
@@ -150,6 +150,24 @@ def opendataloader_pdf(**options: Any) -> LoaderSpec:
         tags=("LangChain", "OpenDataLoader PDF"),
         formats=extensions(("pdf",)),
     )
+
+
+def _numbered_from_one(documents: list[Any]) -> list[Any]:
+    """OpenDataLoader's pages, under the key complydoc reads as counting from 1.
+
+    It numbers a PDF's pages from 1 in `page`, where LangChain's loaders count from 0, and it
+    leaves empty pages out. Told apart from the file alone, a PDF whose last page is empty looked
+    counted from 0, and every page was placed one late. The preset knows how this loader counts.
+    """
+    for document in documents:
+        metadata = getattr(document, "metadata", None)
+        if (
+            isinstance(metadata, dict)
+            and isinstance(metadata.get("page"), int)
+            and "page_number" not in metadata
+        ):
+            metadata["page_number"] = metadata.pop("page")
+    return documents
 
 
 def unstructured(
