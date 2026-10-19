@@ -530,6 +530,27 @@ def dk_cpr(value: str) -> bool:
     return len(digits) == 10 and _plausible_date(int(digits[:2]), int(digits[2:4]))
 
 
+def no_fnr(value: str) -> bool:
+    """Norwegian identity number (fødselsnummer): DDMMYY, three digits, two mod-11 check digits."""
+    digits = _digits(value)
+    if len(digits) != 11:
+        return False
+    day = int(digits[:2])
+    month = int(digits[2:4])
+    # D-numbers add 4 to the first digit of the day (day between 41 and 71).
+    if not _plausible_date(day - 40 if day > 40 else day, month):
+        return False
+    w1 = (3, 7, 6, 1, 8, 9, 4, 5, 2)
+    w2 = (5, 4, 3, 2, 7, 6, 5, 4, 3, 2)
+    r1 = sum(int(d) * w for d, w in zip(digits[:9], w1, strict=True)) % 11
+    k1 = 0 if r1 == 0 else 11 - r1
+    if k1 != int(digits[9]):
+        return False
+    r2 = sum(int(d) * w for d, w in zip(digits[:10], w2, strict=True)) % 11
+    k2 = 0 if r2 == 0 else 11 - r2
+    return k2 == int(digits[10])
+
+
 def ch_ahv(value: str) -> bool:
     """Swiss AHV number: 756, then an EAN-13 check digit."""
     digits = _digits(value)
@@ -646,6 +667,7 @@ VALIDATORS: dict[str, Callable[[str], bool]] = {
     "pl_pesel": pl_pesel,
     "se_personnummer": se_personnummer,
     "dk_cpr": dk_cpr,
+    "no_fnr": no_fnr,
     "ch_ahv": ch_ahv,
     "br_cpf": br_cpf,
     "br_cnpj": br_cnpj,

@@ -570,6 +570,20 @@ categories:
       Direct identifier encoding birth date. It has no checksum, so only the date is
       checked and a nearby label is required.
 
+  no_fnr:
+    enabled: true
+    label: Norwegian identity number
+    region: 'NO'
+    detector: regex
+    severity: high
+    context_patterns:
+      - '\b\d{6}[ -.]?\d{5}\b'
+    validators: [no_fnr]
+    context_terms: ["fødselsnummer", "fodselsnummer", "fnr", "personnummer", "d-nummer"]
+    gdpr_note: >
+      Direct identifier encoding birth date, validated with its two mod-11 check digits.
+
+
   ch_ahv:
     enabled: true
     label: Swiss AHV number

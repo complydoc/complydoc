@@ -10,6 +10,7 @@ import pytest
 
 import complydoc as cd
 from complydoc.sensitive import validators as v
+from tests.helpers import FIXTURES
 
 
 def change_last_digit(value: str) -> str:
@@ -22,6 +23,7 @@ VALID = [
     (v.be_national_number, "85.07.30-033.28"),
     (v.pl_pesel, "44051401359"),
     (v.se_personnummer, "811228-9874"),
+    (v.no_fnr, "010190 10046"),
     (v.ch_ahv, "756.1234.5678.97"),
     (v.br_cpf, "529.982.247-25"),
     (v.br_cnpj, "11.222.333/0001-81"),
@@ -55,6 +57,7 @@ def test_verhoeff_rejects_a_single_digit_change():
         (v.ca_sin, "046 454 286", False),
         (v.dk_cpr, "010190-1234", True),
         (v.dk_cpr, "320190-1234", False),
+        (v.no_fnr, "320190 10046", False),
         (v.in_pan, "ABCPE1234F", True),
         (v.in_pan, "ABCXE1234F", False),
         (v.se_personnummer, "811268-9874", False),
@@ -80,6 +83,7 @@ def test_format_rules(checker, value, expected):
         ("pl_pesel", "PESEL: 44051401359"),
         ("se_personnummer", "Personnummer 811228-9874"),
         ("dk_cpr", "CPR-nummer: 010190-1234"),
+        ("no_fnr", "Fødselsnummer: 010190 10046"),
         ("ch_ahv", "AHV-Nr. 756.1234.5678.97"),
         ("br_cpf", "CPF 529.982.247-25"),
         ("br_cnpj", "CNPJ 11.222.333/0001-81"),
@@ -118,3 +122,12 @@ def test_bare_numbers_without_a_label_are_not_reported(text):
         "in_aadhaar",
         "us_zip_code",
     }
+
+
+def test_a_document_with_a_norwegian_identifier_is_flagged():
+    report = cd.security_audit(FIXTURES / "contract_no.pdf")
+    [document] = report.documents
+    assert document.sensitive is not None
+    assert document.sensitive.counts_by_category.get("no_fnr") == 1
+    match = next(m for m in document.sensitive.matches if m.category == "no_fnr")
+    assert match.page == 1

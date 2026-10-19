@@ -27,6 +27,7 @@ rules:
       - pl_pesel
       - se_personnummer
       - dk_cpr
+      - no_fnr
       - ch_ahv
       - in_aadhaar
       - ca_sin

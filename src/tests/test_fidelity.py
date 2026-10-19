@@ -123,3 +123,13 @@ def test_a_dash_for_an_empty_value_does_not_stop_merged_rows_being_split():
 def test_a_row_whose_cells_all_wrap_is_compared_line_by_line():
     grid = [["Supplier\nname", "Credit\nrating"]]
     assert compare_rows(grid, "Supplier Credit\nname rating") == (2, 2)
+
+
+def test_separator_only_rows_are_not_compared():
+    assert compare_rows([["---", "---", "---"]], "anything") == (0, 0)
+    assert compare_rows([["-", "-", "|"]], "anything") == (0, 0)
+
+
+def test_a_merged_row_starting_with_a_dash_line_does_not_count_the_dash_as_a_row():
+    merged = [["-\nAcme", "-\nB"]]
+    assert compare_rows(merged, "Acme B") == (1, 1)
