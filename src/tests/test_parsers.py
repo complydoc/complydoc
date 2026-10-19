@@ -158,6 +158,29 @@ def test_opendataloader_runs_per_pdf_and_preserves_source(monkeypatch, folder):
     ]
 
 
+def test_opendataloader_pages_count_from_one_even_with_an_empty_last_page(monkeypatch, folder):
+    from complydoc.loaders.inspection import _counted_from_zero, _page_of, document_content
+
+    class FakeLoader:
+        """A three-page PDF whose last page is empty: OpenDataLoader returns pages 1 and 2."""
+
+        def __init__(self, file_path: str, **options: object) -> None:
+            pass
+
+        def load(self) -> list[Document]:
+            return [Document("First page.", {"page": 1}), Document("Second page.", {"page": 2})]
+
+    monkeypatch.setitem(
+        sys.modules,
+        "langchain_opendataloader_pdf",
+        types.SimpleNamespace(OpenDataLoaderPDFLoader=FakeLoader),
+    )
+    pdf = folder / "a.pdf"
+    documents = parsers.opendataloader_pdf().factory(str(pdf)).load()
+    placed = [_page_of(document_content(d)[1]) for d in _counted_from_zero(documents, pdf)]
+    assert placed == [1, 2]
+
+
 class _FakeAzure:
     """Azure's Document Intelligence SDK, as far as the preset uses it."""
 
