@@ -5,6 +5,13 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
+## Unreleased
+
+### Added
+
+- `cd.parsers.opendataloader_pdf()` compares PDFs through the local OpenDataLoader PDF
+  loader in `langchain-opendataloader-pdf`. Requires Java 11+ on PATH.
+
 ## [0.7.6] — 2026-10-16
 
 Where a value is still held in a vector store, and the call that removes it. `complydoc
