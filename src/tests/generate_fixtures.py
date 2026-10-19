@@ -569,6 +569,32 @@ def invoice_de(path: Path) -> None:
     c.save()
 
 
+def contract_no(path: Path) -> None:
+    """A Norwegian supplier contract with a fødselsnummer and local contact details."""
+    _register_font()
+    c = canvas.Canvas(str(path), pagesize=A4)
+    c.setFont(FONT, 11)
+    y = A4[1] - 40 * mm
+    for line in [
+        "AVTALE OM LEVERANSE AV KONSULENTTJENESTER",
+        "",
+        "Mellom Fjord Consult AS og leverandør.",
+        "",
+        "LEVERANDØRINFORMASJON",
+        "Navn: Ola Nordmann",
+        "Fødselsnummer: 010190 10046",
+        "E-post: ola.nordmann@eksempel.no",
+        "Adresse: Storgata 10, 0155 Oslo",
+        "",
+        "Avtalen gjelder fra 01.03.2026 til 31.12.2026.",
+        "Signert for oppdragsgiver av Kari Nordmann, daglig leder.",
+    ]:
+        c.drawString(25 * mm, y, line)
+        y -= 6 * mm
+    c.showPage()
+    c.save()
+
+
 def injection_fr(path: Path) -> None:
     """A French assessment with an instruction to a model hidden in white text.
 
@@ -760,6 +786,7 @@ def main() -> None:
     column_major_table(out / "column_major_table.pdf")
     supplier_contract_pt(out / "supplier_contract_pt.pdf")
     invoice_de(out / "invoice_de.pdf")
+    contract_no(out / "contract_no.pdf")
     injection_fr(out / "injection_fr.pdf")
 
     print(f"wrote fixtures to {out}")
