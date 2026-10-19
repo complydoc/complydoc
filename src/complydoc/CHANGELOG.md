@@ -5,6 +5,56 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
+## [0.7.6] — 2026-10-16
+
+Where a value is still held in a vector store, and the call that removes it. `complydoc
+check` takes a shipped policy, `finance`, `legal` or `hr`, in place of a file. Text set at
+0pt is flagged, and so is an instruction hidden under an opaque image. A docs page shows
+what PDF loaders let through, and a guide puts a Langfuse or Phoenix span beside an
+ingestion trace. complydoc is now described as an offline audit for documents before
+they're indexed.
+
+### Added
+
+- Erasure: where a value is still in the index. `complydoc find`, the viewer's Find a value
+  page and `cd.find_value` name, for each vector store a recorded pipeline wrote to, the
+  items holding the value under the IDs the store gave them, and the call that removes
+  them: LangChain's `delete(ids=...)` or LlamaIndex's `delete_nodes(node_ids=...)`.
+  A trace keeps the IDs each store returned or was given, including those of a store
+  built with `from_documents`, and looks in each item's metadata as well as its text.
+  An ID that holds a path or an identifier is counted, not kept. The report JSON moves
+  to schema 25: a store step lists its `ids` once, and each identifier the `items` that
+  hold it.
+- What PDF loaders let through: a page in the docs comparing what pypdf, pdfplumber,
+  pdfium, pymupdf, Docling, Unstructured and OpenDataLoader PDF return from six one-page
+  files, each with one thing a reader does not see, and what the audit flags.
+  `examples/loader-benchmark` writes the files and repeats the readings.
+- A guide to complydoc beside Langfuse or Arize Phoenix: record the ingestion with
+  `cd.observe`, then open the model call's span after the block, carrying the run's name
+  and the report's path. There is no exporter; the report stays on disk.
+- Three policy packs for `complydoc check`: `finance`, `legal` and `hr`. They ship in the
+  package, so `--policy finance` and the action input `policy: finance` use them.
+
+### Changed
+
+- complydoc is described as an open-source, offline audit for documents before they are
+  indexed, and a diff of document loaders, on the landing page, the docs, the package and
+  the container image. The tagline stays "Know your documents before they reach an LLM".
+- Model prices refreshed (2026-10-12). Claude Sonnet 5.5, Haiku 5.5 and Fable 5.1 are
+  compared with the same vision formula and token-count note as the other Claude models.
+
+### Fixed
+
+- Text set at a font size of zero is reported as hidden. It is below the minimum
+  font size. The text page was leaving it out, so the check reads it from the page
+  content.
+- An instruction to a model hidden under an opaque image is reported, suspected. The
+  page render treats a photograph or a gradient as ink, so the image's own pixels are
+  what decide. A transparent image, one that covers only part of the text, and an
+  image over half the page or more (a scan's picture of its own text) do not count;
+  covered text that gives no instruction, such as a figure's own labels, is left out.
+
+
 ## [0.7.5] — 2026-10-15
 
 `cd.observe` traces more of the pipelines people write: Docling read directly, embedding

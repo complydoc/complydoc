@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: complydoc/complydoc@v0.7.5
+      - uses: complydoc/complydoc@v0.7.6
         with:
           path: documents
           policy: policy.yaml
@@ -42,13 +42,16 @@ rules:
     level: warning
 ```
 
+`policy` can be a [pack](policy.md#packs): `finance`, `legal` or `hr`. Copy one out
+of the package, edit it, and point `policy` at that file to use your own.
+
 ## Inputs
 
 | Input | Default | |
 | --- | --- | --- |
-| `policy` | required | The [policy file](policy.md) |
+| `policy` | required | The [policy file](policy.md), or a shipped pack: `finance`, `legal`, `hr` |
 | `path` | `.` | File or folder to check, from the repository root |
-| `version` | the tag | complydoc to install. Empty installs the version in the tag the action was used at (`@v0.7.5` installs 0.7.5), or the latest release for any other ref |
+| `version` | the tag | complydoc to install. Empty installs the version in the tag the action was used at (`@v0.7.6` installs 0.7.6), or the latest release for any other ref |
 | `extras` | `ocr` | Optional extras, comma separated. `multilingual-names` finds names in European languages and is a large download |
 | `args` | | More arguments for `complydoc check`, such as `--timeout 120` |
 | `comment` | `true` | Keep one comment on the pull request with the result |
@@ -96,7 +99,7 @@ check reads from:
           uv run --no-project --with transformers --with torch python -c
           "from transformers import pipeline;
           pipeline('token-classification', model='Babelscape/wikineural-multilingual-ner')"
-      - uses: complydoc/complydoc@v0.7.5
+      - uses: complydoc/complydoc@v0.7.6
         with:
           path: documents
           policy: policy.yaml

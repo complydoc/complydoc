@@ -36,7 +36,7 @@ RUN python -m build --wheel --outdir /wheels
 
 FROM python:3.12-slim AS plain
 LABEL org.opencontainers.image.title="complydoc" \
-      org.opencontainers.image.description="Observability for AI ingestion pipelines: audits and the report viewer" \
+      org.opencontainers.image.description="An open-source, offline audit for documents before they're indexed. Diff your loaders, catch hidden text and personal data, and gate it in CI." \
       org.opencontainers.image.source="https://github.com/complydoc/complydoc" \
       org.opencontainers.image.licenses="MIT"
 # What the OCR engine's image library loads at run time.

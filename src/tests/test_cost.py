@@ -155,8 +155,10 @@ def test_unknown_page_size_gives_no_vision_path_rather_than_zero(loader, config)
 def test_cost_scales_with_the_price(loader, config):
     estimate = estimate_document(loader("native_text.pdf"), config.pricing)
     by_id = {m.model_id: m for m in estimate.models}
-    opus, haiku = by_id["claude-opus-5-5"], by_id["claude-haiku-4-5"]
-    assert opus.text_path_input_usd == pytest.approx(haiku.text_path_input_usd * 4, rel=1e-6)
+    opus, haiku = by_id["claude-opus-5-5"], by_id["claude-haiku-5-5"]
+    prices = {m.id: m.input_per_mtok_usd for m in config.pricing.models}
+    ratio = prices["claude-opus-5-5"] / prices["claude-haiku-5-5"]
+    assert opus.text_path_input_usd == pytest.approx(haiku.text_path_input_usd * ratio, rel=1e-6)
 
 
 def test_monthly_volume_extrapolates(loader, config):

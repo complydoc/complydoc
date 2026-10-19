@@ -18,6 +18,7 @@ import os
 import threading
 import time
 import traceback as tracebacks
+import uuid
 import warnings
 from collections.abc import Callable, Iterator, Sequence
 from contextvars import ContextVar
@@ -73,6 +74,8 @@ class Recording:
     outputs: list[Any] | None = None
     vectors: int | None = None
     dimensions: int | None = None
+    ids: list[str] | None = None
+    """For a vector store, the IDs it stored what it was given under, in the same order."""
     seconds: float = 0.0
     connections: list[str] = field(default_factory=list)
     finished: bool = True
@@ -343,6 +346,11 @@ def finish(recording: Recording, result: Any) -> None:
     if recording.kind == "store":
         if isinstance(result, list | tuple):
             recording.vectors = len(result)
+            # What `add_documents` and `add` return: the ID each item was stored under,
+            # a string for most stores, a number or a UUID for some.
+            if result and all(_plain_id(item) for item in result):
+                recording.ids = [str(item) for item in result]
+                _pass_ids_up(recording)
         return
     if recording.kind == "embed":
         # A list of vectors from a framework; from a provider's SDK, a response holding them.
@@ -357,6 +365,28 @@ def finish(recording: Recording, result: Any) -> None:
     documents = adapters.listed(result)
     if documents is not None:
         recording.outputs = documents
+
+
+def _plain_id(item: Any) -> bool:
+    return isinstance(item, str | int | uuid.UUID) and not isinstance(item, bool)
+
+
+def _pass_ids_up(recording: Recording) -> None:
+    """Give a store's IDs to the store step it ran inside, when that step has none.
+
+    `from_documents` builds a store and calls its `add_texts`: the IDs come back from
+    the inner call, and the outer step, the one the trace lists, is what was asked for.
+    """
+    observation = _current
+    if observation is None or recording.parent is None:
+        return
+    parent = observation.recordings[recording.parent]
+    if (
+        parent.kind == "store"
+        and parent.ids is None
+        and len(parent.inputs or []) == len(recording.ids or [])
+    ):
+        parent.ids = recording.ids
 
 
 def stage(

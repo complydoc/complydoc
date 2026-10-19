@@ -36,6 +36,16 @@
    "input_per_mtok_usd": 0.12,
    "provider": "cohere"
   },
+  "embed-v5.0-fast": {
+   "dimensions": 2048,
+   "input_per_mtok_usd": 0.08,
+   "provider": "cohere"
+  },
+  "embed-v5.0-pro": {
+   "dimensions": 2048,
+   "input_per_mtok_usd": 0.12,
+   "provider": "cohere"
+  },
   "gemini-embedding-001": {
    "dimensions": 3072,
    "input_per_mtok_usd": 0.15,
@@ -161,6 +171,11 @@
    "input_per_mtok_usd": 0.12,
    "provider": "voyage"
   },
+  "voyage-large-2-instruct": {
+   "dimensions": 1024,
+   "input_per_mtok_usd": 0.12,
+   "provider": "voyage"
+  },
   "voyage-law-2": {
    "dimensions": null,
    "input_per_mtok_usd": 0.12,
@@ -193,7 +208,7 @@
   }
  },
  "embeddings_source_url": "https://github.com/BerriAI/litellm",
- "imported": "2026-09-25",
+ "imported": "2026-10-12",
  "models": {
   "claude-fable-5": {
    "accepts_image": true,
@@ -234,7 +249,7 @@
   "claude-haiku-4-5-20251001": {
    "accepts_image": true,
    "accepts_pdf": true,
-   "batch_input_per_mtok_usd": null,
+   "batch_input_per_mtok_usd": 0.5,
    "display_name": "Claude Haiku 4.5",
    "family": "claude-haiku-4-5",
    "input_per_mtok_usd": 1.0,
@@ -242,6 +257,18 @@
    "output_per_mtok_usd": 5.0,
    "provider": "anthropic",
    "release_date": "2025-10-15"
+  },
+  "claude-haiku-5-5": {
+   "accepts_image": true,
+   "accepts_pdf": true,
+   "batch_input_per_mtok_usd": 0.05,
+   "display_name": "Claude Haiku 5.5",
+   "family": "claude-haiku-5-5",
+   "input_per_mtok_usd": 0.1,
+   "max_input_tokens": 1000000,
+   "output_per_mtok_usd": 0.5,
+   "provider": "anthropic",
+   "release_date": "2026-10-07"
   },
   "claude-opus-4-5": {
    "accepts_image": true,
@@ -258,7 +285,7 @@
   "claude-opus-4-5-20251101": {
    "accepts_image": true,
    "accepts_pdf": true,
-   "batch_input_per_mtok_usd": null,
+   "batch_input_per_mtok_usd": 2.5,
    "display_name": "Claude Opus 4.5",
    "family": "claude-opus-4-5",
    "input_per_mtok_usd": 5.0,
@@ -334,7 +361,7 @@
    "display_name": "Claude Sonnet 4.5 (latest)",
    "family": "claude-sonnet-4-5",
    "input_per_mtok_usd": 3.0,
-   "max_input_tokens": 1000000,
+   "max_input_tokens": 200000,
    "output_per_mtok_usd": 15.0,
    "provider": "anthropic",
    "release_date": "2025-09-29"
@@ -342,11 +369,11 @@
   "claude-sonnet-4-5-20250929": {
    "accepts_image": true,
    "accepts_pdf": true,
-   "batch_input_per_mtok_usd": null,
+   "batch_input_per_mtok_usd": 1.5,
    "display_name": "Claude Sonnet 4.5",
    "family": "claude-sonnet-4-5",
    "input_per_mtok_usd": 3.0,
-   "max_input_tokens": 1000000,
+   "max_input_tokens": 200000,
    "output_per_mtok_usd": 15.0,
    "provider": "anthropic",
    "release_date": "2025-09-29"
@@ -374,6 +401,30 @@
    "output_per_mtok_usd": 10.0,
    "provider": "anthropic",
    "release_date": "2026-06-29"
+  },
+  "claude-sonnet-5-5": {
+   "accepts_image": true,
+   "accepts_pdf": true,
+   "batch_input_per_mtok_usd": 1.0,
+   "display_name": "Claude Sonnet 5.5",
+   "family": "claude-sonnet-5-5",
+   "input_per_mtok_usd": 2.0,
+   "max_input_tokens": 1000000,
+   "output_per_mtok_usd": 10.0,
+   "provider": "anthropic",
+   "release_date": "2026-09-28"
+  },
+  "codestral-2508": {
+   "accepts_image": false,
+   "accepts_pdf": false,
+   "batch_input_per_mtok_usd": null,
+   "display_name": "Codestral 25.08",
+   "family": "codestral",
+   "input_per_mtok_usd": 0.3,
+   "max_input_tokens": 256000,
+   "output_per_mtok_usd": 0.9,
+   "provider": "mistral",
+   "release_date": "2025-07-30"
   },
   "codestral-latest": {
    "accepts_image": false,
@@ -429,9 +480,9 @@
    "batch_input_per_mtok_usd": null,
    "display_name": "DeepSeek V4 Pro",
    "family": "deepseek-v4-pro",
-   "input_per_mtok_usd": 0.435,
+   "input_per_mtok_usd": 0.66,
    "max_input_tokens": 1000000,
-   "output_per_mtok_usd": 0.87,
+   "output_per_mtok_usd": 1.98,
    "provider": "deepseek",
    "release_date": "2026-08-12"
   },
@@ -866,6 +917,18 @@
    "output_per_mtok_usd": 3.2,
    "provider": "zai",
    "release_date": "2026-02-12"
+  },
+  "glm-5-2": {
+   "accepts_image": false,
+   "accepts_pdf": false,
+   "batch_input_per_mtok_usd": null,
+   "display_name": "GLM-5.2",
+   "family": "glm-5-2",
+   "input_per_mtok_usd": 1.4,
+   "max_input_tokens": 1048576,
+   "output_per_mtok_usd": 4.4,
+   "provider": "mistral",
+   "release_date": "2026-06-13"
   },
   "glm-5-turbo": {
    "accepts_image": false,
@@ -1371,6 +1434,42 @@
    "provider": "openai",
    "release_date": "2026-09-22"
   },
+  "gpt-6.1-sol": {
+   "accepts_image": true,
+   "accepts_pdf": true,
+   "batch_input_per_mtok_usd": 1.0,
+   "display_name": "GPT-6.1 Sol",
+   "family": "gpt-6.1-sol",
+   "input_per_mtok_usd": 2.0,
+   "max_input_tokens": 1050000,
+   "output_per_mtok_usd": 10.0,
+   "provider": "openai",
+   "release_date": "2026-09-29"
+  },
+  "gpt-daybreak-blue-latest": {
+   "accepts_image": true,
+   "accepts_pdf": true,
+   "batch_input_per_mtok_usd": null,
+   "display_name": "Daybreak Blue",
+   "family": "gpt-daybreak-blue",
+   "input_per_mtok_usd": 4.0,
+   "max_input_tokens": 1050000,
+   "output_per_mtok_usd": 20.0,
+   "provider": "openai",
+   "release_date": "2026-08-07"
+  },
+  "gpt-daybreak-red-latest": {
+   "accepts_image": true,
+   "accepts_pdf": false,
+   "batch_input_per_mtok_usd": null,
+   "display_name": "Daybreak Red",
+   "family": "gpt-daybreak-red",
+   "input_per_mtok_usd": 12.5,
+   "max_input_tokens": 400000,
+   "output_per_mtok_usd": 75.0,
+   "provider": "openai",
+   "release_date": "2026-08-07"
+  },
   "gpt-realtime-2.1": {
    "accepts_image": true,
    "accepts_pdf": false,
@@ -1386,7 +1485,7 @@
   "grok-4.20-0309-non-reasoning": {
    "accepts_image": true,
    "accepts_pdf": true,
-   "batch_input_per_mtok_usd": null,
+   "batch_input_per_mtok_usd": 1.0,
    "display_name": "Grok 4.20 (Non-Reasoning)",
    "family": "grok-4.20-0309-non-reasoning",
    "input_per_mtok_usd": 1.25,
@@ -1398,7 +1497,7 @@
   "grok-4.20-0309-reasoning": {
    "accepts_image": true,
    "accepts_pdf": true,
-   "batch_input_per_mtok_usd": null,
+   "batch_input_per_mtok_usd": 1.0,
    "display_name": "Grok 4.20 (Reasoning)",
    "family": "grok-4.20-0309-reasoning",
    "input_per_mtok_usd": 1.25,
@@ -1410,7 +1509,7 @@
   "grok-4.20-multi-agent-0309": {
    "accepts_image": true,
    "accepts_pdf": true,
-   "batch_input_per_mtok_usd": null,
+   "batch_input_per_mtok_usd": 1.0,
    "display_name": "Grok 4.20 Multi-Agent",
    "family": "grok-4.20-multi-agent",
    "input_per_mtok_usd": 1.25,
@@ -1422,7 +1521,7 @@
   "grok-4.3": {
    "accepts_image": true,
    "accepts_pdf": true,
-   "batch_input_per_mtok_usd": null,
+   "batch_input_per_mtok_usd": 1.0,
    "display_name": "Grok 4.3",
    "family": "grok-4.3",
    "input_per_mtok_usd": 1.25,
@@ -1528,49 +1627,73 @@
    "release_date": "2026-07-16"
   },
   "magistral-medium-latest": {
-   "accepts_image": false,
+   "accepts_image": true,
    "accepts_pdf": false,
    "batch_input_per_mtok_usd": null,
    "display_name": "Magistral Medium (latest)",
    "family": "magistral-medium",
    "input_per_mtok_usd": 2.0,
-   "max_input_tokens": 128000,
+   "max_input_tokens": 262144,
    "output_per_mtok_usd": 5.0,
    "provider": "mistral",
    "release_date": "2025-03-17"
   },
-  "magistral-small": {
-   "accepts_image": false,
+  "ministral-14b-2512": {
+   "accepts_image": true,
    "accepts_pdf": false,
    "batch_input_per_mtok_usd": null,
-   "display_name": "Magistral Small",
-   "family": "magistral-small",
-   "input_per_mtok_usd": 0.5,
-   "max_input_tokens": 128000,
-   "output_per_mtok_usd": 1.5,
+   "display_name": "Ministral 3 14B",
+   "family": "ministral-14b",
+   "input_per_mtok_usd": 0.2,
+   "max_input_tokens": 262144,
+   "output_per_mtok_usd": 0.2,
    "provider": "mistral",
-   "release_date": "2025-03-17"
+   "release_date": "2025-12-02"
+  },
+  "ministral-3b-2512": {
+   "accepts_image": true,
+   "accepts_pdf": false,
+   "batch_input_per_mtok_usd": null,
+   "display_name": "Ministral 3 3B",
+   "family": "ministral-3b",
+   "input_per_mtok_usd": 0.1,
+   "max_input_tokens": 131072,
+   "output_per_mtok_usd": 0.1,
+   "provider": "mistral",
+   "release_date": "2025-12-02"
   },
   "ministral-3b-latest": {
-   "accepts_image": false,
+   "accepts_image": true,
    "accepts_pdf": false,
    "batch_input_per_mtok_usd": null,
    "display_name": "Ministral 3B (latest)",
    "family": "ministral-3b",
    "input_per_mtok_usd": 0.04,
-   "max_input_tokens": 128000,
+   "max_input_tokens": 131072,
    "output_per_mtok_usd": 0.04,
    "provider": "mistral",
    "release_date": "2024-10-01"
   },
+  "ministral-8b-2512": {
+   "accepts_image": true,
+   "accepts_pdf": false,
+   "batch_input_per_mtok_usd": null,
+   "display_name": "Ministral 3 8B",
+   "family": "ministral-8b",
+   "input_per_mtok_usd": 0.15,
+   "max_input_tokens": 262144,
+   "output_per_mtok_usd": 0.15,
+   "provider": "mistral",
+   "release_date": "2025-12-02"
+  },
   "ministral-8b-latest": {
-   "accepts_image": false,
+   "accepts_image": true,
    "accepts_pdf": false,
    "batch_input_per_mtok_usd": null,
    "display_name": "Ministral 8B (latest)",
    "family": "ministral-8b",
    "input_per_mtok_usd": 0.1,
-   "max_input_tokens": 128000,
+   "max_input_tokens": 262144,
    "output_per_mtok_usd": 0.1,
    "provider": "mistral",
    "release_date": "2024-10-01"
@@ -1610,6 +1733,18 @@
    "output_per_mtok_usd": 1.5,
    "provider": "mistral",
    "release_date": "2024-11-01"
+  },
+  "mistral-large-4": {
+   "accepts_image": true,
+   "accepts_pdf": false,
+   "batch_input_per_mtok_usd": null,
+   "display_name": "Mistral Large 4",
+   "family": "mistral-large-4",
+   "input_per_mtok_usd": 0.68,
+   "max_input_tokens": 1048576,
+   "output_per_mtok_usd": 2.09,
+   "provider": "mistral",
+   "release_date": "2026-10-06"
   },
   "mistral-large-latest": {
    "accepts_image": true,
@@ -1702,7 +1837,7 @@
    "display_name": "Mistral Small 4",
    "family": "mistral-small",
    "input_per_mtok_usd": 0.15,
-   "max_input_tokens": 256000,
+   "max_input_tokens": 262144,
    "output_per_mtok_usd": 0.6,
    "provider": "mistral",
    "release_date": "2026-03-16"
@@ -1714,7 +1849,7 @@
    "display_name": "Mistral Small (latest)",
    "family": "mistral-small",
    "input_per_mtok_usd": 0.15,
-   "max_input_tokens": 256000,
+   "max_input_tokens": 262144,
    "output_per_mtok_usd": 0.6,
    "provider": "mistral",
    "release_date": "2026-03-16"
@@ -1863,6 +1998,18 @@
    "provider": "mistral",
    "release_date": "2024-11-01"
   },
+  "voxtral-small-2507": {
+   "accepts_image": false,
+   "accepts_pdf": false,
+   "batch_input_per_mtok_usd": null,
+   "display_name": "Voxtral Small",
+   "family": "voxtral-small",
+   "input_per_mtok_usd": 0.1,
+   "max_input_tokens": 32768,
+   "output_per_mtok_usd": 0.4,
+   "provider": "mistral",
+   "release_date": "2025-07-15"
+  },
   "voxtral-small-latest": {
    "accepts_image": false,
    "accepts_pdf": false,
@@ -1870,7 +2017,7 @@
    "display_name": "Voxtral Small (latest)",
    "family": "voxtral-small",
    "input_per_mtok_usd": 0.1,
-   "max_input_tokens": 32000,
+   "max_input_tokens": 32768,
    "output_per_mtok_usd": 0.3,
    "provider": "mistral",
    "release_date": "2025-07-15"
@@ -1882,7 +2029,7 @@
    "display_name": "GLM-5.2",
    "family": "zai-glm-5-2",
    "input_per_mtok_usd": 1.4,
-   "max_input_tokens": 1000000,
+   "max_input_tokens": 1048576,
    "output_per_mtok_usd": 4.4,
    "provider": "mistral",
    "release_date": "2026-06-13"
@@ -1894,7 +2041,7 @@
    "display_name": "GLM-5.3",
    "family": "zai-glm-5-3",
    "input_per_mtok_usd": 1.4,
-   "max_input_tokens": 1000000,
+   "max_input_tokens": 1048576,
    "output_per_mtok_usd": 4.4,
    "provider": "mistral",
    "release_date": "2026-08-14"

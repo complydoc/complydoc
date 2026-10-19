@@ -11,7 +11,8 @@ export default defineConfig({
   integrations: [
     starlight({
       title: "complydoc",
-      description: "The observability layer for AI ingestion pipelines.",
+      description:
+        "An open-source, offline audit for documents before they're indexed. Diff your loaders, catch hidden text and personal data, and gate it in CI.",
       logo: { light: "./public/mark.svg", dark: "./public/mark-dark.svg", alt: "complydoc" },
       favicon: "/favicon.svg",
       // Visits are counted without cookies and nothing is stored in the browser.
@@ -19,6 +20,19 @@ export default defineConfig({
         {
           tag: "script",
           attrs: { "data-goatcounter": "https://complydoc.goatcounter.com/count", async: true, src: "https://gc.zgo.at/count.js" },
+        },
+        // The card a shared docs link shows. Same image as the landing page, served from the site root.
+        {
+          tag: "meta",
+          attrs: { property: "og:image", content: "https://complydoc.github.io/complydoc/og.png" },
+        },
+        {
+          tag: "meta",
+          attrs: { name: "twitter:card", content: "summary_large_image" },
+        },
+        {
+          tag: "meta",
+          attrs: { name: "twitter:image", content: "https://complydoc.github.io/complydoc/og.png" },
         },
       ],
       social: [{ icon: "github", label: "GitHub", href: "https://github.com/complydoc/complydoc" }],
@@ -38,6 +52,7 @@ export default defineConfig({
           label: "Observe",
           items: [
             "guides/observe-a-pipeline",
+            "guides/langfuse-phoenix",
             "guides/viewer",
             "guides/inspect-a-loader",
             "guides/compare-loaders",
@@ -86,6 +101,7 @@ export default defineConfig({
             "explanation/not-measured",
             "explanation/evidence",
             "explanation/hidden-content",
+            "explanation/pdf-loaders",
             "explanation/accuracy",
           ],
         },

@@ -28,10 +28,23 @@ Where the page is blank under the text, the file is read for a reason:
 A blank area with a reason is `confirmed`; without one (text under a filled
 shape, clipped, or in a hidden layer) it is `suspected`. Text outside the crop
 box and text below `visibility.min_font_size_pt` is `confirmed` whatever the
-pixels show.
+pixels show. A font size of zero is below that minimum. The text page leaves
+it out, so the words are read from the page content.
+
+Text fully covered by an opaque image is `suspected`. The image has to be
+painted after the text and contain the glyph, and the image's own pixels there
+have to be opaque, soft masks and constant transparency included. That is read
+from the image. A photograph or a gradient has contrast, so the page render
+cannot see the text under it. A transparent image does not count, nor does one
+that leaves part of the glyph outside it, nor an image painted behind the text,
+nor an image over half the page or more, which is a scan's picture of its own
+text layer. Such text is reported only when it reads as an instruction to a
+model: a figure painted over its own labels is covered text too, and common.
 
 Invisible render mode over an image of the same words, as on a scanned page
-with an OCR layer, has ink under it and is not reported.
+with an OCR layer, has ink under it and is not reported. That stays the case
+when the picture is painted after the text: invisible text is still judged by
+whether the page is blank, not by the image.
 
 Rotated pages and pages after `visibility.max_pages` are not checked.
 
@@ -212,6 +225,11 @@ For loader output with a readable source file, each hidden passage records in
 ## Limits
 
 - Text inside images is not checked. A vision model reads it.
+- A gradient drawn as a shading, rather than as an image, is only caught when
+  the pixels under the text are uniform.
+- An image in a blend mode other than normal can be reported as covering text
+  the blend still shows. A clip that is not made of straight lines is not
+  treated as a cover.
 - HTML styles from external stylesheets, scripts and complex selectors are not
   applied.
 - Patterns miss phrasings they do not list and match documents that discuss

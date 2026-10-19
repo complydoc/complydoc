@@ -41,7 +41,7 @@ export function Footer() {
           <div className="flex max-w-lg flex-col gap-4">
             <Logo size={22} />
             <p className="text-sm text-muted-foreground">
-              A document audit tool for AI pipelines. complydoc Cloud, for teams, is planned:{" "}
+              Know your documents before they reach an LLM. complydoc Cloud, for teams, is planned:{" "}
               <a href={links.discussions} className="text-foreground underline underline-offset-4">
                 would you use it?
               </a>

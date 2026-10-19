@@ -26,7 +26,7 @@ rules:
 
 Every rule runs, so one run lists everything that failed rather than stopping at
 the first. A rule with no parameters is written as `true`, and `false` switches one
-off without deleting it.
+off without deleting it. Packs for a finance, legal or HR folder are [listed below](#packs).
 
 ## Rules
 
@@ -96,3 +96,30 @@ print(result.passed, [rule.rule for rule in result.failed])
 
 `cd.expect(report)` remains the way to write these checks inside a test suite; a
 policy file is for the teams and pipelines that would rather not.
+
+## Packs
+
+Three policies ship with the package. Pass the name where a path would go. A path
+to a YAML file is that file: copy a pack out, edit it, and point `--policy` at the copy.
+
+```bash
+complydoc check ./invoices --policy finance
+```
+
+```yaml
+- uses: complydoc/complydoc@v0.7.5
+  with:
+    path: documents
+    policy: legal
+```
+
+| Pack | For | Fails when |
+| --- | --- | --- |
+| `finance` | Invoices, statements, tax filings | An IBAN, card number, bank detail or tax identifier is found. VAT numbers are filed at low severity, so the floor is low. Hidden text from medium. Readiness under 60 |
+| `legal` | Contracts and filings | Hidden text or an instruction-like passage is found at any severity, or a national identity number is found |
+| `hr` | Personnel files | A personal identity number, a name, a date of birth, an email or a phone number is found. Date of birth is the health-adjacent identifier |
+
+Each pack also fails when a run opens a network connection or a file cannot be read,
+and reports a category that could not be scanned as a warning. Names need a model;
+the [action guide](github-action.md#names) says how to fetch one. The files are
+`src/complydoc/policies/` in the repository, and ship inside the package.

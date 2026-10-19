@@ -2,7 +2,7 @@
 const DOCS = "https://complydoc.github.io/complydoc/docs";
 const REPO = "https://github.com/complydoc/complydoc";
 
-export const VERSION = "0.7.5";
+export const VERSION = "0.7.6";
 
 export const links = {
   docs: `${DOCS}/`,
