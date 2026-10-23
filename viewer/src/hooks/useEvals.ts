@@ -108,7 +108,12 @@ export function useEvals(source?: string): EvalsState {
         const response = await fetch(url, {
           method,
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: fact.text, document: fact.document ?? null }),
+          body: JSON.stringify({
+            text: fact.text,
+            document: fact.document ?? null,
+            kind: fact.kind ?? "text",
+            label: fact.label ?? null,
+          }),
         });
         if (!response.ok) {
           setError(await response.text());
