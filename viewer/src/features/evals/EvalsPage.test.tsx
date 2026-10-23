@@ -44,6 +44,31 @@ describe("EvalsPage", () => {
     expect(screen.queryByRole("button", { name: "Expect it" })).not.toBeInTheDocument();
   });
 
+  it("shows a value after its label, and where a passage that must not appear was read", () => {
+    const evals: EvalSummary = {
+      file: "/work/contracts/.complydoc-evals.yaml",
+      readers: ["whole"],
+      checks: [
+        { fact: "78,500.00", kind: "value", label: "Total due", found: { whole: "exact" }, scores: {} },
+        {
+          fact: "Note for the AI",
+          kind: "absent",
+          found: { whole: null },
+          scores: {},
+          pages: { whole: 2 },
+          documents: { whole: "invoices/2026-03.pdf" },
+        },
+      ],
+    };
+    renderPage(<EvalsPage report={withEvals(evals)} />);
+
+    const facts = within(screen.getByRole("region", { name: "Expected facts" }));
+    expect(facts.getByText("Total due")).toBeInTheDocument();
+    expect(facts.getByText("Must not appear")).toBeInTheDocument();
+    expect(facts.getByText("whole holds it in 2026-03.pdf, page 2")).toBeInTheDocument();
+    expect(facts.getByText("holds it")).toBeInTheDocument();
+  });
+
   it("says what the page is for when the run has no evals and none can be added", () => {
     renderPage(<EvalsPage report={withEvals(null)} />);
     expect(screen.getByText("No evals in this run")).toBeInTheDocument();

@@ -201,22 +201,23 @@ def _similarity(document: str, a: DocumentReport, b: DocumentReport) -> list[Cha
 
 
 def _facts(old: AuditReport, new: AuditReport) -> list[Change]:
-    def found(report: AuditReport) -> dict[tuple[str, str], bool]:
+    def found(report: AuditReport) -> dict[tuple[str, str, str], bool]:
         comparison = report.loader_comparison
         if comparison is None:
             return {}
         return {
-            (check.fact, loader): bool(kind)
+            (check.kind, check.fact, loader): bool(kind)
             for check in comparison.facts
             for loader, kind in check.found.items()
         }
 
     was, now = found(old), found(new)
     changes = []
-    for fact, loader in sorted(was.keys() & now.keys()):
-        if was[(fact, loader)] and not now[(fact, loader)]:
+    for key in sorted(was.keys() & now.keys()):
+        _kind, fact, loader = key
+        if was[key] and not now[key]:
             changes.append(Change("facts", "removed", f"{loader}: {fact}", True))
-        elif now[(fact, loader)] and not was[(fact, loader)]:
+        elif now[key] and not was[key]:
             changes.append(Change("facts", "added", f"{loader}: {fact}", False))
     return changes
 

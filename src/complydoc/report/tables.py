@@ -222,6 +222,7 @@ def _facts(report: AuditReport) -> Iterator[Row]:
         for loader, kind in check.found.items():
             yield {
                 "fact": check.fact,
+                "kind": check.kind,
                 "document": check.document,
                 "loader": loader,
                 "found": kind,

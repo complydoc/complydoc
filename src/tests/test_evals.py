@@ -54,7 +54,7 @@ def test_a_fact_is_added_once_tidied_and_taken_out(folder: Path):
         (KEPT, "terms.pdf"),
         (LOST, None),
     ]
-    assert file.read_text().startswith("# Passages a reading of these documents must contain.")
+    assert file.read_text().startswith("# Passages and values a reading of these documents")
 
     assert not remove_fact(file, KEPT)  # not without its document
     assert remove_fact(file, KEPT, "terms.pdf")
@@ -278,7 +278,9 @@ def test_the_viewer_lists_adds_and_removes_the_folders_facts(folder: Path, tmp_p
 
         status, body = send(viewer.port, "POST", url, {"text": KEPT, "document": "terms.pdf"})
         assert status == 200, body
-        assert json.loads(body)["facts"] == [{"text": KEPT, "document": "terms.pdf"}]
+        assert json.loads(body)["facts"] == [
+            {"text": KEPT, "document": "terms.pdf", "kind": "text", "label": None}
+        ]
         assert load_evals(folder / EVALS_FILENAME).facts[0].text == KEPT
 
         assert send(viewer.port, "POST", url, {"text": "x"})[0] == 400
@@ -339,3 +341,35 @@ def test_the_viewer_runs_the_facts_against_a_run_on_request(folder: Path, tmp_pa
         assert send(viewer.port, "GET", "/api/reports/nope/evals/score")[0] == 404
     finally:
         viewer.stop()
+
+
+def test_values_and_absent_passages_are_written_in_their_own_form(tmp_path: Path):
+    file = tmp_path / EVALS_FILENAME
+    file.write_text(
+        "facts:\n"
+        "  - value: 78,500.00\n    label: Total due\n    document: inv.pdf\n"
+        "  - absent: Note for the AI\n"
+    )
+    value, absent = load_evals(file).facts
+    assert (value.kind, value.text, value.label) == ("value", "78,500.00", "Total due")
+    assert (absent.kind, absent.text) == ("absent", "Note for the AI")
+    assert add_fact(file, ExpectedFact(text="Note for the AI"))  # a passage, not the absent one
+    assert "- value: 78,500.00\n  label: Total due\n  document: inv.pdf" in file.read_text()
+    assert remove_fact(file, "Note for the AI", kind="absent")
+    assert [f.kind for f in load_evals(file).facts] == ["value", "text"]
+
+
+@pytest.mark.parametrize(
+    "entry",
+    [
+        "value: seventy",
+        "text: Total\n    label: Total due",
+        "value: 12\n    text: twelve",
+        "absent: ok",
+    ],
+)
+def test_a_malformed_value_or_absent_passage_is_rejected(tmp_path: Path, entry: str):
+    file = tmp_path / EVALS_FILENAME
+    file.write_text(f"facts:\n  - {entry}\n")
+    with pytest.raises(EvalError):
+        load_evals(file)

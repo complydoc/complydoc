@@ -66,7 +66,7 @@ __all__ = [
     "VerificationSummary",
 ]
 
-SCHEMA_VERSION = 25
+SCHEMA_VERSION = 26
 
 
 def report_shape() -> dict[str, object]:
@@ -433,7 +433,11 @@ class FactCheck:
     document: str | None
     """The document the fact was checked in, or None for every document."""
     found: dict[str, str | None]
-    """Loader name to `exact`, `fuzzy`, or None."""
+    """Loader name to `exact` when the fact held, `fuzzy` for a near miss, or None.
+
+    For a passage that must not appear, holding is not being found: `pages` and
+    `documents` then say where a reading that failed it holds it.
+    """
     scores: dict[str, float]
     """Loader name to the best similarity found, from 0 to 1."""
     pages: dict[str, int | None]
@@ -445,6 +449,10 @@ class FactCheck:
     What a missing fact looks like in that loader's text, which is usually the
     reason it went missing.
     """
+    kind: str = "text"
+    """`text`, `value` or `absent`, as `complydoc.extraction.facts.Fact` has them."""
+    label: str | None = None
+    """For a value, the words it was looked for after."""
 
 
 @dataclass(frozen=True, slots=True)

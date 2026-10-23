@@ -1,5 +1,6 @@
 import { CircleCheckIcon, CircleDashedIcon, CircleXIcon, Trash2Icon } from "lucide-react";
 import { Hint } from "@/components/Hint";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { checkFor, outcome, type ExpectedFact, type Outcome } from "@/report/evals";
 import { fileName } from "@/report/format";
@@ -11,9 +12,14 @@ const MARK: Record<Outcome, { icon: typeof CircleCheckIcon; tone: string; says: 
   lost: { icon: CircleXIcon, tone: "text-destructive", says: "lost it" },
 };
 
+/** A passage that must not appear is kept out, not kept. */
+const ABSENT_SAYS: Record<Outcome, string> = { kept: "left it out", near: "holds something like it", lost: "holds it" };
+
 /** What each reader made of one fact, and for a reader that missed, what it read in its place. */
 function Readings({ check, readers }: { check: EvalCheck; readers: string[] }) {
+  const absent = check.kind === "absent";
   const missed = readers.filter((reader) => outcome(check, reader) !== "kept" && check.nearest?.[reader]);
+  const holding = absent ? readers.filter((reader) => outcome(check, reader) === "lost") : [];
   return (
     <div className="flex flex-col gap-2">
       <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
@@ -23,7 +29,7 @@ function Readings({ check, readers }: { check: EvalCheck; readers: string[] }) {
             <li key={reader} className="flex items-center gap-1.5">
               <mark.icon className={`size-3.5 ${mark.tone}`} aria-hidden="true" />
               <span>{reader}</span>
-              <span className="sr-only">{mark.says}</span>
+              <span className="sr-only">{absent ? ABSENT_SAYS[outcome(check, reader)] : mark.says}</span>
             </li>
           );
         })}
@@ -34,8 +40,40 @@ function Readings({ check, readers }: { check: EvalCheck; readers: string[] }) {
           {check.nearest?.[reader]}
         </p>
       ))}
+      {holding.map((reader) => {
+        const page = check.pages?.[reader];
+        const where = check.documents?.[reader];
+        return (
+          <p key={reader} className="text-xs text-destructive">
+            {reader} holds it{where ? ` in ${fileName(where)}` : ""}
+            {page != null ? `, page ${page}` : ""}
+          </p>
+        );
+      })}
     </div>
   );
+}
+
+/** The fact as the file has it: a passage, a value after its label, or a passage to leave out. */
+function FactText({ fact }: { fact: ExpectedFact }) {
+  if (fact.kind === "value") {
+    return (
+      <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm font-medium">
+        <Badge variant="secondary">Value</Badge>
+        {fact.label && <span className="text-muted-foreground">{fact.label}</span>}
+        <span className="font-mono tabular-nums">{fact.text}</span>
+      </p>
+    );
+  }
+  if (fact.kind === "absent") {
+    return (
+      <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm font-medium">
+        <Badge variant="outline">Must not appear</Badge>
+        <span>{fact.text}</span>
+      </p>
+    );
+  }
+  return <p className="text-sm font-medium">{fact.text}</p>;
 }
 
 interface FactListProps {
@@ -58,7 +96,7 @@ export function FactList({ facts, evals, onRemove }: FactListProps) {
         return (
           <li key={`${fact.text}\u0000${fact.document ?? ""}`} className="flex items-start gap-3 p-3">
             <div className="flex min-w-0 flex-1 flex-col gap-2">
-              <p className="text-sm font-medium">{fact.text}</p>
+              <FactText fact={fact} />
               <p className="text-xs text-muted-foreground">
                 {fact.document ? fileName(fact.document) : "Any document"}
                 {!check && " · not checked yet"}
