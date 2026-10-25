@@ -1,9 +1,14 @@
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { ListTreeIcon } from "lucide-react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Hint } from "@/components/Hint";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { InlineFindings } from "@/hooks/useInlineMarks";
-import { defaultSides, readersOf, sideName, sideText, type Side } from "@/report/documentDiff";
+import { summarise } from "@/report/diffExplain";
+import { defaultSides, explainSides, readersOf, sideName, sideText, type Side } from "@/report/documentDiff";
 import type { Report } from "@/report/types";
+import { DiffSummary } from "./DiffSummary";
 
 const GitDiff = lazy(() => import("./GitDiff"));
 
@@ -80,9 +85,29 @@ export function DocumentDiff({
     observer.observe(element);
     return () => observer.disconnect();
   }, []);
+  // A page asked for by the summary, or by the page picker, whichever came last.
+  const [goTo, setGoTo] = useState(jump);
+  const [asked, setAsked] = useState(jump);
+  if (jump !== asked) {
+    setAsked(jump);
+    setGoTo(jump);
+  }
+  const summaries = useMemo(
+    () => summarise(explainSides(report, base, compare, unmasked)),
+    [report, base, compare, unmasked],
+  );
+  // Shown on asking: the diff is what the view is for, the explanation is there when it helps.
+  const [explaining, setExplaining] = useState(false);
 
   return (
     <div ref={root} className="flex min-h-0 min-w-0 flex-1 flex-col">
+      {explaining && summaries.length > 0 && (
+        <DiffSummary
+          summaries={summaries}
+          compareName={sideName(report, compare)}
+          onPage={(page) => setGoTo({ page })}
+        />
+      )}
       <Suspense fallback={<Skeleton className="min-h-0 w-full flex-1 rounded-xl" />}>
         <GitDiff
           oldName={sideName(report, base)}
@@ -90,7 +115,7 @@ export function DocumentDiff({
           newName={sideName(report, compare)}
           newText={sideText(report, compare, "sentences", unmasked, notes)}
           split={split}
-          jump={jump}
+          jump={goTo}
           {...(inline && { inline })}
           {...(onVisiblePage && { onVisiblePage })}
           lead={
@@ -111,6 +136,19 @@ export function DocumentDiff({
                 reader={compare.reader}
                 onChange={(reader) => setSides([base, { ...compare, reader }])}
               />
+              {summaries.length > 0 && (
+                <Hint label={explaining ? "Hide what differs" : "Explain what differs"}>
+                  <Button
+                    variant={explaining ? "secondary" : "ghost"}
+                    size="icon-sm"
+                    aria-label="Explain"
+                    aria-expanded={explaining}
+                    onClick={() => setExplaining((open) => !open)}
+                  >
+                    <ListTreeIcon />
+                  </Button>
+                </Hint>
+              )}
             </span>
           }
         />

@@ -43,3 +43,17 @@ describe("the diff view", () => {
     await vi.waitFor(() => expect(scrolled).toHaveBeenCalled());
   });
 });
+
+describe("the diff's explanation", () => {
+  it("is hidden until asked for", async () => {
+    wide();
+    const report = sampleAudit();
+    const index = report.documents.findIndex((d) => d.relative_path.endsWith("annual-report-2025.pdf"));
+    renderPage(<DocumentsPage report={report} open={String(index)} />);
+    const explain = await screen.findByRole("button", { name: "Explain" }, { timeout: 5000 });
+    expect(screen.queryByRole("list", { name: "What differs" })).not.toBeInTheDocument();
+    await userEvent.click(explain);
+    expect(explain).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("list", { name: "What differs" })).toBeInTheDocument();
+  });
+});

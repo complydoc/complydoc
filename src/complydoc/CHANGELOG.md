@@ -22,6 +22,10 @@ separately.
   page adds both. The report is at schema 26: each fact check has a `kind` and a `label`, and
   `found` says whether the fact held, which for a passage that must not appear is not being
   found.
+- The document diff in the viewer explains, when asked from the button beside the two
+  readers, what kind of differences it holds: numbers read differently, words missing,
+  characters misread, words run together, a page read in another order, and words only the
+  second reading has, each with the pages it is on.
 
 ### Fixed
 
