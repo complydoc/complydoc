@@ -120,14 +120,26 @@ export interface RunMetadata {
   context?: RunContext | null;
 }
 
-/** One expected fact, with what each reader found: `exact`, `fuzzy` for a near miss, or null. */
+/** A passage a reading must hold, a number it must hold however grouped, or a passage it must not. */
+export type FactKind = "text" | "value" | "absent";
+
+/**
+ * One expected fact, with how each reader did: `exact` when it held, `fuzzy` for a near
+ * miss, or null. A passage that must not appear holds when it is not found.
+ */
 export interface EvalCheck {
   fact: string;
+  /** `text`, `value` or `absent`; absent in reports before schema 26, where every fact is text. */
+  kind?: FactKind;
+  /** For a value, the words it was looked for after. */
+  label?: string | null;
   /** The document it was expected in; null or absent for any document. */
   document?: string | null;
   found: Record<string, string | null>;
   scores: Record<string, number>;
   pages?: Record<string, number | null>;
+  /** Reader to the document the fact was found in. */
+  documents?: Record<string, string | null>;
   /** Reader to the passage that came closest, where the fact was not found exactly. */
   nearest?: Record<string, string | null>;
 }
