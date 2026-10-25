@@ -27,6 +27,11 @@ separately.
   characters misread, words run together, a page read in another order, and words only the
   second reading has, each with the pages it is on.
 
+### Fixed
+
+- `pip install "complydoc[ner]"` no longer installs preshed 3.0.14, with which spaCy 3.8.16
+  fails to load the name model.
+
 ## [0.7.6] — 2026-10-16
 
 Where a value is still held in a vector store, and the call that removes it. `complydoc
