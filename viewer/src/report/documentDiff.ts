@@ -6,6 +6,7 @@
  * readings is mostly line endings; laid out one sentence per line, the only
  * lines that differ are the ones whose words do.
  */
+import { explainPage, type PageDifference } from "./diffExplain";
 import type { DocumentEntry, PageText, Report } from "./types";
 
 export type Layout = "lines" | "sentences";
@@ -114,4 +115,21 @@ export function defaultSides(report: Report, index: number): [Side, Side] {
   const base: Side = { document: index, reader: KEPT };
   const other = document ? readersOf(report, document)[1] : undefined;
   return [base, { document: index, reader: other?.id ?? KEPT }];
+}
+
+/** What kind of difference each page holds between the two sides, for the pages that differ. */
+export function explainSides(report: Report, base: Side, compare: Side, unmasked = false): PageDifference[] {
+  const first = report.documents[base.document];
+  const second = report.documents[compare.document];
+  if (!first || !second || (base.document === compare.document && base.reader === compare.reader)) return [];
+  const others = new Map(second.extracted_text.map((page) => [page.number, page]));
+  return first.extracted_text.flatMap((page) => {
+    const other = others.get(page.number);
+    const difference = explainPage(
+      page.number,
+      pageText(page, base.reader, unmasked),
+      other ? pageText(other, compare.reader, unmasked) : "",
+    );
+    return difference ? [difference] : [];
+  });
 }

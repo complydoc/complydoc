@@ -1,9 +1,11 @@
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { InlineFindings } from "@/hooks/useInlineMarks";
-import { defaultSides, readersOf, sideName, sideText, type Side } from "@/report/documentDiff";
+import { summarise } from "@/report/diffExplain";
+import { defaultSides, explainSides, readersOf, sideName, sideText, type Side } from "@/report/documentDiff";
 import type { Report } from "@/report/types";
+import { DiffSummary } from "./DiffSummary";
 
 const GitDiff = lazy(() => import("./GitDiff"));
 
@@ -80,9 +82,28 @@ export function DocumentDiff({
     observer.observe(element);
     return () => observer.disconnect();
   }, []);
+  // A page asked for by the summary, or by the page picker, whichever came last.
+  const [goTo, setGoTo] = useState(jump);
+  const [asked, setAsked] = useState(jump);
+  if (jump !== asked) {
+    setAsked(jump);
+    setGoTo(jump);
+  }
+  const summaries = useMemo(
+    () => summarise(explainSides(report, base, compare, unmasked)),
+    [report, base, compare, unmasked],
+  );
+  const same = base.document === compare.document && base.reader === compare.reader;
 
   return (
     <div ref={root} className="flex min-h-0 min-w-0 flex-1 flex-col">
+      {!same && (
+        <DiffSummary
+          summaries={summaries}
+          compareName={sideName(report, compare)}
+          onPage={(page) => setGoTo({ page })}
+        />
+      )}
       <Suspense fallback={<Skeleton className="min-h-0 w-full flex-1 rounded-xl" />}>
         <GitDiff
           oldName={sideName(report, base)}
@@ -90,7 +111,7 @@ export function DocumentDiff({
           newName={sideName(report, compare)}
           newText={sideText(report, compare, "sentences", unmasked, notes)}
           split={split}
-          jump={jump}
+          jump={goTo}
           {...(inline && { inline })}
           {...(onVisiblePage && { onVisiblePage })}
           lead={
