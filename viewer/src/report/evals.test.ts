@@ -40,6 +40,24 @@ describe("evals", () => {
     expect(checkFor(null, { text: "anything" })).toBeUndefined();
   });
 
+  it("tells a value and a passage that must not appear from a passage with the same words", () => {
+    const evals: EvalSummary = {
+      ...EVALS,
+      checks: [
+        { fact: "Note for the AI", kind: "absent", found: { whole: null, drops: "exact" }, scores: {} },
+        { fact: "78,500.00", kind: "value", label: "Total due", found: { whole: "exact" }, scores: {} },
+      ],
+    };
+    expect(checkFor(evals, { text: "Note for the AI" })).toBeUndefined();
+    expect(checkFor(evals, { text: "Note for the AI", kind: "absent" })?.found.drops).toBe("exact");
+    expect(factsToShow(null, evals)[1]).toEqual({
+      text: "78,500.00",
+      document: null,
+      kind: "value",
+      label: "Total due",
+    });
+  });
+
   it("shows the file's facts where it can be read, else the ones the run checked", () => {
     expect(factsToShow([{ text: "New" }], EVALS)).toEqual([{ text: "New" }]);
     expect(factsToShow(null, EVALS).map((fact) => fact.text)).toHaveLength(3);

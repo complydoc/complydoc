@@ -32,6 +32,22 @@ for a name. The page has to show at least half of the passage, so one that is
 mostly an identifier counts as lost in an audit. `compare-loaders` checks each
 loader's own text and finds it.
 
+## Expect a value, or a passage to leave out
+
+A total is a number, and a reader can keep it while writing it differently:
+`78,500.00`, `78.500,00` and `78 500,00` are the same amount. Expect it as a
+**value** and it is checked as a number, however the reading groups its digits.
+Give it a label and it must come within twelve words after that label; found
+elsewhere on the page it counts as nearly kept, and missed, the line shows what
+the reader has after the label instead.
+
+Some text a reading is worse for keeping: an instruction hidden for a model, a
+watermark, a footer repeated on every page. Expect it as **must not appear** and
+a reader passes by leaving it out. One that holds it is shown with the document
+and page it is on.
+
+Both are on the **Evals** page, beside a passage.
+
 ## The file
 
 ```yaml title=".complydoc-evals.yaml"
@@ -39,7 +55,10 @@ schema_version: 1
 facts:
   - text: Invoices are payable within fourteen days of the invoice date
     document: terms-and-conditions.pdf
-  - text: The Supplier shall notify the Customer within 72 hours
+  - value: 78,500.00
+    label: Total due
+    document: invoices/2026-03.pdf
+  - absent: Note for the AI
 ```
 
 It lives at the top of the folder a run reads, and can be edited by hand.

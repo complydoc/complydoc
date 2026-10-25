@@ -3,14 +3,20 @@
     # .complydoc-evals.yaml
     schema_version: 1
     facts:
-      - text: Total due 5,100.00
-        document: invoices/2026-03.pdf
       - text: The Supplier shall notify the Customer within 72 hours
+      - value: 5,100.00
+        label: Total due
+        document: invoices/2026-03.pdf
+      - absent: Note for the AI
 
 A benchmark says how a loader reads someone else's documents. An eval is a passage one
 of yours must come out with: a total, a clause, a row of a table. Each is checked
 against the text every loader returned, so which loader to use is measured on the
 documents it will be used on, and a change of loader that loses one is caught.
+
+A `value` is a number checked as a number: `5,100.00`, `5.100,00` and `5 100,00` are
+the same amount, and with a `label` it must come within a few words after it. An
+`absent` passage is one a reading must not hold, such as text hidden for a model.
 
 A run reads `.complydoc-evals.yaml` at the top of the folder it reads. The file holds
 passages as they are written in your documents, so it is as sensitive as they are: keep
@@ -27,9 +33,9 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from complydoc.extraction.facts import Fact
+from complydoc.extraction.facts import FACT_KINDS, Fact
 
 if TYPE_CHECKING:
     from complydoc.report.models import AuditReport, DocumentReport, EvalSummary
@@ -50,8 +56,9 @@ __all__ = [
 EVALS_FILENAME = ".complydoc-evals.yaml"
 
 _HEADER = """\
-# Passages a reading of these documents must contain. Each is checked against the text
-# every loader returns: `complydoc audit` and `complydoc compare-loaders` read this file.
+# Passages and values a reading of these documents must contain, and passages it must not.
+# Each is checked against the text every loader returns: `complydoc audit` and
+# `complydoc compare-loaders` read this file.
 # It holds text as your documents write it, so keep it with them.
 # Written by `complydoc ui`; edit it by hand as well.
 """
@@ -65,17 +72,52 @@ class ExpectedFact(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     text: str
-    """The passage, as the document writes it."""
+    """The passage, as the document writes it, or the value."""
     document: str | None = None
     """The document it must be in, by name or relative path. Any document when left out."""
+    kind: str = "text"
+    """`text`, `value` or `absent`. The file writes a value as `value:` and a passage that
+    must not appear as `absent:`, in place of `text:`."""
+    label: str | None = None
+    """For a value, the words it comes after, such as `Total due`."""
+
+    @model_validator(mode="before")
+    @classmethod
+    def _keyed_by_kind(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+        data = dict(data)
+        for kind in ("value", "absent"):
+            if kind in data:
+                if "text" in data or data.get("kind", kind) != kind:
+                    raise ValueError(f"a fact has one of text, value or absent; {kind} is given")
+                data["text"], data["kind"] = str(data.pop(kind)), kind
+        return data
+
+    @model_validator(mode="after")
+    def _well_formed(self) -> ExpectedFact:
+        if self.kind not in FACT_KINDS:
+            raise ValueError(f"a fact's kind is one of {', '.join(FACT_KINDS)}")
+        if self.kind != "value" and len(self.text) < 3:
+            raise ValueError("a fact is at least three characters of a document's text")
+        try:
+            self.as_fact()
+        except ValueError as exc:
+            raise ValueError(str(exc)) from None
+        return self
 
     @field_validator("text")
     @classmethod
     def _said(cls, value: str) -> str:
         value = " ".join(value.split())
-        if len(value) < 3:
-            raise ValueError("a fact is at least three characters of a document's text")
+        if not value:
+            raise ValueError("a fact cannot be empty")
         return value
+
+    @field_validator("label")
+    @classmethod
+    def _labelled(cls, value: str | None) -> str | None:
+        return " ".join((value or "").split()) or None
 
     @field_validator("document")
     @classmethod
@@ -83,7 +125,13 @@ class ExpectedFact(BaseModel):
         return (value or "").strip() or None
 
     def as_fact(self) -> Fact:
-        return Fact(self.text, self.document)
+        return Fact(self.text, self.document, self.kind, self.label)
+
+    def as_entry(self) -> dict[str, str]:
+        """The fact as the file writes it."""
+        key = "text" if self.kind == "text" else self.kind
+        entry = {key: self.text, "label": self.label, "document": self.document}
+        return {name: value for name, value in entry.items() if value is not None}
 
 
 class EvalsFile(BaseModel):
@@ -121,7 +169,7 @@ def load_evals(path: Path) -> EvalsFile:
 
 def _write(path: Path, facts: list[ExpectedFact]) -> None:
     body = yaml.safe_dump(
-        {"schema_version": 1, "facts": [fact.model_dump(exclude_none=True) for fact in facts]},
+        {"schema_version": 1, "facts": [fact.as_entry() for fact in facts]},
         sort_keys=False,
         allow_unicode=True,
         width=100,
@@ -130,7 +178,11 @@ def _write(path: Path, facts: list[ExpectedFact]) -> None:
 
 
 def _same(left: ExpectedFact, right: ExpectedFact) -> bool:
-    return (left.text.casefold(), left.document) == (right.text.casefold(), right.document)
+    return (left.kind, left.text.casefold(), left.document) == (
+        right.kind,
+        right.text.casefold(),
+        right.document,
+    )
 
 
 def add_fact(path: Path, fact: ExpectedFact) -> bool:
@@ -142,10 +194,10 @@ def add_fact(path: Path, fact: ExpectedFact) -> bool:
     return True
 
 
-def remove_fact(path: Path, text: str, document: str | None = None) -> bool:
+def remove_fact(path: Path, text: str, document: str | None = None, kind: str = "text") -> bool:
     """Take a fact out of the file. Whether it was there."""
     try:
-        wanted = ExpectedFact(text=text, document=document)
+        wanted = ExpectedFact(text=text, document=document, kind=kind)
     except ValueError:
         return False
     facts = list(load_evals(path).facts)

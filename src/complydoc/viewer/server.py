@@ -88,7 +88,7 @@ _KEPT = ("ignores", "concepts", "categories", "evals")
 _IGNORE_FIELDS = ("finding", "reason", "what", "paths", "until")
 _CONCEPT_FIELDS = ("id", "label", "description", "pattern", "severity", "judge")
 _CATEGORY_FIELDS = ("enabled", "severity")
-_EVAL_FIELDS = ("text", "document")
+_EVAL_FIELDS = ("text", "document", "kind", "label")
 """What the viewer may set; who made a change, and when, is the server's to say."""
 """The id of the script element that tells the viewer where to find the reports."""
 
@@ -510,7 +510,7 @@ class _Handler(BaseHTTPRequestHandler):
                     {key: given[key] for key in _EVAL_FIELDS if key in given}
                 )
                 if self.command == "DELETE":
-                    remove_fact(file, fact.text, fact.document)
+                    remove_fact(file, fact.text, fact.document, fact.kind)
                 else:
                     add_fact(file, fact)
             elif kind == "ignores" and self.command == "DELETE":

@@ -1,4 +1,4 @@
-import type { EvalCheck, EvalSummary } from "./types";
+import type { EvalCheck, EvalSummary, FactKind } from "./types";
 
 /** How a reader did on one expected fact. */
 export type Outcome = "kept" | "near" | "lost";
@@ -7,6 +7,9 @@ export type Outcome = "kept" | "near" | "lost";
 export interface ExpectedFact {
   text: string;
   document?: string | null;
+  /** A passage when left out. */
+  kind?: FactKind;
+  label?: string | null;
 }
 
 export function outcome(check: EvalCheck, reader: string): Outcome {
@@ -39,15 +42,20 @@ export function scoreboard(evals: EvalSummary): Score[] {
     .sort((a, b) => b.kept - a.kept || b.near - a.near || a.reader.localeCompare(b.reader));
 }
 
-const key = (text: string, document?: string | null) => `${text.toLowerCase()}\u0000${document ?? ""}`;
+const key = (fact: ExpectedFact) =>
+  `${fact.kind ?? "text"}\u0000${fact.text.toLowerCase()}\u0000${fact.document ?? ""}`;
+
+function asExpected(check: EvalCheck): ExpectedFact {
+  return { text: check.fact, document: check.document ?? null, kind: check.kind ?? "text", label: check.label ?? null };
+}
 
 /** The run's check of a fact in the file, or undefined when it was added since the run. */
 export function checkFor(evals: EvalSummary | null | undefined, fact: ExpectedFact): EvalCheck | undefined {
-  return evals?.checks.find((check) => key(check.fact, check.document) === key(fact.text, fact.document));
+  return evals?.checks.find((check) => key(asExpected(check)) === key(fact));
 }
 
 /** The facts to show: the file's when it can be read, else the ones the run checked. */
 export function factsToShow(listed: ExpectedFact[] | null, evals: EvalSummary | null | undefined): ExpectedFact[] {
   if (listed) return listed;
-  return (evals?.checks ?? []).map((check) => ({ text: check.fact, document: check.document ?? null }));
+  return (evals?.checks ?? []).map(asExpected);
 }
