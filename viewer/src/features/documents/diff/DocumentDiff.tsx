@@ -1,4 +1,7 @@
+import { ListTreeIcon } from "lucide-react";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Hint } from "@/components/Hint";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { InlineFindings } from "@/hooks/useInlineMarks";
@@ -93,11 +96,12 @@ export function DocumentDiff({
     () => summarise(explainSides(report, base, compare, unmasked)),
     [report, base, compare, unmasked],
   );
-  const same = base.document === compare.document && base.reader === compare.reader;
+  // Shown on asking: the diff is what the view is for, the explanation is there when it helps.
+  const [explaining, setExplaining] = useState(false);
 
   return (
     <div ref={root} className="flex min-h-0 min-w-0 flex-1 flex-col">
-      {!same && (
+      {explaining && summaries.length > 0 && (
         <DiffSummary
           summaries={summaries}
           compareName={sideName(report, compare)}
@@ -132,6 +136,19 @@ export function DocumentDiff({
                 reader={compare.reader}
                 onChange={(reader) => setSides([base, { ...compare, reader }])}
               />
+              {summaries.length > 0 && (
+                <Hint label={explaining ? "Hide what differs" : "Explain what differs"}>
+                  <Button
+                    variant={explaining ? "secondary" : "ghost"}
+                    size="icon-sm"
+                    aria-label="Explain"
+                    aria-expanded={explaining}
+                    onClick={() => setExplaining((open) => !open)}
+                  >
+                    <ListTreeIcon />
+                  </Button>
+                </Hint>
+              )}
             </span>
           }
         />

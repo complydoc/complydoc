@@ -15,8 +15,8 @@ separately.
   such as "fødselsnummer" or "fnr" and checked against both check digits, and the legal and HR
   packs fail on them. Written with a space, a hyphen, a full stop or nothing between the date
   and the rest.
-- The document diff in the viewer says what kind of differences it holds before the lines
-  themselves: numbers read differently, words missing, characters misread, words run
+- The document diff in the viewer explains, when asked from the button beside the two
+  readers, what kind of differences it holds: numbers read differently, words missing, characters misread, words run
   together, a page read in another order, and words only the second reading has, each with
   the pages it is on.
 

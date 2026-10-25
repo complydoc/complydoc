@@ -127,8 +127,9 @@ A document read more than one way opens as a diff of two readers' text: the kept
 reading against another library, OCR or a vision model. The diff shows the two
 readings and nothing else; switch to Text to see what was found in it.
 
-Above the diff, a few lines say what kind of differences it holds, worst first,
-each with the pages it is on: numbers read differently (`78,500.00 → 78,5OO.OO`),
+The button beside the two readers, **Explain what differs**, opens a few lines
+above the diff on what kind of differences it holds, worst first, each with the
+pages it is on: numbers read differently (`78,500.00 → 78,5OO.OO`),
 words one reading is missing, words with a character or two misread, words run
 together where a reader lost the spaces, a page read in another order, and words
 only the second reading has. A page that differs only in where its lines break is

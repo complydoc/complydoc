@@ -27,7 +27,8 @@ interface DiffSummaryProps {
 
 /**
  * What kind of differences the diff below holds, worst first, each with the pages it is
- * on: a number read wrong matters more than a paragraph broken somewhere new.
+ * on: a number read wrong matters more than a paragraph broken somewhere new. Opened from
+ * the diff's Explain button.
  */
 export function DiffSummary({ summaries, compareName, onPage }: DiffSummaryProps) {
   // The diff's own header says when the two read the same.
