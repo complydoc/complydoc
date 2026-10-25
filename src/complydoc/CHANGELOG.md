@@ -23,6 +23,11 @@ separately.
   `found` says whether the fact held, which for a passage that must not appear is not being
   found.
 
+### Fixed
+
+- `pip install "complydoc[ner]"` no longer installs preshed 3.0.14, with which spaCy 3.8.16
+  fails to load the name model.
+
 ## [0.7.6] — 2026-10-16
 
 Where a value is still held in a vector store, and the call that removes it. `complydoc
