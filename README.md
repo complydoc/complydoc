@@ -131,7 +131,7 @@ The [playground](https://github.com/complydoc/playground) has all of this ready 
 GitHub, the repository is also an action:
 
 ```yaml
-- uses: complydoc/complydoc@v0.7.6
+- uses: complydoc/complydoc@v0.7.7
   with:
     path: documents
     policy: policy.yaml

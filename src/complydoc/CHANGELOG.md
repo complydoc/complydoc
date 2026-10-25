@@ -5,7 +5,14 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
-## Unreleased
+## [0.7.7] — 2026-10-25
+
+Evals check values as numbers, however a reader groups their digits, and passages that must
+not appear, such as an instruction hidden for a model. The document diff explains, on
+asking, what kind of differences two readings hold: numbers, missing words, misread
+characters, words run together or a page read in another order. OpenDataLoader PDF joins the
+loader comparison, Norwegian identity numbers are found, and installing the name model works
+again after a preshed release broke it. The report is at schema 26.
 
 ### Added
 
