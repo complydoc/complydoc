@@ -102,17 +102,22 @@ Entries written by `make prices` are marked `imported`. To mark one verified, ch
 source and replace `price_source`/`imported_on` with `last_verified`.
 
 The `prices` workflow rebuilds that table every Monday. When a price moved, it pushes
-`prices/YYYY-MM-DD` and opens a pull request into `development`. The push uses the built-in
-token. The pull request uses the `PRICES_TOKEN` secret when that secret is set, and the
-built-in token otherwise. `PRICES_TOKEN` is a fine-grained personal access token for this
-repository with Pull requests set to Read and write, or a GitHub App token with permission
-to open pull requests here. The built-in token can open one only when Settings > Actions >
-General > Workflow permissions > Allow GitHub Actions to create and approve pull requests is
-turned on. If an organization policy leaves that checkbox off, it will not stay on, and
-`PRICES_TOKEN` is the way through. A pull request opened with the built-in token does not
-start the checks workflow, so run the checks on the branch by hand or push to it. One opened
-with `PRICES_TOKEN` does start the checks. With neither the setting nor the secret, the run
-still pushes the branch and fails with these two options.
+`prices/YYYY-MM-DD` and opens a pull request into `development`. The date is the day the
+workflow run was created, so re-running that run later still uses the same branch. If the
+branch is already on the remote, the re-run opens the pull request and does not commit or
+push again. The push uses the built-in token. The pull request uses the `PRICES_TOKEN`
+secret when that secret is set, and the built-in token otherwise. `PRICES_TOKEN` needs
+permission to open pull requests on this repository (Pull requests: Read and write). A
+personal access token opens those pull requests as that person, who then cannot approve
+them when a review is required, so a GitHub App token or a bot account's PAT is the better
+choice. The built-in token can open one only when Settings > Actions > General > Workflow
+permissions > Allow GitHub Actions to create and approve pull requests is turned on. If an
+organization policy leaves that checkbox off, it will not stay on, and `PRICES_TOKEN` is
+the way through. A pull request opened with the built-in token does not start the checks
+workflow, so run the checks on the branch by hand or push to it. One opened with
+`PRICES_TOKEN` does start the checks. With neither the setting nor the secret, the run
+pushes the branch once and fails with these two options. Re-running it tries to open the
+pull request again.
 
 ## Branches and releases
 

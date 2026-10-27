@@ -8,9 +8,16 @@
 # Nothing here runs during an audit, which never reaches the network.
 #
 # The pull request is opened with the PRICES_TOKEN secret when that secret is
-# set, and with the built-in GITHUB_TOKEN otherwise. PRICES_TOKEN is a
-# fine-grained personal access token, or a GitHub App token, that can open
-# pull requests on this repository. The push always uses the built-in token.
+# set, and with the built-in GITHUB_TOKEN otherwise. PRICES_TOKEN needs
+# permission to open pull requests on this repository. A personal access token
+# opens them as that person, who cannot approve them when a review is
+# required, so a GitHub App token or a bot account's PAT is the better choice.
+# The push always uses the built-in token.
+#
+# The branch is prices/YYYY-MM-DD for the day the workflow run was created.
+# Re-running the run, including on a later day, uses that same branch. If it
+# is already on the remote, the re-run opens the pull request and does not
+# commit or push again.
 #
 # The built-in token can open a pull request only when the repository allows
 # it: Settings > Actions > General > Workflow permissions > Allow GitHub
@@ -19,7 +26,7 @@
 # token opens does not start other workflows, so run the checks on that branch
 # by hand or push to it. A pull request opened with PRICES_TOKEN does start
 # them. With neither the setting nor the secret, the branch is still pushed
-# and the run fails with these two options. See CONTRIBUTING.md.
+# once and the run fails with these two options. See CONTRIBUTING.md.
 name: prices
 
 on:
@@ -30,6 +37,8 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  # Read this run's creation time, so a re-run keeps the same branch name.
+  actions: read
 
 env:
   UV_FROZEN: "1"
@@ -51,46 +60,65 @@ jobs:
         env:
           # An empty secret falls through to the built-in token. PR_TOKEN_NAME
           # is only the label printed when opening the pull request fails.
+          # ACTIONS_TOKEN reads this run's creation time. A narrow PRICES_TOKEN
+          # may not be allowed to.
           GH_TOKEN: ${{ secrets.PRICES_TOKEN || github.token }}
           PR_TOKEN_NAME: ${{ secrets.PRICES_TOKEN != '' && 'PRICES_TOKEN' || 'GITHUB_TOKEN' }}
+          ACTIONS_TOKEN: ${{ github.token }}
         run: |
-          if git diff --quiet -- src/complydoc/config/model_prices.json; then
+          created=$(GH_TOKEN="${ACTIONS_TOKEN}" gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" --jq .created_at)
+          branch="prices/$(date -u -d "${created}" +%Y-%m-%d)"
+          remote_status=0
+          git ls-remote --exit-code --heads origin "refs/heads/${branch}" >/dev/null || remote_status=$?
+          if [ "${remote_status}" -eq 0 ]; then
+            echo "${branch} is already on the remote. Opening the pull request, and leaving the branch as it is."
+          elif [ "${remote_status}" -ne 2 ]; then
+            echo "Could not look up ${branch} on origin (git ls-remote exited ${remote_status})."
+            exit "${remote_status}"
+          elif git diff --quiet -- src/complydoc/config/model_prices.json; then
             echo "No price moved."
             exit 0
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git switch -c "${branch}"
+            git commit -am "chore: refresh model prices"
+            git push -u origin "${branch}"
           fi
-          branch="prices/$(date -u +%Y-%m-%d)"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git switch -c "${branch}"
-          git commit -am "chore: refresh model prices"
-          git push -u origin "${branch}"
-          title="chore: refresh model prices ($(date -u +%Y-%m-%d))"
+          title="chore: refresh model prices (${branch#prices/})"
           body="The weekly refresh of src/complydoc/config/model_prices.json from models.dev and litellm. Check the diff for a price that moved further than expected, and correct it in pricing.yaml if the provider's own page disagrees."
           if output=$(gh pr create --base development --head "${branch}" --title "${title}" --body "${body}" 2>&1); then
             printf '%s\n' "${output}"
             exit 0
           fi
           printf '%s\n' "${output}"
+          if [[ "${output}" == *"already exists"* ]]; then
+            echo "The pull request for ${branch} is already open."
+            exit 0
+          fi
           manual="https://github.com/${GITHUB_REPOSITORY}/pull/new/${branch}"
-          if printf '%s\n' "${output}" | grep -F -q "not permitted to create or approve pull requests"; then
+          if [[ "${output}" == *"not permitted to create or approve pull requests"* ]]; then
             cat <<EOF
 
           The price table is on ${branch}, but the pull request was not opened.
           This run used ${PR_TOKEN_NAME}.
 
           GitHub Actions is not permitted to create or approve pull requests.
-          Do one of these, then re-run the workflow:
+          Do one of these, then re-run this workflow. The re-run opens the pull request for ${branch} and does not push that branch again.
 
           - Settings > Actions > General > Workflow permissions > Allow GitHub Actions to create and approve pull requests.
             If an organization policy leaves that checkbox off, it will not stay on.
-          - Or add a repository secret named PRICES_TOKEN: a fine-grained personal access token, or a GitHub App token, with permission to open pull requests on this repository.
+          - Or add a repository secret named PRICES_TOKEN, with permission to open pull requests on this repository.
+            A personal access token opens the pull request as that person, who cannot approve it when a review is required. A GitHub App token, or a PAT from a bot account, is the better choice.
             The workflow uses that secret when it is set. The branch is pushed with the built-in token either way.
 
           Open this one by hand:
           ${manual}
           EOF
-            echo "::error title=Cannot open the price pull request::${PR_TOKEN_NAME} cannot open the pull request for ${branch}. Allow GitHub Actions to create and approve pull requests (Settings > Actions > General > Workflow permissions), or set the PRICES_TOKEN secret. The branch was pushed: ${manual}"
+            echo "::error title=Cannot open the price pull request::${PR_TOKEN_NAME} cannot open the pull request for ${branch}. Allow GitHub Actions to create and approve pull requests (Settings > Actions > General > Workflow permissions), or set the PRICES_TOKEN secret. Re-run this workflow and it opens the pull request without pushing ${branch} again. ${manual}"
             exit 1
           fi
-          echo "::error title=Cannot open the price pull request::${PR_TOKEN_NAME} could not open the pull request for ${branch}: ${manual}"
+          echo "${PR_TOKEN_NAME} could not open the pull request for ${branch}. If PRICES_TOKEN is set, check that it has not expired."
+          echo "Open it by hand: ${manual}"
+          echo "::error title=Cannot open the price pull request::${PR_TOKEN_NAME} could not open the pull request for ${branch}. If PRICES_TOKEN is set, check that it has not expired. ${manual}"
           exit 1
