@@ -28,6 +28,10 @@ export interface ModelCost {
   supports_vision?: boolean;
   vision_formula?: string | null;
   tokenizer?: string;
+  /** Schema 27: the context window, the most input tokens one request takes. */
+  max_input_tokens?: number | null;
+  /** Schema 27: whether the model takes a PDF file whole. */
+  accepts_pdf?: boolean;
 }
 
 export interface Cost {

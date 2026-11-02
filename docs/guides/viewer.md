@@ -143,6 +143,14 @@ is the one they were cut from, so a page read by another reader shows none rathe
 than wrong ones. The Chunks page links each document it lists to this view, with the
 splitter's cuts drawn.
 
+**Whole**, beside the title, says what the document comes to when it is sent to a
+model whole, as a PDF, not cut into chunks: for each model that reads PDFs, its
+tokens, the share of the context window they take, and the input one question
+costs. Pages are counted as each provider says it reads a PDF: Anthropic and
+OpenAI send each page's text with an image of the page, Gemini counts 258 tokens a
+page. A document too long for a model says why, in pages or in tokens. Models
+whose provider does not say how it reads a PDF are left out.
+
 Beside the text, the Page tab shows the page's picture, when the report has one,
 and what a vision check made of it.
 

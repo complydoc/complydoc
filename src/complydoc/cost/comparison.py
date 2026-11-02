@@ -76,6 +76,10 @@ class ModelComparison:
     """The image formula `pages[].image_tokens` is keyed by."""
     tokenizer: str = ""
     """The count `pages[].tokens` is keyed by."""
+    max_input_tokens: int | None = None
+    """The context window: the most input tokens one request takes."""
+    accepts_pdf: bool = False
+    """Whether the model takes a PDF file whole, as a document."""
 
     def by_key(self, key: str) -> ArchitectureCost | None:
         return next((a for a in self.architectures if a.key == key), None)
@@ -162,6 +166,8 @@ def build_comparison(report: AuditReport) -> list[ModelComparison]:
                 supports_vision=report.cost.documents[0].models[index].supports_vision,
                 vision_formula=report.cost.documents[0].models[index].vision_formula,
                 tokenizer=report.cost.documents[0].models[index].tokenizer,
+                max_input_tokens=report.cost.documents[0].models[index].max_input_tokens,
+                accepts_pdf=report.cost.documents[0].models[index].accepts_pdf,
             )
         )
     return comparisons
