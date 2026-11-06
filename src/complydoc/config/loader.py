@@ -178,6 +178,8 @@ def _priced_from(model: ModelPricing, catalogue: dict[str, ModelPricing]) -> Mod
             "input_per_mtok_usd": chosen("input_per_mtok_usd"),
             "output_per_mtok_usd": chosen("output_per_mtok_usd"),
             "batch_input_per_mtok_usd": chosen("batch_input_per_mtok_usd"),
+            "max_input_tokens": model.max_input_tokens or listed.max_input_tokens,
+            "accepts_pdf": model.accepts_pdf or listed.accepts_pdf,
             "price_source": "imported",
             "imported_on": listed.imported_on,
             "last_verified": None,

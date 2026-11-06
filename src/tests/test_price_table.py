@@ -240,3 +240,23 @@ def test_a_text_only_model_is_not_given_a_vision_price():
     text_only = [m for m in imported_models() if not m.supports_vision]
     assert text_only, "the catalogue carries text-only models"
     assert all(m.vision_formula is None for m in text_only)
+
+
+def test_a_compared_model_carries_its_context_window_and_whether_it_reads_pdfs(config):
+    """What the viewer needs to say whether a document goes to the model whole."""
+    table = json.loads(TABLE_PATH.read_text())["models"]
+    compared = [m for m in config.pricing.models if m.enabled]
+    listed = [m for m in compared if m.id.rsplit("/", 1)[-1] in table]
+    assert listed
+    for model in listed:
+        entry = table[model.id.rsplit("/", 1)[-1]]
+        assert model.max_input_tokens == entry.get("max_input_tokens")
+        assert model.accepts_pdf == bool(entry.get("accepts_pdf"))
+
+
+def test_the_report_carries_each_model_s_context_window(config):
+    from complydoc.cost.comparison import build_comparison
+
+    comparison = build_comparison(run_audit(FIXTURES / "contract_no.pdf", config))
+    claude = next(m for m in comparison if m.provider == "anthropic")
+    assert claude.max_input_tokens and claude.accepts_pdf

@@ -1,5 +1,6 @@
 import { useContext, useMemo, useRef, useState } from "react";
 import { DocumentDiff } from "@/features/documents/diff/DocumentDiff";
+import { WholeDocument } from "./WholeDocument";
 import { useHashParam } from "@/hooks/useHashRoute";
 import { useIsIgnored } from "@/hooks/useIgnores";
 import type { InlineFindings, InlineMark } from "@/hooks/useInlineMarks";
@@ -230,6 +231,7 @@ export function DocumentDetail({
               />
             )}
             {layers.length > 0 && <ChunkPicker layers={layers} value={chunkBy} onChange={setChunkBy} />}
+            <WholeDocument report={report} document={document} />
             {eyeToggle}
           </>
         }

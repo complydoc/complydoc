@@ -66,7 +66,7 @@ __all__ = [
     "VerificationSummary",
 ]
 
-SCHEMA_VERSION = 26
+SCHEMA_VERSION = 27
 
 
 def report_shape() -> dict[str, object]:

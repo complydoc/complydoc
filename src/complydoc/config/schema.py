@@ -114,6 +114,10 @@ class ModelPricing(_Base):
     supports_vision: bool = True
     vision_formula: str | None = None
     tokenizer: TokenizerSpec
+    max_input_tokens: int | None = None
+    """The context window: the most input tokens one request takes. From the price table."""
+    accepts_pdf: bool = False
+    """Whether the model takes a PDF file whole, as a document. From the price table."""
     input_tokens_per_second: float | None = None
     """Observed prefill throughput, for estimating how long a document takes.
 

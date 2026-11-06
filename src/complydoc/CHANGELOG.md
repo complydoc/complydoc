@@ -5,6 +5,16 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
+## Unreleased
+
+### Added
+
+- A document's **Whole** button in the viewer says what it comes to sent whole, as a PDF, to
+  each model that reads PDFs: its tokens, the share of the context window, and the input one
+  question costs, counted the way Anthropic, OpenAI and Gemini each say they read a PDF. One
+  too long for a model says why. The report is at schema 27: each compared model carries its
+  `max_input_tokens` and whether it `accepts_pdf`, from the vendored price table.
+
 ## [0.7.7] — 2026-10-25
 
 Evals check values as numbers, however a reader groups their digits, and passages that must

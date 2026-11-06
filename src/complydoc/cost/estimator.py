@@ -80,6 +80,10 @@ class ModelCostEstimate:
     """How this model's text tokens are counted, as `tokenizer_key` names it."""
     supports_vision: bool = False
     """Whether pages can be sent to this model as images and priced."""
+    max_input_tokens: int | None = None
+    """The model's context window, where the price table gives it."""
+    accepts_pdf: bool = False
+    """Whether the model takes a PDF whole."""
     vision_tokens_by_page: dict[str, list[int]] = field(default_factory=dict)
     """Image tokens for each page, in page order, per resolution.
 
@@ -278,6 +282,8 @@ def _model_estimate(
         vision_tokens_by_page=vision_by_page,
         tokenizer=tokenizer_key(model.tokenizer),
         supports_vision=model.supports_vision and formula is not None,
+        max_input_tokens=model.max_input_tokens,
+        accepts_pdf=model.accepts_pdf,
     )
 
 

@@ -193,6 +193,8 @@ def imported_models() -> tuple[ModelPricing, ...]:
                 supports_vision=takes_images and formula is not None,
                 vision_formula=formula if takes_images else None,
                 tokenizer=_tokenizer(provider),
+                max_input_tokens=entry.get("max_input_tokens"),
+                accepts_pdf=bool(entry.get("accepts_pdf")),
                 price_source="imported",
                 imported_on=imported,
                 source_url=source_url,
