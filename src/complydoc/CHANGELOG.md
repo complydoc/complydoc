@@ -5,7 +5,11 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
-## Unreleased
+## [0.7.8] — 2026-11-06
+
+A document's Whole button in the viewer says what the file comes to sent whole, as a PDF, to
+each model that reads PDFs: its tokens, the share of the context window, and what one
+question costs. The report is at schema 27.
 
 ### Added
 
