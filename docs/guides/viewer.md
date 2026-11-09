@@ -23,6 +23,24 @@ Name report files or other folders to open those instead:
 complydoc ui reports/ baseline.json
 ```
 
+## Audit documents from the viewer
+
+Drop documents or a folder on the viewer, or choose them, and it audits them: from
+the empty page, or from **Audit documents…** in the folder menu. The viewer sends
+them to `complydoc ui` on this machine, which copies them to
+`.complydoc/uploads/<name>/`, reads them as `complydoc demo` reads its samples (each
+page's text kept, pypdf compared, OCR on) and writes the report beside them as
+`.complydoc/uploads/<name>.json`. The page shows each file being sent and each
+document being read, then opens the report. Files complydoc does not read, and hidden
+ones, are left out.
+
+Nothing leaves the machine. The copies are the documents themselves, so treat
+`.complydoc/uploads` as you treat the folder they came from.
+
+Only a viewer serving this machine and allowed to write takes documents. With
+`--host` or `--read-only` it takes none, so nobody else who can reach it can make
+this machine read files.
+
 | Option | Default | What it does |
 | --- | --- | --- |
 | `--port`, `-p` | 8500 | The port to serve on. The next free one is used when it is taken |
