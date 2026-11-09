@@ -4,20 +4,22 @@
     for step in steps:
         documents = step.transform_documents(documents)
 
-A step takes LangChain documents, LlamaIndex nodes, mappings with `page_content` or
-`text`, or strings, and returns copies with their text or metadata changed. The
+A step takes LangChain documents, LlamaIndex nodes, Haystack documents, mappings with
+`page_content` or `text`, or strings, and returns copies with their text or metadata
+changed. The
 originals are not modified. `step.changes` records what each call changed.
 
 LangChain pipelines call `transform_documents`; LlamaIndex pipelines call the step
-with nodes. `complydoc.integrations.langchain.as_transformer` and
-`complydoc.integrations.llamaindex.as_transform` wrap a step in each framework's
-base class.
+with nodes. `complydoc.integrations.langchain.as_transformer`,
+`complydoc.integrations.llamaindex.as_transform` and
+`complydoc.integrations.haystack.as_component` wrap a step as each framework's component.
 """
 
 from __future__ import annotations
 
 import asyncio
 import copy
+import dataclasses
 import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
@@ -160,6 +162,13 @@ def _rebuild(document: Any, text: str, metadata: dict[str, Any]) -> Any:
     if isinstance(document, Mapping):
         key = "page_content" if "page_content" in document else "text"
         return {**document, key: text, "metadata": metadata}
+    if (
+        dataclasses.is_dataclass(document)
+        and not isinstance(document, type)
+        and hasattr(document, "meta")
+    ):
+        # A Haystack document, kept under its ID.
+        return dataclasses.replace(document, content=text, meta=metadata)
     field = "page_content" if hasattr(document, "page_content") else "text"
     model_copy = getattr(document, "model_copy", None)
     if callable(model_copy):

@@ -514,7 +514,16 @@ def _is_document_like(item: Any) -> bool:
         return True
     if isinstance(item, Mapping):
         return "page_content" in item or "text" in item
-    return hasattr(item, "page_content") or (hasattr(item, "text") and hasattr(item, "metadata"))
+    return (
+        hasattr(item, "page_content")
+        or (hasattr(item, "text") and hasattr(item, "metadata"))
+        or _is_haystack(item)
+    )
+
+
+def _is_haystack(item: Any) -> bool:
+    """A Haystack document: its text in `content`, which a file kept whole leaves as None."""
+    return hasattr(item, "content") and hasattr(item, "meta") and hasattr(item, "blob")
 
 
 def document_content(item: Any) -> tuple[str, dict[str, Any]]:
@@ -530,6 +539,9 @@ def document_content(item: Any) -> tuple[str, dict[str, Any]]:
     elif hasattr(item, "text") and hasattr(item, "metadata"):
         text = item.text
         metadata = item.metadata or {}
+    elif _is_haystack(item):
+        text = item.content if item.content is not None else ""
+        metadata = item.meta or {}
     else:
         raise TypeError(
             f"cannot read a document from {type(item).__name__}: expected "

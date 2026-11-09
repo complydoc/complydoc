@@ -351,16 +351,19 @@ def finish(recording: Recording, result: Any) -> None:
             if result and all(_plain_id(item) for item in result):
                 recording.ids = [str(item) for item in result]
                 _pass_ids_up(recording)
+        elif isinstance(result, dict) and isinstance(result.get("documents_written"), int):
+            # Haystack's `DocumentWriter`.
+            recording.vectors = result["documents_written"]
+        elif recording.ids is not None:
+            # A database's client returns a status: what it stored is what it was given.
+            recording.vectors = len(recording.ids)
+            _pass_ids_up(recording)
         return
     if recording.kind == "embed":
         # A list of vectors from a framework; from a provider's SDK, a response holding them.
-        sdk = type(result).__module__.startswith("openai")
-        vectors = getattr(result, "data", None) if sdk else result
-        if isinstance(vectors, list):
-            recording.vectors = len(vectors)
-            first = vectors[0] if vectors else None
-            first = getattr(first, "embedding", first)
-            recording.dimensions = len(first) if isinstance(first, Sequence) else None
+        shape = adapters.vectors_of(result)
+        if shape is not None:
+            recording.vectors, recording.dimensions = shape
         return
     documents = adapters.listed(result)
     if documents is not None:

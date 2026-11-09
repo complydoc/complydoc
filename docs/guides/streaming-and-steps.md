@@ -46,4 +46,16 @@ In a LangChain pipeline call `step.transform_documents(documents)`, or wrap the
 step with `complydoc.integrations.langchain.as_transformer(step)` to get a
 `BaseDocumentTransformer`. In LlamaIndex, wrap it with
 `complydoc.integrations.llamaindex.as_transform(step)` to get a
-`TransformComponent` for an `IngestionPipeline`.
+`TransformComponent` for an `IngestionPipeline`. In Haystack,
+`complydoc.integrations.haystack.as_component(step)` is a component that takes
+`documents` and returns them, to connect between a splitter and a `DocumentWriter`:
+
+```python
+from complydoc.integrations.haystack import as_component
+
+pipeline.add_component("mask", as_component(cd.MaskIdentifiers()))
+pipeline.connect("splitter.documents", "mask.documents")
+pipeline.connect("mask.documents", "writer.documents")
+```
+
+Each document keeps its ID, so what the writer stores is stored under the ID it had.
