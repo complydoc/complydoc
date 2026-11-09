@@ -1,6 +1,7 @@
 import {
   CheckIcon,
   ChevronsUpDownIcon,
+  FileUpIcon,
   FolderIcon,
   FolderPlusIcon,
   HistoryIcon,
@@ -8,7 +9,10 @@ import {
   WorkflowIcon,
   XIcon,
 } from "lucide-react";
-import { useRef } from "react";
+import { useRef, useState } from "react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { UploadPanel } from "@/features/upload/UploadPanel";
+import type { Uploader } from "@/hooks/useUpload";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,11 +39,21 @@ interface CollectionSwitcherProps {
   onSelect: (selection: Selection) => void;
   onAdd: (files: File[]) => void;
   onCloseAll: () => void;
+  /** Documents sent to `complydoc ui` to audit, when it takes them. */
+  upload?: Uploader | undefined;
 }
 
 /** Which folder is on screen, which run of it, and the way to open more. */
-export function CollectionSwitcher({ collections, selection, onSelect, onAdd, onCloseAll }: CollectionSwitcherProps) {
+export function CollectionSwitcher({
+  collections,
+  selection,
+  onSelect,
+  onAdd,
+  onCloseAll,
+  upload,
+}: CollectionSwitcherProps) {
   const input = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
   const current = collections.find((c) => c.id === selection.collection) ?? null;
   const run = current?.runs.find((r) => r.id === selection.run) ?? (current && leadRun(current));
   const folders = collections.filter((c) => !isPipeline(c));
@@ -131,6 +145,17 @@ export function CollectionSwitcher({ collections, selection, onSelect, onAdd, on
               </>
             )}
             <DropdownMenuSeparator />
+            {upload && (
+              <DropdownMenuItem
+                onSelect={() => {
+                  if (upload.state.phase === "done" || upload.state.phase === "failed") upload.reset();
+                  setUploading(true);
+                }}
+              >
+                <FileUpIcon />
+                Audit documents…
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem onSelect={() => input.current?.click()}>
               <FolderPlusIcon />
               Add reports…
@@ -155,6 +180,18 @@ export function CollectionSwitcher({ collections, selection, onSelect, onAdd, on
           }}
         />
       </SidebarMenuItem>
+      {upload && (
+        // Closed once the report opens; reading carries on if it is closed sooner.
+        <Dialog open={uploading && upload.state.phase !== "done"} onOpenChange={setUploading}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Audit documents</DialogTitle>
+              <DialogDescription>Copied to this machine and audited here.</DialogDescription>
+            </DialogHeader>
+            <UploadPanel upload={upload.state} onStart={(picked) => void upload.start(picked)} />
+          </DialogContent>
+        </Dialog>
+      )}
     </SidebarMenu>
   );
 }

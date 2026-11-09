@@ -109,6 +109,7 @@ def serve_viewer(
             host=host,
             read_only=read_only,
             allowed_hosts=allowed_hosts or [],
+            uploads=DEFAULT_OUT / "uploads",
         )
     except ViewerNotBuiltError as exc:
         errors.print(f"[bold red]Cannot start the viewer[/] — {escape(str(exc))}")
@@ -125,8 +126,12 @@ def serve_viewer(
         console.print(f"{count(len(found), 'report')} in {escape(where)}")
     else:
         console.print(
-            f"No reports in {escape(where)} yet. Run [bold]complydoc audit ./documents[/] "
-            "and reload the page."
+            f"No reports in {escape(where)} yet. "
+            + (
+                "Drop documents on the page, or run [bold]complydoc audit ./documents[/]."
+                if viewer.uploads
+                else "Run [bold]complydoc audit ./documents[/] and reload the page."
+            )
         )
     if viewer.shared and in_container():
         # Its own name and port mean nothing outside it: say what does.
@@ -154,6 +159,11 @@ def serve_viewer(
         )
     elif viewer.read_only:
         console.print("[dim]Read-only: the viewer changes no file.[/]")
+    if viewer.uploads:
+        console.print(
+            f"[dim]Documents dropped on the page are copied to {escape(str(viewer.uploads))} "
+            "and audited here.[/]"
+        )
     if browser and not viewer.shared:
         import webbrowser
 

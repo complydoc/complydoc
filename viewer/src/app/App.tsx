@@ -6,9 +6,12 @@ import { Toaster } from "@/components/Toaster";
 import { LocalLoading } from "@/features/open/LocalLoading";
 import { SAMPLES } from "@/features/open/samples";
 import { useLocalReports } from "@/hooks/useLocalReports";
+import { takesUploads, useUpload } from "@/hooks/useUpload";
+import { toast } from "@/lib/toast";
 import { embeddedReports, useReports } from "@/hooks/useReports";
 import { useTheme } from "@/hooks/useTheme";
 import { collectionsOf, leadRun } from "@/report/collections";
+import { fileName } from "@/report/format";
 import { ReportView } from "./ReportView";
 
 /** Shows the open reports, or the way to open some. */
@@ -18,10 +21,24 @@ export function App() {
   const local = useLocalReports(addTexts);
   const collections = useMemo(() => collectionsOf(state.loaded), [state.loaded]);
   const [chosen, setChosen] = useState<Selection | null>(null);
+  // The report an upload wrote, opened once it is read.
+  const [uploaded, setUploaded] = useState<string | null>(null);
+  const upload = useUpload(
+    useCallback(
+      (report: { name: string; text: string; source: string }) => {
+        addTexts([report]);
+        setUploaded(report.name);
+        setChosen(null);
+        toast(`Audited ${fileName(report.name).replace(/\.json$/, "")}`);
+      },
+      [addTexts],
+    ),
+  );
+  const uploader = takesUploads() ? upload : undefined;
 
   // `?run=` in the address names a report file to open on, as a link to one run does.
   const asked = (() => {
-    const name = new URLSearchParams(window.location.search).get("run");
+    const name = uploaded ?? new URLSearchParams(window.location.search).get("run");
     if (!name) return null;
     for (const collection of collections) {
       const run = collection.runs.find((r) => r.name === name || r.name.endsWith(`/${name}`));
@@ -67,6 +84,7 @@ export function App() {
           onSelect={setChosen}
           onAdd={(files) => void addFiles(files)}
           onCloseAll={close}
+          upload={uploader}
           dark={dark}
           onToggleTheme={toggle}
         />
@@ -78,6 +96,7 @@ export function App() {
           onSamples={(ids) => void openSamples(ids)}
           error={[local.error, ...state.errors].filter(Boolean).join(" ") || undefined}
           local={local}
+          upload={uploader}
         />
       )}
       <Toaster />

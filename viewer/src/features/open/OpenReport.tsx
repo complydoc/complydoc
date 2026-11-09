@@ -6,6 +6,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import type { LocalState } from "@/hooks/useLocalReports";
+import { UploadPanel } from "@/features/upload/UploadPanel";
+import type { Uploader } from "@/hooks/useUpload";
 import { cn } from "@/lib/utils";
 import { SAMPLES } from "./samples";
 
@@ -19,10 +21,12 @@ interface OpenReportProps {
   error?: string | undefined;
   /** Set when `complydoc ui` served the page and found no reports to open. */
   local?: LocalState | undefined;
+  /** Documents sent to `complydoc ui` to audit, when it takes them. */
+  upload?: Uploader | undefined;
 }
 
 /** The empty state: drop a report, pick one, or look at the sample. */
-export function OpenReport({ dark, onToggleTheme, onFiles, onSamples, error, local }: OpenReportProps) {
+export function OpenReport({ dark, onToggleTheme, onFiles, onSamples, error, local, upload }: OpenReportProps) {
   const served = local !== undefined && local.status !== "off";
   const where = local?.sources.join(", ") || ".complydoc";
   const input = useRef<HTMLInputElement>(null);
@@ -41,6 +45,24 @@ export function OpenReport({ dark, onToggleTheme, onFiles, onSamples, error, loc
         <ModeToggle dark={dark} onToggle={onToggleTheme} />
       </div>
       <Logo size={36} />
+      {upload ? (
+        <Empty className="max-w-md flex-none border bg-card py-8">
+          <EmptyHeader>
+            <EmptyTitle>
+              <h1 className="text-lg">Audit documents</h1>
+            </EmptyTitle>
+            <EmptyDescription>
+              Copied to this machine and audited here, then opened. Nothing is sent anywhere else.
+            </EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent className="max-w-none">
+            <UploadPanel upload={upload.state} onStart={(picked) => void upload.start(picked)} />
+            <Button variant="link" size="sm" onClick={() => input.current?.click()}>
+              Or open a report JSON
+            </Button>
+          </EmptyContent>
+        </Empty>
+      ) : (
       <Empty
         className={cn("max-w-md flex-none border bg-card py-10 transition-colors", dragging && "border-primary bg-success-soft")}
         onDragOver={(event) => {
@@ -98,12 +120,27 @@ export function OpenReport({ dark, onToggleTheme, onFiles, onSamples, error, loc
           )}
         </EmptyContent>
       </Empty>
+      )}
+      {upload && (
+        <input
+          ref={input}
+          type="file"
+          multiple
+          accept="application/json,.json"
+          aria-label="Report files"
+          className="sr-only"
+          onChange={(event) => {
+            const files = [...(event.target.files ?? [])];
+            if (files.length) onFiles(files);
+          }}
+        />
+      )}
       {error && (
         <Alert variant="destructive" className="max-w-md">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
-      <p className="text-xs text-faint">The file is read in this browser and goes nowhere else.</p>
+      {!upload && <p className="text-xs text-faint">The file is read in this browser and goes nowhere else.</p>}
     </main>
   );
 }

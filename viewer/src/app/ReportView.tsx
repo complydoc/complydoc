@@ -38,6 +38,7 @@ import { OverviewPage } from "@/features/collections/OverviewPage";
 import { FolderRunsContext } from "@/hooks/useFolderRuns";
 import { leadRun, type Collection, type Loaded } from "@/report/collections";
 import { fileName } from "@/report/format";
+import type { Uploader } from "@/hooks/useUpload";
 import { AppSidebar } from "./AppSidebar";
 import { PAGES, PAGE_INFO, type Page } from "./pages";
 import { shortcut } from "@/lib/shortcut";
@@ -52,6 +53,8 @@ interface ReportViewProps {
   onSelect: (selection: Selection) => void;
   onAdd: (files: File[]) => void;
   onCloseAll: () => void;
+  /** Documents sent to `complydoc ui` to audit, when it takes them. */
+  upload?: Uploader | undefined;
   /** Whether the dark theme is showing, and how to switch. */
   dark: boolean;
   onToggleTheme: () => void;
@@ -87,6 +90,7 @@ export function ReportView({
   onSelect,
   onAdd,
   onCloseAll,
+  upload,
   dark,
   onToggleTheme,
 }: ReportViewProps) {
@@ -131,6 +135,7 @@ export function ReportView({
       onSelect={onSelect}
       onAdd={onAdd}
       onCloseAll={onCloseAll}
+      upload={upload}
     />
   );
 

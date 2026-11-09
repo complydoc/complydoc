@@ -5,6 +5,16 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
+## Unreleased
+
+### Added
+
+- Documents and folders dropped on the viewer, or chosen, are audited when `complydoc ui`
+  serves this machine and may write: from the empty page and from the folder menu's "Audit
+  documents…". They are copied to `.complydoc/uploads/<name>/`, read with the defaults
+  `demo` uses, and the report opens when it is written. Under `--host` or `--read-only` the
+  viewer takes no documents.
+
 ## [0.7.8] — 2026-11-06
 
 A document's Whole button in the viewer says what the file comes to sent whole, as a PDF, to
