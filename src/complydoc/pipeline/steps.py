@@ -167,8 +167,10 @@ def _rebuild(document: Any, text: str, metadata: dict[str, Any]) -> Any:
         and not isinstance(document, type)
         and hasattr(document, "meta")
     ):
-        # A Haystack document, kept under its ID.
-        return dataclasses.replace(document, content=text, meta=metadata)
+        # A Haystack document, kept under its ID. One with no text, a file's blob alone,
+        # keeps None: Haystack reads None and "" differently.
+        content = None if getattr(document, "content", None) is None and not text else text
+        return dataclasses.replace(document, content=content, meta=metadata)
     field = "page_content" if hasattr(document, "page_content") else "text"
     model_copy = getattr(document, "model_copy", None)
     if callable(model_copy):

@@ -52,6 +52,10 @@ loader for each file, say. A call the same component makes on itself (`load` cal
 `lazy_load`, `split_documents` calling `create_documents`) is part of the stage, not a
 stage of its own."""
 
+_quiet: ContextVar[bool] = ContextVar("complydoc_quiet", default=False)
+"""A call that is no step of ingestion is running: a query embedded to search with, say.
+What it calls underneath, a provider's SDK or a model's `encode`, is no step either."""
+
 
 @dataclass(slots=True)
 class Recording:
@@ -266,8 +270,19 @@ def idle() -> bool:
 
 
 def in_stage() -> bool:
-    """True while a stage is running: what it does is part of it."""
-    return _inside.get() is not None
+    """True while a stage is running: what it does is part of it. True as well while
+    `quietly` runs a call that is no stage, so nothing it does is one."""
+    return _inside.get() is not None or _quiet.get()
+
+
+@contextlib.contextmanager
+def quietly() -> Iterator[None]:
+    """Run a call that is no step of ingestion, so nothing it calls is recorded."""
+    token = _quiet.set(True)
+    try:
+        yield
+    finally:
+        _quiet.reset(token)
 
 
 def begin(
@@ -283,7 +298,7 @@ def begin(
     """Open a stage in the current block, or return None where the call is not one: no
     block is open, or the component running is calling itself."""
     observation = _current
-    if observation is None:
+    if observation is None or _quiet.get():
         return None
     within = _inside.get()
     if within is not None and component is not None and within.owner == id(component):

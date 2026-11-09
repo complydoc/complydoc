@@ -58,4 +58,6 @@ pipeline.connect("splitter.documents", "mask.documents")
 pipeline.connect("mask.documents", "writer.documents")
 ```
 
-Each document keeps its ID, so what the writer stores is stored under the ID it had.
+Each document keeps its ID, so what the writer stores is stored under the ID it had. It
+keeps its embedding too, which was made from the text before the step changed it: put the
+step before the document embedder, as above, so the vector stored is the masked text's.

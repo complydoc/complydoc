@@ -98,6 +98,10 @@ Yours is sent a document's content only where you turned content tracing on; com
 reads it either way, and it stays on your machine. A component of your own given
 documents, such as a deduplicating step, is a `transform` step.
 
+A query embedded to search with is no step of ingestion, and nor is the call it makes to a
+provider's SDK or a local model: a Haystack text embedder, LangChain's `embed_query` and
+LlamaIndex's `get_query_embedding` run inside the block without being recorded or priced.
+
 ## When the block ends
 
 - The documents loaded in the block are audited as `cd.inspect_documents` audits a

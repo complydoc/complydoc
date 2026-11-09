@@ -89,6 +89,7 @@ __all__ = [
     "common_root",
     "document_content",
     "inspect_documents",
+    "is_document_like",
     "load_items",
 ]
 
@@ -478,13 +479,13 @@ def load_items(source: Any) -> list[Any]:
 def _load_items(source: Any, call: Callable[[], Iterable[Any]] | None) -> list[Any]:
     if call is not None:
         return list(call())
-    if _is_document_like(source):
+    if is_document_like(source):
         return [source]
     return list(source)
 
 
 def _loading_call(source: Any) -> Callable[[], Iterable[Any]] | None:
-    if _is_document_like(source) or isinstance(source, (list, tuple)):
+    if is_document_like(source) or isinstance(source, (list, tuple)):
         return None
     for attribute in ("load", "load_data", "lazy_load"):
         method = getattr(source, attribute, None)
@@ -509,7 +510,8 @@ def _name_of(source: Any, call: Callable[[], Iterable[Any]] | None) -> str:
     return type(source).__name__
 
 
-def _is_document_like(item: Any) -> bool:
+def is_document_like(item: Any) -> bool:
+    """Whether `item` is one document, of any framework the inspection reads."""
     if isinstance(item, str):
         return True
     if isinstance(item, Mapping):

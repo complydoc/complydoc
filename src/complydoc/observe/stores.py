@@ -71,16 +71,19 @@ def qdrant_collection(
 def chroma(
     function: Callable[..., Any], args: tuple[Any, ...], kwargs: dict[str, Any]
 ) -> Given | None:
-    """`add(ids, embeddings, metadatas, documents)` and `upsert`: lists side by side."""
+    """`add(ids, embeddings, metadatas, documents)` and `upsert`: lists side by side, or one
+    record's ID, text and metadata on their own."""
     arguments = _arguments(function, args, kwargs)
-    ids = arguments.get("ids")
-    ids = [ids] if isinstance(ids, str) else ids
+    ids = _many(arguments.get("ids"), str)
     if not isinstance(ids, list | tuple):
         return None
-    texts = _each(arguments.get("documents"), len(ids))
-    metadatas = _each(arguments.get("metadatas"), len(ids))
+    texts = _each(_many(arguments.get("documents"), str), len(ids))
+    metadatas = _each(_many(arguments.get("metadatas"), Mapping), len(ids))
     documents = [
-        {"page_content": text if isinstance(text, str) else "", "metadata": dict(metadata or {})}
+        {
+            "page_content": text if isinstance(text, str) else "",
+            "metadata": dict(metadata) if isinstance(metadata, Mapping) else {},
+        }
         for text, metadata in zip(texts, metadatas, strict=True)
     ]
     return documents, [str(i) for i in ids]
@@ -139,6 +142,11 @@ def _document(payload: Any) -> dict[str, Any]:
     elif nested is not None:
         metadata["metadata"] = nested
     return {"page_content": payload[key] if key else "", "metadata": metadata}
+
+
+def _many(value: Any, one: type) -> Any:
+    """`value` as a list, where it is the one item Chroma takes in place of one."""
+    return [value] if isinstance(value, one) else value
 
 
 def _each(values: Any, length: int) -> list[Any]:

@@ -481,6 +481,18 @@ def test_a_step_as_a_haystack_component_keeps_each_document_s_id() -> None:
     assert masked.meta == {"file_path": "contract.pdf"}
 
 
+def test_a_haystack_document_with_no_text_keeps_none() -> None:
+    pytest.importorskip("haystack")
+    from haystack import Document
+    from haystack.dataclasses import ByteStream
+
+    from complydoc.integrations.haystack import as_component
+
+    document = Document(blob=ByteStream(b"%PDF-1.7"), meta={"file_path": "/home/jane/a.pdf"})
+    (cleaned,) = as_component(cd.StripPathMetadata()).run(documents=[document])["documents"]
+    assert cleaned.content is None and cleaned.meta == {"file_path": "a.pdf"}
+
+
 def test_chonkie_chunkers_are_split_steps() -> None:
     chonkie = pytest.importorskip("chonkie")
     chunker = chonkie.RecursiveChunker(chunk_size=256)
@@ -541,6 +553,21 @@ def test_a_chroma_collection_called_directly_is_a_store_step() -> None:
     assert (step.documents_in, step.vectors, step.ids) == (2, 2, ["a", "b"])
     assert step.sources == ["contract.pdf"]
     assert [(i.label, i.items) for i in step.identifiers] == [("IBAN", [0])]
+
+
+def test_one_chroma_record_given_on_its_own_is_read_whole() -> None:
+    chromadb = pytest.importorskip("chromadb")
+    collection = chromadb.EphemeralClient().get_or_create_collection("one-record")
+    with cd.observe("chroma", out=None) as observation:
+        collection.add(
+            ids="a",
+            documents=PAGES[0],
+            metadatas={"source": "contract.pdf"},
+            embeddings=[[0.1] * 4],
+        )
+    (step,) = observation.report.trace.stages
+    assert (step.documents_in, step.vectors, step.ids) == (1, 1, ["a"])
+    assert step.sources == ["contract.pdf"] and [i.label for i in step.identifiers] == ["IBAN"]
 
 
 def test_a_pinecone_index_is_a_store_step(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -768,3 +795,71 @@ def test_haystack_s_tracer_makes_a_step_of_each_component_a_pipeline_runs() -> N
     # The program's tracer saw every span, and no content: content tracing is off.
     assert recorder.spans.count("haystack.component.run") == 3
     assert "haystack.component.input" not in recorder.tags
+
+
+def test_a_load_s_path_names_only_marker_s_documents() -> None:
+    """A loader given a folder reads many files: the folder is not each one's source."""
+    pytest.importorskip("langchain_core")
+    from langchain_core.document_loaders import BaseLoader
+
+    class FolderReader(BaseLoader):
+        def load(self, path: str) -> list[dict[str, Any]]:  # type: ignore[override]
+            return [{"page_content": text, "metadata": {}} for text in PAGES]
+
+    with cd.observe("folder", out=None) as observation:
+        FolderReader().load("contracts/")
+    (load,) = observation.report.trace.stages
+    assert load.documents_out == 2 and load.sources == []
+
+
+def test_a_query_embedded_to_search_with_is_no_step(monkeypatch: pytest.MonkeyPatch) -> None:
+    pytest.importorskip("haystack")
+    pytest.importorskip("langchain_core")
+    from haystack import Pipeline, component
+    from langchain_core.embeddings import Embeddings
+
+    class SentenceTransformer:
+        def encode(self, inputs: Any) -> _Array:
+            return _Array(0 if isinstance(inputs, str) else len(inputs), 384)
+
+    _module(monkeypatch, "sentence_transformers", SentenceTransformer=SentenceTransformer)
+    model = SentenceTransformer()
+
+    @component
+    class LocalTextEmbedder:
+        def __init__(self) -> None:
+            component.set_input_type(self, "text", str)
+
+        @component.output_types(embedding=list[float])
+        def run(self, **inputs: Any) -> dict[str, list[float]]:
+            model.encode(inputs["text"])
+            return {"embedding": [0.0] * 384}
+
+    class LocalEmbeddings(Embeddings):
+        def embed_documents(self, texts: list[str]) -> list[list[float]]:
+            model.encode(texts)
+            return [[0.0] * 384 for _ in texts]
+
+        def embed_query(self, text: str) -> list[float]:
+            return self.embed_documents([text])[0]
+
+    pipeline = Pipeline()
+    pipeline.add_component("embed", LocalTextEmbedder())
+    with cd.observe("search", out=None) as observation:
+        pipeline.run({"embed": {"text": PAGES[0]}})
+        LocalTextEmbedder().run(text=PAGES[0])
+        LocalEmbeddings().embed_query(PAGES[0])
+        LocalEmbeddings().embed_documents(PAGES)
+    # Only the documents embedded for the index are a step.
+    (step,) = [s for s in observation.report.trace.stages if s.parent is None]
+    assert (step.kind, step.component, step.documents_in) == ("embed", "LocalEmbeddings", 2)
+
+
+def test_only_a_batch_of_documents_is_flattened() -> None:
+    from complydoc.observe import adapters
+
+    first, second = ({"page_content": text, "metadata": {}} for text in PAGES)
+    assert adapters.listed([[first], [second]]) == [first, second]
+    # A search's `(document, score)` pairs, or a row of values, are items as they are.
+    assert adapters.listed([(first, 0.9)]) == [(first, 0.9)]
+    assert adapters.listed([[first, 0.9]]) == [[first, 0.9]]

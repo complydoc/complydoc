@@ -31,6 +31,9 @@ separately.
 
 - Called by a framework's store, a database client's call is now a step inside the store's:
   LangChain's `Chroma` holds a `Chroma collection` step.
+- A query embedded to search with, by LangChain's `embed_query`, LlamaIndex's
+  `get_query_embedding` or a Haystack text embedder, is no longer a step, and nor is the
+  provider's SDK call it makes: a search run in the block no longer adds a priced embed step.
 
 ## [0.7.8] — 2026-11-06
 

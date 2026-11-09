@@ -85,6 +85,9 @@ class _Target:
     made_by: bool = False
     """The base is a metaclass: the classes observed are those it made, each of the kind
     `haystack.kind_of` says, and none it says is no step."""
+    sourced: bool = False
+    """A load's documents do not say which file they came from: the path it was called with
+    is their source."""
 
 
 _QDRANT: Final = (
@@ -147,6 +150,14 @@ _TARGETS: Final = (
         "embed",
         "langchain-core",
     ),
+    # A query embedded to search with is no step, and nor is the SDK call it makes.
+    _Target(
+        "langchain_core.embeddings",
+        "Embeddings",
+        ("embed_query", "aembed_query"),
+        "query",
+        "langchain-core",
+    ),
     # Where the documents are kept: what a store is given is what stays in the index.
     _Target(
         "langchain_core.vectorstores.base",
@@ -188,6 +199,13 @@ _TARGETS: Final = (
         "BaseEmbedding",
         ("get_text_embedding_batch", "aget_text_embedding_batch"),
         "embed",
+        "llama-index-core",
+    ),
+    _Target(
+        "llama_index.core.base.embeddings.base",
+        "BaseEmbedding",
+        ("get_query_embedding", "aget_query_embedding"),
+        "query",
         "llama-index-core",
     ),
     _Target(
@@ -320,7 +338,9 @@ _TARGETS: Final = (
         arguments=("text", "texts", "document"),
     ),
     # Marker's converters, called with the file to convert.
-    _Target("marker.converters", "BaseConverter", ("__call__",), "load", "marker-pdf"),
+    _Target(
+        "marker.converters", "BaseConverter", ("__call__",), "load", "marker-pdf", sourced=True
+    ),
     # Haystack's components, as `Pipeline.run` calls them or as they are run alone.
     _Target(
         "haystack.core.component.component",
@@ -434,6 +454,11 @@ def _wrap_class(cls: type, target: _Target) -> None:
     kind_of = _kind_of(kind)
     for method in target.methods:
         original = cls.__dict__.get(method)
+        if kind == "query":
+            if _wrappable(original):
+                setattr(cls, method, _quieted(original))
+                _installed.append((cls, method, original))
+            continue
         if isinstance(original, classmethod) and _wrappable(original.__func__):
             # Called on the class: the class is the component.
             wrapped: Any = classmethod(_observed(original.__func__, method, kind_of, target))
@@ -611,7 +636,7 @@ def _observed(original: Any, method: str, kind_of: Callable[[Any], str], target:
                 return await original(self, *args, **kwargs)
             with session.running(recording):
                 result = await original(self, *args, **kwargs)
-            _finish(recording, result, args)
+            _finish(recording, result, args, target)
             return result
 
         wrapped = coroutine
@@ -634,7 +659,7 @@ def _observed(original: Any, method: str, kind_of: Callable[[Any], str], target:
                 return _lazily(recording, result)
             with session.running(recording):
                 result = original(self, *args, **kwargs)
-            _finish(recording, result, args)
+            _finish(recording, result, args, target)
             return result
 
         wrapped = function
@@ -643,12 +668,41 @@ def _observed(original: Any, method: str, kind_of: Callable[[Any], str], target:
     return wrapped
 
 
-def _finish(recording: session.Recording, result: Any, args: tuple[Any, ...]) -> None:
+def _quieted(original: Any) -> Any:
+    """`original`, run as no step: nothing it calls in a block is recorded."""
+    if inspect.iscoroutinefunction(original):
+
+        @functools.wraps(original)
+        async def coroutine(self: Any, *args: Any, **kwargs: Any) -> Any:
+            if session.idle():
+                return await original(self, *args, **kwargs)
+            with session.quietly():
+                return await original(self, *args, **kwargs)
+
+        wrapped: Any = coroutine
+    else:
+
+        @functools.wraps(original)
+        def function(self: Any, *args: Any, **kwargs: Any) -> Any:
+            if session.idle():
+                return original(self, *args, **kwargs)
+            with session.quietly():
+                return original(self, *args, **kwargs)
+
+        wrapped = function
+
+    setattr(wrapped, _OBSERVED, True)
+    return wrapped
+
+
+def _finish(
+    recording: session.Recording, result: Any, args: tuple[Any, ...], target: _Target
+) -> None:
     """Keep what the stage returned. A file read whole, as Marker reads one, gives text that
     does not say where it came from; the file the stage was called with does."""
     session.finish(recording, result)
     path = args[0] if args else None
-    if recording.kind != "load" or not isinstance(path, str | os.PathLike) or not recording.outputs:
+    if not target.sourced or not isinstance(path, str | os.PathLike) or not recording.outputs:
         return
     recording.outputs = [
         {**document, "metadata": {**document.get("metadata", {}), "source": os.fspath(path)}}

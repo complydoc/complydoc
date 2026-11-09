@@ -5,8 +5,9 @@ Haystack's components share no base class: each is a class its `@component` deco
 remakes with one metaclass, and keeps in a registry. The components that read, split,
 clean, embed and write documents are told apart by name, as Haystack and its
 integrations name them: `PyPDFToDocument`, `DocumentSplitter`, `DocumentCleaner`,
-`OpenAIDocumentEmbedder`, `DocumentWriter`. A text embedder embeds a query, not documents,
-and is left alone, as are the components that answer questions.
+`OpenAIDocumentEmbedder`, `DocumentWriter`. A text embedder embeds a query, not documents:
+it is no step, and nor is the call it makes to a provider's SDK or a model's `encode`. The
+components that answer questions are left alone.
 
 A pipeline opens a span for each component it runs, and gives the span what the component
 was given and returned. While a block is open, Haystack's tracer is wrapped by one that
@@ -46,7 +47,8 @@ _wrapping: Any = None
 
 
 def kind_of(cls: type) -> str | None:
-    """The kind of step a component class is, or None where it is not one."""
+    """The kind of step a component class is, or None where it is not one; "query" for one
+    run as no step, with nothing it calls one either."""
     name = cls.__name__
     if name.endswith("ToDocument") or (
         name.endswith("Converter") and "converter" in cls.__module__
@@ -60,6 +62,9 @@ def kind_of(cls: type) -> str | None:
         return "embed"
     if name.endswith("DocumentWriter"):
         return "store"
+    if name.endswith("TextEmbedder"):
+        # Run quietly: what it calls is no step.
+        return "query"
     return None
 
 
@@ -136,7 +141,7 @@ class _Run:
     def _begin(self, inputs: Mapping[str, Any]) -> None:
         documents = inputs.get("documents")
         kind = self.kind or ("transform" if isinstance(documents, list) and documents else None)
-        if kind is None or self.own:
+        if kind in (None, "query") or self.own:
             return
         given = None if kind == "load" else documents
         recording = session.begin(

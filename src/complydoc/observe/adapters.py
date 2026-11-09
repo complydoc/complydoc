@@ -61,10 +61,17 @@ def documents_of(item: Any) -> list[Any]:
         # Content sent to Gemini: the text of its parts.
         texts = [p.text for p in item.parts if isinstance(getattr(p, "text", None), str)]
         return ["\n".join(texts)]
-    if isinstance(item, list | tuple):
+    if isinstance(item, list) and _batch(item):
         # A batch: Chonkie's `chunk_batch` returns the chunks of each text.
         return [document for inner in item for document in documents_of(inner)]
     return [item]
+
+
+def _batch(items: list[Any]) -> bool:
+    """A list of documents, not a row of values: `(document, score)` is one item, not two."""
+    from complydoc.loaders.inspection import is_document_like
+
+    return bool(items) and all(is_document_like(item) for item in items)
 
 
 def listed(value: Any) -> list[Any] | None:
