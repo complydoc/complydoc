@@ -51,7 +51,8 @@ complydoc ui
 ```
 
 The audit keeps both readings and flags the white sentence, the check fails on it, and
-`complydoc ui` opens the report.
+`complydoc ui` opens the report. On a folder of your own, `complydoc ui ./documents`
+audits it first and opens the viewer on it.
 
 <img alt="Viewer security page: the white sentence, marked high, confirmed, white text" src="https://raw.githubusercontent.com/complydoc/complydoc/main/docs/assets/hidden-clause-security.png">
 

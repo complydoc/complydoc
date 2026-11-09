@@ -361,6 +361,52 @@ def test_the_demo_audits_the_samples_that_ship_with_the_tool(tmp_path):
     assert [f["severity"] for f in assessment["content_findings"]] == ["high"]
 
 
+@pytest.fixture
+def opened(tmp_path, monkeypatch):
+    """What `complydoc ui` would serve, without starting the server."""
+    import shutil
+
+    from complydoc.cli import ui as ui_module
+
+    served: list[list[pathlib.Path]] = []
+    monkeypatch.setattr(ui_module, "serve_viewer", lambda folders, **_: served.append(folders))
+    monkeypatch.chdir(tmp_path)
+    contracts = tmp_path / "contracts"
+    contracts.mkdir()
+    for name in ("native_text.pdf", "two_column.pdf"):
+        shutil.copy(FIXTURES / name, contracts / name)
+    return served
+
+
+def test_ui_audits_a_folder_of_documents_that_has_no_report(opened):
+    """`complydoc ui ./contracts` is a first look in one command."""
+    result = runner.invoke(app, ["ui", "contracts"])
+    assert result.exit_code == 0, result.output
+    report = pathlib.Path(".complydoc/contracts.json")
+    assert opened == [[report]]
+    data = json.loads(report.read_text())
+    assert len(data["documents"]) == 2
+    assert data["documents"][0]["extracted_text"], "the text is kept for the diff"
+
+
+def test_ui_opens_the_report_from_earlier_without_reading_the_folder_again(opened):
+    runner.invoke(app, ["ui", "contracts"])
+    written = pathlib.Path(".complydoc/contracts.json").stat().st_mtime_ns
+    result = runner.invoke(app, ["ui", "contracts"])
+    assert result.exit_code == 0, result.output
+    assert "from earlier" in result.output
+    assert pathlib.Path(".complydoc/contracts.json").stat().st_mtime_ns == written
+    assert opened[-1] == [pathlib.Path(".complydoc/contracts.json")]
+
+
+def test_ui_serves_a_folder_of_reports_as_it_is(opened):
+    runner.invoke(app, ["audit", "contracts", "--out", "reports", "--quiet"])
+    result = runner.invoke(app, ["ui", "reports"])
+    assert result.exit_code == 0, result.output
+    assert opened == [[pathlib.Path("reports")]]
+    assert not pathlib.Path(".complydoc").exists()
+
+
 def test_the_sample_folder_holds_documents_and_nothing_else():
     """Discovery reports anything else as a skipped file, and the demo is the
     first thing many people see."""

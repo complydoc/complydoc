@@ -66,18 +66,72 @@ def ui(
     server listens on 127.0.0.1 only and makes no outbound connection. Ctrl+C
     stops it.
 
+    A folder of documents with no report in it is audited first, as `demo` audits
+    its samples, and the viewer opens on the report. The audit runs here, before
+    the server starts.
+
     With --host it serves a team: everyone who can reach the address reads the
     same reports. It has no sign-in, so put it on a network you trust or behind
     your own proxy.
     """
+    folders: list[Path] = []
+    for source in sources or [DEFAULT_OUT]:
+        source = audited(source)
+        if source not in folders:
+            folders.append(source)
     serve_viewer(
-        sources or [DEFAULT_OUT],
+        folders,
         port=port,
         browser=browser,
         host=host,
         read_only=read_only,
         allowed_hosts=allowed_host or [],
     )
+
+
+def audited(source: Path) -> Path:
+    """Where the viewer finds the reports for `source`, auditing it first when it needs one.
+
+    A folder on this machine that holds documents and no report is read the way `demo`
+    reads its samples, with each page's text kept and pypdf compared, and its report is
+    written to `.complydoc/<folder name>.json`. A report already written there for the
+    same folder is opened as it is. Anything else, a report, a folder of reports or a
+    bucket, is returned unchanged.
+    """
+    from complydoc.audit.discovery import discover
+    from complydoc.viewer.server import find_reports
+
+    if not source.is_dir() or find_reports(source) or not discover(source)[0]:
+        return source
+    folder = source.resolve()
+    name = folder.name or "complydoc"
+    report = DEFAULT_OUT / f"{name}.json"
+    earlier = find_reports(report) if report.is_file() else []
+    if earlier and Path(earlier[0].target).resolve() == folder:
+        console.print(
+            f"[dim]Opening the report on {escape(str(source))} from earlier. "
+            f"complydoc audit {escape(str(source))} --out {DEFAULT_OUT} --name {escape(name)} "
+            "reads it again.[/]"
+        )
+        return report
+    from complydoc.audit.run import COMPONENTS
+    from complydoc.cli.audits import run
+
+    console.print(f"[dim]No report on {escape(str(source))} yet: auditing it first.[/]")
+    run(
+        source,
+        COMPONENTS,
+        DEFAULT_OUT,
+        name,
+        None,
+        True,
+        True,
+        False,
+        extracted_text=True,
+        # What the diff shows; the same comparison `demo` makes.
+        compare_extractors=["pypdf"],
+    )
+    return report
 
 
 def in_container() -> bool:
@@ -128,9 +182,9 @@ def serve_viewer(
         console.print(
             f"No reports in {escape(where)} yet. "
             + (
-                "Drop documents on the page, or run [bold]complydoc audit ./documents[/]."
+                "Drop documents on the page, or run [bold]complydoc ui ./documents[/]."
                 if viewer.uploads
-                else "Run [bold]complydoc audit ./documents[/] and reload the page."
+                else "Run [bold]complydoc ui ./documents[/] to audit a folder and open it."
             )
         )
     if viewer.shared and in_container():
