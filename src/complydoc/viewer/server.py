@@ -23,6 +23,10 @@ What the server does, and does not do:
   It writes `.complydoc-ignore.yaml` and `.complydoc-concepts.yaml` in the
   audited folder, or the file the run read if it is still a valid one, never any
   other file.
+- Serving this machine only, and allowed to write, it takes documents dropped on
+  the viewer's own page: it copies them to `.complydoc/uploads/<name>/`, audits
+  them in this process and writes the report beside them. Under `--host` or
+  read-only it takes none.
 - Read-only, it writes no file at all.
 - It makes no outbound connection, unless a source is a bucket folder
   (`s3://bucket/folder`): it then reads that bucket and nothing else. The viewer it
@@ -52,6 +56,7 @@ from typing import Any
 from urllib.parse import unquote, urlsplit
 
 from complydoc.storage import Mirror, remote_folder
+from complydoc.viewer.uploads import Upload, Uploads
 
 __all__ = [
     "DEFAULT_PORT",
@@ -354,10 +359,22 @@ def served_names(host: str, allowed: tuple[str, ...] = ()) -> frozenset[str]:
     return frozenset(names)
 
 
-def _index_html(dist: Path, sources: list[str], read_only: bool = False) -> bytes:
-    """The viewer's page, told where the reports are and whether it may change files."""
+def _index_html(
+    dist: Path, sources: list[str], read_only: bool = False, uploads: bool = False
+) -> bytes:
+    """The viewer's page, told where the reports are, whether it may change files and
+    whether it takes documents."""
+    from complydoc.ingest.registry import supported_extensions
+
     page = (dist / "index.html").read_text(encoding="utf-8")
-    config = json.dumps({"reports": f"{API}/reports", "sources": sources, "readOnly": read_only})
+    config = json.dumps(
+        {"reports": f"{API}/reports", "sources": sources, "readOnly": read_only}
+        | (
+            {"uploads": f"{API}/uploads", "documentTypes": list(supported_extensions())}
+            if uploads
+            else {}
+        )
+    )
     # `</` cannot close the script element from inside the JSON.
     config = config.replace("</", "<\\/")
     element = f'<script type="application/json" id="{CONFIG_ELEMENT}">{config}</script>'
@@ -409,18 +426,19 @@ class _Handler(BaseHTTPRequestHandler):
             f"start it with --allowed-host {asked}"
         )
 
-    def _same_origin(self) -> bool:
+    def _same_origin(self, json_body: bool = True) -> bool:
         """Whether a write came from the viewer's own page.
 
         A page elsewhere can send a form to this port, and the Host check alone
         lets it through, since the browser names this machine for it. A JSON body
         makes the browser ask first, which this server never answers, and the
-        Origin says who is asking.
+        Origin says who is asking. A PUT is asked about first whatever its body,
+        so a file sent with one need not be JSON.
         """
         port = self.server.server_address[1]
         origin = (self.headers.get("Origin") or "").strip().lower()
         content_type = (self.headers.get("Content-Type") or "").split(";")[0].strip().lower()
-        if content_type != "application/json":
+        if json_body and content_type != "application/json":
             return False
         if self.server.names is None:
             return origin in {
@@ -588,11 +606,71 @@ class _Handler(BaseHTTPRequestHandler):
         self.server.refresh()
         self._json(HTTPStatus.OK, find_value(value, *self.server.sources).to_dict())
 
+    def _uploaded(self) -> None:
+        """Take documents from the viewer's own page and audit them: POST `/api/uploads`
+        starts an upload, PUT `/api/uploads/{id}/files/{path}` sends each file, POST
+        `/api/uploads/{id}/audit` reads them, and GET `/api/uploads/{id}` says how far."""
+        from complydoc.viewer.uploads import UploadError
+
+        uploads = self.server.uploads
+        if uploads is None:
+            self._error(HTTPStatus.FORBIDDEN, "this viewer takes no documents")
+            return
+        if not self._local_host() or (
+            self.command != "GET" and not self._same_origin(json_body=self.command == "POST")
+        ):
+            self._error(HTTPStatus.FORBIDDEN, "only the viewer's own page can send documents")
+            return
+        path = unquote(urlsplit(self.path).path).removeprefix(f"/{API}/uploads")
+        try:
+            if path == "" and self.command == "POST":
+                length = max(0, min(int(self.headers.get("Content-Length") or 0), 4_000))
+                body = json.loads(self.rfile.read(length) or b"{}")
+                name = body.get("name") if isinstance(body, dict) else None
+                upload = uploads.create(name if isinstance(name, str) else "")
+                self._json(HTTPStatus.CREATED, self._upload_status(upload))
+                return
+            wanted, _, rest = path.lstrip("/").partition("/")
+            found = uploads.get(wanted)
+            if found is None:
+                self._error(HTTPStatus.NOT_FOUND, "no such upload")
+                return
+            upload = found
+            if rest.startswith("files/") and self.command == "PUT":
+                length = int(self.headers.get("Content-Length") or 0)
+                uploads.receive(upload, rest.removeprefix("files/"), self.rfile, length)
+            elif rest == "audit" and self.command == "POST":
+                uploads.start(upload)
+            elif rest == "" and self.command == "GET":
+                pass
+            else:
+                self._error(HTTPStatus.NOT_FOUND, "not found")
+                return
+        except (UploadError, ValueError, OSError) as exc:
+            self._error(HTTPStatus.BAD_REQUEST, str(exc))
+            return
+        self._json(HTTPStatus.OK, self._upload_status(upload))
+
+    def _upload_status(self, upload: Upload) -> dict[str, object]:
+        """How far an upload is, and the report to open once it is read."""
+        report = _report_id(upload.report) if upload.state == "done" else None
+        return upload.to_dict() | {"report": report}
+
     def do_POST(self) -> None:
-        if unquote(urlsplit(self.path).path) == f"/{API}/find":
+        path = unquote(urlsplit(self.path).path)
+        if path == f"/{API}/find":
             self._find()
             return
+        if path == f"/{API}/uploads" or path.startswith(f"/{API}/uploads/"):
+            self._uploaded()
+            return
         self._write()
+
+    def do_PUT(self) -> None:
+        if unquote(urlsplit(self.path).path).startswith(f"/{API}/uploads/"):
+            self._uploaded()
+            return
+        self._error(HTTPStatus.METHOD_NOT_ALLOWED, "not allowed")
 
     def do_DELETE(self) -> None:
         self._write()
@@ -607,7 +685,9 @@ class _Handler(BaseHTTPRequestHandler):
         if path in {"/", "/index.html"}:
             self._send(
                 HTTPStatus.OK,
-                _index_html(server.dist, server.source_names, server.read_only),
+                _index_html(
+                    server.dist, server.source_names, server.read_only, server.uploads is not None
+                ),
                 "text/html; charset=utf-8",
             )
         elif path == f"/{API}/health":
@@ -625,6 +705,8 @@ class _Handler(BaseHTTPRequestHandler):
                     "storage_errors": [m.error for m in server.mirrors if m.error],
                 },
             )
+        elif path.startswith(f"/{API}/uploads/"):
+            self._uploaded()
         elif path == f"/{API}/reports":
             reports = [report.to_dict() for report in find_reports(*server.sources)]
             body = json.dumps({"reports": reports, "sources": server.source_names}).encode("utf-8")
@@ -741,6 +823,7 @@ class _Server(ThreadingHTTPServer):
         self.dist = dist
         self.host = host
         self.read_only = read_only
+        self.uploads: Uploads | None = None
         # None while only this machine can reach it: the stricter check, port and all.
         self.names = None if is_loopback(host) else served_names(host, allowed_hosts)
         if ":" in host:
@@ -767,6 +850,11 @@ class ViewerServer:
     def read_only(self) -> bool:
         """Whether the viewer may change the ignore, concepts and categories files."""
         return self._server.read_only
+
+    @property
+    def uploads(self) -> Path | None:
+        """Where documents dropped on the viewer go, or None when it takes none."""
+        return None if self._server.uploads is None else self._server.uploads.root
 
     @property
     def shared(self) -> bool:
@@ -851,6 +939,7 @@ def launch_ui(
     host: str = HOST,
     read_only: bool | None = None,
     allowed_hosts: tuple[str, ...] | list[str] = (),
+    uploads: str | Path | None = None,
 ) -> ViewerServer:
     """Open the report viewer on the reports in `sources`, served from this machine.
 
@@ -867,6 +956,9 @@ def launch_ui(
     read-only unless `read_only=False` says otherwise. It answers only to this
     machine's names and to `allowed_hosts`: the name a proxy serves it under goes
     there, and `"*"` accepts every name.
+
+    `uploads` is a folder for documents dropped on the viewer, which it audits and
+    then lists. It is taken only by a viewer that serves this machine and may write.
     """
     dist = dist or DIST
     if not (dist / "index.html").is_file():
@@ -886,6 +978,13 @@ def launch_ui(
             names.append(str(remote))
     if read_only is None:
         read_only = not is_loopback(host)
+    taking = None
+    if uploads is not None and is_loopback(host) and not read_only:
+        taking = Uploads(Path(uploads).expanduser().resolve())
+        # Its reports are listed with the rest, so it is searched when nothing given covers it.
+        if not any(f.is_dir() and taking.root.is_relative_to(f) for f in folders):
+            folders.append(taking.root)
+            names.append(str(taking.root))
     try:
         server = _bind(port, folders, dist, host, read_only, tuple(allowed_hosts))
     except OSError:
@@ -894,6 +993,7 @@ def launch_ui(
         raise
     server.source_names = names
     server.mirrors = mirrors
+    server.uploads = taking
     viewer = ViewerServer(server)
     if open_browser:
         webbrowser.open(viewer.url)

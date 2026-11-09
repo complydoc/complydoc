@@ -8,6 +8,10 @@ export interface LocalConfig {
   sources: string[];
   /** Set when the server changes no file: a viewer shared with a team is read-only. */
   readOnly: boolean;
+  /** Where to send documents to audit, when the server takes them: only on this machine. */
+  uploads?: string;
+  /** The file types the server reads, as `.pdf`, when it takes documents. */
+  documentTypes?: string[];
 }
 
 interface ListedReport {
@@ -29,9 +33,13 @@ export function localConfig(): LocalConfig | null {
   if (!text) return null;
   try {
     const data = JSON.parse(text) as Partial<LocalConfig>;
-    return typeof data.reports === "string"
-      ? { reports: data.reports, sources: data.sources ?? [], readOnly: data.readOnly === true }
-      : null;
+    if (typeof data.reports !== "string") return null;
+    const config: LocalConfig = { reports: data.reports, sources: data.sources ?? [], readOnly: data.readOnly === true };
+    if (typeof data.uploads === "string") {
+      config.uploads = data.uploads;
+      config.documentTypes = data.documentTypes ?? [];
+    }
+    return config;
   } catch {
     return null;
   }
