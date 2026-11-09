@@ -68,10 +68,11 @@ def documents_of(item: Any) -> list[Any]:
 
 
 def _batch(items: list[Any]) -> bool:
-    """A list of documents, not a row of values: `(document, score)` is one item, not two."""
+    """A list of documents, not a row of values: `(document, score)` is one item, not two.
+    An empty one is a batch with nothing in it, as a chunker gives for a text with none."""
     from complydoc.loaders.inspection import is_document_like
 
-    return bool(items) and all(is_document_like(item) for item in items)
+    return all(is_document_like(item) for item in items)
 
 
 def listed(value: Any) -> list[Any] | None:

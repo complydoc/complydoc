@@ -860,6 +860,8 @@ def test_only_a_batch_of_documents_is_flattened() -> None:
 
     first, second = ({"page_content": text, "metadata": {}} for text in PAGES)
     assert adapters.listed([[first], [second]]) == [first, second]
+    # A text with nothing in it, a scan's, is chunked into nothing.
+    assert adapters.listed([[first], []]) == [first]
     # A search's `(document, score)` pairs, or a row of values, are items as they are.
     assert adapters.listed([(first, 0.9)]) == [(first, 0.9)]
     assert adapters.listed([[first, 0.9]]) == [[first, 0.9]]
