@@ -5,6 +5,36 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
+## Unreleased
+
+### Added
+
+- `cd.observe` records Haystack pipelines: converters, splitters, `DocumentCleaner`,
+  document embedders and `DocumentWriter` are each a step, run by a `Pipeline` or alone.
+  They are read through Haystack's own tracer, so a component of your own given documents
+  is a step too, and a tracer you set, such as Langfuse's, is sent every span as before
+  and no content it was not sent already.
+  `complydoc.integrations.haystack.as_component(step)` puts a complydoc step in one, and
+  complydoc's steps take Haystack documents, keeping each one's ID.
+- Embeddings called through Cohere's, Voyage's, Mistral's and Gemini's own SDKs are steps,
+  sync and async, priced by the model the call names, as OpenAI's already were.
+  sentence-transformers' `encode` is a step that sent nothing off the machine.
+- A vector database's own client is a store step: Qdrant's `upsert`, `upload_points` and
+  `upload_collection`, a Chroma collection's `add` and `upsert`, and a Pinecone index's
+  `upsert` and `upsert_records`. Each record is read with its payload, under its ID, so an
+  identifier found is traced to the record that holds it.
+- Unstructured's partitioners and chunkers are observed by themselves, imported by name
+  before the block or inside it, with no `@cd.stage` around them. Marker's converters and
+  Chonkie's chunkers are steps too.
+
+### Changed
+
+- Called by a framework's store, a database client's call is now a step inside the store's:
+  LangChain's `Chroma` holds a `Chroma collection` step.
+- A query embedded to search with, by LangChain's `embed_query`, LlamaIndex's
+  `get_query_embedding` or a Haystack text embedder, is no longer a step, and nor is the
+  provider's SDK call it makes: a search run in the block no longer adds a priced embed step.
+
 ## [0.7.8] — 2026-11-06
 
 A document's Whole button in the viewer says what the file comes to sent whole, as a PDF, to

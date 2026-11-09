@@ -9,8 +9,11 @@
 
     print(run.summary())
 
-Inside the block, LangChain's loaders, document transformers, text splitters and
-embedding models are observed, and so are complydoc's own pipeline steps. Each
+Inside the block, LangChain's, LlamaIndex's and Haystack's loaders, splitters,
+transformers, embedding models and vector stores are observed; so are Docling,
+Unstructured, Marker and Chonkie read directly, the embedding SDKs of OpenAI, Cohere,
+Voyage, Mistral and Gemini, sentence-transformers, the clients of Qdrant, Chroma and
+Pinecone, and complydoc's own pipeline steps. Each
 call becomes a stage of the trace: what went in and came out, the component's
 settings, the time it took, which identifiers were in what it passed on, and
 which hosts it reached. Outside the block nothing is touched.
