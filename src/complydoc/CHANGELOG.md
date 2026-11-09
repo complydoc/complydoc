@@ -11,6 +11,9 @@ separately.
 
 - `cd.observe` records Haystack pipelines: converters, splitters, `DocumentCleaner`,
   document embedders and `DocumentWriter` are each a step, run by a `Pipeline` or alone.
+  They are read through Haystack's own tracer, so a component of your own given documents
+  is a step too, and a tracer you set, such as Langfuse's, is sent every span as before
+  and no content it was not sent already.
   `complydoc.integrations.haystack.as_component(step)` puts a complydoc step in one, and
   complydoc's steps take Haystack documents, keeping each one's ID.
 - Embeddings called through Cohere's, Voyage's, Mistral's and Gemini's own SDKs are steps,

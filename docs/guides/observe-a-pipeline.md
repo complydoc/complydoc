@@ -18,7 +18,7 @@ Nothing in your pipeline changes. Outside the block, nothing is touched.
 | LangChain | document loaders (`load`, `lazy_load`, `aload`, `alazy_load`), document transformers, text splitters (`split_documents`, `create_documents`), embedding models (`embed_documents`, `aembed_documents`) and vector stores (`add_documents`, `add_texts` and their async forms) |
 | LlamaIndex | readers (`load_data`, `lazy_load_data` and their async forms), node parsers (`get_nodes_from_documents`), embedding models (`get_text_embedding_batch`), vector stores (`add`, `async_add`), and any other transform component an `IngestionPipeline` runs |
 | PDF libraries | a file read with pypdf's `PdfReader` or PyMuPDF's `Document` in your own code, page by page |
-| Haystack | converters (`PyPDFToDocument` and every other `…ToDocument` or converter), splitters, `DocumentCleaner`, document embedders and `DocumentWriter`, run by a `Pipeline` or alone, through `run` or `run_async` |
+| Haystack | each component a `Pipeline` runs, through Haystack's own tracer: converters (`PyPDFToDocument` and every other `…ToDocument` or converter), splitters, `DocumentCleaner`, document embedders, `DocumentWriter`, and any component of your own given documents; the same components run alone, through `run` or `run_async` |
 | Docling | the converter (`DocumentConverter.convert`, `convert_all`) and its chunkers (`chunk`), called directly or through Docling's LangChain loader |
 | Unstructured | the partitioners (`partition`, `partition_pdf` and every other `partition_<format>`) and the chunkers (`chunk_by_title`, `chunk_elements`) |
 | Marker | its converters, such as `PdfConverter`, called with a file |
@@ -90,6 +90,13 @@ Marker returns a file's Markdown, which does not say where it came from: its ste
 the file it was called with, and Markdown asked to be paginated is read as a document a
 page. A Haystack document is read by its `content` and `meta`, and a writer's step names
 each document by its ID.
+
+A Haystack pipeline says what each component was given and returned to its tracer. While
+the block is open, complydoc's tracer stands between Haystack and the one you set, Langfuse's
+or OpenTelemetry's, which is sent every span as before and put back when the block ends.
+Yours is sent a document's content only where you turned content tracing on; complydoc's
+reads it either way, and it stays on your machine. A component of your own given
+documents, such as a deduplicating step, is a `transform` step.
 
 ## When the block ends
 

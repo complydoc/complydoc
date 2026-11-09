@@ -373,6 +373,8 @@ def install() -> dict[str, str]:
     _libraries.update(readers.install())
     # Functions a program calls by name, as Unstructured's partitioners.
     _libraries.update(functions.install())
+    # Haystack's pipelines, through Haystack's own tracer.
+    haystack.install()
     _finder = _LateImports()
     sys.meta_path.insert(0, _finder)
     return _libraries
@@ -390,6 +392,7 @@ def uninstall() -> None:
     _pending.clear()
     readers.uninstall()
     functions.uninstall()
+    haystack.uninstall()
     while _installed:
         cls, method, original = _installed.pop()
         setattr(cls, method, original)
@@ -459,6 +462,8 @@ def _imported(module: Any) -> None:
     if name in _PDF_LIBRARIES:
         _libraries.update(readers.install())
     _libraries.update(functions.imported(module))
+    if name == "haystack.tracing.tracer":
+        haystack.install()
 
 
 class _LateImports(importlib.abc.MetaPathFinder):
@@ -556,6 +561,9 @@ def _observed(original: Any, method: str, kind_of: Callable[[Any], str], target:
         on_class = isinstance(self, type)
         module = self.__module__ if on_class else type(self).__module__
         label = target.label or (self.__name__ if on_class else None)
+        # A component a pipeline is running is its span's step: `run` gives it settings.
+        if target.made_by and haystack.claimed(self):
+            return None
         kind = kind_of(self)
         given = target.reads(original, args, kwargs) if target.reads is not None else None
         inputs = (

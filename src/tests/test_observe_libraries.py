@@ -10,6 +10,7 @@ machine; Haystack, Chonkie, Qdrant and Chroma are used for real where they are i
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import importlib.util
 import inspect
 import json
@@ -683,3 +684,87 @@ def test_unstructured_functions_imported_by_name_are_steps(unstructured: types.M
     # Put back where the program holds it, and where Unstructured defines it.
     assert unstructured.partition_pdf is original
     assert sys.modules["unstructured.partition.pdf"].partition_pdf is original
+
+
+def test_haystack_s_tracer_makes_a_step_of_each_component_a_pipeline_runs() -> None:
+    pytest.importorskip("haystack")
+    from haystack import Document, Pipeline, component, tracing
+    from haystack.components.preprocessors import DocumentSplitter
+
+    # Sockets declared, not annotated: this file's annotations are strings, which Haystack
+    # cannot connect.
+    @component
+    class Deduplicate:
+        """A component of the program's own, given documents."""
+
+        def __init__(self) -> None:
+            component.set_input_type(self, "documents", list[Document])
+
+        @component.output_types(documents=list[Document])
+        def run(self, **inputs: Any) -> dict[str, list[Document]]:
+            return {"documents": list({d.content.strip(): d for d in inputs["documents"]}.values())}
+
+    @component
+    class Broken:
+        def __init__(self) -> None:
+            component.set_input_type(self, "documents", list[Document])
+
+        @component.output_types(documents=list[Document])
+        def run(self, **inputs: Any) -> dict[str, list[Document]]:
+            raise RuntimeError("the index is down")
+
+    class Recorder(tracing.Tracer):  # type: ignore[misc]
+        """A tracer of the program's own, as Langfuse's would be."""
+
+        def __init__(self) -> None:
+            self.spans: list[str] = []
+            self.tags: list[str] = []
+
+        @contextlib.contextmanager
+        def trace(
+            self, operation_name: str, tags: dict[str, Any] | None = None, parent_span: Any = None
+        ) -> Iterator[Any]:
+            self.spans.append(operation_name)
+            recorder = self
+
+            class Span(tracing.Span):  # type: ignore[misc]
+                def set_tag(self, key: str, value: Any) -> None:
+                    recorder.tags.append(key)
+
+            yield Span()
+
+        def current_span(self) -> Any:
+            return None
+
+    pipeline = Pipeline()
+    pipeline.add_component("split", DocumentSplitter(split_by="sentence", split_length=1))
+    pipeline.add_component("dedupe", Deduplicate())
+    pipeline.connect("split", "dedupe")
+    broken = Pipeline()
+    broken.add_component("write", Broken())
+    documents = [Document(content=f"{PAGES[0]} {PAGES[0]}")]
+
+    recorder = Recorder()
+    tracing.enable_tracing(recorder)
+    try:
+        with cd.observe("haystack", out=None) as observation:
+            pipeline.run({"split": {"documents": documents}})
+            DocumentSplitter(split_by="word", split_length=4).run(documents=documents)
+            with pytest.raises(Exception, match="the index is down"):
+                broken.run({"write": {"documents": documents}})
+        assert tracing.tracer.actual_tracer is recorder
+    finally:
+        tracing.disable_tracing()
+
+    split, dedupe, alone, failed = observation.report.trace.stages
+    assert (split.kind, split.component, split.documents_out) == ("split", "DocumentSplitter", 2)
+    # The span does not carry the component's settings; its `run` gives them.
+    assert split.parameters["split_by"] == "sentence" and split.parameters["split_length"] == 1
+    # A component of the program's own is a step where it is given documents.
+    assert (dedupe.kind, dedupe.component, dedupe.documents_out) == ("transform", "Deduplicate", 1)
+    # Run alone, a component opens no span, and is a step all the same.
+    assert (alone.component, alone.parameters["split_by"]) == ("DocumentSplitter", "word")
+    assert failed.error is not None and "the index is down" in failed.error
+    # The program's tracer saw every span, and no content: content tracing is off.
+    assert recorder.spans.count("haystack.component.run") == 3
+    assert "haystack.component.input" not in recorder.tags
