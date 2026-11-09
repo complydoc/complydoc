@@ -23,6 +23,20 @@ Name report files or other folders to open those instead:
 complydoc ui reports/ baseline.json
 ```
 
+Name a folder of documents that has no report yet, and it is audited first, then
+opened:
+
+```bash
+complydoc ui ./contracts
+```
+
+The audit keeps each page's text and compares pypdf's reading with complydoc's, as
+`complydoc demo` does, and reads `.complydoc-evals.yaml` when the folder has one. The
+report is written to `.complydoc/contracts.json`, and naming the folder again opens that
+report without reading the documents again. The audit runs in the command before the
+viewer starts. For other options, run `complydoc audit` and
+open its report.
+
 ## Audit documents from the viewer
 
 Drop documents or a folder on the viewer, or choose them, and it audits them: from

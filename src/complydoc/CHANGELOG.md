@@ -9,6 +9,10 @@ separately.
 
 ### Added
 
+- `complydoc ui ./documents` on a folder of documents with no report in it audits the
+  folder first, keeping each page's text and comparing pypdf, as `demo` does, writes the
+  report to `.complydoc/<folder name>.json` and opens the viewer on it. Naming the folder
+  again opens that report without reading it again.
 - Documents and folders dropped on the viewer, or chosen, are audited when `complydoc ui`
   serves this machine and may write: from the empty page and from the folder menu's "Audit
   documents…". They are copied to `.complydoc/uploads/<name>/`, read with the defaults
