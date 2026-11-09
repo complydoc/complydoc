@@ -5,7 +5,13 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
-## Unreleased
+## [0.7.9] — 2026-11-09
+
+`cd.observe` reads more of what an ingestion pipeline is built from: Haystack pipelines,
+through Haystack's own tracer; embeddings through Cohere's, Voyage's, Mistral's and Gemini's
+SDKs and sentence-transformers; Unstructured, Marker and Chonkie called directly; and
+Qdrant's, Chroma's and Pinecone's own clients. A query embedded to search with is no longer
+a step. The report stays at schema 27.
 
 ### Added
 
