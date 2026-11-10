@@ -154,7 +154,7 @@ jobs:
           key: fastembed-bge-small-en-v1.5
       - run: uv sync --extra ocr --group dev --group integrations --group pipelines
       - name: tests
-        run: uv run pytest -q src/tests/test_real_pipelines.py src/tests/test_observe.py
+        run: uv run pytest -q src/tests/test_real_pipelines.py src/tests/test_observe.py src/tests/test_observe_libraries.py
 
   fixtures:
     name: fixtures match their generator

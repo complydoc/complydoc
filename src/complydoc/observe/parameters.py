@@ -14,7 +14,7 @@ from typing import Any, Final
 
 from complydoc.loaders.inspection import ABSOLUTE_PATH
 
-__all__ = ["parameters_of"]
+__all__ = ["parameters_of", "settings_of"]
 
 _SECRET: Final = re.compile(r"key|token|secret|passw|credential|auth|cookie|header", re.I)
 """Names of settings left out whatever they hold."""
@@ -41,7 +41,12 @@ def parameters_of(component: Any) -> dict[str, Any]:
         source = {name: getattr(component, name, None) for name in fields}
     else:
         source = dict(getattr(component, "__dict__", {}))
+    return settings_of(source)
 
+
+def settings_of(source: dict[str, Any]) -> dict[str, Any]:
+    """The plain values of `source`, by name, secrets left out: a component's attributes,
+    or the keyword arguments of a function called as a step."""
     values: dict[str, Any] = {}
     for raw, value in source.items():
         name = raw.lstrip("_")

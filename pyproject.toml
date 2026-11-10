@@ -101,6 +101,13 @@ integrations = [
     "langchain-community>=0.3",
     "docx2txt>=0.8",
     "llama-index-core>=0.12",
+    # Observed by `cd.observe` for real: embedding SDKs against a server on the machine.
+    "haystack-ai>=2.10",
+    "chonkie>=1.0",
+    "cohere>=5.0",
+    "voyageai>=0.3",
+    "mistralai>=1.0",
+    "google-genai>=1.0",
 ]
 # What src/scripts/build_docs.py reads the code with to write the reference pages.
 # The site itself is built by Starlight, in docs-site/. Separate from `dev` because
@@ -233,6 +240,8 @@ module = [
     "httpx2",
     "httpx2.*",
     "llama_index.*",
+    "haystack",
+    "haystack.*",
 ]
 ignore_missing_imports = true
 

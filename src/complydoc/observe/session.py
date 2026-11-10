@@ -52,6 +52,10 @@ loader for each file, say. A call the same component makes on itself (`load` cal
 `lazy_load`, `split_documents` calling `create_documents`) is part of the stage, not a
 stage of its own."""
 
+_quiet: ContextVar[bool] = ContextVar("complydoc_quiet", default=False)
+"""A call that is no step of ingestion is running: a query embedded to search with, say.
+What it calls underneath, a provider's SDK or a model's `encode`, is no step either."""
+
 
 @dataclass(slots=True)
 class Recording:
@@ -266,8 +270,19 @@ def idle() -> bool:
 
 
 def in_stage() -> bool:
-    """True while a stage is running: what it does is part of it."""
-    return _inside.get() is not None
+    """True while a stage is running: what it does is part of it. True as well while
+    `quietly` runs a call that is no stage, so nothing it does is one."""
+    return _inside.get() is not None or _quiet.get()
+
+
+@contextlib.contextmanager
+def quietly() -> Iterator[None]:
+    """Run a call that is no step of ingestion, so nothing it calls is recorded."""
+    token = _quiet.set(True)
+    try:
+        yield
+    finally:
+        _quiet.reset(token)
 
 
 def begin(
@@ -283,7 +298,7 @@ def begin(
     """Open a stage in the current block, or return None where the call is not one: no
     block is open, or the component running is calling itself."""
     observation = _current
-    if observation is None:
+    if observation is None or _quiet.get():
         return None
     within = _inside.get()
     if within is not None and component is not None and within.owner == id(component):
@@ -351,16 +366,19 @@ def finish(recording: Recording, result: Any) -> None:
             if result and all(_plain_id(item) for item in result):
                 recording.ids = [str(item) for item in result]
                 _pass_ids_up(recording)
+        elif isinstance(result, dict) and isinstance(result.get("documents_written"), int):
+            # Haystack's `DocumentWriter`.
+            recording.vectors = result["documents_written"]
+        elif recording.ids is not None:
+            # A database's client returns a status: what it stored is what it was given.
+            recording.vectors = len(recording.ids)
+            _pass_ids_up(recording)
         return
     if recording.kind == "embed":
         # A list of vectors from a framework; from a provider's SDK, a response holding them.
-        sdk = type(result).__module__.startswith("openai")
-        vectors = getattr(result, "data", None) if sdk else result
-        if isinstance(vectors, list):
-            recording.vectors = len(vectors)
-            first = vectors[0] if vectors else None
-            first = getattr(first, "embedding", first)
-            recording.dimensions = len(first) if isinstance(first, Sequence) else None
+        shape = adapters.vectors_of(result)
+        if shape is not None:
+            recording.vectors, recording.dimensions = shape
         return
     documents = adapters.listed(result)
     if documents is not None:

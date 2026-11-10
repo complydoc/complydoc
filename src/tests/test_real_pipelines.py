@@ -147,7 +147,10 @@ def test_langchain_semantic_search(embeddings, store: str, tmp_path: Path) -> No
     assert sorted(named([s.parameters["file_path"] for s in reads])) == [f.name for f in files]
     stored = one(trace, "store")
     assert (stored.component, stored.method) == (store, "add_documents")
-    assert [s.kind for s in inside(trace, stored)] == ["embed"]
+    # Chroma's store writes through Chroma's own collection, which is a step inside it.
+    below = [(s.kind, s.component) for s in inside(trace, stored)]
+    assert below[0][0] == "embed"
+    assert below[1:] == ([("store", "Chroma collection")] if store == "Chroma" else [])
 
     # The scan's empty page is warned of on the read of that file, and goes no further.
     assert [named(sources) for sources in warned(trace, "empty_document")] == [[SCAN]]
