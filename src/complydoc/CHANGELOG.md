@@ -5,7 +5,11 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
-## Unreleased
+## [0.7.11] — 2026-11-10
+
+Evals are checked when an audit keeps no page text, an IBAN wrapped onto the next line is
+found, and the locked dependencies move past their open security advisories (Pillow 13,
+pypdf 6.21, certifi and the rest). The report stays at schema 27.
 
 ### Fixed
 
