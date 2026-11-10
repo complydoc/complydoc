@@ -13,6 +13,10 @@ separately.
   default, checks the folder's evals file instead of writing an empty `evals` section. The
   text is read for the evals and left out of the report, and so is the nearest passage to a
   missed fact.
+- An IBAN wrapped onto the next line between two of its groups, as a narrow column breaks
+  it, is found whole. It was missed: the part before the break failed the checksum. Found
+  whole, it is the same account as the IBAN written on one line, so `complydoc find` traces
+  both.
 
 ## [0.7.10] — 2026-11-10
 
