@@ -14,6 +14,7 @@ multiprocessing. The console entry point already does.
 
 from __future__ import annotations
 
+import dataclasses
 import datetime as dt
 import platform
 import time
@@ -326,6 +327,12 @@ def run_audit(
         # A model object is a function in this process and cannot cross into a
         # worker, so every document is read here, where it is.
         jobs, timeout = 1, None
+    # Evals are checked against the page text, so a folder with an evals file has it read
+    # even when the report is not to keep it, and it is left out once they are checked.
+    from complydoc.evals import find_evals_file
+
+    for_evals = not extracted_text and find_evals_file(target) is not None
+    reading = extracted_text or for_evals
     plan = plan_audit(
         target,
         config,
@@ -336,7 +343,7 @@ def run_audit(
         recurse=recurse,
         previews=previews,
         page_images=page_images,
-        extracted_text=extracted_text,
+        extracted_text=reading,
         ocr_compare=ocr_compare,
         render_dpi=render_dpi,
         password=password,
@@ -435,16 +442,25 @@ def run_audit(
             None if not judging else judge_spec or getattr(judge_concepts, "__name__", "your own")
         ),
     )
-    report.evals = _evals(Path(target), report, extracted_text)
+    report.evals = _evals(Path(target), report, reading)
+    if for_evals:
+        for document in report.documents:
+            document.extracted_text = []
+        # The nearest passage to a missed fact is the document's own text too.
+        if report.evals is not None:
+            report.evals = dataclasses.replace(
+                report.evals,
+                checks=[dataclasses.replace(c, nearest={}) for c in report.evals.checks],
+            )
     return report
 
 
 def _evals(target: Path, report: AuditReport, extracted_text: bool) -> EvalSummary | None:
     """What the folder's evals file expects, checked against this run's own reading.
 
-    None without the file. With it but without the text kept, the file is named and
-    nothing is checked, since there is nothing to check it against. A file that cannot
-    be read is named with the reason, and the run is kept.
+    None without the file. A run that keeps no text still reads it for the evals (see
+    `run_audit`), so `extracted_text` is false only for a report assembled without it.
+    A file that cannot be read is named with the reason, and the run is kept.
     """
     from complydoc.evals import EvalError, find_evals_file, load_evals, readings_of
     from complydoc.extraction.facts import evaluate_facts
