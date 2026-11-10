@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import http.client
+import io
 import json
 import os
 from pathlib import Path
@@ -16,6 +17,7 @@ from complydoc.cli import app
 from complydoc.concepts import CONCEPTS_FILENAME, Concept
 from complydoc.viewer import ViewerNotBuiltError, find_reports, launch_ui
 from complydoc.viewer.server import is_loopback
+from tests.helpers import FIXTURES
 
 runner = CliRunner()
 
@@ -662,3 +664,175 @@ def test_in_a_container_the_command_points_at_the_published_address(
     output = " ".join(result.output.split())
     assert "of this container" in output
     assert "published it on" in output
+
+
+def wait_for(upload, states=("done", "failed"), seconds: float = 120) -> None:
+    import time
+
+    deadline = time.monotonic() + seconds
+    while upload.state not in states:
+        assert time.monotonic() < deadline, f"still {upload.state}"
+        time.sleep(0.05)
+
+
+def put(port: int, path: str, data: bytes, origin: str | None) -> tuple[int, bytes]:
+    connection = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+    headers = {"Content-Type": "application/octet-stream"}
+    if origin is not None:
+        headers["Origin"] = origin
+    connection.request("PUT", path, body=data, headers=headers)
+    response = connection.getresponse()
+    body = response.read()
+    connection.close()
+    return response.status, body
+
+
+@pytest.fixture
+def stand_in_audit(monkeypatch):
+    """An audit that writes a report at once, so the server's part is what is tested."""
+    from complydoc.viewer import uploads
+
+    def audit(folder: Path, report: Path, progress) -> None:
+        files = sorted(p for p in folder.rglob("*") if p.is_file())
+        for index, file in enumerate(files, 1):
+            progress(index, len(files), file)
+        write_report(report, target=str(folder), schema=27)
+
+    monkeypatch.setattr(uploads, "_audit_folder", audit)
+
+
+def test_documents_dropped_on_the_viewer_are_audited_and_listed(
+    tmp_path: Path, dist: Path, stand_in_audit
+):
+    reports = tmp_path / ".complydoc"
+    reports.mkdir()
+    viewer = launch_ui(reports, port=0, open_browser=False, dist=dist, uploads=reports / "uploads")
+    try:
+        origin = f"http://127.0.0.1:{viewer.port}"
+        _status, _headers, page = get(viewer.port, "/")
+        assert b'"uploads": "api/uploads"' in page
+
+        status, body = send(
+            viewer.port, "POST", "/api/uploads", {"name": "contracts"}, origin, "application/json"
+        )
+        assert status == 201, body
+        upload = json.loads(body)
+        assert upload["name"] == "contracts"
+        base = f"/api/uploads/{upload['id']}"
+        for name in ("msa.pdf", "annex/prices.docx"):
+            status, body = put(viewer.port, f"{base}/files/{name}", b"%PDF-1.4", origin)
+            assert status == 200, body
+        assert json.loads(body)["files"] == 2
+
+        status, body = send(viewer.port, "POST", f"{base}/audit", {}, origin, "application/json")
+        assert status == 200, body
+        wait_for(viewer._server.uploads.get(upload["id"]))
+        status, _headers, body = get(viewer.port, base)
+        done = json.loads(body)
+        assert done["state"] == "done", done
+        assert (done["done"], done["total"]) == (2, 2)
+        assert (reports / "uploads" / "contracts" / "annex" / "prices.docx").is_file()
+        assert done["report"] in {report.id for report in viewer.reports()}
+
+        # Read already: no more files, and not read twice.
+        assert put(viewer.port, f"{base}/files/late.pdf", b"x", origin)[0] == 400
+        assert send(viewer.port, "POST", f"{base}/audit", {}, origin, "application/json")[0] == 400
+    finally:
+        viewer.stop()
+
+
+def test_an_upload_folder_outside_the_sources_is_searched_too(
+    tmp_path: Path, dist: Path, stand_in_audit
+):
+    report = write_report(tmp_path / "elsewhere" / "complydoc.json")
+    viewer = launch_ui(
+        report, port=0, open_browser=False, dist=dist, uploads=tmp_path / ".complydoc" / "uploads"
+    )
+    try:
+        uploads = viewer._server.uploads
+        upload = uploads.create("x")
+        uploads.receive(upload, "a.pdf", io.BytesIO(b"%PDF"), 4)
+        uploads.start(upload)
+        wait_for(upload)
+        assert len(viewer.reports()) == 2
+    finally:
+        viewer.stop()
+
+
+@pytest.mark.parametrize(
+    "name", ["../escape.pdf", ".hidden/a.pdf", "notes.exe", "", "a/../../b.pdf"]
+)
+def test_an_upload_takes_only_documents_and_keeps_them_inside_it(
+    tmp_path: Path, dist: Path, name: str
+):
+    reports = tmp_path / ".complydoc"
+    viewer = launch_ui(reports, port=0, open_browser=False, dist=dist, uploads=reports / "uploads")
+    try:
+        origin = f"http://127.0.0.1:{viewer.port}"
+        _status, body = send(viewer.port, "POST", "/api/uploads", {}, origin, "application/json")
+        upload = json.loads(body)
+        status, _body = put(viewer.port, f"/api/uploads/{upload['id']}/files/{name}", b"x", origin)
+        assert status in {400, 404}
+        written = [p for p in tmp_path.rglob("*") if p.is_file() and p.suffix != ".html"]
+        assert not [p for p in written if "dist" not in p.parts], written
+    finally:
+        viewer.stop()
+
+
+def test_refuses_documents_from_anywhere_but_its_own_page(tmp_path: Path, dist: Path):
+    reports = tmp_path / ".complydoc"
+    viewer = launch_ui(reports, port=0, open_browser=False, dist=dist, uploads=reports / "uploads")
+    try:
+        own = f"http://127.0.0.1:{viewer.port}"
+        assert (
+            send(
+                viewer.port, "POST", "/api/uploads", {}, "http://evil.example", "application/json"
+            )[0]
+            == 403
+        )
+        assert send(viewer.port, "POST", "/api/uploads", {}, own, "text/plain")[0] == 403
+        _status, body = send(viewer.port, "POST", "/api/uploads", {}, own, "application/json")
+        upload = json.loads(body)
+        path = f"/api/uploads/{upload['id']}/files/a.pdf"
+        assert put(viewer.port, path, b"%PDF", "http://evil.example")[0] == 403
+        assert put(viewer.port, path, b"%PDF", None)[0] == 403
+        assert not (reports / "uploads" / upload["name"] / "a.pdf").exists()
+    finally:
+        viewer.stop()
+
+
+@pytest.mark.parametrize(
+    "options", [{"read_only": True}, {"host": "0.0.0.0", "allowed_hosts": ("*",)}]
+)
+def test_a_shared_or_read_only_viewer_takes_no_documents(tmp_path: Path, dist: Path, options: dict):
+    reports = tmp_path / ".complydoc"
+    viewer = launch_ui(
+        reports, port=0, open_browser=False, dist=dist, uploads=reports / "uploads", **options
+    )
+    try:
+        assert viewer.uploads is None
+        _status, _headers, page = get(viewer.port, "/", host=f"127.0.0.1:{viewer.port}")
+        assert b"uploads" not in page
+        origin = f"http://127.0.0.1:{viewer.port}"
+        status, _body = send(viewer.port, "POST", "/api/uploads", {}, origin, "application/json")
+        assert status == 403
+        assert not (reports / "uploads").exists()
+    finally:
+        viewer.stop()
+
+
+def test_an_upload_is_audited_as_the_demo_audits_its_samples(tmp_path: Path):
+    """The real audit, run as the server runs it: in a thread of its own."""
+    from complydoc.viewer.uploads import Uploads
+
+    uploads = Uploads(tmp_path / "uploads")
+    upload = uploads.create("contracts")
+    data = (FIXTURES / "native_text.pdf").read_bytes()
+    uploads.receive(upload, "native_text.pdf", io.BytesIO(data), len(data))
+    uploads.start(upload)
+    wait_for(upload)
+    assert upload.state == "done", upload.error
+    report = json.loads(upload.report.read_text())
+    (document,) = report["documents"]
+    assert document["extracted_text"], "the text is kept for the diff"
+    assert "pypdf" in json.dumps(report["run"]), "pypdf is compared, as in the demo"

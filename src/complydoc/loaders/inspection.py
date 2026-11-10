@@ -89,6 +89,7 @@ __all__ = [
     "common_root",
     "document_content",
     "inspect_documents",
+    "is_document_like",
     "load_items",
 ]
 
@@ -478,13 +479,13 @@ def load_items(source: Any) -> list[Any]:
 def _load_items(source: Any, call: Callable[[], Iterable[Any]] | None) -> list[Any]:
     if call is not None:
         return list(call())
-    if _is_document_like(source):
+    if is_document_like(source):
         return [source]
     return list(source)
 
 
 def _loading_call(source: Any) -> Callable[[], Iterable[Any]] | None:
-    if _is_document_like(source) or isinstance(source, (list, tuple)):
+    if is_document_like(source) or isinstance(source, (list, tuple)):
         return None
     for attribute in ("load", "load_data", "lazy_load"):
         method = getattr(source, attribute, None)
@@ -509,12 +510,22 @@ def _name_of(source: Any, call: Callable[[], Iterable[Any]] | None) -> str:
     return type(source).__name__
 
 
-def _is_document_like(item: Any) -> bool:
+def is_document_like(item: Any) -> bool:
+    """Whether `item` is one document, of any framework the inspection reads."""
     if isinstance(item, str):
         return True
     if isinstance(item, Mapping):
         return "page_content" in item or "text" in item
-    return hasattr(item, "page_content") or (hasattr(item, "text") and hasattr(item, "metadata"))
+    return (
+        hasattr(item, "page_content")
+        or (hasattr(item, "text") and hasattr(item, "metadata"))
+        or _is_haystack(item)
+    )
+
+
+def _is_haystack(item: Any) -> bool:
+    """A Haystack document: its text in `content`, which a file kept whole leaves as None."""
+    return hasattr(item, "content") and hasattr(item, "meta") and hasattr(item, "blob")
 
 
 def document_content(item: Any) -> tuple[str, dict[str, Any]]:
@@ -530,6 +541,9 @@ def document_content(item: Any) -> tuple[str, dict[str, Any]]:
     elif hasattr(item, "text") and hasattr(item, "metadata"):
         text = item.text
         metadata = item.metadata or {}
+    elif _is_haystack(item):
+        text = item.content if item.content is not None else ""
+        metadata = item.meta or {}
     else:
         raise TypeError(
             f"cannot read a document from {type(item).__name__}: expected "

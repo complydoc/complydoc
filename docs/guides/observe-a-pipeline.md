@@ -18,8 +18,13 @@ Nothing in your pipeline changes. Outside the block, nothing is touched.
 | LangChain | document loaders (`load`, `lazy_load`, `aload`, `alazy_load`), document transformers, text splitters (`split_documents`, `create_documents`), embedding models (`embed_documents`, `aembed_documents`) and vector stores (`add_documents`, `add_texts` and their async forms) |
 | LlamaIndex | readers (`load_data`, `lazy_load_data` and their async forms), node parsers (`get_nodes_from_documents`), embedding models (`get_text_embedding_batch`), vector stores (`add`, `async_add`), and any other transform component an `IngestionPipeline` runs |
 | PDF libraries | a file read with pypdf's `PdfReader` or PyMuPDF's `Document` in your own code, page by page |
+| Haystack | each component a `Pipeline` runs, through Haystack's own tracer: converters (`PyPDFToDocument` and every other `…ToDocument` or converter), splitters, `DocumentCleaner`, document embedders, `DocumentWriter`, and any component of your own given documents; the same components run alone, through `run` or `run_async` |
 | Docling | the converter (`DocumentConverter.convert`, `convert_all`) and its chunkers (`chunk`), called directly or through Docling's LangChain loader |
-| Embedding SDKs | OpenAI's `client.embeddings.create`, sync and async, priced by the model the call names |
+| Unstructured | the partitioners (`partition`, `partition_pdf` and every other `partition_<format>`) and the chunkers (`chunk_by_title`, `chunk_elements`) |
+| Marker | its converters, such as `PdfConverter`, called with a file |
+| Chonkie | its chunkers (`chunk`, `chunk_batch`, `chunk_document`, a chunker called itself, and the async forms) |
+| Embedding SDKs | OpenAI's `client.embeddings.create`, Cohere's `embed` (v1 and v2 clients), Voyage's `embed`, Mistral's `embeddings.create`, and Gemini's `models.embed_content`, sync and async, priced by the model the call names; sentence-transformers' `encode` and `encode_document`, run on your machine |
+| Vector databases | Qdrant's `upsert`, `upload_points` and `upload_collection`; a Chroma collection's `add` and `upsert`; a Pinecone index's `upsert` and `upsert_records`, over HTTP, async or gRPC |
 | complydoc | its pipeline steps, such as `MaskIdentifiers` and `StripPathMetadata` |
 | Your code | any function marked `@cd.stage` |
 
@@ -36,6 +41,14 @@ checked for what a loader is checked for (see Warnings).
 A vector store's step is what it was given, since that is what stays in the index:
 its texts, the metadata kept with them and the identifiers in both. A store that
 embeds what it is given holds the embedding call as a step inside it.
+
+A database's own client is a store step too, called directly or by a framework's store.
+Each record is read as a document under the ID it is stored by: its text is the field a
+framework keeps it in (`page_content`, `text`, `document`, `content` or `chunk_text`), and
+the rest of the payload is its metadata, LangChain's nested `metadata` field included.
+Called by LangChain's `Chroma` or LlamaIndex's `QdrantVectorStore`, the client's call is a
+step inside the store's. A batch given as an iterator, as `upload_points` takes one, is
+read by the database and not by complydoc, so its step holds no documents.
 
 A library is observed wherever it is imported, before the block or inside it, as a
 function that imports what it uses does. A call made
@@ -54,19 +67,40 @@ Docling's converter returns a result holding the whole document; its step is rea
 document a page, named by the file, as LangChain's PDF loaders give them. A chunk keeps
 Docling's provenance, so its page is known. What your code receives is Docling's own.
 
-Unstructured's `partition` functions are plain functions your code imports before the
-block opens, so they are not observed by themselves. Mark the function that calls them,
-and its elements are read as documents, metadata included:
+Unstructured's partitioners and chunkers are plain functions your code imports by name,
+usually before the block opens. Each is replaced where Unstructured defines it and in your
+own modules that hold it, notebooks included, and put back when the block ends. Its
+elements are read as documents, metadata included, and its keyword arguments, such as
+`strategy` or `max_characters`, are the step's settings. `partition` calling
+`partition_pdf` is one step.
+
+A name imported inside a function before the block opens is out of reach. There, mark the
+function that calls it:
 
 ```python
-from unstructured.partition.auto import partition
-
 @cd.stage("partition", kind="load")
 def read(path):
+    from unstructured.partition.auto import partition
     return partition(filename=path)
 ```
 
 Unstructured used through LangChain's or LlamaIndex's loader is observed as that loader.
+
+Marker returns a file's Markdown, which does not say where it came from: its step names
+the file it was called with, and Markdown asked to be paginated is read as a document a
+page. A Haystack document is read by its `content` and `meta`, and a writer's step names
+each document by its ID.
+
+A Haystack pipeline says what each component was given and returned to its tracer. While
+the block is open, complydoc's tracer stands between Haystack and the one you set, Langfuse's
+or OpenTelemetry's, which is sent every span as before and put back when the block ends.
+Yours is sent a document's content only where you turned content tracing on; complydoc's
+reads it either way, and it stays on your machine. A component of your own given
+documents, such as a deduplicating step, is a `transform` step.
+
+A query embedded to search with is no step of ingestion, and nor is the call it makes to a
+provider's SDK or a local model: a Haystack text embedder, LangChain's `embed_query` and
+LlamaIndex's `get_query_embedding` run inside the block without being recorded or priced.
 
 ## When the block ends
 

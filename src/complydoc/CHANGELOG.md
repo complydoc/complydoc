@@ -5,6 +5,61 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
+## [0.7.10] — 2026-11-10
+
+Documents can be audited without writing a command for them. `complydoc ui ./documents`
+audits a folder that has no report yet and opens the viewer on it, and the viewer on this
+machine audits documents and folders dropped on it, copying them to `.complydoc/uploads`
+and opening the report when it is written. The report stays at schema 27.
+
+### Added
+
+- `complydoc ui ./documents` on a folder of documents with no report in it audits the
+  folder first, keeping each page's text and comparing pypdf, as `demo` does, writes the
+  report to `.complydoc/<folder name>.json` and opens the viewer on it. Naming the folder
+  again opens that report without reading it again.
+- Documents and folders dropped on the viewer, or chosen, are audited when `complydoc ui`
+  serves this machine and may write: from the empty page and from the folder menu's "Audit
+  documents…". They are copied to `.complydoc/uploads/<name>/`, read with the defaults
+  `demo` uses, and the report opens when it is written. Under `--host` or `--read-only` the
+  viewer takes no documents.
+
+## [0.7.9] — 2026-11-09
+
+`cd.observe` reads more of what an ingestion pipeline is built from: Haystack pipelines,
+through Haystack's own tracer; embeddings through Cohere's, Voyage's, Mistral's and Gemini's
+SDKs and sentence-transformers; Unstructured, Marker and Chonkie called directly; and
+Qdrant's, Chroma's and Pinecone's own clients. A query embedded to search with is no longer
+a step. The report stays at schema 27.
+
+### Added
+
+- `cd.observe` records Haystack pipelines: converters, splitters, `DocumentCleaner`,
+  document embedders and `DocumentWriter` are each a step, run by a `Pipeline` or alone.
+  They are read through Haystack's own tracer, so a component of your own given documents
+  is a step too, and a tracer you set, such as Langfuse's, is sent every span as before
+  and no content it was not sent already.
+  `complydoc.integrations.haystack.as_component(step)` puts a complydoc step in one, and
+  complydoc's steps take Haystack documents, keeping each one's ID.
+- Embeddings called through Cohere's, Voyage's, Mistral's and Gemini's own SDKs are steps,
+  sync and async, priced by the model the call names, as OpenAI's already were.
+  sentence-transformers' `encode` is a step that sent nothing off the machine.
+- A vector database's own client is a store step: Qdrant's `upsert`, `upload_points` and
+  `upload_collection`, a Chroma collection's `add` and `upsert`, and a Pinecone index's
+  `upsert` and `upsert_records`. Each record is read with its payload, under its ID, so an
+  identifier found is traced to the record that holds it.
+- Unstructured's partitioners and chunkers are observed by themselves, imported by name
+  before the block or inside it, with no `@cd.stage` around them. Marker's converters and
+  Chonkie's chunkers are steps too.
+
+### Changed
+
+- Called by a framework's store, a database client's call is now a step inside the store's:
+  LangChain's `Chroma` holds a `Chroma collection` step.
+- A query embedded to search with, by LangChain's `embed_query`, LlamaIndex's
+  `get_query_embedding` or a Haystack text embedder, is no longer a step, and nor is the
+  provider's SDK call it makes: a search run in the block no longer adds a priced embed step.
+
 ## [0.7.8] — 2026-11-06
 
 A document's Whole button in the viewer says what the file comes to sent whole, as a PDF, to

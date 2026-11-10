@@ -17,9 +17,16 @@
   <a href="https://github.com/langchain-ai/langchain">LangChain</a> &middot;
   <a href="https://github.com/run-llama/llama_index">LlamaIndex</a> &middot;
   <a href="https://github.com/Unstructured-IO/unstructured">Unstructured</a> &middot;
+  <a href="https://github.com/deepset-ai/haystack">Haystack</a> &middot;
   <a href="https://github.com/docling-project/docling">Docling</a> &middot;
   <a href="https://github.com/run-llama/llama_cloud_services">LlamaParse</a> &middot;
-  <a href="https://learn.microsoft.com/azure/ai-services/document-intelligence/">Azure Document Intelligence</a>
+  <a href="https://learn.microsoft.com/azure/ai-services/document-intelligence/">Azure Document Intelligence</a> &middot;
+  <a href="https://github.com/datalab-to/marker">Marker</a> &middot;
+  <a href="https://github.com/chonkie-inc/chonkie">Chonkie</a><br>
+  <a href="https://github.com/qdrant/qdrant-client">Qdrant</a> &middot;
+  <a href="https://github.com/chroma-core/chroma">Chroma</a> &middot;
+  <a href="https://github.com/pinecone-io/pinecone-python-client">Pinecone</a> &middot;
+  Cohere, Voyage, Mistral, Gemini and OpenAI embeddings
 </div>
 
 <br>
@@ -51,7 +58,8 @@ complydoc ui
 ```
 
 The audit keeps both readings and flags the white sentence, the check fails on it, and
-`complydoc ui` opens the report.
+`complydoc ui` opens the report. On a folder of your own, `complydoc ui ./documents`
+audits it first and opens the viewer on it.
 
 <img alt="Viewer security page: the white sentence, marked high, confirmed, white text" src="https://raw.githubusercontent.com/complydoc/complydoc/main/docs/assets/hidden-clause-security.png">
 
@@ -131,7 +139,7 @@ The [playground](https://github.com/complydoc/playground) has all of this ready 
 GitHub, the repository is also an action:
 
 ```yaml
-- uses: complydoc/complydoc@v0.7.8
+- uses: complydoc/complydoc@v0.7.10
   with:
     path: documents
     policy: policy.yaml

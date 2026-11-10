@@ -4,7 +4,9 @@ LangChain's callbacks do not reach loaders or splitters, so the methods themselv
 wrapped instead. Base classes leave most of these methods to their subclasses
 (`Embeddings.embed_documents` is abstract, and most loaders define their own `lazy_load`),
 so each method is wrapped on every loaded class that defines it, and on each class a
-library defines as it is imported inside the block. Wrapping is undone when the block ends.
+library defines as it is imported inside the block. Haystack's components share a
+metaclass rather than a base class, so for Haystack it is every class the metaclass made.
+Wrapping is undone when the block ends.
 """
 
 from __future__ import annotations
@@ -15,12 +17,14 @@ import importlib
 import importlib.abc
 import importlib.metadata
 import inspect
+import os
 import sys
 from collections.abc import AsyncIterator, Callable, Iterator
 from dataclasses import dataclass
 from typing import Any, Final
 
-from complydoc.observe import adapters, readers, session
+from complydoc.loaders.inspection import SOURCE_KEYS
+from complydoc.observe import adapters, functions, haystack, readers, session, stores
 
 __all__ = ["install", "uninstall"]
 
@@ -54,6 +58,8 @@ _INPUT: Final = {
     "afrom_texts": "texts",
     "chunk": "dl_doc",
     "create": "input",
+    "run": "documents",
+    "run_async": "documents",
 }
 """The argument holding what a method is given, by method."""
 
@@ -71,6 +77,48 @@ class _Target:
     """Subclasses observed by another target, and so left alone by this one."""
     label: str | None = None
     """The step's name, where the class's own would not say what it is."""
+    arguments: tuple[str, ...] = ()
+    """The arguments holding what a method is given, where `_INPUT`'s for the method is not
+    it: the first passed by name, or else the first passed."""
+    reads: stores.Reader | None = None
+    """Reads a database client's records as documents and their IDs."""
+    made_by: bool = False
+    """The base is a metaclass: the classes observed are those it made, each of the kind
+    `haystack.kind_of` says, and none it says is no step."""
+    sourced: bool = False
+    """A load's documents do not say which file they came from: the path it was called with
+    is their source."""
+
+
+_QDRANT: Final = (
+    ("qdrant_client.qdrant_client", "QdrantClient"),
+    ("qdrant_client.async_qdrant_client", "AsyncQdrantClient"),
+)
+
+_PINECONE: Final = (
+    ("pinecone.index", "Index"),
+    ("pinecone.async_client.async_index", "AsyncIndex"),
+    ("pinecone.grpc", "GrpcIndex"),
+    ("pinecone.db_data.index", "Index"),
+    ("pinecone.db_data.index_asyncio", "_IndexAsyncio"),
+    ("pinecone.grpc.index_grpc", "GRPCIndex"),
+    ("pinecone.data.index", "Index"),
+)
+"""Where Pinecone's index classes are, over HTTP, async and gRPC, in its releases since 5."""
+
+
+def _at(
+    places: tuple[tuple[str, str], ...],
+    methods: tuple[str, ...],
+    kind: str,
+    distribution: str,
+    **fields: Any,
+) -> tuple[_Target, ...]:
+    """The same methods observed on each of several classes: a client and its async twin,
+    or one class where each of a library's releases has kept it."""
+    return tuple(
+        _Target(module, base, methods, kind, distribution, **fields) for module, base in places
+    )
 
 
 _TARGETS: Final = (
@@ -100,6 +148,14 @@ _TARGETS: Final = (
         "Embeddings",
         ("embed_documents", "aembed_documents"),
         "embed",
+        "langchain-core",
+    ),
+    # A query embedded to search with is no step, and nor is the SDK call it makes.
+    _Target(
+        "langchain_core.embeddings",
+        "Embeddings",
+        ("embed_query", "aembed_query"),
+        "query",
         "langchain-core",
     ),
     # Where the documents are kept: what a store is given is what stays in the index.
@@ -146,6 +202,13 @@ _TARGETS: Final = (
         "llama-index-core",
     ),
     _Target(
+        "llama_index.core.base.embeddings.base",
+        "BaseEmbedding",
+        ("get_query_embedding", "aget_query_embedding"),
+        "query",
+        "llama-index-core",
+    ),
+    _Target(
         "llama_index.core.vector_stores.types",
         "BasePydanticVectorStore",
         ("add", "async_add"),
@@ -183,6 +246,109 @@ _TARGETS: Final = (
         "embed",
         "openai",
         label="OpenAI embeddings",
+    ),
+    *_at(
+        (("cohere.client", "Client"), ("cohere.client", "AsyncClient")),
+        ("embed",),
+        "embed",
+        "cohere",
+        label="Cohere embeddings",
+        arguments=("texts",),
+    ),
+    *_at(
+        (("cohere.v2.client", "V2Client"), ("cohere.v2.client", "AsyncV2Client")),
+        ("embed",),
+        "embed",
+        "cohere",
+        label="Cohere embeddings",
+        arguments=("texts",),
+    ),
+    *_at(
+        (("voyageai.client", "Client"), ("voyageai.client_async", "AsyncClient")),
+        ("embed",),
+        "embed",
+        "voyageai",
+        label="Voyage embeddings",
+        arguments=("texts",),
+    ),
+    # Mistral's SDK moved its code under `client` in its second major version.
+    *_at(
+        (("mistralai.client.embeddings", "Embeddings"), ("mistralai.embeddings", "Embeddings")),
+        ("create", "create_async"),
+        "embed",
+        "mistralai",
+        label="Mistral embeddings",
+        arguments=("inputs",),
+    ),
+    *_at(
+        (("google.genai.models", "Models"), ("google.genai.models", "AsyncModels")),
+        ("embed_content",),
+        "embed",
+        "google-genai",
+        label="Gemini embeddings",
+        arguments=("contents",),
+    ),
+    # A model run on this machine: `encode_document` calls `encode`, and is one step.
+    _Target(
+        "sentence_transformers",
+        "SentenceTransformer",
+        ("encode", "encode_document"),
+        "embed",
+        "sentence-transformers",
+        arguments=("inputs", "sentences"),
+    ),
+    # A database's own client, called directly rather than through a framework's store.
+    *_at(
+        _QDRANT,
+        ("upsert", "upload_points"),
+        "store",
+        "qdrant-client",
+        reads=stores.qdrant,
+    ),
+    *_at(_QDRANT, ("upload_collection",), "store", "qdrant-client", reads=stores.qdrant_collection),
+    *_at(
+        (
+            ("chromadb.api.models.Collection", "Collection"),
+            ("chromadb.api.models.AsyncCollection", "AsyncCollection"),
+        ),
+        ("add", "upsert"),
+        "store",
+        "chromadb",
+        label="Chroma collection",
+        reads=stores.chroma,
+    ),
+    *_at(
+        _PINECONE, ("upsert",), "store", "pinecone", label="Pinecone index", reads=stores.pinecone
+    ),
+    *_at(
+        _PINECONE,
+        ("upsert_records",),
+        "store",
+        "pinecone",
+        label="Pinecone index",
+        reads=stores.pinecone_records,
+    ),
+    # Chonkie's chunkers, given a text: `__call__` and `chunk_batch` call `chunk`.
+    _Target(
+        "chonkie.chunker.base",
+        "BaseChunker",
+        ("chunk", "chunk_batch", "__call__", "achunk", "achunk_batch", "chunk_document"),
+        "split",
+        "chonkie",
+        arguments=("text", "texts", "document"),
+    ),
+    # Marker's converters, called with the file to convert.
+    _Target(
+        "marker.converters", "BaseConverter", ("__call__",), "load", "marker-pdf", sourced=True
+    ),
+    # Haystack's components, as `Pipeline.run` calls them or as they are run alone.
+    _Target(
+        "haystack.core.component.component",
+        "ComponentMeta",
+        ("run", "run_async"),
+        "haystack",
+        "haystack-ai",
+        made_by=True,
     ),
     # Any other step of an ingestion pipeline, such as a metadata extractor.
     _Target(
@@ -225,6 +391,10 @@ def install() -> dict[str, str]:
             _pending.append(target)
     # Files read with a PDF library directly, not through a loader.
     _libraries.update(readers.install())
+    # Functions a program calls by name, as Unstructured's partitioners.
+    _libraries.update(functions.install())
+    # Haystack's pipelines, through Haystack's own tracer.
+    haystack.install()
     _finder = _LateImports()
     sys.meta_path.insert(0, _finder)
     return _libraries
@@ -241,6 +411,8 @@ def uninstall() -> None:
     _attached.clear()
     _pending.clear()
     readers.uninstall()
+    functions.uninstall()
+    haystack.uninstall()
     while _installed:
         cls, method, original = _installed.pop()
         setattr(cls, method, original)
@@ -254,7 +426,8 @@ def _attach(target: _Target) -> bool:
     _attached[target] = base
     if target.distribution is not None:
         _libraries[target.distribution] = _version(target.distribution)
-    for cls in (base, *_subclasses(base)):
+    classes = haystack.components(base) if target.made_by else [base, *_subclasses(base)]
+    for cls in classes:
         _wrap_class(cls, target)
     return True
 
@@ -275,18 +448,26 @@ def _wrap_class(cls: type, target: _Target) -> None:
     excluded = tuple(b for b in (_base(m, n) for m, n in target.exclude) if b is not None)
     if excluded and issubclass(cls, excluded):
         return
-    kind_of = _kind_of(target.kind)
+    kind = haystack.kind_of(cls) if target.made_by else target.kind
+    if kind is None:
+        return
+    kind_of = _kind_of(kind)
     for method in target.methods:
         original = cls.__dict__.get(method)
+        if kind == "query":
+            if _wrappable(original):
+                setattr(cls, method, _quieted(original))
+                _installed.append((cls, method, original))
+            continue
         if isinstance(original, classmethod) and _wrappable(original.__func__):
             # Called on the class: the class is the component.
-            wrapped: Any = classmethod(_observed(original.__func__, method, kind_of, target.label))
+            wrapped: Any = classmethod(_observed(original.__func__, method, kind_of, target))
             setattr(cls, method, wrapped)
             _installed.append((cls, method, original))
             continue
         if not _wrappable(original):
             continue
-        setattr(cls, method, _observed(original, method, kind_of, target.label))
+        setattr(cls, method, _observed(original, method, kind_of, target))
         _installed.append((cls, method, original))
 
 
@@ -301,10 +482,13 @@ def _imported(module: Any) -> None:
     ]
     for target, base in _attached.items():
         for cls in defined:
-            if issubclass(cls, base):
+            if isinstance(cls, base) if target.made_by else issubclass(cls, base):
                 _wrap_class(cls, target)
     if name in _PDF_LIBRARIES:
         _libraries.update(readers.install())
+    _libraries.update(functions.imported(module))
+    if name == "haystack.tracing.tracer":
+        haystack.install()
 
 
 class _LateImports(importlib.abc.MetaPathFinder):
@@ -339,9 +523,10 @@ class _LateImports(importlib.abc.MetaPathFinder):
 
 
 def _base(module: str, name: str) -> type | None:
-    # A library the program has not imported has no classes to observe, and importing it
-    # here would cost the program the import (most of a second for LlamaIndex).
-    if module.partition(".")[0] not in sys.modules:
+    # A module the program has not imported defines no classes to observe, and importing it
+    # here would cost the program the import (most of a second for LlamaIndex). The module
+    # itself, not its package: `google` is loaded by protobuf, and `google.genai` is not.
+    if module not in sys.modules:
         return None
     try:
         found = getattr(importlib.import_module(module), name, None)
@@ -376,34 +561,46 @@ def _wrappable(function: Any) -> bool:
     )
 
 
-def _inputs(method: str, args: tuple[Any, ...], kwargs: dict[str, Any]) -> Any:
-    argument = _INPUT.get(method)
-    if argument is None:
-        return None
-    given = args[0] if args else kwargs.get(argument)
-    # An SDK's embedding call takes one text as readily as a list of them.
-    return [given] if isinstance(given, str) and method == "create" else adapters.listed(given)
-
-
-def _observed(
-    original: Any, method: str, kind_of: Callable[[Any], str], name: str | None = None
+def _inputs(
+    method: str, kind: str, names: tuple[str, ...], args: tuple[Any, ...], kwargs: dict[str, Any]
 ) -> Any:
+    # A load is given files, not documents: what it passed on is what it read.
+    if kind == "load":
+        return None
+    names = names or ((_INPUT[method],) if method in _INPUT else ())
+    if not names:
+        return None
+    named = next((kwargs[n] for n in names if n in kwargs), None)
+    given = named if named is not None or not args else args[0]
+    # An embedding call or a chunker takes one text as readily as a list of them.
+    if isinstance(given, str) and kind in ("embed", "split"):
+        return [given]
+    return adapters.listed(given)
+
+
+def _observed(original: Any, method: str, kind_of: Callable[[Any], str], target: _Target) -> Any:
     """`original`, recording a stage each time it is called in a block and not in a stage."""
 
     def begin(self: Any, args: tuple[Any, ...], kwargs: dict[str, Any]) -> Any:
         # A class method's `self` is the class: it names the step, not its metaclass.
         on_class = isinstance(self, type)
         module = self.__module__ if on_class else type(self).__module__
-        label = name or (self.__name__ if on_class else None)
-        inputs = _inputs(method, args, kwargs)
+        label = target.label or (self.__name__ if on_class else None)
+        # A component a pipeline is running is its span's step: `run` gives it settings.
+        if target.made_by and haystack.claimed(self):
+            return None
         kind = kind_of(self)
+        given = target.reads(original, args, kwargs) if target.reads is not None else None
+        inputs = (
+            given[0] if given is not None else _inputs(method, kind, target.arguments, args, kwargs)
+        )
         recording = session.begin(kind, self, module, method, inputs, label=label)
         # A model named in the call, as an SDK takes it, prices the call as a setting would.
         if recording is not None and kind == "embed" and isinstance(kwargs.get("model"), str):
             recording.parameters["model"] = kwargs["model"]
         # IDs given to a store, as `from_documents(..., ids=...)` takes them: a store built
         # by a class method returns itself, not the IDs.
-        ids = kwargs.get("ids")
+        ids = given[1] if given is not None and given[1] else kwargs.get("ids")
         if recording is not None and kind == "store" and isinstance(ids, list | tuple):
             recording.ids = [str(i) for i in ids]
         return recording
@@ -439,7 +636,7 @@ def _observed(
                 return await original(self, *args, **kwargs)
             with session.running(recording):
                 result = await original(self, *args, **kwargs)
-            session.finish(recording, result)
+            _finish(recording, result, args, target)
             return result
 
         wrapped = coroutine
@@ -462,13 +659,62 @@ def _observed(
                 return _lazily(recording, result)
             with session.running(recording):
                 result = original(self, *args, **kwargs)
-            session.finish(recording, result)
+            _finish(recording, result, args, target)
             return result
 
         wrapped = function
 
     setattr(wrapped, _OBSERVED, True)
     return wrapped
+
+
+def _quieted(original: Any) -> Any:
+    """`original`, run as no step: nothing it calls in a block is recorded."""
+    if inspect.iscoroutinefunction(original):
+
+        @functools.wraps(original)
+        async def coroutine(self: Any, *args: Any, **kwargs: Any) -> Any:
+            if session.idle():
+                return await original(self, *args, **kwargs)
+            with session.quietly():
+                return await original(self, *args, **kwargs)
+
+        wrapped: Any = coroutine
+    else:
+
+        @functools.wraps(original)
+        def function(self: Any, *args: Any, **kwargs: Any) -> Any:
+            if session.idle():
+                return original(self, *args, **kwargs)
+            with session.quietly():
+                return original(self, *args, **kwargs)
+
+        wrapped = function
+
+    setattr(wrapped, _OBSERVED, True)
+    return wrapped
+
+
+def _finish(
+    recording: session.Recording, result: Any, args: tuple[Any, ...], target: _Target
+) -> None:
+    """Keep what the stage returned. A file read whole, as Marker reads one, gives text that
+    does not say where it came from; the file the stage was called with does."""
+    session.finish(recording, result)
+    path = args[0] if args else None
+    if not target.sourced or not isinstance(path, str | os.PathLike) or not recording.outputs:
+        return
+    recording.outputs = [
+        {**document, "metadata": {**document.get("metadata", {}), "source": os.fspath(path)}}
+        if isinstance(document, dict) and not _named(document)
+        else document
+        for document in recording.outputs
+    ]
+
+
+def _named(document: dict[str, Any]) -> bool:
+    metadata = document.get("metadata") or {}
+    return any(metadata.get(key) for key in SOURCE_KEYS)
 
 
 def _lazily(recording: session.Recording, returned: Any) -> Iterator[Any]:
