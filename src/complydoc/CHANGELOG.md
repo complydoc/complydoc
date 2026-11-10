@@ -5,7 +5,12 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
-## Unreleased
+## [0.7.10] — 2026-11-10
+
+Documents can be audited without writing a command for them. `complydoc ui ./documents`
+audits a folder that has no report yet and opens the viewer on it, and the viewer on this
+machine audits documents and folders dropped on it, copying them to `.complydoc/uploads`
+and opening the report when it is written. The report stays at schema 27.
 
 ### Added
 
