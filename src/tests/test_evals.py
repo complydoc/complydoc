@@ -117,7 +117,33 @@ def test_an_audit_says_in_the_terminal_how_the_reader_did(folder: Path, tmp_path
     bare = runner.invoke(
         app, ["audit", str(folder), "--out", str(tmp_path / "b"), "--no-ocr", "--no-extracted-text"]
     )
-    assert "was not checked" in " ".join(bare.output.split())
+    assert "1 of 2 expected passages kept, 1 lost" in " ".join(bare.output.split())
+
+
+def test_evals_are_checked_when_the_report_keeps_no_text(folder: Path, tmp_path: Path):
+    """The text is read for the evals and left out of the report, as the run asked."""
+    import complydoc as cd
+
+    add_fact(
+        folder / EVALS_FILENAME, ExpectedFact(text="Terms and conditions", document="terms.pdf")
+    )
+    missed = "Invoices are payable in advance, by direct debit on the first day of each month"
+    add_fact(folder / EVALS_FILENAME, ExpectedFact(text=missed, document="terms.pdf"))
+    # The Python API keeps no text unless asked.
+    report = cd.full_audit(folder, compare_extractors=["pypdf"], ocr=False)
+    assert report.evals is not None
+    check, miss = report.evals.checks
+    assert check.found == {report.run.extractor: "exact", "pypdf": "exact"}
+    assert miss.found[report.run.extractor] is None
+    assert miss.nearest == {}, "the nearest passage is document text, left out with the rest"
+    assert not report.run.extracted_text_used
+    assert all(document.extracted_text == [] for document in report.documents)
+
+    out = tmp_path / "out"
+    runner.invoke(app, ["audit", str(folder), "--out", str(out), "--no-ocr", "--no-extracted-text"])
+    written = json.loads((out / "complydoc.json").read_text())
+    assert written["evals"]["checks"][0]["found"]
+    assert "Terms and conditions" not in json.dumps(written["documents"])
 
 
 def test_a_broken_evals_file_does_not_lose_the_run(folder: Path, tmp_path: Path):

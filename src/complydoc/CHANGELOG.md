@@ -5,6 +5,23 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
+## [0.7.11] — 2026-11-10
+
+Evals are checked when an audit keeps no page text, an IBAN wrapped onto the next line is
+found, and the locked dependencies move past their open security advisories (Pillow 13,
+pypdf 6.21, certifi and the rest). The report stays at schema 27.
+
+### Fixed
+
+- An audit that keeps no page text, with `--no-extracted-text` or through the Python API's
+  default, checks the folder's evals file instead of writing an empty `evals` section. The
+  text is read for the evals and left out of the report, and so is the nearest passage to a
+  missed fact.
+- An IBAN wrapped onto the next line between two of its groups, as a narrow column breaks
+  it, is found whole. It was missed: the part before the break failed the checksum. Found
+  whole, it is the same account as the IBAN written on one line, so `complydoc find` traces
+  both.
+
 ## [0.7.10] — 2026-11-10
 
 Documents can be audited without writing a command for them. `complydoc ui ./documents`

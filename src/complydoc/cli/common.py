@@ -375,11 +375,7 @@ def print_evals(report: AuditReport) -> None:
         console.print(f"[bold]Evals[/]   [red]{name} could not be read[/]: {escape(evals.error)}")
         return
     if not evals.checks:
-        kept_text = any(document.extracted_text for document in report.documents)
-        why = (
-            "it expects nothing yet" if kept_text else "this run kept no text. Add --extracted-text"
-        )
-        console.print(f"[bold]Evals[/]   {name} was not checked: {why}.")
+        console.print(f"[bold]Evals[/]   {name} was not checked: it expects nothing yet.")
         return
     total = len(evals.checks)
     for reader in evals.readers:

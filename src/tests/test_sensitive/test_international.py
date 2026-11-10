@@ -144,3 +144,28 @@ def test_a_document_with_a_norwegian_identifier_is_flagged():
     assert document.sensitive.counts_by_category.get("no_fnr") == 1
     match = next(m for m in document.sensitive.matches if m.category == "no_fnr")
     assert match.page == 1
+
+
+@pytest.mark.parametrize("wrap", ["\n", "\r\n", " \n"])
+def test_an_iban_wrapped_onto_the_next_line_is_found_whole(wrap: str):
+    """A narrow column breaks an IBAN between two groups. Found whole, it is the same
+    account as the IBAN written on one line, so `complydoc find` traces both."""
+    from complydoc.fingerprint import identifier_fingerprint
+
+    text = f"Bitte überweisen Sie auf das Konto IBAN DE89 3704 0044{wrap}0532 0130 00. Danke."
+    (match,) = [m for m in cd.scan_text(text).matches if m.category == "iban"]
+    assert match.fingerprint == identifier_fingerprint("iban", "DE89 3704 0044 0532 0130 00")
+
+
+def test_an_iban_at_a_line_end_keeps_the_next_line_out_of_it():
+    from complydoc.fingerprint import identifier_fingerprint
+
+    text = (
+        "IBAN: GB82 WEST 1234 5698 7654 32\n2026 annual fee\n"
+        "IBAN ES91 2100 0418 4502 0005 1332\n2026"
+    )
+    found = {m.fingerprint for m in cd.scan_text(text).matches if m.category == "iban"}
+    assert found == {
+        identifier_fingerprint("iban", "GB82WEST12345698765432"),
+        identifier_fingerprint("iban", "ES9121000418450200051332"),
+    }
