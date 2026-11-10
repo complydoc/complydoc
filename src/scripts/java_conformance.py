@@ -16,9 +16,9 @@ give the same answers on the same input, so this writes, into one folder:
 - `reports/<fixture>.json`: the report `cd.observe` writes for the fixture run through
   the pipeline both versions build the same way: split at blank lines, embedded by a
   fixed local model, kept in an in-memory store.
-- `files/`: the PDF, Word and Excel fixtures, and `files/audit.json`, the report
-  `cd.security_audit` writes for the folder of them, hidden text drawn by each file's
-  formatting included.
+- `files/`: the PDF, Word and Excel fixtures and an evals file, and `files/audit.json`, the
+  report `cd.security_audit` writes for the folder of them: hidden text drawn by each file's
+  formatting, and each fact checked against the text read.
 
 The fixtures are in `src/tests/fixtures/java/`; `--fixtures` writes the binary ones again.
 Paths on this machine are written as `<complydoc>` and `<files>`, so nothing of it is kept.
@@ -313,6 +313,8 @@ def _files(out: Path) -> None:
         shutil.copyfile(FIXTURES / name, folder / name)
     for name in EXISTING:
         shutil.copyfile(ROOT / "src" / "tests" / "fixtures" / name, folder / name)
+    # The evals both versions check against the text each read.
+    shutil.copyfile(FIXTURES / "complydoc-evals.yaml", folder / ".complydoc-evals.yaml")
     report = cd.security_audit(str(folder), extracted_text=True)
     cd.write_json(report, folder / "audit.json", detail="full")
     _neutral(folder / "audit.json", {str(folder.resolve()): "<files>", str(folder): "<files>"})
