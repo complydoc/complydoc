@@ -5,6 +5,15 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
+## Unreleased
+
+### Fixed
+
+- An audit that keeps no page text, with `--no-extracted-text` or through the Python API's
+  default, checks the folder's evals file instead of writing an empty `evals` section. The
+  text is read for the evals and left out of the report, and so is the nearest passage to a
+  missed fact.
+
 ## [0.7.10] — 2026-11-10
 
 Documents can be audited without writing a command for them. `complydoc ui ./documents`
