@@ -222,12 +222,19 @@ jobs:
           uv run python - "${RUNNER_TEMP}/fixtures" <<'PY'
           import pathlib, sys
           made = {p.name for p in pathlib.Path(sys.argv[1]).iterdir()}
-          want = {p.name for p in pathlib.Path("src/tests/fixtures").iterdir()}
+          # Files only: java/ holds complydoc4j's fixtures, which the next step accounts for.
+          want = {p.name for p in pathlib.Path("src/tests/fixtures").iterdir() if p.is_file()}
           missing = sorted(want - made)
           if missing:
               sys.exit(f"the generator no longer produces: {missing}")
           print(f"{len(want)} fixtures accounted for")
           PY
+      - name: complydoc4j's fixtures are still generated
+        run: |
+          uv run python src/scripts/java_conformance.py --fixtures
+          for name in hidden_layout.pdf hidden_runs.docx hidden_cells.xlsx; do
+            test -s "src/tests/fixtures/java/$name" || { echo "not generated: $name"; exit 1; }
+          done
   image:
     name: the container image audits and serves
     runs-on: ubuntu-latest
