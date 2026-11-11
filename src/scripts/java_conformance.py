@@ -323,7 +323,11 @@ def _files(out: Path) -> None:
 def _neutral(path: Path, extra: dict[str, str] | None = None) -> None:
     """The report with this machine's folders named, not spelled out."""
     text = path.read_text(encoding="utf-8")
-    for local, name in {**(extra or {}), str(ROOT): "<complydoc>"}.items():
+    import complydoc
+
+    # The checkout the package was imported from, which may be another worktree than this one.
+    package = str(Path(complydoc.__file__).resolve().parents[2])
+    for local, name in {**(extra or {}), package: "<complydoc>", str(ROOT): "<complydoc>"}.items():
         text = text.replace(local, name)
     path.write_text(text, encoding="utf-8")
 
