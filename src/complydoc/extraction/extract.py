@@ -193,23 +193,25 @@ def mask_matches(text: str, matches: list[SensitiveMatch]) -> tuple[str, int, in
     if not matches:
         return text, 0, 0
 
-    lines = text.split("\n")
-    covered: dict[int, set[int]] = {}
+    # A match is placed by line and column, and may run on past its line: an IBAN a
+    # narrow column wrapped is one value over two lines. It is covered where it lies in
+    # the whole text, and the line breaks inside it stay, so the lines are as they were.
+    starts = _line_starts(text)
+    chars = list(text)
+    covered: set[int] = set()
     replaced = 0
     confirmed = 0
 
     for match in sorted(matches, key=_strength):
         index = match.line - 1
-        if not 0 <= index < len(lines):
+        if not 0 <= index < len(starts) or match.column < 0:
             continue
-        chars = list(lines[index])
-        start = match.column
+        start = starts[index] + match.column
         end = start + match.length
-        if start < 0 or end > len(chars):
+        if end > len(chars):
             continue
 
-        done = covered.setdefault(index, set())
-        free = [position for position in range(start, end) if position not in done]
+        free = [position for position in range(start, end) if position not in covered]
         if not free:
             # Wholly inside something already masked. Counting it would say two
             # things were covered where one was.
@@ -217,16 +219,23 @@ def mask_matches(text: str, matches: list[SensitiveMatch]) -> tuple[str, int, in
 
         if len(match.masked) == match.length:
             for position in free:
-                chars[position] = match.masked[position - start]
+                if chars[position] not in "\r\n":
+                    chars[position] = match.masked[position - start]
         else:  # pragma: no cover - masking preserves length today
             chars[start:end] = list(match.masked)
-        done.update(range(start, end))
-        lines[index] = "".join(chars)
+        covered.update(range(start, end))
         replaced += 1
         if match.evidence == "confirmed":
             confirmed += 1
 
-    return "\n".join(lines), replaced, confirmed
+    return "".join(chars), replaced, confirmed
+
+
+def _line_starts(text: str) -> list[int]:
+    """Where each line of `text` starts, lines ending at `\\n` as a match counts them."""
+    starts = [0]
+    starts.extend(index + 1 for index, char in enumerate(text) if char == "\n")
+    return starts
 
 
 def _strength(match: SensitiveMatch) -> tuple[int, int, int]:

@@ -5,6 +5,16 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
+## [Unreleased]
+
+### Fixed
+
+- An IBAN wrapped onto the next line, found whole since 0.7.11, is masked whole. Masking
+  covered a value one line at a time and skipped one that ran past its line, so `mask_text`,
+  previews and excerpts showed the wrapped IBAN as it was written. The page text an audit
+  keeps covered the first line and left the digits on the second in the clear. A value is
+  now covered where it lies in the whole text, and the line breaks in it stay.
+
 ## [0.7.11] — 2026-11-10
 
 Evals are checked when an audit keeps no page text, an IBAN wrapped onto the next line is

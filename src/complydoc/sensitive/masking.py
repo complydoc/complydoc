@@ -10,6 +10,7 @@ under `masking.never_reveal`, and any report produced with it is stamped.
 from __future__ import annotations
 
 import dataclasses
+from bisect import bisect_right
 from collections.abc import Iterable
 from typing import TYPE_CHECKING
 
@@ -70,13 +71,17 @@ _SHORTEST_CARRIED = 3
 
 
 def found_values(text: str, matches: Iterable[SensitiveMatch]) -> list[tuple[str, SensitiveMatch]]:
-    """Each value found in `text`, read off it at the match's place, with the match."""
-    lines = text.split("\n")
+    """Each value found in `text`, read off it at the match's place, with the match.
+
+    A value may run on past its line, so it is read from the whole text.
+    """
+    starts = _line_starts(text)
     found: list[tuple[str, SensitiveMatch]] = []
     for match in matches:
-        if not 0 < match.line <= len(lines):
+        if not 0 < match.line <= len(starts):
             continue
-        value = lines[match.line - 1][match.column : match.column + match.length]
+        start = starts[match.line - 1] + match.column
+        value = text[start : start + match.length]
         if len(value.strip()) >= _SHORTEST_CARRIED:
             found.append((value, match))
     return found
@@ -89,13 +94,19 @@ def carried_matches(text: str, found: Iterable[tuple[str, SensitiveMatch]]) -> l
     reading's wording and not the other's. The value is then an identifier complydoc
     knows about, and is covered wherever it appears, not only where it was found.
     """
-    lines = text.split("\n")
+    starts = _line_starts(text)
     carried: list[SensitiveMatch] = []
     for value, match in found:
-        for index, line in enumerate(lines):
-            start = line.find(value)
-            while start >= 0:
-                here = dataclasses.replace(match, line=index + 1, column=start)
-                carried.append(dataclasses.replace(here, length=len(value)))
-                start = line.find(value, start + 1)
+        at = text.find(value)
+        while at >= 0:
+            line = bisect_right(starts, at)
+            here = dataclasses.replace(match, line=line, column=at - starts[line - 1])
+            carried.append(dataclasses.replace(here, length=len(value)))
+            at = text.find(value, at + 1)
     return carried
+
+
+def _line_starts(text: str) -> list[int]:
+    starts = [0]
+    starts.extend(index + 1 for index, char in enumerate(text) if char == "\n")
+    return starts
