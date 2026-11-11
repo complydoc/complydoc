@@ -174,14 +174,15 @@ def test_an_iban_at_a_line_end_keeps_the_next_line_out_of_it():
 @pytest.mark.parametrize("wrap", ["\n", "\r\n", " \n"])
 def test_an_iban_wrapped_onto_the_next_line_is_masked_on_both(wrap: str):
     """Found whole across the break, it is covered whole: no digit of it stays on either
-    line, and the lines and the text's length are as they were."""
+    line, and the lines and the text's length are as they were. Only the IBAN is asserted
+    on: with a name model installed, words around it may be covered too."""
     text = f"IBAN DE89 3704 0044{wrap}0532 0130 00. Danke."
     masked = cd.mask_text(text).text
     assert len(masked) == len(text)
     assert masked.count("\n") == text.count("\n")
     assert "3704" not in masked
     assert "0532" not in masked
-    assert masked.endswith("30 00. Danke.")
+    assert "••30 00." in masked
 
 
 def test_a_wrapped_iban_is_masked_in_the_page_text_an_audit_keeps(tmp_path):
@@ -193,4 +194,4 @@ def test_a_wrapped_iban_is_masked_in_the_page_text_an_audit_keeps(tmp_path):
     assert len(kept.text) == len(page)
     assert "3704" not in kept.text
     assert "0532" not in kept.text
-    assert kept.text.splitlines()[3] == "BIC: COBADEFFXXX"
+    assert kept.text.splitlines()[3].startswith("BIC: ")
