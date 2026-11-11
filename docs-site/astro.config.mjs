@@ -53,6 +53,7 @@ export default defineConfig({
           items: [
             "guides/observe-a-pipeline",
             "guides/langfuse-phoenix",
+            "guides/java",
             "guides/viewer",
             "guides/inspect-a-loader",
             "guides/compare-loaders",
