@@ -1,0 +1,16 @@
+Ficha de cliente / Kundendaten
+
+Nome: Ana Silva
+NIF: 123456789
+IBAN: PT50 0002 0123 1234 5678 9015 4
+DNI: 12345678Z
+Steuer-ID: 86095742719
+NIR: 1 84 12 76 451 089 46
+BSN: 111222333
+PESEL: 44051401359
+Email: ana.silva@example.pt
+Telefone: +351 912 345 678
+VAT: DE123456789
+SSN: 123-45-6789
+
+Os dados acima são confidenciais.

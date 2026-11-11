@@ -156,6 +156,38 @@ jobs:
       - name: tests
         run: uv run pytest -q src/tests/test_real_pipelines.py src/tests/test_observe.py src/tests/test_observe_libraries.py
 
+  complydoc4j:
+    # complydoc4j, complydoc for Java, is checked against what this package answers. Its
+    # suite runs here on what this branch answers, so a change complydoc4j has not followed
+    # shows up on the pull request that makes it, not in a Java report afterwards.
+    name: complydoc4j gives this branch's answers
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/checkout@v5
+        with:
+          repository: complydoc/complydoc4j
+          path: complydoc4j
+      - uses: astral-sh/setup-uv@v10.3.0
+        with:
+          enable-cache: true
+          python-version: "3.12"
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+          cache-dependency-path: complydoc4j/**/pom.xml
+      - run: uv sync --group dev --group integrations
+      - name: write this branch's answers into complydoc4j
+        run: |
+          golden=complydoc4j/complydoc4j-conformance/src/test/resources/golden
+          uv run python src/scripts/java_conformance.py "$golden"
+          cp "$golden"/config/*.yaml complydoc4j/complydoc4j-core/src/main/resources/io/github/complydoc4j/config/
+      - name: complydoc4j's suite
+        working-directory: complydoc4j
+        run: mvn --batch-mode verify
+
   fixtures:
     name: fixtures match their generator
     runs-on: ubuntu-latest
@@ -175,12 +207,19 @@ jobs:
           uv run python - "${RUNNER_TEMP}/fixtures" <<'PY'
           import pathlib, sys
           made = {p.name for p in pathlib.Path(sys.argv[1]).iterdir()}
-          want = {p.name for p in pathlib.Path("src/tests/fixtures").iterdir()}
+          # Files only: java/ holds complydoc4j's fixtures, which the next step accounts for.
+          want = {p.name for p in pathlib.Path("src/tests/fixtures").iterdir() if p.is_file()}
           missing = sorted(want - made)
           if missing:
               sys.exit(f"the generator no longer produces: {missing}")
           print(f"{len(want)} fixtures accounted for")
           PY
+      - name: complydoc4j's fixtures are still generated
+        run: |
+          uv run python src/scripts/java_conformance.py --fixtures
+          for name in hidden_layout.pdf hidden_runs.docx hidden_cells.xlsx; do
+            test -s "src/tests/fixtures/java/$name" || { echo "not generated: $name"; exit 1; }
+          done
   image:
     name: the container image audits and serves
     runs-on: ubuntu-latest
