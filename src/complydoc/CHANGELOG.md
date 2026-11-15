@@ -5,7 +5,17 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
-## [Unreleased]
+## [0.7.12] — 2026-11-15
+
+An IBAN wrapped onto the next line is masked whole, and complydoc4j, complydoc for Java, is
+documented and checked against this package. The report stays at schema 27.
+
+### Added
+
+- [From Java](https://complydoc.github.io/complydoc/docs/guides/java/): complydoc4j audits
+  folders and observes LangChain4j ingestions in Java, and writes this report, so
+  `complydoc ui` and `complydoc check` read its runs. Its answers are checked against this
+  package's on every change to either.
 
 ### Fixed
 
