@@ -37,12 +37,14 @@ Report report = Complydoc4j.audit(Path.of("contracts"));
 Complydoc4j.write(report, Path.of(".complydoc/contracts.json"));
 ```
 
-It reads PDF, Word, Excel, text and Markdown files and checks each one for:
+It reads PDF, Word, Excel, text and Markdown files, and from complydoc4j 0.1.1 PowerPoint,
+HTML and email files too. It checks each one for:
 
 - identifiers, validated and masked as here;
 - text the file's formatting hides: white, under 1pt, off the page, in an invisible
   render mode or under an image in a PDF; hidden runs in Word; hidden sheets, rows, columns
-  and cells in Excel;
+  and cells in Excel; hidden slides and shapes off the slide in PowerPoint; hidden styles
+  and comments in HTML, email and Markdown;
 - passages written as instructions to a model.
 
 It also checks the folder's [evals file](/complydoc/docs/guides/evals/), with near misses
@@ -61,8 +63,8 @@ complydoc4j does not produce these yet:
   for, as complydoc does when its name model isn't installed.
 - **Cost, readiness and routing.** Those sections are empty, so a policy rule on readiness
   has nothing to check in a Java report.
-- **HTML, email, PowerPoint and images.** A folder audit lists these files under `skipped`.
-  It doesn't run OCR.
+- **Images.** A folder audit lists them under `skipped`: they need OCR, which complydoc4j
+  doesn't run. Until 0.1.1, PowerPoint, HTML and email files are listed there too.
 - **Where an embedding call went.** complydoc sees this from inside its network guard.
   complydoc4j reads it from the endpoint in the model's settings, and its report says so.
 
