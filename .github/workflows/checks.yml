@@ -217,7 +217,7 @@ jobs:
       - name: complydoc4j's fixtures are still generated
         run: |
           uv run python src/scripts/java_conformance.py --fixtures
-          for name in hidden_layout.pdf hidden_runs.docx hidden_cells.xlsx; do
+          for name in hidden_layout.pdf hidden_runs.docx hidden_cells.xlsx hidden_page.html hidden_mail.eml hidden_slides.pptx hidden_notes.md; do
             test -s "src/tests/fixtures/java/$name" || { echo "not generated: $name"; exit 1; }
           done
   image:
