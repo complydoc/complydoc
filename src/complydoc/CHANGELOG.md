@@ -5,6 +5,14 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
+
+### Added
+
+- `cd.parsers.markitdown()`, a preset for Microsoft's MarkItDown, to compare it with the
+  other loaders. It runs locally on PDF, Word, PowerPoint, Excel and HTML files and returns
+  one Markdown document per file, with no page numbers because MarkItDown does not split
+  pages.
+
 ## [0.7.12] — 2026-11-15
 
 An IBAN wrapped onto the next line is masked whole, and complydoc4j, complydoc for Java, is

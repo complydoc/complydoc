@@ -39,6 +39,7 @@ __all__ = [
     "azure_document_intelligence",
     "docling",
     "llamaparse",
+    "markitdown",
     "opendataloader_pdf",
     "unstructured",
 ]
@@ -168,6 +169,31 @@ def _numbered_from_one(documents: list[Any]) -> list[Any]:
         ):
             metadata["page_number"] = metadata.pop("page")
     return documents
+
+
+def markitdown(**options: Any) -> LoaderSpec:
+    """Microsoft MarkItDown through the `markitdown` package, run locally
+
+    Returns one Markdown document per file. MarkItDown does not split pages, so the
+    document carries no page metadata. `options` are passed to `MarkItDown`
+    """
+
+    def factory(path: str) -> _WithSource:
+        module= _require("markitdown", "markitdown")
+        converter= module.MarkItDown(**options)
+
+        def load() -> list[dict[str, Any]]:
+            result =converter.convert(path)
+            return [{"page_content": result.text_content, "metadata": {"source": path}}]
+
+        return _WithSource(load, path)
+
+    return LoaderSpec(
+        name="markitdown",
+        factory=factory,
+        tags=("MarkItDown",),
+        formats=extensions(("pdf", "docx", "pptx", "xlsx", "html")),
+    )
 
 
 def unstructured(
