@@ -68,6 +68,8 @@ class Fact:
     is grouped; `absent`, a passage it must not hold."""
     label: str | None = None
     """For a value, the words it follows, such as `Total due`."""
+    page: int | None = None
+    """The page it must be on, counted from 1. None looks on every page"""
 
     def __post_init__(self) -> None:
         if self.kind not in FACT_KINDS:
@@ -76,6 +78,8 @@ class Fact:
             raise ValueError(f"{self.text!r} is not a number")
         if self.label is not None and self.kind != "value":
             raise ValueError("only a value has a label")
+        if self.page is not None and self.page < 1:
+            raise ValueError("a fact's page is 1 or more")
 
 
 @dataclass(frozen=True, slots=True)
@@ -370,7 +374,11 @@ def evaluate_facts(
             for document in candidates:
                 if not _applies(document, fact.document):
                     continue
-                pairs = [(page.number, page.text) for page in document.extracted_text]
+                pairs = [
+                    (page.number, page.text)
+                    for page in document.extracted_text
+                    if fact.page is None or page.number == fact.page
+                ]
                 if fact.kind == "value":
                     match = find_value(pairs, fact.text, fact.label)
                 else:
