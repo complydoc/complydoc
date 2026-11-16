@@ -18,7 +18,7 @@ documents it will be used on, and a change of loader that loses one is caught.
 A `value` is a number checked as a number: `5,100.00`, `5.100,00` and `5 100,00` are
 the same amount, and with a `label` it must come within a few words after it. An
 `absent` passage is one a reading must not hold, such as text hidden for a model. With a
-`page`, a fact is looked for on that page of the document and nowhere else
+`page`, a fact is looked for on that page of the document and nowhere else.
 
 A run reads `.complydoc-evals.yaml` at the top of the folder it reads. The file holds
 passages as they are written in your documents, so it is as sensitive as they are: keep
@@ -132,7 +132,7 @@ class ExpectedFact(BaseModel):
         return Fact(self.text, self.document, self.kind, self.label, self.page)
 
     def as_entry(self) -> dict[str, str | int]:
-        """The fact as the file writes it"""
+        """The fact as the file writes it."""
         key = "text" if self.kind == "text" else self.kind
         entry: dict[str, str | int | None] = {
             key: self.text,

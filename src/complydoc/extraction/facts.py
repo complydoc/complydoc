@@ -69,7 +69,7 @@ class Fact:
     label: str | None = None
     """For a value, the words it follows, such as `Total due`."""
     page: int | None = None
-    """The page it must be on, counted from 1. None looks on every page"""
+    """The page it must be on, counted from 1. None looks on every page."""
 
     def __post_init__(self) -> None:
         if self.kind not in FACT_KINDS:

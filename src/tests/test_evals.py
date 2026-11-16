@@ -65,7 +65,7 @@ CLAUSE = "Either party may terminate this agreement with thirty days notice"
 
 
 def _checked(tmp_path: Path, key: str, page: int | None = None) -> cd.FactCheck:
-    """The clause as an evals file expects it, against a contract that has it on page 2"""
+    """The clause as an evals file expects it, against a contract that has it on page 2."""
     file = tmp_path / EVALS_FILENAME
     entry = {key: CLAUSE, "document": "contract.pdf"} | ({} if page is None else {"page": page})
     file.write_text(json.dumps({"facts": [entry]}))  # JSON is YAML
