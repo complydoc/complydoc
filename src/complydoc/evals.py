@@ -7,6 +7,7 @@
       - value: 5,100.00
         label: Total due
         document: invoices/2026-03.pdf
+        page: 2
       - absent: Note for the AI
 
 A benchmark says how a loader reads someone else's documents. An eval is a passage one
@@ -16,7 +17,8 @@ documents it will be used on, and a change of loader that loses one is caught.
 
 A `value` is a number checked as a number: `5,100.00`, `5.100,00` and `5 100,00` are
 the same amount, and with a `label` it must come within a few words after it. An
-`absent` passage is one a reading must not hold, such as text hidden for a model.
+`absent` passage is one a reading must not hold, such as text hidden for a model. With a
+`page`, a fact is looked for on that page of the document and nowhere else.
 
 A run reads `.complydoc-evals.yaml` at the top of the folder it reads. The file holds
 passages as they are written in your documents, so it is as sensitive as they are: keep
@@ -80,6 +82,8 @@ class ExpectedFact(BaseModel):
     must not appear as `absent:`, in place of `text:`."""
     label: str | None = None
     """For a value, the words it comes after, such as `Total due`."""
+    page: int | None = Field(default=None, ge=1)
+    """The page it must be on, counted from 1. Any page when left out."""
 
     @model_validator(mode="before")
     @classmethod
@@ -125,12 +129,17 @@ class ExpectedFact(BaseModel):
         return (value or "").strip() or None
 
     def as_fact(self) -> Fact:
-        return Fact(self.text, self.document, self.kind, self.label)
+        return Fact(self.text, self.document, self.kind, self.label, self.page)
 
-    def as_entry(self) -> dict[str, str]:
+    def as_entry(self) -> dict[str, str | int]:
         """The fact as the file writes it."""
         key = "text" if self.kind == "text" else self.kind
-        entry = {key: self.text, "label": self.label, "document": self.document}
+        entry: dict[str, str | int | None] = {
+            key: self.text,
+            "label": self.label,
+            "document": self.document,
+            "page": self.page,
+        }
         return {name: value for name, value in entry.items() if value is not None}
 
 
