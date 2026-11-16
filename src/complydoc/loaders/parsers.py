@@ -172,18 +172,18 @@ def _numbered_from_one(documents: list[Any]) -> list[Any]:
 
 
 def markitdown(**options: Any) -> LoaderSpec:
-    """Microsoft MarkItDown through the `markitdown` package, run locally
+    """Microsoft MarkItDown through the `markitdown` package, run locally.
 
     Returns one Markdown document per file. MarkItDown does not split pages, so the
-    document carries no page metadata. `options` are passed to `MarkItDown`
+    document carries no page metadata. `options` are passed to `MarkItDown`.
     """
 
     def factory(path: str) -> _WithSource:
-        module= _require("markitdown", "markitdown")
-        converter= module.MarkItDown(**options)
+        module = _require("markitdown", "markitdown")
+        converter = module.MarkItDown(**options)
 
         def load() -> list[dict[str, Any]]:
-            result =converter.convert(path)
+            result = converter.convert(path)
             return [{"page_content": result.text_content, "metadata": {"source": path}}]
 
         return _WithSource(load, path)
