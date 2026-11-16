@@ -5,6 +5,14 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
+
+### Added
+
+- A fact in `.complydoc-evals.yaml` can name the page it must be on, with `page: 4`, and so
+  can `cd.Fact(..., page=4)`. It is then looked for in that page's text only, so a clause a
+  reader moved, or read from an annex after skipping its page, is not found. Without `page`
+  a fact is looked for in the whole document, as before.
+
 ## [0.7.12] — 2026-11-15
 
 An IBAN wrapped onto the next line is masked whole, and complydoc4j, complydoc for Java, is

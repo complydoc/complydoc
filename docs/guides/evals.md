@@ -55,6 +55,7 @@ schema_version: 1
 facts:
   - text: Invoices are payable within fourteen days of the invoice date
     document: terms-and-conditions.pdf
+    page: 1
   - value: 78,500.00
     label: Total due
     document: invoices/2026-03.pdf
@@ -62,8 +63,16 @@ facts:
 ```
 
 It lives at the top of the folder a run reads, and can be edited by hand.
-`document` limits a passage to one file; without it, any document may hold it. The
-file holds text as your documents write it, so it is as sensitive as they are:
+`document` limits a passage to one file; without it, any document may hold it.
+
+`page` limits it to one page, counted from 1: a clause that must be on page 4 is
+looked for in page 4's text and nowhere else, so a reader that moves it, or skips
+the page and finds the clause in an annex, no longer passes. A passage that must
+not appear is then only refused on that page. A loader that returns a whole file
+as one document has it all on page 1, so any other page finds nothing in its
+reading. `page` is set in the file; the viewer does not ask for one.
+
+The file holds text as your documents write it, so it is as sensitive as they are:
 keep it with them.
 
 Case, spacing, invisible characters and words broken at a line end do not matter

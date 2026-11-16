@@ -133,7 +133,7 @@ class ExpectedFact(BaseModel):
 
     def as_entry(self) -> dict[str, str | int]:
         """The fact as the file writes it"""
-        key= "text" if self.kind == "text" else self.kind
+        key = "text" if self.kind == "text" else self.kind
         entry: dict[str, str | int | None] = {
             key: self.text,
             "label": self.label,
