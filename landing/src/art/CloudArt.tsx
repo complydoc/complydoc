@@ -11,7 +11,6 @@ export function CloudArt() {
       aria-hidden
       className="relative flex size-72 items-center justify-center"
     >
-      <div className="absolute inset-6 rounded-full bg-[radial-gradient(circle_at_35%_40%,var(--primary),transparent_60%),radial-gradient(circle_at_70%_65%,var(--blush),transparent_60%)] opacity-40 blur-2xl" />
       <img
         src={cloud}
         alt=""

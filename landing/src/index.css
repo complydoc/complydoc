@@ -235,20 +235,15 @@
   }
 }
 
-/* The backdrop behind a page's first section: a glow of the brand blue, or of
-   the blue and the pink, fading out. Tokens only, so it follows the theme. */
-@utility backdrop-duo {
+/* Behind the product video: baby blue fading into the page, as a wash of colour rather than a picture. */
+@utility showcase-backdrop {
   background-image:
-    radial-gradient(ellipse 45% 60% at 20% 0%, color-mix(in oklab, var(--primary) 30%, transparent), transparent 70%),
-    radial-gradient(ellipse 45% 60% at 85% 10%, color-mix(in oklab, var(--blush) 28%, transparent), transparent 70%);
-  mask-image: linear-gradient(to bottom, black 55%, transparent);
+    radial-gradient(ellipse 70% 80% at 15% 0%, color-mix(in oklab, var(--primary) 45%, transparent), transparent 70%),
+    radial-gradient(ellipse 60% 70% at 100% 100%, color-mix(in oklab, var(--primary) 25%, transparent), transparent 70%),
+    linear-gradient(var(--muted), var(--muted));
 }
 
-@utility backdrop-glow {
-  background-image: radial-gradient(
-    ellipse 60% 55% at 50% 0%,
-    color-mix(in oklab, var(--primary) 30%, transparent),
-    transparent 70%
-  );
-  mask-image: linear-gradient(to bottom, black 55%, transparent);
+/* Moving between the site's pages fades from one to the next instead of flashing. */
+@view-transition {
+  navigation: auto;
 }
