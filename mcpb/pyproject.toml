@@ -1,0 +1,9 @@
+[project]
+name = "complydoc-claude-extension"
+version = "0.7.13"
+description = "complydoc as a Claude Desktop extension: documents opened through it are masked and cleaned."
+requires-python = ">=3.11"
+dependencies = [
+    # Until `complydoc mcp` is released, the extension runs the branch that adds it.
+    "complydoc @ git+https://github.com/complydoc/complydoc@feature/mcp-server",
+]

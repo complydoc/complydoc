@@ -9,7 +9,14 @@ hidden from the reader, such as a white sentence telling the model what to concl
 reaches the model with its personal and financial details masked and its hidden passages
 taken out. The file itself never does.
 
-## Set it up in Claude Desktop
+## Install it in Claude Desktop
+
+The easiest way is the extension: open `complydoc.mcpb` (built with `make mcpb`), click
+**Install**, and choose the documents folder. Claude Desktop sets up Python and complydoc on
+its own, so nothing else needs installing. This light version masks identifiers found by
+pattern; names of people and companies need a name model, set up as below.
+
+## Set it up by hand in Claude Desktop
 
 Install complydoc, then add it to Claude Desktop's configuration (Settings, Developer,
 Edit Config), with the folder people keep their documents in:
