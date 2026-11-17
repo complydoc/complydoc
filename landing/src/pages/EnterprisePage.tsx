@@ -1,43 +1,64 @@
 import {
   ArrowRightIcon,
-  BookOpenIcon,
   CheckIcon,
-  FileLockIcon,
+  EyeOffIcon,
   FileSearchIcon,
-  FolderLockIcon,
-  ListChecksIcon,
+  FileLockIcon,
+  FileScanIcon,
+  GaugeIcon,
+  HardDriveIcon,
+  ScaleIcon,
   ShieldCheckIcon,
-  WifiOffIcon,
+  ShieldIcon,
+  UserRoundXIcon,
   type LucideIcon,
 } from "lucide-react";
-import { CloudArt } from "@/art/CloudArt";
-import { BrandLogo } from "@/components/BrandLogo";
+import { LayerArt } from "@/art/LayerArt";
 import { Section, TextLink } from "@/components/Section";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Item, ItemContent, ItemGroup, ItemMedia, ItemTitle } from "@/components/ui/item";
 import { CONTACT_EMAIL, links } from "@/links";
-import type { Brand } from "@/lib/logos";
 import { ContactForm } from "@/pages/ContactForm";
-import { Page, PageHeader } from "@/pages/Page";
+import { Page } from "@/pages/Page";
 
-/** Agents that speak MCP, and so can read documents through complydoc. */
-const AGENTS: { name: string; brand: Brand }[] = [
-  { name: "Claude", brand: "claude" },
-  { name: "Codex", brand: "codex" },
-  { name: "Cursor", brand: "cursor" },
-  { name: "GitHub Copilot", brand: "githubcopilot" },
-  { name: "Gemini", brand: "gemini" },
-  { name: "Any MCP client", brand: "mcp" },
+const BADGES: { icon: LucideIcon; label: string }[] = [
+  { icon: HardDriveIcon, label: "Cleaned on your computer" },
+  { icon: ShieldIcon, label: "Any assistant that speaks MCP" },
+  { icon: ScaleIcon, label: "MIT licensed" },
 ];
 
-/** What an agent can do through complydoc's MCP server, one idea each. */
+/** What happens to every document on its way to a model. */
+const LAYER: { icon: LucideIcon; title: string; detail: string }[] = [
+  {
+    icon: UserRoundXIcon,
+    title: "Personal data masked",
+    detail: "Bank accounts, tax and insurance numbers, emails and names, masked before the text leaves complydoc.",
+  },
+  {
+    icon: EyeOffIcon,
+    title: "Prompt injection taken out",
+    detail: "Text a person cannot see, such as white or tiny text, is removed, and instructions written to an AI are flagged.",
+  },
+  {
+    icon: GaugeIcon,
+    title: "AI readiness checked",
+    detail: "Which documents a model can read well, which are scanned, and what would make the rest usable.",
+  },
+  {
+    icon: FileScanIcon,
+    title: "Loaded efficiently",
+    detail: "complydoc's own loader is on by default: text where there is text, OCR only where a page is scanned.",
+  },
+];
+
+/** What an assistant can do through complydoc's MCP server. */
 const CAN: { icon: LucideIcon; title: string; detail: string }[] = [
   {
     icon: FileSearchIcon,
     title: "Find a document",
-    detail: "By part of its name, in the folders a person has shared, and nowhere else.",
+    detail: "By part of its name, in the folders a person shared, and nowhere else.",
   },
   {
     icon: ShieldCheckIcon,
@@ -46,67 +67,39 @@ const CAN: { icon: LucideIcon; title: string; detail: string }[] = [
   },
   {
     icon: FileLockIcon,
-    title: "Read a clean copy",
-    detail: "Bank accounts, tax numbers and names masked, hidden instructions taken out, and a note of what was removed.",
+    title: "Read the clean copy",
+    detail: "With a note of what was masked and removed, so the assistant knows what it is missing.",
   },
 ];
-
-/** What keeps it safe, whichever agent asks. */
-const KEEPS: { icon: LucideIcon; title: string; detail: string }[] = [
-  {
-    icon: FolderLockIcon,
-    title: "Only folders a person picks",
-    detail: "Chosen in the computer's own folder dialog. The agent can ask for it, never choose what it lands on.",
-  },
-  {
-    icon: WifiOffIcon,
-    title: "The file stays put",
-    detail: "Documents are read where they are, with the network blocked. Only the cleaned text reaches the agent.",
-  },
-  {
-    icon: ListChecksIcon,
-    title: "Every read on record",
-    detail: "For a team: which agent read which document, and what was masked, ready for an audit.",
-  },
-];
-
-/** The verdict as complydoc gives it, on the sample invoices. */
-const VERDICT = `Do not send as it is: rechnungen-2026-de.pdf
-Found:
-- German tax identification number: 3 (sensitive)
-- IBAN: 3 (sensitive)
-- Email address: 3
-- Person name: 6
-open_document gives a copy with these masked, which is safe to use.`;
 
 const TODAY = [
-  "The MCP server, for any agent that speaks MCP",
-  "A verdict anyone understands, before a document is shared",
-  "Personal and financial details masked, and text hidden from a reader taken out",
-  "Only the folders a person picks, and no network connection while documents are read",
+  "The MCP server, for any assistant that speaks MCP",
+  "Masking, prompt injection removal and the verdict, on every document",
+  "AI readiness of a folder, and complydoc's loader",
+  "Only folders a person picks, with no network while documents are read",
 ];
 
 const FOR_TEAMS = [
-  "Rolled out by IT, with the folders and what counts as sensitive set once for everyone",
-  "A record of what each agent read, and what was masked, for audit",
-  "A server inside your network, for agents that only reach a remote one, such as Microsoft 365 Copilot and ChatGPT",
-  "Your shared drives and SharePoint as the folders, with the documents left where they are",
+  "Rolled out by IT, with folders and what counts as sensitive set once for everyone",
+  "A record of what each assistant read, and what was masked, for audit",
+  "A server inside your network, for assistants that only reach a remote one",
+  "Shared drives and SharePoint as the folders, with documents left where they are",
 ];
 
 const QUESTIONS = [
   {
     q: "Do our documents leave the computer?",
-    a: "The file never does. complydoc reads it where it is, with outbound connections blocked, and only the cleaned text joins the conversation the person was already having with the agent.",
+    a: "The file never does. complydoc reads it where it is, with outbound connections blocked, and only the cleaned text joins the conversation.",
     href: links.offline,
   },
   {
-    q: "Can the agent open any file it likes?",
-    a: "No. It reads only from folders a person picked, in their computer's own folder dialog, or that IT set for the team.",
+    q: "Can the assistant open any file it likes?",
+    a: "No. It reads only from folders a person picked in their computer's own folder dialog, or that IT set for the team.",
     href: links.assistant,
   },
   {
     q: "What if someone attaches the file anyway?",
-    a: "Then it reaches the agent whole: complydoc is the safe way in, not a lock. Where that must not happen, turn file uploads off in the agent's admin settings and leave complydoc as the way documents come in.",
+    a: "Then it reaches the assistant whole: complydoc is the safe way in, not a lock. Where that must not happen, turn uploads off in the assistant's admin settings.",
     href: links.assistant,
   },
   {
@@ -119,65 +112,68 @@ const QUESTIONS = [
 export function EnterprisePage() {
   return (
     <Page>
-      <PageHeader
-        eyebrow="complydoc for teams"
-        title="A safe way for your team's agents to read documents."
-        art={<CloudArt />}
-        lead="People hand contracts, invoices and CVs to AI agents every day, whole. complydoc sits between any agent and your team's documents: through MCP, agents find, check and read them with personal data masked and hidden instructions removed, and the file never leaves the computer."
-      >
-        <div className="flex flex-col gap-8">
-          <div className="flex flex-wrap gap-3">
-            <Button size="lg" asChild>
-              <a href="#contact">
-                Ask for a pilot
-                <ArrowRightIcon data-icon="inline-end" />
-              </a>
-            </Button>
-            <Button size="lg" variant="outline" asChild>
-              <a href={links.assistant}>
-                <BookOpenIcon data-icon="inline-start" />
-                How it works
-              </a>
-            </Button>
+      <section id="top" aria-labelledby="page-title">
+        <div className="mx-auto flex max-w-6xl flex-col gap-16 px-6 pt-20 pb-24 md:pt-28 md:pb-32">
+          <div className="grid gap-10 md:grid-cols-2 md:gap-16">
+            <div className="flex flex-col gap-10">
+              <div className="flex flex-col gap-4">
+                <p className="font-mono text-xs tracking-wide text-muted-foreground uppercase">complydoc for teams</p>
+                <h1 id="page-title" className="text-5xl font-medium tracking-tight text-balance md:text-6xl">
+                  Share documents with AI, safely.
+                </h1>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <Button size="lg" asChild>
+                  <a href="#contact">
+                    Ask for early access
+                    <ArrowRightIcon data-icon="inline-end" />
+                  </a>
+                </Button>
+                <Button size="lg" variant="outline" asChild>
+                  <a href="#layer">How it works</a>
+                </Button>
+              </div>
+            </div>
+            <div className="flex flex-col justify-between gap-10">
+              <p className="text-xl text-pretty md:pt-9">
+                Your team gives contracts, invoices and CVs to AI assistants every day. complydoc sits between
+                those documents and the models: each one is cleaned on your computer, and the assistant only
+                ever reads the clean copy.
+              </p>
+              <ul className="flex flex-wrap gap-x-6 gap-y-3 text-sm text-muted-foreground">
+                {BADGES.map((badge) => (
+                  <li key={badge.label} className="flex items-center gap-2">
+                    <badge.icon className="size-4" />
+                    {badge.label}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
-          <ul aria-label="Works with" className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm font-medium">
-            {AGENTS.map((agent) => (
-              <li key={agent.name} className="flex items-center gap-2">
-                <BrandLogo brand={agent.brand} className="size-4" />
-                {agent.name}
-              </li>
-            ))}
-          </ul>
+          <LayerArt />
         </div>
-      </PageHeader>
+      </section>
+
+      <Section
+        id="layer"
+        eyebrow="The layer"
+        title="What happens to every document."
+      >
+        <Facts items={LAYER} columns="md:grid-cols-2" />
+      </Section>
 
       <Section
         id="mcp"
         eyebrow="Over MCP"
-        title="One layer between every agent and your documents."
-        lead="complydoc speaks MCP, so any agent that does can use it. The agent asks complydoc for a document instead of taking the file, and gets what is safe to read."
+        title="Works with the assistants your team already uses."
       >
-        <div className="flex flex-col gap-16">
-          <Facts items={CAN} />
-          <figure className="flex flex-col gap-3">
-            <pre className="overflow-x-auto rounded-lg border bg-card p-6 font-mono text-sm leading-7 whitespace-pre-wrap">
-              {VERDICT}
-            </pre>
-            <figcaption className="text-sm text-muted-foreground">
-              What an agent is told about a file of sample invoices, before anyone shares it.
-            </figcaption>
-          </figure>
-          <div className="border-t pt-12">
-            <Facts items={KEEPS} />
-          </div>
-        </div>
+        <Facts items={CAN} />
       </Section>
 
       <Section
         id="offer"
         eyebrow="What you get"
         title="Free for every person. Managed for the whole team."
-        lead="The MCP server is open source and runs on each person's computer. complydoc for teams adds what a company needs to roll it out, and is built with the first teams that pilot it."
       >
         <div className="grid gap-8 lg:grid-cols-2">
           <Offer title="Open source" badge="Free" items={TODAY} />
@@ -196,7 +192,7 @@ export function EnterprisePage() {
             </div>
           ))}
         </dl>
-        <p className="mt-16 text-pretty text-muted-foreground">
+        <p className="mt-16 border-t pt-8 text-pretty text-muted-foreground">
           Building pipelines that load documents for a model? That is{" "}
           <TextLink href="../">complydoc for engineers</TextLink>: loaders compared, every step traced, and what must
           survive tested in CI.
@@ -206,8 +202,7 @@ export function EnterprisePage() {
       <Section
         id="contact"
         eyebrow="Talk to us"
-        title="Ask for a pilot."
-        lead="Tell us which agents your team uses and what documents go into them. A pilot starts on a few people's computers and ends with what your security team needs to roll it out."
+        title="Ask for early access."
       >
         <div className="grid gap-8 lg:grid-cols-[5fr_6fr]">
           <p className="text-pretty text-muted-foreground">
@@ -225,9 +220,15 @@ export function EnterprisePage() {
 }
 
 /** Three ideas side by side, each with its icon, as the home page shows the trace's. */
-function Facts({ items }: { items: { icon: LucideIcon; title: string; detail: string }[] }) {
+function Facts({
+  items,
+  columns = "md:grid-cols-3",
+}: {
+  items: { icon: LucideIcon; title: string; detail: string }[];
+  columns?: string;
+}) {
   return (
-    <dl className="grid gap-10 md:grid-cols-3">
+    <dl className={`grid gap-10 ${columns}`}>
       {items.map((item) => (
         <div key={item.title} className="flex gap-4">
           <item.icon className="mt-1 size-5 shrink-0 text-muted-foreground" />
@@ -262,7 +263,7 @@ function Offer({
           </Badge>
         </CardTitle>
         <CardDescription>
-          {highlight ? "For companies where security decides what agents may read." : "Everything one person needs."}
+          {highlight ? "For companies where security decides what assistants may read." : "Everything one person needs."}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -283,7 +284,7 @@ function Offer({
         <CardFooter className="mt-auto">
           <Button className="bg-card" variant="outline" asChild>
             <a href="#contact">
-              Ask for a pilot
+              Ask for early access
               <ArrowRightIcon data-icon="inline-end" />
             </a>
           </Button>
