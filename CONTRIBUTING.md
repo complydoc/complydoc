@@ -56,6 +56,27 @@ which `src/tests/test_docs.py` executes.
 copies of fixtures in `src/tests/fixtures`; `make sample` refreshes them. Every name and
 identifier in them is invented.
 
+## Adding an identifier
+
+An identifier is a category in `src/complydoc/config/sensitive.yaml`: its patterns, the
+words that sit beside it, and the validators that confirm it. When its check digit is a
+weighted sum or Luhn, declare it under `checks` instead of writing code:
+
+```yaml
+checks:
+  pt_niss:
+    length: 11
+    starts_with: ["1", "2"]
+    method: weighted
+    weights: [29, 23, 19, 17, 13, 11, 7, 5, 3, 2]
+    modulus: 10
+    subtract_from: 9
+```
+
+complydoc4j reads the same file, so a declared check needs nothing on the Java side. A check
+that fits neither method is a function in `src/complydoc/sensitive/validators.py`, and
+complydoc4j follows it by hand.
+
 ## Adding a signal
 
 Add a file under `readiness/signals/` with an `@signal` class, and a block in

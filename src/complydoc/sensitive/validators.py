@@ -10,9 +10,21 @@ from __future__ import annotations
 
 import datetime as dt
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
+from typing import TYPE_CHECKING
 
-__all__ = ["FORMAT_ONLY", "VALIDATORS", "iban_mod97", "luhn", "validate", "vat_mod97"]
+if TYPE_CHECKING:
+    from complydoc.config.schema import CheckConfig
+
+__all__ = [
+    "FORMAT_ONLY",
+    "VALIDATORS",
+    "declared",
+    "iban_mod97",
+    "luhn",
+    "validate",
+    "vat_mod97",
+]
 
 FORMAT_ONLY: frozenset[str] = frozenset(
     {
@@ -678,14 +690,42 @@ VALIDATORS: dict[str, Callable[[str], bool]] = {
 }
 
 
-def validate(value: str, names: list[str]) -> tuple[bool, list[str]]:
-    """Run the named validators. Returns (all passed, names that passed)."""
+def declared(check: CheckConfig, value: str) -> bool:
+    """Whether `value` passes a check declared in `sensitive.yaml`."""
+    digits = _digits(value)
+    if len(digits) not in check.lengths:
+        return False
+    if check.starts_with and not digits.startswith(tuple(check.starts_with)):
+        return False
+    if check.method == "luhn":
+        return _luhn_valid(digits)
+    total = sum(int(d) * w for d, w in zip(digits, check.weights, strict=False))
+    remainder = total % check.modulus
+    if check.zero:
+        return remainder == 0
+    result = remainder if check.subtract_from is None else check.subtract_from - remainder
+    if result in check.invalid:
+        return False
+    return check.replace.get(result, result) == int(digits[len(check.weights)])
+
+
+def validate(
+    value: str, names: list[str], checks: Mapping[str, CheckConfig] | None = None
+) -> tuple[bool, list[str]]:
+    """Run the named validators, written in code or declared in `checks`.
+
+    Returns (all passed, names that passed). An unknown name is skipped.
+    """
     passed: list[str] = []
     for name in names:
         checker = VALIDATORS.get(name)
-        if checker is None:
+        if checker is not None:
+            ok = checker(value)
+        elif checks is not None and name in checks:
+            ok = declared(checks[name], value)
+        else:
             continue
-        if not checker(value):
+        if not ok:
             return False, passed
         passed.append(name)
     return True, passed
