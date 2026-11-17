@@ -110,7 +110,7 @@ export function ContributorsPage() {
         </div>
       </Section>
 
-      <Section id="issues" eyebrow="Good first issues" title="Small, well described, and waiting.">
+      <Section id="issues" eyebrow="Good first issues" title="A good place to start.">
         <Card className="max-w-2xl">
           <CardHeader>
             <CardTitle className="text-lg">Issues labelled for a first contribution</CardTitle>
