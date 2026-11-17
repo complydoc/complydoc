@@ -9,6 +9,7 @@ one logical page.
 
 from __future__ import annotations
 
+import contextlib
 import re
 from pathlib import Path
 from typing import Any
@@ -45,11 +46,19 @@ _CELLS = frozenset({"td", "th"})
 _SPACE = re.compile(r"\s+")
 _CELL_GAP = re.compile(r" *\t *")
 _XML_DECLARATION = re.compile(r"^\s*<\?xml[^>]*\?>")
+_CHARSET = re.compile(rb"charset|encoding\s*=", re.IGNORECASE)
 _FEW_LETTERS = 200
 
 
 def parse_html(markup: str | bytes) -> Any:
-    """The document element. Bytes are decoded as the page's own charset declares."""
+    """The document element. Bytes are decoded as the page's own charset declares.
+
+    A page that declares none is read as UTF-8 when it is valid UTF-8, as a browser does
+    today; lxml would otherwise read it as Latin-1 and turn every accent into two letters.
+    """
+    if isinstance(markup, bytes) and not _CHARSET.search(markup[:4096]):
+        with contextlib.suppress(UnicodeDecodeError):
+            markup = markup.decode("utf-8-sig")
     if isinstance(markup, str):
         # lxml refuses a string that still carries an encoding declaration.
         markup = _XML_DECLARATION.sub("", markup)

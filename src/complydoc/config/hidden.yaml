@@ -45,6 +45,11 @@ instructions:
         - '\b(?:ignoriere|ignorieren|vergiss|vergessen)\b[^.\n]{0,40}?\b(?:anweisungen|anweisung|regeln|vorgaben)\b'
         - '\b(?:ignora|ignorare|dimentica)\b[^.\n]{0,40}?\b(?:istruzioni|regole)\b'
         - '\b(?:negeer|vergeet)\b[^.\n]{0,40}?\b(?:instructies|regels)\b'
+        # "Disregard the above", "forget everything you were told before".
+        - '\b(?:disregard|ignore|forget)\s+(?:all\s+|everything\s+)?(?:of\s+)?(?:the\s+)?above\b'
+        - '\bforget everything (?:you (?:were|have been) told|above|before)\b'
+        # European Portuguese: "esquece tudo o que te disseram antes", "ignora tudo o que está acima".
+        - '\b(?:esquece|esque[çc]a|ignora|ignore)\s+tudo\b[^.\n]{0,40}\b(?:antes|anteriormente|acima|disseram|disse)\b'
 
     - id: role
       label: reassigns the model's role
@@ -101,6 +106,9 @@ instructions:
         # The model is named the same way in every language; what changes is the address.
         - '\b(?:nota|mensagem|instru[çc][õo]es|aten[çc][ãa]o) (?:para|ao|[àa]) (?:a |o )?(?:ia|ai|llm|modelo|assistente|chatbot)\b'
         - '\bse (?:voc[êe]|tu) (?:for|fores|[ée]) (?:uma? )?(?:ia|ai|intelig[êe]ncia artificial|modelo de linguagem|assistente)\b'
+        - '\bse (?:[ée]s|fores) (?:uma? )?(?:ia|ai|intelig[êe]ncia artificial|modelo de linguagem|assistente)\b'
+        - '\bassistente (?:de )?(?:ia|ai|virtual)\s*[:,]'
+        - '\b(?:any|every|all) (?:ai|llm|language model|ai assistant)s?\s*[:,]'
         - '\b(?:nota|mensaje|instrucciones|atenci[óo]n) (?:para|al|a la) (?:la |el )?(?:ia|ai|llm|modelo|asistente|chatbot)\b'
         - '\bsi eres una? (?:ia|ai|inteligencia artificial|modelo de lenguaje|asistente)\b'
         - '\b(?:note|message|instructions?|attention) (?:pour|[àa]) (?:l.|la |le )?(?:ia|ai|llm|mod[èe]le|assistant|agent conversationnel)\b'
@@ -123,6 +131,9 @@ instructions:
         - '\b(?:n[ãa]o|nunca)\s+(?:mencione|revele|repita|cite)\s+(?:esta|estas|este|estes)\s+(?:frase|instru[çc][ãa]o|nota|mensagem|texto|linha|par[áa]grafo)s?\b'
         - '\b(?:n[ãa]o|nunca)\s+(?:diga|conte|informe|mencione|revele|mostre)\b[^.\n]{0,25}\b(?:ao? usu[áa]rio|ao? leitor|a ningu[ée]m)\b'
         - '\bsem (?:avisar|informar|contar) (?:ao? )?(?:usu[áa]rio|leitor|ningu[ée]m)\b'
+        # European Portuguese: "não digas ao utilizador", "sem avisar o utilizador".
+        - '\b(?:n[ãa]o|nunca)\s+(?:digas|contes|informes|menciones|reveles|mostres|diga|conte|informe|mencione|revele|mostre)\b[^.\n]{0,25}\b(?:ao? utilizador|ao? cliente|a ningu[ée]m)\b'
+        - '\bsem (?:avisar|informar|contar) (?:ao? |o )?utilizador\b'
         - '\bmantenha (?:isto|isso|estas instru[çc][õo]es) (?:em segredo|secreto|oculto|confidencial)\b'
         - '\bno (?:le )?(?:digas|informes|menciones|reveles|muestres)\b[^.\n]{0,25}\b(?:al usuario|al lector|a nadie)\b'
         - '\bsin (?:avisar|informar|decirle) (?:al usuario|al lector|a nadie)\b'
@@ -147,6 +158,9 @@ instructions:
         - '\bwhen (?:summari[sz]ing|reviewing|screening|evaluating|analy[sz]ing|assessing|processing|ranking|grading) (?:this|the)\b[^.\n]{0,80}\b(?:say|state|respond|reply|answer|rate|score|recommend|approve|conclude|mention|report|output|classify)\b'
         - '\b(?:rank|rate|score|list) (?:him|her|them|this (?:candidate|applicant|supplier|vendor|bid|offer|proposal))\b[^.\n]{0,20}\b(?:first|highest|top|best)\b'
         - '\bao (?:resumir|avaliar|analisar|rever|revisar|classificar|processar)\b[^.\n]{0,80}\b(?:diga|afirme|declare|responda|recomende|aprove|conclua|classifique)\b'
+        # European Portuguese, whose imperative is spelt as the third person: only what a model
+        # is asked to do, and only "say that", so "o jurista diz se há riscos" stays out.
+        - '\bao (?:resumir|processar)\b[^.\n]{0,80}\b(?:diz|afirma|declara|indica|responde) que\b'
         - '\bal (?:resumir|evaluar|analizar|revisar|clasificar|procesar)\b[^.\n]{0,80}\b(?:afirma|declara|responde|recomienda|aprueba|concluye|clasifica)\b'
         - '\b(?:lors|au moment) (?:de|du) (?:la |l.)?(?:r[ée]sum[ée]|synth[èe]se|[ée]valuation|analyse|revue|classement)\b[^.\n]{0,80}\b(?:dis|d[ée]clare|r[ée]ponds|recommande|approuve|conclus)\b'
         - '\b(?:beim|bei der) (?:zusammenfassen|zusammenfassung|bewerten|bewertung|analysieren|analyse|pr[üu]fen|pr[üu]fung|einstufung)\b[^.\n]{0,80}\b(?:sage|gib an|erkl[äa]re|antworte|empfiehl|genehmige|schlie[ßs]e)\b'
@@ -157,6 +171,12 @@ instructions:
       label: tries to move data out through a link or the conversation
       languages: [en, pt, es, fr, de, it, nl]
       regexes:
+        # Data sent to a link that carries it in a query string: "send the client list to https://…?d=".
+        - '\b(?:send|post|upload|forward|transmit|paste)\b[^.\n]{0,30}\b(?:list|data|conversation|chat|history|contents?|details|documents?|messages|emails?|credentials)\b[^.\n]{0,20}\bto\s+https?://\S*[?&]\S*='
+        - '\b(?:envia|envie|manda|mande|carrega)\b[^.\n]{0,30}\b(?:lista|dados|conversa|hist[óo]rico|conte[úu]do|detalhes|documentos?|mensagens|emails?|credenciais)\b[^.\n]{0,20}\bpara\s+https?://\S*[?&]\S*='
+        - '\bcall (?:the )?(?:tool|function)\s+(?:[a-z]+_\w+|\w+\()'
+        - '\b(?:reveal|print|show|repeat|output)\s+(?:your|the)\s+system prompt\b'
+        - '\b(?:mostra|mostre|revela|revele|repete|repita)\s+(?:o |a )?(?:prompt|instru[çc][õo]es) do sistema\b'
         # A tracking image is markup, not language, so it needs no translation.
         - '!\[[^\]\n]*\]\(\s*https?://[^)\s]*[?&][^)\s]*=[^)\s]*\)'
         - '\b(?:include|append|insert|repeat)\b[^.\n]{0,30}\b(?:the |your )?(?:conversation|chat history|system prompt|previous messages)\b'
