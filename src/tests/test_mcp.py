@@ -56,6 +56,9 @@ def test_it_introduces_itself_and_its_three_tools(folder: Path) -> None:
         {"jsonrpc": "2.0", "id": 2, "method": "tools/list"},
     )
     assert first["result"]["serverInfo"]["name"] == "complydoc"
+    icons = first["result"]["serverInfo"]["icons"]
+    assert [icon["mimeType"] for icon in icons] == ["image/png", "image/svg+xml"]
+    assert icons[0]["src"].startswith("data:image/png;base64,")
     assert first["result"]["protocolVersion"] == "2025-06-18"
     assert [tool["name"] for tool in second["result"]["tools"]] == [
         "list_documents",

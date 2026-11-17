@@ -13,11 +13,14 @@ guard is armed for the whole session, as on every other complydoc path.
 
 from __future__ import annotations
 
+import base64
 import json
 import re
 import sys
 from collections import Counter
 from dataclasses import dataclass, field
+from functools import cache
+from importlib.resources import files
 from pathlib import Path
 from typing import IO, Any
 
@@ -245,6 +248,20 @@ def _remove(text: str, excerpt: str) -> tuple[str, int]:
     return re.subn(pattern, "[hidden text removed]", text)
 
 
+@cache
+def _icons() -> list[dict[str, Any]]:
+    """The mark on its tile, for clients that show a server's icon beside its name."""
+    here = files("complydoc.mcp")
+    icons = []
+    for name, mime, sizes in (
+        ("icon.png", "image/png", ["128x128"]),
+        ("icon.svg", "image/svg+xml", ["any"]),
+    ):
+        data = base64.b64encode(here.joinpath(name).read_bytes()).decode("ascii")
+        icons.append({"src": f"data:{mime};base64,{data}", "mimeType": mime, "sizes": sizes})
+    return icons
+
+
 def _reply(out: IO[str], message: dict[str, Any]) -> None:
     out.write(json.dumps(message, ensure_ascii=False) + "\n")
     out.flush()
@@ -257,7 +274,13 @@ def _handle(server: Server, request: dict[str, Any]) -> dict[str, Any] | None:
         return {
             "protocolVersion": params.get("protocolVersion") or PROTOCOL,
             "capabilities": {"tools": {}},
-            "serverInfo": {"name": "complydoc", "version": __version__},
+            "serverInfo": {
+                "name": "complydoc",
+                "title": "complydoc",
+                "version": __version__,
+                "websiteUrl": "https://complydoc.github.io/complydoc/",
+                "icons": _icons(),
+            },
             "instructions": (
                 "Open documents with open_document, never by asking for the file: it masks "
                 "personal details and removes hidden instructions before you read it."
