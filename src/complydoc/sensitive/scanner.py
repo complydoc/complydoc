@@ -251,7 +251,7 @@ def _scan_page(
                 ]
         for finding in ruled:
             value = text[finding.start : finding.end]
-            passed, names = validate(value, category.validators)
+            passed, names = validate(value, category.validators, config.checks)
             if passed:
                 candidates.append(
                     Candidate(
@@ -277,7 +277,7 @@ def _scan_page(
             if finding.confidence is not None and finding.confidence < category.min_confidence:
                 continue
             value = text[finding.start : finding.end]
-            passed, names = validate(value, category.validators)
+            passed, names = validate(value, category.validators, config.checks)
             if not passed:
                 continue
             candidates.append(Candidate(category_id, category, finding, names))
