@@ -18,7 +18,7 @@ interface LogoProps {
 
 export function Logo({ withName = true, size = 24 }: LogoProps) {
   return (
-    <span className="inline-flex items-center gap-2 text-primary" role="img" aria-label="complydoc">
+    <span className="inline-flex items-center gap-2 text-viz-blue" role="img" aria-label="complydoc">
       <svg viewBox="9 20 84 64" width={size * (84 / 64)} height={size} aria-hidden="true" className="shrink-0">
         <path fill="currentColor" fillRule="evenodd" d={MARK} />
       </svg>

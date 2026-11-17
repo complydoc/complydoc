@@ -32,7 +32,7 @@ Nothing on the page is invented.
 | On the page | From |
 | --- | --- |
 | The recordings in `src/assets/recordings` | The viewer with its sidebar folded, driven with a real mouse and rendered by `scripts/recordings/render.py`. `scenes.mjs` records Find a value, on the bundled sample documents observed twice with and without masking, and the diff, on `viewer/sample/documents/master-services-agreement.pdf` loaded with LangChain's `PyPDFLoader` and `PDFPlumberLoader` through `cd.compare_loaders`; `expect.mjs` records the evals. Recordings are kept for what has to be seen happening; each plays once it is on screen and stays a still picture for a reader who asked for less motion |
-| The screenshots in `src/assets/screens` | From `scripts/recordings/shots.mjs`: the trace as a whole window, and one whole panel each for the reading of `employee-record.pdf` and for the Security page of `viewer/sample/documents` |
+| The screenshots in `src/assets/screens` | From `scripts/recordings/shots.mjs`: the trace as a whole window, and one whole panel each for a document's reading with its chunks and for the Security page. `TRACE_RUN`, `AUDIT_RUN`, `SPLITTER` and `DOCUMENT` name the runs and the document to show; `scenes.mjs` and `expect.mjs` take `AUDIT_RUN`, `LOADERS_RUN`, `DIFF_DOCUMENT`, `DIFF_PAGE`, `FIND_VALUE`, `DOCUMENT` and `PASSAGE_FROM`, `PASSAGE_TO`, `PASSAGE` the same way |
 | The page router and `src/data/routing.ts` | `complydoc routing ./documents` on `viewer/sample/documents`, the `complydoc-routing.json` it writes |
 | 98% of reported identifiers real | The changelog, 0.7.3: measured on 4,200 pages |
 | 53 of 53, 91.4% precision | `complydoc benchmark` |

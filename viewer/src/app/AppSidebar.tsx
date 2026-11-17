@@ -13,7 +13,6 @@ import {
   SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarRail,
   SidebarSeparator,
 } from "@/components/ui/sidebar";
 import { useEvalsState } from "@/hooks/useEvals";
@@ -21,6 +20,7 @@ import { FolderRunsContext } from "@/hooks/useFolderRuns";
 import { cn } from "@/lib/utils";
 import { guideFor } from "@/report/docs";
 import { formatCount } from "@/report/format";
+import { scoreboard } from "@/report/evals";
 import { measured } from "@/report/measured";
 import type { Report } from "@/report/types";
 import { PAGE_CONTENT, PAGE_INFO, type Page } from "./pages";
@@ -37,9 +37,9 @@ interface AppSidebarProps {
 
 /** The report's pages, grouped by what they are for. */
 const GROUPS: { label: string; pages: Page[] }[] = [
-  { label: "Overview", pages: ["home", "pipeline"] },
+  { label: "Overview", pages: ["home", "evals", "pipeline"] },
   { label: "Findings", pages: ["security", "documents", "find"] },
-  { label: "Ingestion", pages: ["evals", "chunks", "cost"] },
+  { label: "Ingestion", pages: ["chunks", "cost"] },
 ];
 
 const FOLDED_KEY = "complydoc-sidebar-missing-open";
@@ -54,6 +54,12 @@ function countFor(report: Report, page: Page, runs: number): string | null {
     }
     case "documents":
       return report.documents.length > 0 ? formatCount(report.documents.length) : null;
+    case "evals": {
+      // The best reading's facts kept, as a test run counts its passes.
+      if (!report.evals?.checks.length) return null;
+      const [best] = scoreboard(report.evals);
+      return best ? `${best.kept}/${best.total}` : null;
+    }
     case "chunks":
       return report.chunks?.length ? formatCount(report.chunks.length) : null;
     case "pipeline":
@@ -226,7 +232,6 @@ export function AppSidebar({ report, page, switcher, search }: AppSidebarProps) 
           </SidebarMenu>
         </SidebarFooter>
       )}
-      <SidebarRail />
     </Sidebar>
   );
 }

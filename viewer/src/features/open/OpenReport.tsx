@@ -49,7 +49,7 @@ export function OpenReport({ dark, onToggleTheme, onFiles, onSamples, error, loc
         <Empty className="max-w-md flex-none border bg-card py-8">
           <EmptyHeader>
             <EmptyTitle>
-              <h1 className="text-lg">Audit documents</h1>
+              <h1 className="text-lg">Add documents</h1>
             </EmptyTitle>
             <EmptyDescription>
               Copied to this machine and audited here, then opened. Nothing is sent anywhere else.

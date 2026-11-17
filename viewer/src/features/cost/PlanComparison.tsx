@@ -126,7 +126,7 @@ export function PlanComparison({ report }: { report: Report }) {
         />
         <span>cores</span>
       </div>
-      <Card className="py-0">
+      <Card className="gap-0 overflow-hidden rounded-md border bg-card">
         <Table>
           <TableCaption className="sr-only">Ways to read this folder</TableCaption>
           <TableHeader>
@@ -152,7 +152,7 @@ export function PlanComparison({ report }: { report: Report }) {
                 >
                   <TableCell className="pl-4">
                     <span className="flex items-center gap-2 font-medium">
-                      <CheckIcon className={cn("size-4 text-primary", !chosen && "invisible")} />
+                      <CheckIcon className={cn("size-4 text-primary-ink", !chosen && "invisible")} />
                       {way.label}
                       {way.recommended && <Badge variant="secondary">Recommended</Badge>}
                     </span>

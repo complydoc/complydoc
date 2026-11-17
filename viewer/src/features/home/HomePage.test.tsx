@@ -15,7 +15,7 @@ describe("Home", () => {
   it("lists the surest high-severity findings, each opening its page", () => {
     const report = sampleAudit();
     renderPage(<HomePage report={report} />);
-    const card = screen.getByText("Needs attention").closest("[data-slot=card]") as HTMLElement;
+    const card = screen.getByRole("region", { name: "Needs attention" });
     const links = within(card)
       .getAllByRole("link")
       .filter((a) => a.getAttribute("href")?.startsWith("#documents/"));
@@ -26,7 +26,7 @@ describe("Home", () => {
 
   it("names the documents to look at first, with why", () => {
     renderPage(<HomePage report={sampleAudit()} />);
-    const card = screen.getByText("Documents to look at").closest("[data-slot=card]") as HTMLElement;
+    const card = screen.getByRole("region", { name: "Documents to look at" });
     expect(within(card).getByRole("link", { name: "vendor-due-diligence.pdf" })).toBeInTheDocument();
     expect(within(card).getByText("hidden instruction")).toBeInTheDocument();
   });
@@ -41,19 +41,18 @@ describe("Home", () => {
 });
 
 describe("Home for a run of some components", () => {
-  it("says what a pricing run did not measure, and shows what it did", () => {
+  it("shows only what a pricing run measured", () => {
     renderPage(<HomePage report={sampleRunOf(["cost"])} />);
-    expect(screen.getAllByText("not in this run")).toHaveLength(2);
-    expect(screen.getByText("No identifier scan in this run")).toBeInTheDocument();
-    expect(screen.getByText("Readiness was not measured in this run")).toBeInTheDocument();
-    expect(screen.queryByText("No pricing in this run")).not.toBeInTheDocument();
-    expect(screen.getByText(/^complydoc sensitive /)).toBeInTheDocument();
+    expect(screen.queryByText(/not in this run/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Needs attention" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Readiness" })).not.toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Where the cost goes" })).toBeInTheDocument();
   });
 
-  it("says what a scan did not price", () => {
+  it("shows only what a scan measured", () => {
     renderPage(<HomePage report={sampleRunOf(["sensitive"])} />);
-    expect(screen.getByText("No pricing in this run")).toBeInTheDocument();
-    expect(screen.queryByText("No identifier scan in this run")).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Where the cost goes" })).not.toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Needs attention" })).toBeInTheDocument();
   });
 });
 

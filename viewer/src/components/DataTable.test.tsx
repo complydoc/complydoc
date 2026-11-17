@@ -52,7 +52,7 @@ describe("DataTable", () => {
   it("says when nothing matches", async () => {
     table();
     await userEvent.type(screen.getByRole("searchbox", { name: "Search files" }), "invoice");
-    expect(screen.getByText("Nothing matches “invoice”.")).toBeInTheDocument();
+    expect(screen.getByText("Nothing matches “invoice”")).toBeInTheDocument();
   });
 
   it("opens a row from anywhere on it, and leaves the row's own buttons their clicks", async () => {

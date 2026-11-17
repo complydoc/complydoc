@@ -122,8 +122,8 @@ export function BarList<T>({ series, data, category, format, colour, onSelect, l
             dataKey={key}
             {...(stacked && { stackId: "stack" })}
             fill={`var(--color-${key})`}
-            maxBarSize={20}
-            radius={index === keys.length - 1 ? [0, 4, 4, 0] : 0}
+            maxBarSize={14}
+            radius={index === keys.length - 1 ? [0, 2, 2, 0] : 0}
             isAnimationActive={false}
             {...(onSelect && {
               className: "cursor-pointer",

@@ -1,15 +1,17 @@
 import { createColumnHelper } from "@tanstack/react-table";
-import { FolderIcon } from "lucide-react";
+import { CircleDollarSignIcon, FileTextIcon, FileUpIcon, FolderIcon, ShieldAlertIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { DataTable, type Columns } from "@/components/DataTable";
 import { Section, SectionStack } from "@/components/Section";
 import { Stat, StatGrid } from "@/components/Stat";
+import { HUE_BG, type Hue } from "@/components/hues";
 import { ScoreRing } from "@/components/LevelIcons";
 import { measured } from "@/report/measured";
 import { isPipeline, leadRun, runLabel, type Collection } from "@/report/collections";
 import { formatCount, formatPageUsd, formatScore, formatSeconds, plural } from "@/report/format";
 import { EMPTY, combine, reportTotals, type Totals } from "@/report/planEstimate";
 import { planFor } from "@/report/planChoice";
-import { bandTone } from "@/report/select";
+import { bandCounts, bandTone } from "@/report/select";
 import type { Band } from "@/report/types";
 import { PipelinesTable } from "./PipelinesTable";
 
@@ -26,6 +28,8 @@ interface Row {
   sensitive: number | null;
   hidden: number | null;
   totals: Totals;
+  /** How many of its documents fall in each readiness band, best first. */
+  bands: ReturnType<typeof bandCounts>;
 }
 
 function rowsOf(collections: Collection[]): Row[] {
@@ -47,6 +51,7 @@ function rowsOf(collections: Collection[]): Row[] {
         sensitive: scanned ? report.aggregate.sensitive_total : null,
         hidden: scanned ? report.aggregate.content_findings_total : null,
         totals: reportTotals(report, planFor(report)),
+        bands: measured(report, "readiness") ? bandCounts(report) : [],
       },
     ];
   });
@@ -58,6 +63,62 @@ function NotMeasured() {
     <span className="text-xs text-muted-foreground" title="The last run did not measure this">
       not measured
     </span>
+  );
+}
+
+const BAND_HUE: Record<string, Hue> = { ready: "mint", workable: "blue", needsWork: "amber", notReady: "coral" };
+
+/** Each folder's documents by readiness band, one strip a folder, so where work is needed shows at a glance. */
+function BandStrips({ rows }: { rows: Row[] }) {
+  const scored = rows.filter((row) => row.bands.length > 0);
+  if (!scored.length) return null;
+  const legend = new Map<string, { label: string; count: number }>();
+  for (const row of scored)
+    for (const band of row.bands) {
+      const seen = legend.get(band.id);
+      legend.set(band.id, { label: band.label, count: (seen?.count ?? 0) + band.count });
+    }
+  return (
+    <div className="flex flex-col gap-4">
+      <ul className="flex flex-col gap-3">
+        {scored.map((row) => {
+          const total = row.bands.reduce((sum, band) => sum + band.count, 0);
+          return (
+            <li key={row.id} className="grid grid-cols-[minmax(0,10rem)_minmax(0,1fr)_auto] items-center gap-4">
+              <span className="flex min-w-0 items-center gap-2 text-sm font-medium">
+                <FolderIcon aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
+                <span className="truncate">{row.name}</span>
+              </span>
+              <div
+                className="flex h-2.5 gap-0.5 overflow-hidden rounded-full"
+                role="img"
+                aria-label={row.bands.map((band) => `${band.count} ${band.label.toLowerCase()}`).join(", ")}
+              >
+                {row.bands.map((band) => (
+                  <span
+                    key={band.id}
+                    className={HUE_BG[BAND_HUE[band.id] ?? "blue"]}
+                    style={{ width: `${(band.count / total) * 100}%` }}
+                  />
+                ))}
+              </div>
+              <span className="figure text-xs text-muted-foreground" title={plural(total, "document")}>
+                {total}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+      <ul aria-label="Bands" className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted-foreground">
+        {[...legend].map(([id, band]) => (
+          <li key={id} className="flex items-center gap-1.5">
+            <span aria-hidden="true" className={`size-2 rounded-full ${HUE_BG[BAND_HUE[id] ?? "blue"]}`} />
+            {band.label}
+            <span className="figure text-foreground">{band.count}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
@@ -89,16 +150,16 @@ function columnsFor(onOpen: (id: string) => void): Columns<Row> {
         </span>
       ),
     }),
-    // Pairs of figures share a column, the second beneath, so the table fits beside the sidebar.
     column.accessor((row) => row.totals.documents, {
       id: "documents",
       header: "Documents",
-      cell: ({ row, getValue }) => (
-        <span className="flex flex-col items-end tabular-nums">
-          <span>{formatCount(getValue())}</span>
-          <span className="text-xs text-muted-foreground">{plural(row.original.totals.pages, "page")}</span>
-        </span>
-      ),
+      cell: ({ getValue }) => formatCount(getValue()),
+      ...numeric,
+    }),
+    column.accessor((row) => row.totals.pages, {
+      id: "pages",
+      header: "Pages",
+      cell: ({ getValue }) => formatCount(getValue()),
       ...numeric,
     }),
     column.accessor((row) => row.readiness ?? undefined, {
@@ -136,17 +197,16 @@ function columnsFor(onOpen: (id: string) => void): Columns<Row> {
     }),
     column.accessor((row) => row.totals.usd ?? undefined, {
       id: "cost",
-      header: "Cost · time",
-      cell: ({ row, getValue }) => {
-        const seconds = row.original.totals.seconds;
-        return (
-          <span className="flex flex-col items-end tabular-nums">
-            <span>{formatPageUsd(getValue() ?? null)}</span>
-            <span className="text-xs text-muted-foreground">
-              {seconds === null ? "not timed" : formatSeconds(seconds)}
-            </span>
-          </span>
-        );
+      header: "Cost",
+      cell: ({ getValue }) => formatPageUsd(getValue() ?? null),
+      ...numeric,
+    }),
+    column.accessor((row) => row.totals.seconds ?? undefined, {
+      id: "time",
+      header: "Time",
+      cell: ({ getValue }) => {
+        const seconds = getValue();
+        return seconds === undefined ? <span className="text-muted-foreground">not timed</span> : formatSeconds(seconds);
       },
       ...numeric,
     }),
@@ -159,7 +219,16 @@ function columnsFor(onOpen: (id: string) => void): Columns<Row> {
  * their own: they read documents a folder may also hold, so adding them in would count
  * those documents twice.
  */
-export function OverviewPage({ collections, onOpen }: { collections: Collection[]; onOpen: (id: string) => void }) {
+export function OverviewPage({
+  collections,
+  onOpen,
+  onAudit,
+}: {
+  collections: Collection[];
+  onOpen: (id: string) => void;
+  /** Where `complydoc ui` takes documents: opens the dialog to audit a new folder. */
+  onAudit?: (() => void) | undefined;
+}) {
   const pipelines = collections.filter(isPipeline);
   const rows = rowsOf(collections.filter((c) => !isPipeline(c)));
   const all = rows.reduce((sum, row) => combine(sum, row.totals), EMPTY);
@@ -170,21 +239,46 @@ export function OverviewPage({ collections, onOpen }: { collections: Collection[
     <SectionStack>
       <Section title="Across every folder">
         <StatGrid>
-          <Stat label="Folders" value={formatCount(rows.length)} note={plural(all.documents, "document")} />
-          <Stat label="Pages" value={formatCount(all.pages)} />
+          <Stat
+            label="Folders"
+            icon={FolderIcon}
+            hue="blue"
+            value={formatCount(rows.length)}
+            note={plural(all.documents, "document")}
+          />
+          <Stat label="Pages" icon={FileTextIcon} hue="violet" value={formatCount(all.pages)} />
           <Stat
             label="Identifiers"
+            icon={ShieldAlertIcon}
+            hue="coral"
             value={formatCount(sensitive)}
             {...(unscanned > 0 && { note: `${plural(unscanned, "folder")} not scanned` })}
           />
           <Stat
             label="To read it all"
+            icon={CircleDollarSignIcon}
+            hue="mint"
             value={formatPageUsd(all.usd)}
             note={`${all.seconds === null ? "not timed" : formatSeconds(all.seconds)}, under the plan chosen for each`}
           />
         </StatGrid>
       </Section>
-      <Section title="Folders">
+      {rows.some((row) => row.bands.length > 0) && (
+        <Section title="Where the documents stand">
+          <BandStrips rows={rows} />
+        </Section>
+      )}
+      <Section
+        title="Folders"
+        aside={
+          onAudit && (
+            <Button variant="outline" size="sm" onClick={onAudit}>
+              <FileUpIcon />
+              Add documents
+            </Button>
+          )
+        }
+      >
         <DataTable
           caption="Folders"
           columns={columnsFor(onOpen)}

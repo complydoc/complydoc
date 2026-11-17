@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/EmptyState";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { useRunWith } from "@/hooks/useFolderRuns";
 import { runKind, runLabel } from "@/report/collections";
@@ -146,10 +147,13 @@ export function NotInRun({ report, content, size = "page" }: NotInRunProps) {
 
   if (size === "section") {
     return (
-      <div className="flex flex-col gap-2 text-sm">
-        <p className="font-medium">{title}</p>
-        {openOther ?? <Command command={command} />}
-      </div>
+      <EmptyState
+        icon={Icon}
+        title={title}
+        description="Run it on the same folder to fill this in."
+        action={openOther ?? <Command command={command} />}
+        className="py-6"
+      />
     );
   }
 

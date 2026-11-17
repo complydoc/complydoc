@@ -25,6 +25,9 @@ const BANDS: readonly { key: Band; id: string; label: string; tone: Tone }[] = [
 
 export const SEVERITIES: readonly Severity[] = ["high", "medium", "low"];
 
+/** What a severity says, as a tone: high wants a look, medium a second one, low none. */
+export const SEVERITY_TONE: Record<Severity, Tone> = { high: "bad", medium: "warn", low: "neutral" };
+
 /**
  * How sure complydoc is of a finding, strongest first, as a grade a reader
  * knows. How each grade is earned is in `how`, and a finding's own checks in

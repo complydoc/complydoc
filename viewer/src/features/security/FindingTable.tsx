@@ -1,3 +1,4 @@
+import { ShieldCheckIcon } from "lucide-react";
 import { createColumnHelper } from "@tanstack/react-table";
 import { DataTable, type Columns } from "@/components/DataTable";
 import { copyWithToast } from "@/lib/toast";
@@ -160,6 +161,11 @@ export function FindingTable({ rows }: { rows: FindingRow[] }) {
       rowHref={(row) => documentHref(row.document, row.page, { kind: "identifier", index: row.match })}
       rowMenu={findingMenu}
       stateKey="findings"
+      empty={{
+        icon: ShieldCheckIcon,
+        title: "No findings",
+        description: "No identifier was found in these documents.",
+      }}
       bulkActions={(chosen, clear) => <BulkIgnore rows={chosen} onDone={clear} />}
       toolbar={
         <ToggleGroup

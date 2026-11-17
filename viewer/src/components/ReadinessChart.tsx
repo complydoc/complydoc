@@ -1,3 +1,4 @@
+import { cn } from "cn";
 import { Label, Pie, PieChart } from "recharts";
 import { ToneBadge } from "@/components/ToneBadge";
 import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
@@ -12,7 +13,7 @@ export interface BandSlice {
 }
 
 const TONE_COLOUR: Record<Tone, string> = {
-  good: "var(--success)",
+  good: "var(--primary)",
   neutral: "var(--chart-2)",
   warn: "var(--warning)",
   bad: "var(--destructive)",
@@ -24,6 +25,8 @@ interface ReadinessChartProps {
   score: string;
   /** The score as a number from 0 to 100, which the ring fills to; null when not scored. */
   value: number | null;
+  /** A smaller ring, for beside other content rather than above it. */
+  small?: boolean;
   /** The tone of the band the score falls in, which colours the ring. */
   tone: Tone;
   caption: string;
@@ -36,7 +39,7 @@ interface ReadinessChartProps {
  * The ring is the score, not the mix of bands: a ring a third full around a
  * score of 74 read as a third of something.
  */
-export function ReadinessChart({ score, value, tone, caption, bands }: ReadinessChartProps) {
+export function ReadinessChart({ score, value, tone, caption, bands, small = false }: ReadinessChartProps) {
   const config = {
     score: { label: "Score", color: TONE_COLOUR[tone] },
     rest: { label: "To 100", color: "var(--muted)" },
@@ -49,8 +52,8 @@ export function ReadinessChart({ score, value, tone, caption, bands }: Readiness
   const summary = bands.map((band) => `${band.count} ${band.label.toLowerCase()}`).join(", ");
 
   return (
-    <figure className="m-0 flex flex-col items-center gap-4">
-      <ChartContainer config={config} className="aspect-square size-48" initialDimension={{ width: SIZE, height: SIZE }}>
+    <figure className={cn("m-0 flex flex-col items-center", small ? "gap-2.5" : "gap-4")}>
+      <ChartContainer config={config} className={cn("aspect-square", small ? "size-28" : "size-40")} initialDimension={{ width: SIZE, height: SIZE }}>
         <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
           <Pie
             data={data}
@@ -69,10 +72,14 @@ export function ReadinessChart({ score, value, tone, caption, bands }: Readiness
               content={({ viewBox }) =>
                 viewBox && "cx" in viewBox && viewBox.cx !== undefined && viewBox.cy !== undefined ? (
                   <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle">
-                    <tspan x={viewBox.cx} y={viewBox.cy + 4} className="fill-foreground text-4xl font-semibold">
+                    <tspan
+                      x={viewBox.cx}
+                      y={viewBox.cy + (small ? 2 : 4)}
+                      className={cn("fill-foreground font-semibold", small ? "text-2xl" : "text-4xl")}
+                    >
                       {score}
                     </tspan>
-                    <tspan x={viewBox.cx} y={viewBox.cy + 24} className="fill-muted-foreground text-xs">
+                    <tspan x={viewBox.cx} y={viewBox.cy + (small ? 18 : 24)} className="fill-muted-foreground text-xs">
                       {caption}
                     </tspan>
                   </text>

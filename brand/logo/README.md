@@ -15,13 +15,13 @@ over the check, or the one thing on the page that was found.
 
 ```
 mark-flat.svg   what ships in a UI: the shapes only, in currentColor
-mark.svg        the same shapes in complydoc green, for a light ground
-icon.svg        the icon: the mark in bright green on the near-black tile
+mark.svg        the same shapes in complydoc baby blue, for a light ground
+icon.svg        the icon: the mark in baby blue on the near-black tile
 avatar.svg      the same without rounded corners, for places that round them,
                 such as a GitHub organisation's avatar
 social-preview.svg   the 1280 x 640 card GitHub shows when the repository is shared
 png/            the same rendered to PNG, for places that take no SVG:
-                avatar-1024, icon-1024, icon-512, mark-green, social-preview
+                avatar-1024, icon-1024, icon-512, mark-blue, social-preview
 ```
 
 The PNGs are rendered with `rsvg-convert`, for example:
@@ -33,13 +33,13 @@ rsvg-convert -w 1024 -h 1024 brand/logo/avatar.svg -o brand/logo/png/avatar-1024
 The wordmarks the README shows, the mark beside `complydoc` in Geist semibold,
 are `.github/images/logo-light.svg` and `logo-dark.svg`. The HTML report
 inlines the same mark and icon from `src/complydoc/report/assets.py`, and the
-docs site uses `docs/assets/mark.svg` (white, for the green header) and
+docs site uses `docs/assets/mark.svg` (white, for the coloured header) and
 `docs/assets/favicon.svg`.
 
 ## Which one, where
 
-**In a UI**, header or footer: `mark-flat.svg` inline, in the theme's primary
-green, beside the name. No plate behind it.
+**In a UI**, header or footer: `mark-flat.svg` inline, in the theme's brand
+blue, beside the name. No plate behind it.
 
 **As an icon**, a favicon, a social card or an app tile: `icon.svg`. An icon
 has no text around it and no known ground, so it brings its own.

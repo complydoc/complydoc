@@ -39,19 +39,25 @@ Colour carries state. A colour that doesn't mean anything is grey.
 | `muted-foreground` | `#666666` | `#9aa0a6` | Labels, secondary text |
 | `faint` | `#999999` | `#71767b` | Footnotes, weights, the least important text |
 | `border` | `#e8e8e6` | `#222427` | Card edges, table rules, separators |
-| `primary` | `#1a7f4b` | `#4cc38a` | **complydoc green.** Main action, focus ring, the mark |
-| `success` / `success-soft` | `#1a7f4b` / `#e3f2ea` | `#4cc38a` / `#1e3a2a` | Ready, kept, recommended |
-| `warning` / `warning-soft` | `#b0740f` / `#f7ecd8` | `#d9a441` / `#3a2f1b` | Needs work, close, medium severity |
-| `destructive` / `destructive-soft` | `#a4402f` / `#f6e5e1` | `#e08a72` / `#3a2622` | Not ready, missed, high severity |
+| `primary` | `#a3dcf1` | `#a3dcf1` | **complydoc baby blue.** Main action fill (navy text on it), focus ring |
+| `primary-soft` / `primary-ink` | `#dcf1f9` / `#1d6f96` | `#102a35` / `#a3dcf1` | A blue tint behind something; blue text and links |
+| `viz-blue` | `#56b4e0` | `#a3dcf1` | The mark, readiness, loading and documents |
+| `viz-indigo` · `viz-violet` · `viz-mint` · `viz-amber` · `viz-coral` | `#6b7cf0` · `#9a7cf4` · `#2bb38a` · `#e6a23c` · `#ee6b5f` | `#9aa6f7` · `#bba7fb` · `#6ad9b6` · `#f2c26b` · `#f6998e` | Charts and kinds of work: one hue a series |
+| `success` / `success-soft` | `#1f9470` / `#e2f5ee` | `#6ad9b6` / `#11302a` | Ready, kept, recommended |
+| `warning` / `warning-soft` | `#b7791f` / `#fbf0dc` | `#f2c26b` / `#35291a` | Needs work, close, medium severity |
+| `destructive` / `destructive-soft` | `#c8473b` / `#fbe7e4` | `#f6998e` / `#3a2220` | Not ready, missed, high severity |
 | `secondary` / `muted` | `#f1f1ef` | `#18191b` | Neutral badges, quiet fills |
 
 Rules:
 
 - Use the token, never the hex value: `text-muted-foreground`, not `text-[#666]`.
 - State colours go on a soft fill, as in a badge, not on large areas.
-- Green is the brand and "ready" at once, on purpose: a ready document is the
-  point of the product.
-- The attention red is a brick, not a fire engine. It says "look here", not "danger".
+- Baby blue is the brand, and it is used sparingly: the mark, the main action,
+  the active page's icon, the readiness ring, focus. It is not a status.
+- The six `viz` hues are one family. Charts and kinds of work take one each, so
+  the app has colour without colour meaning good or bad; status keeps mint,
+  amber and coral.
+- The attention red is a coral, not a fire engine. It says "look here", not "danger".
 - Dark mode is black, not grey: the page and the sidebar are one black surface,
   cards sit a step above it. It is its own palette, not an inversion. Don't
   write `dark:` overrides; the tokens already switch.

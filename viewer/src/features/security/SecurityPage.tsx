@@ -1,3 +1,5 @@
+import { ShieldCheckIcon } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 import { BarList } from "@/components/BarList";
 import { NotInRun } from "@/components/NotInRun";
 import { Section, SectionStack } from "@/components/Section";
@@ -9,7 +11,7 @@ import { fileName, formatCount, humanise } from "@/report/format";
 import { measured } from "@/report/measured";
 import { documentHref } from "@/report/route";
 import { evidenceCounts, findingRows, hiddenInstructions, ignoredRows, severityByDocument } from "@/report/security";
-import { SEVERITIES, categoriesByCount } from "@/report/select";
+import { SEVERITIES, SEVERITY_TONE, categoriesByCount } from "@/report/select";
 import type { Report } from "@/report/types";
 import { FindingTable } from "./FindingTable";
 import { HiddenInstructions } from "./HiddenInstructions";
@@ -17,15 +19,13 @@ import { IgnoredFindings } from "./IgnoredFindings";
 import { JudgedConcepts } from "./JudgedConcepts";
 import { judgedRows } from "@/report/judged";
 import { activeEntry, useIgnores } from "@/hooks/useIgnores";
-import { notLookedFor } from "@/report/limitations";
 import { nextUnreviewed, progressOf, readKept, reviewId, reviewKey } from "@/report/review";
-import { NotLookedFor } from "./NotLookedFor";
 
-const BY_KIND = { count: { label: "Found", color: "var(--chart-5)" } } satisfies ChartConfig;
+const BY_KIND = { count: { label: "Found", color: "var(--viz-indigo)" } } satisfies ChartConfig;
 const BY_EVIDENCE = { count: { label: "Found", color: "var(--primary)" } } satisfies ChartConfig;
 const BY_SEVERITY = {
-  high: { label: "High", color: "var(--destructive)" },
-  medium: { label: "Medium", color: "var(--warning)" },
+  high: { label: "High", color: "var(--viz-coral)" },
+  medium: { label: "Medium", color: "var(--viz-amber)" },
   low: { label: "Low", color: "var(--chart-2)" },
 } satisfies ChartConfig;
 
@@ -80,11 +80,9 @@ export function SecurityPage({ report }: { report: Report }) {
   const kinds = categoriesByCount(report);
   const ignored = ignoredRows(report);
   const judged = judgedRows(report);
-  const unscanned = notLookedFor(report);
 
   return (
     <SectionStack>
-      {unscanned.length > 0 && <NotLookedFor categories={unscanned} documents={report.documents.length} />}
       <Section title="Found">
         <StatGrid>
           {SEVERITIES.map((severity) => (
@@ -92,49 +90,64 @@ export function SecurityPage({ report }: { report: Report }) {
               key={severity}
               label={`${humanise(severity)} severity`}
               value={formatCount(aggregate.sensitive_by_severity[severity] ?? 0)}
+              tone={(aggregate.sensitive_by_severity[severity] ?? 0) > 0 ? SEVERITY_TONE[severity] : "neutral"}
             />
           ))}
-          <Stat label="Hidden instructions" value={formatCount(hidden.filter((f) => f.instruction).length)} />
+          <Stat
+            label="Hidden instructions"
+            value={formatCount(hidden.filter((f) => f.instruction).length)}
+            tone={hidden.some((f) => f.instruction) ? "bad" : "neutral"}
+          />
           {ignored.length > 0 && <Stat label="Ignored" value={formatCount(ignored.length)} />}
         </StatGrid>
       </Section>
 
       <Section title="What and where">
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>By kind</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-2">
-              <BarList series={BY_KIND} data={kinds.slice(0, TOP)} category="label" />
-              <More count={kinds.length - TOP} noun="kind" />
-            </CardContent>
-          </Card>
-          <div className="flex flex-col gap-4">
+        {kinds.length === 0 ? (
+          <div className="rounded-md border">
+            <EmptyState
+              icon={ShieldCheckIcon}
+              title="No identifiers found"
+              description="Nothing in these documents matched a kind complydoc looks for."
+            />
+          </div>
+        ) : (
+          <div className="grid gap-4 lg:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle>By document</CardTitle>
+                <CardTitle>By kind</CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col gap-2">
-                <BarList
-                  series={BY_SEVERITY}
-                  data={byDocument.slice(0, TOP)}
-                  category="document"
-                  onSelect={(row) => window.location.assign(documentHref(row.index))}
-                />
-                <More count={byDocument.length - TOP} noun="document" />
+                <BarList series={BY_KIND} data={kinds.slice(0, TOP)} category="label" />
+                <More count={kinds.length - TOP} noun="kind" />
               </CardContent>
             </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>How sure</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <BarList series={BY_EVIDENCE} data={evidenceCounts(report)} category="label" />
-              </CardContent>
-            </Card>
+            <div className="flex flex-col gap-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>By document</CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-2">
+                  <BarList
+                    series={BY_SEVERITY}
+                    data={byDocument.slice(0, TOP)}
+                    category="document"
+                    onSelect={(row) => window.location.assign(documentHref(row.index))}
+                  />
+                  <More count={byDocument.length - TOP} noun="document" />
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>How sure</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <BarList series={BY_EVIDENCE} data={evidenceCounts(report)} category="label" />
+                </CardContent>
+              </Card>
+            </div>
           </div>
-        </div>
+        )}
       </Section>
 
       {hidden.length > 0 && (
@@ -149,9 +162,12 @@ export function SecurityPage({ report }: { report: Report }) {
         </Section>
       )}
 
-      <Section title="Every finding" aside={<ReviewLink report={report} />}>
-        <FindingTable rows={findingRows(report)} />
-      </Section>
+      {/* With nothing found, "What and where" already says so; an empty table would say it twice. */}
+      {kinds.length > 0 && (
+        <Section title="Every finding" aside={<ReviewLink report={report} />}>
+          <FindingTable rows={findingRows(report)} />
+        </Section>
+      )}
 
       {ignored.length > 0 && (
         <Section title="Ignored" aside="Set aside with a reason, and left out of every count above">

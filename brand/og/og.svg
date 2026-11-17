@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630" role="img" aria-label="complydoc: Know your documents before they reach an LLM.">
   <rect width="1200" height="630" fill="#fbfbfa"/>
-  <g transform="translate(88 82.6875)"><path fill="#1a7f4b" fill-rule="evenodd" transform="scale(0.5801) translate(-9 -20)" d="M35 84A30 30 0 0 1 9 58A30 30 0 0 1 35 84ZM43 84A72 72 0 0 1 93 20A72 72 0 0 1 43 84ZM11 34a13 13 0 1 0 26 0a13 13 0 1 0 -26 0Z"/>
+  <g transform="translate(88 82.6875)"><path fill="#56b4e0" fill-rule="evenodd" transform="scale(0.5801) translate(-9 -20)" d="M35 84A30 30 0 0 1 9 58A30 30 0 0 1 35 84ZM43 84A72 72 0 0 1 93 20A72 72 0 0 1 43 84ZM11 34a13 13 0 1 0 26 0a13 13 0 1 0 -26 0Z"/>
   <text x="65.6" y="37.5" fill="#111111" font-size="41.2" font-weight="600" font-family="Geist, 'Helvetica Neue', Helvetica, Arial, sans-serif" letter-spacing="-1">complydoc</text></g>
   <text x="88" y="295.3125" fill="#111111" font-size="71.2" font-weight="600" font-family="Geist, 'Helvetica Neue', Helvetica, Arial, sans-serif" letter-spacing="-2.5"><tspan x="88">Know your documents</tspan><tspan x="88" dy="82.5">before they reach an LLM.</tspan></text>
   <text x="88" y="450.84375" fill="#666666" font-size="30.0" font-weight="400" font-family="Geist, 'Helvetica Neue', Helvetica, Arial, sans-serif" letter-spacing="-0.3">An open-source, offline audit for documents before they're indexed.</text>

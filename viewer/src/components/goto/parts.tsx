@@ -61,7 +61,7 @@ export function TypeTab({ active, onPick, children }: { active: boolean; onPick:
       tabIndex={-1}
       onClick={onPick}
       className={cn(
-        "rounded-lg px-3 py-1.5 text-sm transition-colors",
+        "rounded-lg px-3 py-1.5 text-sm",
         active ? "bg-muted font-medium text-foreground" : "text-muted-foreground hover:text-foreground",
       )}
     >

@@ -10,6 +10,8 @@ export interface ExpectedFact {
   /** A passage when left out. */
   kind?: FactKind;
   label?: string | null;
+  /** The page it must be on, counted from 1; any page when left out. */
+  page?: number | null;
 }
 
 export function outcome(check: EvalCheck, reader: string): Outcome {
@@ -40,6 +42,11 @@ export function scoreboard(evals: EvalSummary): Score[] {
       };
     })
     .sort((a, b) => b.kept - a.kept || b.near - a.near || a.reader.localeCompare(b.reader));
+}
+
+/** The facts no reading kept: what every reader of the folder would get wrong. */
+export function lostByAll(evals: EvalSummary): number {
+  return evals.checks.filter((check) => evals.readers.every((reader) => outcome(check, reader) !== "kept")).length;
 }
 
 const key = (fact: ExpectedFact) =>

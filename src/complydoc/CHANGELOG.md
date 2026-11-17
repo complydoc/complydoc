@@ -20,6 +20,29 @@ separately.
   reader moved, or read from an annex after skipping its page, is not found. Without `page`
   a fact is looked for in the whole document, as before.
 
+- **Add documents** in the viewer's top bar, on the page of all folders and in the search
+  menu (⌘K), where `complydoc ui` takes uploads. It was only in the folder menu.
+
+### Changed
+
+- complydoc's colour is baby blue instead of green: the mark, the favicon, the README, the
+  landing page and the documentation.
+- The viewer has one palette for charts and kinds of work (blue, indigo, violet, mint,
+  amber, coral), so a chart, a step in the trace and a status read as one family. Green,
+  amber and red for status are its mint, amber and coral.
+- The dashboard is a grid of framed panels, laid out by what the run has: readiness lies
+  beside the time a run took when there is one run, and stands beside the trends when
+  there are several. A figure or panel the run did not measure is left out.
+- Evals show pass, near and fail as an icon and a word; the text a reader read is on the
+  left with the reader named on the right.
+- Empty tables, charts and lists say what is missing with an icon and a line, and a table
+  says apart nothing at all, nothing matching a search and nothing in a filter.
+- The page of all folders shows where each folder's documents stand, by readiness band.
+- The Security page and the trace no longer head the page with the categories that were
+  not looked for; the report's limitations and `run.summary()` still name them.
+- The sidebar opens and closes in 150 ms and charts redraw once it has, and ⌘K keeps one
+  height as its tabs change.
+
 
 ## [0.7.12] — 2026-11-15
 

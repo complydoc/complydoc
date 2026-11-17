@@ -45,7 +45,7 @@ export function FeatureRow({ label, title, children, points, more, visual, flip 
           <ArrowRightIcon className="size-4" />
         </a>
       </div>
-      <div className={cn("flex items-center bg-success-soft p-6 md:p-10", flip && "lg:order-first")}>
+      <div className={cn("flex items-center bg-primary-soft p-6 md:p-10", flip && "lg:order-first")}>
         <div className="w-full">{visual}</div>
       </div>
     </article>

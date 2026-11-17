@@ -44,8 +44,9 @@ export function DocumentHeader({
   ].filter(Boolean);
 
   return (
-    <header className="flex shrink-0 flex-col gap-1.5">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+    <header className="flex shrink-0 flex-wrap items-start justify-between gap-x-6 gap-y-3">
+      {/* The name and what the document is stay together; the controls sit beside them, or under both. */}
+      <div className="flex min-w-0 flex-col gap-1.5">
         <h2
           className="min-w-0 truncate font-heading text-xl font-semibold tracking-tight"
           title={document.relative_path}
@@ -53,28 +54,28 @@ export function DocumentHeader({
           {folder && <span className="font-normal text-muted-foreground">{folder}/</span>}
           {name}
         </h2>
-        <span className="ml-auto flex items-center gap-2">{controls}</span>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-muted-foreground">
+          <span className="tabular-nums">{facts.join(" · ")}</span>
+          {scanned && (
+            <span className="flex flex-wrap items-center gap-1.5">
+              {identifiers === 0 && hidden === 0 ? (
+                <ToneBadge tone="good">Nothing found</ToneBadge>
+              ) : (
+                <>
+                  {identifiers > 0 && (
+                    <ToneBadge tone={high > 0 ? "bad" : "warn"}>
+                      {plural(identifiers, "identifier")}
+                      {high > 0 && ` · ${formatCount(high)} high`}
+                    </ToneBadge>
+                  )}
+                  {hidden > 0 && <ToneBadge tone="bad">{plural(hidden, "hidden passage")}</ToneBadge>}
+                </>
+              )}
+            </span>
+          )}
+        </div>
       </div>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-muted-foreground">
-        <span className="tabular-nums">{facts.join(" · ")}</span>
-        {scanned && (
-          <span className="flex flex-wrap items-center gap-1.5">
-            {identifiers === 0 && hidden === 0 ? (
-              <ToneBadge tone="good">Nothing found</ToneBadge>
-            ) : (
-              <>
-                {identifiers > 0 && (
-                  <ToneBadge tone={high > 0 ? "bad" : "warn"}>
-                    {plural(identifiers, "identifier")}
-                    {high > 0 && ` · ${formatCount(high)} high`}
-                  </ToneBadge>
-                )}
-                {hidden > 0 && <ToneBadge tone="bad">{plural(hidden, "hidden passage")}</ToneBadge>}
-              </>
-            )}
-          </span>
-        )}
-      </div>
+      <div className="flex flex-wrap items-center gap-2">{controls}</div>
     </header>
   );
 }

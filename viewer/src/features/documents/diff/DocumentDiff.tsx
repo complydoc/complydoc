@@ -2,6 +2,7 @@ import { ListTreeIcon } from "lucide-react";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Hint } from "@/components/Hint";
 import { Button } from "@/components/ui/button";
+import { ToolName } from "@/components/ToolLogo";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { InlineFindings } from "@/hooks/useInlineMarks";
@@ -29,14 +30,14 @@ function ReaderPicker({ label, report, index, reader, onChange }: ReaderPickerPr
   const readers = document ? readersOf(report, document) : [];
   return (
     <Select value={reader} onValueChange={onChange}>
-      <SelectTrigger size="sm" aria-label={label} className="w-44">
+      <SelectTrigger size="sm" aria-label={label} className="w-48">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
         <SelectGroup>
           {readers.map((option) => (
             <SelectItem key={option.id} value={option.id}>
-              {option.label}
+              <ToolName name={option.label} />
             </SelectItem>
           ))}
         </SelectGroup>
