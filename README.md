@@ -4,8 +4,8 @@
     <img alt="complydoc" src="https://raw.githubusercontent.com/complydoc/complydoc/main/.github/images/logo-light.svg" width="42%">
   </picture>
 
-  <h3>Know your documents before they reach an LLM.</h3>
-  <p>An open-source, offline audit for documents before they're indexed.</p>
+  <h3>Get document loading right.</h3>
+  <p>Compare loaders, trace every step and evaluate what reaches your model.</p>
 
   <a href="https://pypi.org/project/complydoc/"><img src="https://img.shields.io/pypi/v/complydoc?color=56b4e0&label=pypi" alt="PyPI"></a>
   <a href="https://github.com/complydoc/complydoc/actions/workflows/checks.yml"><img src="https://github.com/complydoc/complydoc/actions/workflows/checks.yml/badge.svg?branch=main" alt="Tests"></a>

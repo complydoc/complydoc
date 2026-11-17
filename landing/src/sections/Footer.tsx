@@ -45,7 +45,7 @@ export function Footer({ home = "" }: { home?: string }) {
           <div className="flex max-w-lg flex-col gap-4">
             <Logo size={22} />
             <p className="text-sm text-muted-foreground">
-              Know your documents before they reach an LLM. Self-hosted for companies today, and a cloud version on
+              Get document loading right. Self-hosted for companies today, and a cloud version on
               its way:{" "}
               <a href={`${home}enterprise/`} className="text-foreground underline underline-offset-4">
                 talk to us
