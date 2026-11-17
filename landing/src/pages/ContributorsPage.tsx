@@ -87,7 +87,6 @@ export function ContributorsPage() {
             </Item>
           ))}
         </ItemGroup>
-        <p className="mt-4 text-xs text-muted-foreground">From GitHub on {contributors.as_of}. Bots are left out.</p>
       </Section>
 
       <Section id="start" eyebrow="Your first contribution" title="From a clone to a pull request.">

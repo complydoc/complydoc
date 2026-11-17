@@ -5,8 +5,8 @@ Run from the repository root, before a release or whenever someone new is merged
     python3 landing/scripts/make_contributors.py
 
 - `src/data/contributors.json`: everyone with a commit on the default branch,
-  bots left out, in GitHub's order. A snapshot: the page shows it as of the
-  day the script ran, and links to GitHub for anything live, such as issues.
+  bots left out, in GitHub's order. A snapshot from the day the script ran;
+  the page links to GitHub for anything live, such as issues.
 - `src/assets/contributors/<login>.png`: each avatar at 96 pixels, so the page
   asks no other site for pictures when it is read.
 
@@ -15,7 +15,6 @@ Set GITHUB_TOKEN to raise the API's hourly limit; nothing else needs it.
 
 from __future__ import annotations
 
-import datetime
 import json
 import os
 import urllib.request
@@ -57,7 +56,6 @@ def main() -> None:
     DATA.write_text(
         json.dumps(
             {
-                "as_of": datetime.date.today().isoformat(),
                 "contributors": people,
             },
             ensure_ascii=False,

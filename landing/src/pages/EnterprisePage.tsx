@@ -2,9 +2,8 @@ import { ArrowRightIcon, CheckIcon, CloudIcon, MailIcon, ServerIcon } from "luci
 import { type FormEvent, useState } from "react";
 import { CopyButton } from "@/components/CopyButton";
 import { Section, TextLink } from "@/components/Section";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Item, ItemContent, ItemGroup, ItemMedia, ItemTitle } from "@/components/ui/item";
 import { Textarea } from "@/components/ui/textarea";
@@ -86,9 +85,6 @@ export function EnterprisePage() {
                 <ServerIcon aria-hidden className="size-5 text-primary" />
                 Self-hosted
               </CardTitle>
-              <CardAction>
-                <Badge variant="success">Available now</Badge>
-              </CardAction>
               <CardDescription>
                 Everything complydoc does, on machines you run. The documents, the reports and the people who can read
                 them all stay where your security team already looks.
@@ -126,9 +122,6 @@ export function EnterprisePage() {
                 <CloudIcon aria-hidden className="size-5 text-primary" />
                 complydoc Cloud
               </CardTitle>
-              <CardAction>
-                <Badge variant="outline">Early access</Badge>
-              </CardAction>
             </CardHeader>
             <CardContent className="flex flex-col gap-4 text-sm text-pretty text-muted-foreground">
               <p>
