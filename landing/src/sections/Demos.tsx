@@ -13,7 +13,7 @@ export function Demos() {
       title="See what your model would be given."
       lead="complydoc's real output on two sample documents. Nothing here is mocked up."
     >
-      <div className="grid gap-8 lg:grid-cols-2">
+      <div className="flex flex-col gap-16">
         <Demo
           label="Compare loaders"
           title="Same page, two loaders, two different texts."
@@ -49,12 +49,14 @@ function Demo({
   children: ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-4">
-      <p className="font-mono text-xs tracking-wide text-primary uppercase">{label}</p>
-      <h3 className="text-xl font-semibold tracking-tight text-balance">{title}</h3>
-      <p className="text-sm text-pretty text-muted-foreground">
-        {text} {more}
-      </p>
+    <div className="grid items-center gap-8 lg:grid-cols-[2fr_3fr]">
+      <div className="flex flex-col gap-4">
+        <p className="font-mono text-xs tracking-wide text-primary uppercase">{label}</p>
+        <h3 className="text-2xl font-semibold tracking-tight text-balance">{title}</h3>
+        <p className="text-pretty text-muted-foreground">
+          {text} {more}
+        </p>
+      </div>
       {children}
     </div>
   );

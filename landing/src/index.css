@@ -55,6 +55,7 @@
   --color-warning-soft: var(--warning-soft);
   --color-destructive-soft: var(--destructive-soft);
   --color-faint: var(--faint);
+  --color-blush: var(--blush);
 
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
@@ -89,6 +90,8 @@
   --success: #1f9470;
   --success-soft: #e2f5ee;
   --primary-soft: #e4f4fb;
+  /* A pink to pair with the baby blue in the landing page's decoration, never meaning good or bad. */
+  --blush: #ec8fb8;
   --warning: #b0740f;
   --warning-soft: #f7ecd8;
   --destructive-soft: #f6e5e1;
@@ -145,6 +148,7 @@
   --success: #6ad9b6;
   --success-soft: #11302a;
   --primary-soft: #0d222b;
+  --blush: #e27aa9;
   --warning: #d9a441;
   --warning-soft: #3a2f1b;
   --destructive-soft: #3a2622;
@@ -234,6 +238,18 @@
 /* The backdrop behind a page's first section: a dot grid, as on a page being
    read, fading out from a glow of the brand blue. Tokens only, so it follows
    the theme. */
+@utility backdrop-duo {
+  background-image:
+    radial-gradient(ellipse 45% 60% at 20% 0%, color-mix(in oklab, var(--primary) 30%, transparent), transparent 70%),
+    radial-gradient(ellipse 45% 60% at 85% 10%, color-mix(in oklab, var(--blush) 28%, transparent), transparent 70%),
+    radial-gradient(circle at 1px 1px, var(--input) 1px, transparent 0);
+  background-size:
+    100% 100%,
+    100% 100%,
+    22px 22px;
+  mask-image: linear-gradient(to bottom, black 55%, transparent);
+}
+
 @utility backdrop-dots {
   background-image:
     radial-gradient(ellipse 60% 55% at 50% 0%, color-mix(in oklab, var(--primary) 30%, transparent), transparent 70%),

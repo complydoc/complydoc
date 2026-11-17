@@ -1,4 +1,5 @@
 import { ArrowRightIcon, BugIcon, CoffeeIcon, FileTextIcon, IdCardIcon, TerminalIcon } from "lucide-react";
+import { MergeArt } from "@/art/MergeArt";
 import { CodeBlock } from "@/components/CodeBlock";
 import { Section, TextLink } from "@/components/Section";
 import { Button } from "@/components/ui/button";
@@ -57,6 +58,7 @@ export function ContributorsPage() {
       <PageHeader
         eyebrow="Contributors"
         title="Built in the open."
+        art={<MergeArt people={contributors.contributors.map((p) => ({ login: p.login, avatar: avatar(p.login) }))} />}
         lead="complydoc is MIT licensed and made by the people below. Every pull request is read, and a first one is welcome."
       >
         <div className="flex flex-wrap gap-3">

@@ -1,5 +1,6 @@
 import { ArrowRightIcon, CheckIcon, CloudIcon, MailIcon, ServerIcon } from "lucide-react";
 import { type FormEvent, useState } from "react";
+import { CloudArt } from "@/art/CloudArt";
 import { CopyButton } from "@/components/CopyButton";
 import { Section, TextLink } from "@/components/Section";
 import { Button } from "@/components/ui/button";
@@ -59,6 +60,7 @@ export function EnterprisePage() {
       <PageHeader
         eyebrow="For companies"
         title="complydoc inside your company, on your own infrastructure."
+        art={<CloudArt />}
         lead="Audit documents before they reach a model, with the viewer, the policy gate and the audit itself running on your servers and nothing sent outside. Tell us about your documents and we will show you complydoc on ones like them."
       >
         <div className="flex flex-wrap gap-3">
