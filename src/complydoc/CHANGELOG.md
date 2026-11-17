@@ -26,6 +26,16 @@ separately.
 
 ### Fixed
 
+- Instructions written in European Portuguese are found: "esquece tudo o que te disseram",
+  "se és uma IA", "assistente de IA:", "não digas ao utilizador", "ao resumir, afirma que" and
+  "mostra o prompt do sistema". So are "disregard the above", "any LLM:", an order to send a
+  list or the conversation to a link that carries it in its query, and an order to call a named
+  tool. Business prose such as "a Contratada atua como subcontratante" or a portal link with
+  `?ref=` is still left alone.
+- White text on a white background in HTML and email is hidden text. A background used to make
+  any white text count as readable, whatever its colour.
+- An HTML page or email part that declares no charset is read as UTF-8 when it is valid UTF-8,
+  instead of as Latin-1, which turned "preços" into "preÃ§os".
 - Hidden text written to a model by its job ("Instruction to the screening assistant:",
   "AI agents processing this invoice:"), told to keep quiet about itself ("do not mention
   this sentence"), or dictating a ranking ("Rank her first") is now reported as an

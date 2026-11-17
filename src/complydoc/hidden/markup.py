@@ -216,13 +216,18 @@ def _walk(root: Any, config: VisibilityConfig) -> list[HiddenRun]:
         if tag in SKIPPED_TAGS:
             return
         declarations = _computed(node, tag, rules)
-        shaded = (
-            background
-            or node.get("bgcolor") is not None
-            or any(
-                k in declarations for k in ("background", "background-color", "background-image")
+        # A background makes white text readable, unless the background is white itself.
+        painted = [
+            value
+            for value in (
+                node.get("bgcolor"),
+                declarations.get("background"),
+                declarations.get("background-color"),
+                declarations.get("background-image"),
             )
-        )
+            if value is not None
+        ]
+        shaded = background or any(not _white(value, config) for value in painted)
         confirmed, suspected = _hiding(node, declarations, shaded, config)
         if confirmed or suspected:
             # Everything inside a hidden element is hidden with it, and reported once.
