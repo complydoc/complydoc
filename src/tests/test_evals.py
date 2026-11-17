@@ -61,6 +61,55 @@ def test_a_fact_is_added_once_tidied_and_taken_out(folder: Path):
     assert [f.text for f in load_evals(file).facts] == [LOST]
 
 
+CLAUSE = "Either party may terminate this agreement with thirty days notice"
+
+
+def _checked(tmp_path: Path, key: str, page: int | None = None) -> cd.FactCheck:
+    """The clause as an evals file expects it, against a contract that has it on page 2."""
+    file = tmp_path / EVALS_FILENAME
+    entry = {key: CLAUSE, "document": "contract.pdf"} | ({} if page is None else {"page": page})
+    file.write_text(json.dumps({"facts": [entry]}))  # JSON is YAML
+    report = cd.inspect_documents(
+        [
+            {"page_content": text, "metadata": {"source": "/tmp/c/contract.pdf", "page_number": n}}
+            for n, text in enumerate(["Cover page.", f"12. {CLAUSE}.", "Annex A."], start=1)
+        ]
+    )
+    (check,) = cd.check_facts(report, load_evals(file).as_facts())
+    return check
+
+
+def test_a_fact_with_a_page_is_looked_for_on_that_page_only(tmp_path: Path):
+    on_its_page = _checked(tmp_path, "text", page=2)
+    assert (on_its_page.found, on_its_page.pages) == ({"documents": "exact"}, {"documents": 2})
+
+    for elsewhere in (1, 3, 9):
+        moved = _checked(tmp_path, "text", page=elsewhere)
+        assert (moved.found, moved.pages) == ({"documents": None}, {"documents": None})
+
+    anywhere = _checked(tmp_path, "text")
+    assert (anywhere.found, anywhere.pages) == ({"documents": "exact"}, {"documents": 2})
+
+
+def test_a_passage_that_must_not_be_on_a_page_may_be_on_another(tmp_path: Path):
+    assert _checked(tmp_path, "absent", page=1).found == {"documents": "exact"}
+    assert _checked(tmp_path, "absent", page=2).found == {"documents": None}
+
+
+def test_a_page_is_kept_when_the_file_is_written_again_and_is_1_or_more(folder: Path):
+    file = folder / EVALS_FILENAME
+    add_fact(file, ExpectedFact(text=CLAUSE, document="terms.pdf", page=4))
+    add_fact(file, ExpectedFact(text=KEPT))
+    assert [fact.page for fact in load_evals(file).facts] == [4, None]
+    assert "page: 4" in file.read_text()
+
+    for page in (0, -1):
+        with pytest.raises(ValueError):
+            ExpectedFact(text=CLAUSE, page=page)
+        with pytest.raises(ValueError, match="1 or more"):
+            cd.Fact(CLAUSE, page=page)
+
+
 def test_a_fact_too_short_to_mean_anything_and_a_broken_file_are_refused(folder: Path):
     with pytest.raises(ValueError):
         ExpectedFact(text=" a ")
@@ -305,7 +354,7 @@ def test_the_viewer_lists_adds_and_removes_the_folders_facts(folder: Path, tmp_p
         status, body = send(viewer.port, "POST", url, {"text": KEPT, "document": "terms.pdf"})
         assert status == 200, body
         assert json.loads(body)["facts"] == [
-            {"text": KEPT, "document": "terms.pdf", "kind": "text", "label": None}
+            {"text": KEPT, "document": "terms.pdf", "kind": "text", "label": None, "page": None}
         ]
         assert load_evals(folder / EVALS_FILENAME).facts[0].text == KEPT
 

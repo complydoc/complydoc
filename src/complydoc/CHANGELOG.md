@@ -9,10 +9,17 @@ separately.
 
 ### Added
 
+
 - `cd.parsers.markitdown()`, a preset for Microsoft's MarkItDown, to compare it with the
   other loaders. It runs locally on PDF, Word, PowerPoint, Excel and HTML files and returns
   one Markdown document per file, with no page numbers because MarkItDown does not split
   pages.
+
+- A fact in `.complydoc-evals.yaml` can name the page it must be on, with `page: 4`, and so
+  can `cd.Fact(..., page=4)`. It is then looked for in that page's text only, so a clause a
+  reader moved, or read from an annex after skipping its page, is not found. Without `page`
+  a fact is looked for in the whole document, as before.
+
 
 ## [0.7.12] — 2026-11-15
 
