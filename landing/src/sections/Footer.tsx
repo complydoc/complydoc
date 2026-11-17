@@ -10,7 +10,7 @@ const columns = (home: string) => [
       { label: "Features", href: `${home}#features` },
       { label: "Quickstart", href: `${home}#quickstart` },
       { label: "Integrations", href: `${home}#integrations` },
-      { label: "For companies", href: `${home}enterprise/` },
+      { label: "For teams", href: `${home}enterprise/` },
       { label: "Report viewer", href: links.viewer },
       { label: "Changelog", href: links.changelog },
     ],
@@ -45,8 +45,7 @@ export function Footer({ home = "" }: { home?: string }) {
           <div className="flex max-w-lg flex-col gap-4">
             <Logo size={22} />
             <p className="text-sm text-muted-foreground">
-              Get document loading right. Self-hosted for companies today, and a cloud version on
-              its way:{" "}
+              Get document loading right. For teams whose assistants read documents:{" "}
               <a href={`${home}enterprise/`} className="text-foreground underline underline-offset-4">
                 talk to us
               </a>

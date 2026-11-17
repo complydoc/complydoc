@@ -1,144 +1,206 @@
-import { ArrowRightIcon, CheckIcon, CloudIcon, MailIcon, ServerIcon } from "lucide-react";
-import { type FormEvent, useState } from "react";
+import {
+  ArrowRightIcon,
+  CheckIcon,
+  FileSearchIcon,
+  FolderOpenIcon,
+  MessageSquareTextIcon,
+  ShieldCheckIcon,
+} from "lucide-react";
 import { CloudArt } from "@/art/CloudArt";
-import { CopyButton } from "@/components/CopyButton";
+import { BrandLogo } from "@/components/BrandLogo";
 import { Section, TextLink } from "@/components/Section";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Item, ItemContent, ItemGroup, ItemMedia, ItemTitle } from "@/components/ui/item";
-import { Textarea } from "@/components/ui/textarea";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { CONTACT_EMAIL, links } from "@/links";
+import type { Brand } from "@/lib/logos";
+import { ContactForm } from "@/pages/ContactForm";
 import { Page, PageHeader } from "@/pages/Page";
 
-const SELF_HOSTED = [
-  { text: "The container image audits a folder of documents and serves the viewer", href: links.container },
-  { text: "One viewer for the whole team, behind the sign-in you already have", href: links.team },
-  { text: "A policy that fails the build when a document breaks it", href: links.policy },
-  { text: "The network blocked while documents are read, and each report saying so", href: links.offline },
+/** Assistants that run complydoc's MCP server on the person's own computer today. */
+const ASSISTANTS: { name: string; brand: Brand }[] = [
+  { name: "Claude", brand: "claude" },
+  { name: "Codex", brand: "codex" },
+  { name: "Cursor", brand: "cursor" },
+  { name: "GitHub Copilot", brand: "githubcopilot" },
+  { name: "Gemini CLI", brand: "gemini" },
+  { name: "Any MCP client", brand: "mcp" },
 ];
 
-const DEMO = [
-  "Your loaders compared on documents like yours, page by page",
-  "Hidden text and personal data found, and where they would be masked",
-  "How it would run in your infrastructure: the container, the viewer and the gate in CI",
+const STEPS = [
+  {
+    icon: FolderOpenIcon,
+    title: "Install it once",
+    detail:
+      "Open the extension in Claude Desktop and pick the folders your documents are in. Nothing else to install.",
+  },
+  {
+    icon: MessageSquareTextIcon,
+    title: "Ask for the document",
+    detail:
+      "Instead of attaching a file: “Open the Acme proposal and summarise it.” Another folder is one click away, from the conversation.",
+  },
+  {
+    icon: ShieldCheckIcon,
+    title: "The assistant reads a clean copy",
+    detail:
+      "Bank accounts, tax numbers and names come back masked, hidden instructions are taken out, and the assistant says what was removed.",
+  },
+];
+
+/** The verdict as complydoc gives it, on the sample invoices. */
+const VERDICT = `Do not send as it is: rechnungen-2026-de.pdf
+Found:
+- German tax identification number: 3 (sensitive)
+- IBAN: 3 (sensitive)
+- Email address: 3
+- Person name: 6
+open_document gives a copy with these masked, which is safe to use.`;
+
+const TODAY = [
+  "The extension for Claude Desktop, and setup for Codex, Cursor, Copilot in VS Code and Gemini CLI",
+  "A verdict anyone understands: ready to send, send with care, or do not send as it is",
+  "Personal and financial details masked, and text hidden from a reader taken out",
+  "Only the folders a person picks, and no network connection while documents are read",
+];
+
+const FOR_TEAMS = [
+  "Installed for everyone by IT, with the folders and what counts as sensitive set once",
+  "A record of what each assistant read, and what was masked, for audit",
+  "A server inside your network, for the assistants that only reach one: Microsoft 365 Copilot and ChatGPT",
+  "Your shared drives and SharePoint as the folders, with the documents left where they are",
 ];
 
 const QUESTIONS = [
   {
-    q: "Do our documents leave our network?",
-    a: "No. complydoc runs where you run it, with outbound connections blocked while documents are read, and every report records that they were.",
+    q: "Do our documents leave the computer?",
+    a: "The file never does. complydoc reads it on the person's computer, with outbound connections blocked, and only the cleaned text joins the conversation they were already having with the assistant.",
     href: links.offline,
   },
   {
-    q: "Who can see the reports?",
-    a: "Whoever your identity provider lets through. complydoc has no accounts of its own: the viewer sits behind your proxy and reads the reports folder read-only.",
-    href: links.team,
+    q: "Can the assistant open any file it likes?",
+    a: "No. It reads only from folders the person picked, in their computer's own folder dialog. The model can ask for the dialog, never choose what it lands on.",
+    href: links.assistant,
+  },
+  {
+    q: "What if someone attaches the file anyway?",
+    a: "Then it reaches the assistant whole: complydoc is the safe way in, not a lock. Where that must not happen, turn file uploads off in the assistant's admin settings and leave complydoc as the way documents come in.",
+    href: links.assistant,
   },
   {
     q: "What is the licence?",
-    a: "MIT, for the package, the viewer and the container image. You can read every line that touches your documents.",
+    a: "MIT, for the extension and the engine under it. You can read every line that touches your documents.",
     href: links.github,
-  },
-  {
-    q: "We use Java, not Python.",
-    a: "complydoc4j writes the same report, from a folder or a LangChain4j ingestion, and is checked against this package on every change.",
-    href: links.java,
   },
 ];
 
-const INTERESTS = [
-  { id: "demo", label: "A demo of self-hosted complydoc" },
-  { id: "cloud", label: "Early access to the cloud version" },
-  { id: "other", label: "Something else" },
-] as const;
 
 export function EnterprisePage() {
   return (
     <Page>
       <PageHeader
-        eyebrow="For companies"
-        title="complydoc inside your company, on your own infrastructure."
+        eyebrow="complydoc for teams"
+        title="Let your team's AI assistants read documents safely."
         art={<CloudArt />}
-        lead="Audit documents before they reach a model, with the viewer, the policy gate and the audit itself running on your servers and nothing sent outside. Tell us about your documents and we will show you complydoc on ones like them."
+        lead="People send contracts, invoices and CVs to Claude and Copilot every day, whole. complydoc sits between any assistant and your team's documents: it hands over the text with personal data masked and hidden instructions removed, and the file never leaves the computer."
       >
-        <div className="flex flex-wrap gap-3">
-          <Button size="lg" asChild>
-            <a href="#contact">
-              Ask for a demo
-              <ArrowRightIcon data-icon="inline-end" />
-            </a>
-          </Button>
-          <Button size="lg" variant="outline" asChild>
-            <a href={`mailto:${CONTACT_EMAIL}`}>
-              <MailIcon data-icon="inline-start" />
-              {CONTACT_EMAIL}
-            </a>
-          </Button>
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-wrap gap-3">
+            <Button size="lg" asChild>
+              <a href="#contact">
+                Ask for a pilot
+                <ArrowRightIcon data-icon="inline-end" />
+              </a>
+            </Button>
+            <Button size="lg" variant="outline" asChild>
+              <a href={links.assistant}>
+                <FileSearchIcon data-icon="inline-start" />
+                Try the extension
+              </a>
+            </Button>
+          </div>
+          <ul aria-label="Works with" className="flex flex-wrap items-center gap-x-5 gap-y-3 text-sm font-medium">
+            {ASSISTANTS.map((assistant) => (
+              <li key={assistant.name} className="flex items-center gap-2">
+                <BrandLogo brand={assistant.brand} className="size-4" />
+                {assistant.name}
+              </li>
+            ))}
+          </ul>
         </div>
       </PageHeader>
 
-      <Section id="offer" eyebrow="Two ways to run it" title="Self-hosted today. A cloud version is on its way.">
+      <Section id="how" eyebrow="How it works" title="Nothing new to learn. The assistant asks complydoc first.">
+        <div className="grid gap-8 lg:grid-cols-[6fr_5fr]">
+          <ol className="flex flex-col gap-6">
+            {STEPS.map((step, index) => (
+              <li key={step.title} className="flex gap-4">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-md border bg-card">
+                  <step.icon aria-hidden className="size-4 text-primary" />
+                </span>
+                <div className="flex flex-col gap-1">
+                  <p className="font-medium">
+                    <span className="text-muted-foreground">{index + 1}. </span>
+                    {step.title}
+                  </p>
+                  <p className="text-sm text-pretty text-muted-foreground">{step.detail}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+          <figure className="flex flex-col gap-2">
+            <pre className="overflow-x-auto rounded-lg border bg-card p-4 font-mono text-xs leading-6 whitespace-pre-wrap">
+              {VERDICT}
+            </pre>
+            <figcaption className="text-xs text-muted-foreground">
+              What the assistant is told about a file of sample invoices, before anyone shares it.
+            </figcaption>
+          </figure>
+        </div>
+      </Section>
+
+      <Section id="offer" eyebrow="What you get" title="Free for every person today. Managed for the whole team next.">
         <div className="grid gap-8 lg:grid-cols-2">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
-                <ServerIcon aria-hidden className="size-5 text-primary" />
-                Self-hosted
+                Open source
+                <Badge variant="secondary">Free</Badge>
               </CardTitle>
-              <CardDescription>
-                Everything complydoc does, on machines you run. The documents, the reports and the people who can read
-                them all stay where your security team already looks.
-              </CardDescription>
+              <CardDescription>Everything one person needs, on their own computer.</CardDescription>
             </CardHeader>
             <CardContent>
-              <ItemGroup className="gap-2">
-                {SELF_HOSTED.map((item) => (
-                  <Item key={item.text} size="sm" asChild>
-                    <a href={item.href}>
-                      <ItemMedia variant="icon">
-                        <CheckIcon aria-hidden className="text-primary" />
-                      </ItemMedia>
-                      <ItemContent>
-                        <ItemTitle className="font-normal">{item.text}</ItemTitle>
-                      </ItemContent>
-                    </a>
-                  </Item>
-                ))}
-              </ItemGroup>
+              <Checklist items={TODAY} />
             </CardContent>
-            <CardFooter>
-              <div className="flex w-full items-center gap-2 rounded-lg border bg-muted/50 px-4 py-2 font-mono text-xs">
-                <span className="text-muted-foreground select-none">$</span>
-                <span className="truncate">docker pull ghcr.io/complydoc/complydoc</span>
-                <span className="ml-auto">
-                  <CopyButton text="docker pull ghcr.io/complydoc/complydoc" label="Copy the pull command" />
-                </span>
-              </div>
+            <CardFooter className="mt-auto">
+              <Button variant="outline" asChild>
+                <a href={links.assistant}>
+                  Set it up
+                  <ArrowRightIcon data-icon="inline-end" />
+                </a>
+              </Button>
             </CardFooter>
           </Card>
           <Card className="bg-primary-soft">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
-                <CloudIcon aria-hidden className="size-5 text-primary" />
-                complydoc Cloud
+                complydoc for teams
+                <Badge variant="outline" className="bg-card">
+                  Early access
+                </Badge>
               </CardTitle>
+              <CardDescription>
+                For companies where security decides what assistants may read. Built with the first teams that pilot it.
+              </CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-col gap-4 text-sm text-pretty text-muted-foreground">
-              <p>
-                For teams that would rather not run it themselves. We are starting on a hosted version now, and the
-                companies that tell us what they need are the ones it is being built around.
-              </p>
-              <p>
-                Ask for early access and tell us what you would send it, how much of it, and what your security team
-                will want to know.
-              </p>
+            <CardContent>
+              <Checklist items={FOR_TEAMS} />
             </CardContent>
             <CardFooter className="mt-auto">
-              <Button variant="outline" className="bg-card" asChild>
+              <Button className="bg-card" variant="outline" asChild>
                 <a href="#contact">
-                  Ask for early access
+                  Ask for a pilot
                   <ArrowRightIcon data-icon="inline-end" />
                 </a>
               </Button>
@@ -158,24 +220,20 @@ export function EnterprisePage() {
             </div>
           ))}
         </dl>
+        <p className="mt-8 text-sm text-pretty text-muted-foreground">
+          Building pipelines that load documents for a model? That is{" "}
+          <TextLink href="../">complydoc for engineers</TextLink>: loaders compared, every step traced, and what must
+          survive tested in CI.
+        </p>
       </Section>
 
-      <Section id="contact" eyebrow="Talk to us" title="Ask for a demo.">
+      <Section id="contact" eyebrow="Talk to us" title="Ask for a pilot.">
         <div className="grid gap-8 lg:grid-cols-[5fr_6fr]">
           <div className="flex flex-col gap-4">
-            <p className="text-pretty text-muted-foreground">A demo walks through:</p>
-            <ItemGroup className="gap-2">
-              {DEMO.map((item) => (
-                <Item key={item} size="sm" className="px-0">
-                  <ItemMedia variant="icon">
-                    <CheckIcon aria-hidden className="text-primary" />
-                  </ItemMedia>
-                  <ItemContent>
-                    <ItemTitle className="font-normal">{item}</ItemTitle>
-                  </ItemContent>
-                </Item>
-              ))}
-            </ItemGroup>
+            <p className="text-pretty text-muted-foreground">
+              Tell us which assistants your team uses and what documents go into them. A pilot starts with complydoc on
+              a few people's computers and ends with what your security team needs to roll it out.
+            </p>
             <p className="text-sm text-pretty text-muted-foreground">
               Messages go straight to the maintainer, at{" "}
               <a href={`mailto:${CONTACT_EMAIL}`} className="font-medium text-foreground underline underline-offset-4">
@@ -191,89 +249,19 @@ export function EnterprisePage() {
   );
 }
 
-/**
- * A form that writes the email for you. The site is static, so nothing is sent
- * from it: submitting opens the reader's mail app with the message filled in.
- */
-function ContactForm() {
-  const [interest, setInterest] = useState<string>("demo");
-
-  function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    const value = (name: string) => String(form.get(name) ?? "").trim();
-    const topic = INTERESTS.find((i) => i.id === interest)?.label ?? "";
-    const subject = `${topic}: ${value("company")}`;
-    const body = [
-      value("message"),
-      "",
-      `Name: ${value("name")}`,
-      `Company: ${value("company")}`,
-      `Email: ${value("email")}`,
-    ].join("\n");
-    window.location.href = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-  }
-
+function Checklist({ items }: { items: string[] }) {
   return (
-    <Card>
-      <CardContent>
-        <form onSubmit={submit} className="flex flex-col gap-8">
-          <div className="flex flex-col gap-4">
-            <p className="text-sm font-medium" id="interest-label">
-              What would you like?
-            </p>
-            <ToggleGroup
-              type="single"
-              variant="outline"
-              spacing={2}
-              value={interest}
-              onValueChange={(value) => value && setInterest(value)}
-              aria-labelledby="interest-label"
-              className="flex-wrap"
-            >
-              {INTERESTS.map((option) => (
-                <ToggleGroupItem key={option.id} value={option.id} className="px-4">
-                  {option.label}
-                </ToggleGroupItem>
-              ))}
-            </ToggleGroup>
-          </div>
-          <div className="flex flex-col gap-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="flex flex-col gap-2 text-sm font-medium">
-                Name
-                <Input name="name" required autoComplete="name" />
-              </label>
-              <label className="flex flex-col gap-2 text-sm font-medium">
-                Company
-                <Input name="company" required autoComplete="organization" />
-              </label>
-            </div>
-            <label className="flex flex-col gap-2 text-sm font-medium">
-              Work email
-              <Input name="email" type="email" required autoComplete="email" />
-            </label>
-            <label className="flex flex-col gap-2 text-sm font-medium">
-              Your documents and what you do with them
-              <Textarea
-                name="message"
-                rows={5}
-                required
-                placeholder="Contracts and invoices, about 50,000 pages a month, indexed for an internal assistant."
-              />
-            </label>
-          </div>
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xs text-muted-foreground">
-              Opens your email app with the message written. Nothing is sent from this page.
-            </p>
-            <Button type="submit" className="shrink-0">
-              <MailIcon data-icon="inline-start" />
-              Write the email
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+    <ItemGroup className="gap-2">
+      {items.map((item) => (
+        <Item key={item} size="sm" className="px-0">
+          <ItemMedia variant="icon">
+            <CheckIcon aria-hidden className="text-primary" />
+          </ItemMedia>
+          <ItemContent>
+            <ItemTitle className="font-normal">{item}</ItemTitle>
+          </ItemContent>
+        </Item>
+      ))}
+    </ItemGroup>
   );
 }
