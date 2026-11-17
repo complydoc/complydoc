@@ -72,15 +72,6 @@ const CAN: { icon: LucideIcon; title: string; detail: string }[] = [
   },
 ];
 
-/** The verdict as complydoc gives it, on the sample invoices. */
-const VERDICT = `Do not send as it is: rechnungen-2026-de.pdf
-Found:
-- German tax identification number: 3 (sensitive)
-- IBAN: 3 (sensitive)
-- Email address: 3
-- Person name: 6
-open_document gives a copy with these masked, which is safe to use.`;
-
 const TODAY = [
   "The MCP server, for any assistant that speaks MCP",
   "Masking, prompt injection removal and the verdict, on every document",
@@ -167,7 +158,6 @@ export function EnterprisePage() {
         id="layer"
         eyebrow="The layer"
         title="What happens to every document."
-        lead="Before any model sees a document, complydoc reads it locally and passes on only what is safe and useful. The same checks run on one file or on a folder of hundreds."
       >
         <Facts items={LAYER} columns="md:grid-cols-2" />
       </Section>
@@ -176,26 +166,14 @@ export function EnterprisePage() {
         id="mcp"
         eyebrow="Over MCP"
         title="Works with the assistants your team already uses."
-        lead="complydoc speaks MCP, so any assistant that does can use it, with nothing to set up per tool. The assistant asks complydoc for a document instead of taking the file."
       >
-        <div className="flex flex-col gap-16">
-          <Facts items={CAN} />
-          <figure className="flex flex-col gap-3">
-            <pre className="overflow-x-auto rounded-lg border bg-card p-6 font-mono text-sm leading-7 whitespace-pre-wrap">
-              {VERDICT}
-            </pre>
-            <figcaption className="text-sm text-muted-foreground">
-              What an assistant is told about a file of sample invoices, before anyone shares it.
-            </figcaption>
-          </figure>
-        </div>
+        <Facts items={CAN} />
       </Section>
 
       <Section
         id="offer"
         eyebrow="What you get"
         title="Free for every person. Managed for the whole team."
-        lead="Everything above is open source and runs on each person's computer. complydoc for teams adds what a company needs to roll it out, and is shaped with each team that joins early."
       >
         <div className="grid gap-8 lg:grid-cols-2">
           <Offer title="Open source" badge="Free" items={TODAY} />
@@ -225,7 +203,6 @@ export function EnterprisePage() {
         id="contact"
         eyebrow="Talk to us"
         title="Ask for early access."
-        lead="Tell us which assistants your team uses and what documents go into them. Scope and pricing are agreed with you directly."
       >
         <div className="grid gap-8 lg:grid-cols-[5fr_6fr]">
           <p className="text-pretty text-muted-foreground">
