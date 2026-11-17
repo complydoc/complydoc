@@ -18,7 +18,7 @@ npm run build    # static files in dist/
 | --- | --- |
 | Hero | What complydoc is in a sentence, the install command, the command for a coding agent, and a trace |
 | What to know first | Runs on your machine, network blocked, no account, MIT, and the loaders it works with |
-| Try it | Two demos to play with: four LangChain PDF loaders on a page of your choice, and three documents whose hidden text a switch reveals |
+| Try it | Two small demos side by side: two LangChain PDF loaders on a two-column page, with the order each read it in, and a CV whose hidden prompt injection a switch reveals |
 | Quickstart | Install, wrap a pipeline in `cd.observe`, open the viewer |
 | Features | One row a feature, text beside the thing itself: read, compare, expect, follow, protect, route |
 | Measured | Four figures complydoc prints or its changelog records, each linked to where it is measured |
@@ -40,8 +40,8 @@ Nothing on the page is invented.
 | The policy file | `docs/guides/policy.md` |
 | The quickstart's pipeline | `docs/examples/observe_a_pipeline.py`, with the reader's own loader, splitter and store in place of the example's |
 
-| The loader comparison, `src/data/loaders.json` | `scripts/demos/make_demos.py`: `cd.compare_loaders` with `PyPDFLoader`, `PDFPlumberLoader`, `PDFMinerLoader` and `PyMuPDF4LLMLoader` on one page each of five documents in `viewer/sample/documents`, with a passage each page must keep |
-| The hidden text, `src/data/hidden.json` | The same script: `complydoc audit` on `vendor-due-diligence.pdf` and the two documents `scripts/demos/make_documents.py` writes, a CV with a line at half a point and an invoice with text under a white box. Where the hidden lines sit is read from the PDF with pdfplumber |
+| The loader comparison, `src/data/loaders.json` | `scripts/demos/make_demos.py`: `cd.compare_loaders` with `PyPDFLoader` and `PDFPlumberLoader` on page 2 of `viewer/sample/documents/master-services-agreement.pdf`, with a passage the page must keep. The reading-order lines over the page are a sketch of what the two texts show |
+| The hidden text, `src/data/hidden.json` | The same script: `complydoc audit` on the CV `scripts/demos/make_documents.py` writes, with a prompt injection at half a point. Where the hidden line sits is read from the PDF with pdfplumber |
 | The contributors page, `src/data/contributors.json` | `scripts/make_contributors.py`, from GitHub's public API, avatars saved beside it |
 
 When a release changes what these print, run them again and update the page:

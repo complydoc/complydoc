@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Backdrop } from "@/components/Backdrop";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Footer } from "@/sections/Footer";
 import { Nav } from "@/sections/Nav";
@@ -19,22 +20,29 @@ export function PageHeader({
   eyebrow,
   title,
   lead,
+  art,
   children,
 }: {
   eyebrow: string;
   title: string;
   lead: ReactNode;
+  /** A drawing beside the heading on a wide screen. */
+  art?: ReactNode;
   children?: ReactNode;
 }) {
   return (
-    <section id="top" aria-labelledby="page-title">
-      <div className="mx-auto flex max-w-6xl flex-col gap-4 px-6 pt-16 pb-16 md:pt-24 md:pb-20">
-        <p className="text-sm font-medium text-primary">{eyebrow}</p>
-        <h1 id="page-title" className="max-w-3xl text-4xl font-semibold tracking-tight text-balance md:text-5xl">
-          {title}
-        </h1>
-        <p className="max-w-2xl text-lg text-pretty text-muted-foreground">{lead}</p>
-        {children && <div className="mt-4">{children}</div>}
+    <section id="top" aria-labelledby="page-title" className="relative isolate overflow-hidden">
+      <Backdrop tone="duo" />
+      <div className="mx-auto grid max-w-6xl items-center gap-8 px-6 pt-16 pb-16 md:pt-24 md:pb-20 lg:grid-cols-[3fr_2fr]">
+        <div className="flex flex-col gap-4">
+          <p className="text-sm font-medium text-primary">{eyebrow}</p>
+          <h1 id="page-title" className="max-w-3xl text-4xl font-semibold tracking-tight text-balance md:text-5xl">
+            {title}
+          </h1>
+          <p className="max-w-2xl text-lg text-pretty text-muted-foreground">{lead}</p>
+          {children && <div className="mt-4">{children}</div>}
+        </div>
+        {art && <div className="hidden justify-center lg:flex">{art}</div>}
       </div>
     </section>
   );

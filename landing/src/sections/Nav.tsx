@@ -4,14 +4,10 @@ import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/useTheme";
 import { links, VERSION } from "@/links";
 
-const SECTIONS = [
-  { href: "#try", label: "Try it" },
-  { href: "#quickstart", label: "Quickstart" },
-  { href: "#features", label: "Features" },
-  { href: "#numbers", label: "Measured" },
-  { href: "#team", label: "For a team" },
-  { href: "#integrations", label: "Integrations" },
-  { href: "#faq", label: "FAQ" },
+/** The pages besides this one, each in a folder of its own. */
+const PAGES = [
+  { href: "contributors/", label: "Contributors" },
+  { href: "enterprise/", label: "For companies" },
 ];
 
 /**
@@ -28,19 +24,16 @@ export function Nav({ home = "" }: { home?: string }) {
         <a href={home || "#top"} aria-label={home ? "complydoc, home" : "complydoc, back to the top"}>
           <Logo size={20} />
         </a>
-        <nav aria-label="Sections" className="hidden items-center gap-1 lg:flex">
-          {SECTIONS.map((section) => (
-            <Button key={section.href} variant="ghost" size="sm" asChild>
-              <a href={`${home}${section.href}`}>{section.label}</a>
+        <nav aria-label="Pages" className="hidden items-center gap-1 sm:flex">
+          {PAGES.map((page) => (
+            <Button key={page.href} variant="ghost" size="sm" asChild>
+              <a href={`${home}${page.href}`}>{page.label}</a>
             </Button>
           ))}
         </nav>
         <div className="ml-auto flex items-center gap-1">
           <Button variant="ghost" size="sm" asChild className="hidden font-mono text-xs text-muted-foreground sm:inline-flex">
             <a href={links.changelog}>v{VERSION}</a>
-          </Button>
-          <Button variant="ghost" size="sm" asChild className="hidden md:inline-flex">
-            <a href={`${home}enterprise/`}>For companies</a>
           </Button>
           <Button variant="ghost" size="sm" asChild>
             <a href={links.docs}>Docs</a>
