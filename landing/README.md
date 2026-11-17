@@ -1,8 +1,8 @@
 # complydoc landing page
 
-The page that introduces complydoc to AI engineers and researchers: an open-source,
-offline audit for documents before they're indexed. Diff your loaders, catch hidden
-text and personal data, and gate it in CI. It is a static site on the viewer's stack
+The page that introduces complydoc to AI engineers and researchers: get document
+loading right. Compare loaders, trace every step and evaluate what reaches your model,
+catch hidden text and personal data, and gate it in CI. It is a static site on the viewer's stack
 and theme (React, Tailwind v4, shadcn/ui), so the two look like one product.
 
 ```bash

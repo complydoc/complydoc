@@ -27,7 +27,7 @@ SANS = "Geist, 'Helvetica Neue', Helvetica, Arial, sans-serif"
 MONO = "'Geist Mono', ui-monospace, Menlo, monospace"
 # The full descriptor is two sentences. The second does not fit this line at a
 # readable size, so the card keeps the first.
-DESCRIPTOR = "An open-source, offline audit for documents before they're indexed."
+DESCRIPTOR = "Compare loaders, trace every step and evaluate what reaches your model."
 
 
 def svg(theme: str, width: int, height: int) -> str:
@@ -39,11 +39,11 @@ def svg(theme: str, width: int, height: int) -> str:
         return value * height / 640
 
     mark = 0.6875 * scale  # the mark is 44px tall on the 1280-wide card
-    return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" width="{width}" height="{height}" role="img" aria-label="complydoc: Know your documents before they reach an LLM.">
+    return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" width="{width}" height="{height}" role="img" aria-label="complydoc: Get document loading right.">
   <rect width="{width}" height="{height}" fill="{c['bg']}"/>
   <g transform="translate({margin} {y(84)})"><path fill="{c['g']}" fill-rule="evenodd" transform="scale({mark * 0.9:.4f}) translate(-9 -20)" d="{MARK}"/>
   <text x="{70 * scale:.1f}" y="{40 * scale:.1f}" fill="{c['ink']}" font-size="{44 * scale:.1f}" font-weight="600" font-family="{SANS}" letter-spacing="-1">complydoc</text></g>
-  <text x="{margin}" y="{y(300)}" fill="{c['ink']}" font-size="{76 * scale:.1f}" font-weight="600" font-family="{SANS}" letter-spacing="-2.5"><tspan x="{margin}">Know your documents</tspan><tspan x="{margin}" dy="{88 * scale:.1f}">before they reach an LLM.</tspan></text>
+  <text x="{margin}" y="{y(300)}" fill="{c['ink']}" font-size="{76 * scale:.1f}" font-weight="600" font-family="{SANS}" letter-spacing="-2.5"><tspan x="{margin}">Get document</tspan><tspan x="{margin}" dy="{88 * scale:.1f}">loading right.</tspan></text>
   <text x="{margin}" y="{y(458)}" fill="{c['mu']}" font-size="{32 * scale:.1f}" font-weight="400" font-family="{SANS}" letter-spacing="-0.3">{DESCRIPTOR}</text>
   <line x1="{margin}" y1="{y(530)}" x2="{width - margin}" y2="{y(530)}" stroke="{c['br']}" stroke-width="1.5"/>
   <text x="{margin}" y="{y(576)}" font-size="{22 * scale:.1f}" font-family="{MONO}" fill="{c['mu']}">load <tspan fill="{c['fa']}">→</tspan> split <tspan fill="{c['fa']}">→</tspan> embed</text>

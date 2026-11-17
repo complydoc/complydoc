@@ -5,6 +5,14 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
+## Unreleased
+
+### Changed
+
+- complydoc's line is now "Get document loading right. Compare loaders, trace every step
+  and evaluate what reaches your model." on PyPI, the README, the landing page, the
+  documentation and the share cards.
+
 ## [0.7.13] — 2026-11-17
 
 The viewer gets one palette, a dashboard of framed panels and a way to add documents from
