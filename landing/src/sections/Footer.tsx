@@ -2,13 +2,15 @@ import { Logo } from "@/components/Logo";
 import { Separator } from "@/components/ui/separator";
 import { links } from "@/links";
 
-const COLUMNS = [
+const columns = (home: string) => [
   {
     title: "Product",
     items: [
-      { label: "Features", href: "#features" },
-      { label: "Quickstart", href: "#quickstart" },
-      { label: "Integrations", href: "#integrations" },
+      { label: "Try it", href: `${home}#try` },
+      { label: "Features", href: `${home}#features` },
+      { label: "Quickstart", href: `${home}#quickstart` },
+      { label: "Integrations", href: `${home}#integrations` },
+      { label: "For companies", href: `${home}enterprise/` },
       { label: "Report viewer", href: links.viewer },
       { label: "Changelog", href: links.changelog },
     ],
@@ -25,6 +27,7 @@ const COLUMNS = [
   {
     title: "Community",
     items: [
+      { label: "Contributors", href: `${home}contributors/` },
       { label: "GitHub", href: links.github },
       { label: "Discussions", href: links.discussions },
       { label: "Examples", href: links.playground },
@@ -33,7 +36,8 @@ const COLUMNS = [
   },
 ];
 
-export function Footer() {
+/** `home` is the way back to the landing page, as for the nav bar. */
+export function Footer({ home = "" }: { home?: string }) {
   return (
     <footer className="border-t bg-muted/30">
       <div className="mx-auto flex max-w-6xl flex-col gap-10 px-6 py-14">
@@ -41,14 +45,15 @@ export function Footer() {
           <div className="flex max-w-lg flex-col gap-4">
             <Logo size={22} />
             <p className="text-sm text-muted-foreground">
-              Know your documents before they reach an LLM. complydoc Cloud, for teams, is planned:{" "}
-              <a href={links.discussions} className="text-foreground underline underline-offset-4">
-                would you use it?
+              Know your documents before they reach an LLM. Self-hosted for companies today, and a cloud version on
+              its way:{" "}
+              <a href={`${home}enterprise/`} className="text-foreground underline underline-offset-4">
+                talk to us
               </a>
             </p>
           </div>
           <nav aria-label="Footer" className="grid grid-cols-2 gap-10 sm:grid-cols-3">
-            {COLUMNS.map((column) => (
+            {columns(home).map((column) => (
               <div key={column.title} className="flex flex-col gap-3">
                 <p className="text-sm font-medium">{column.title}</p>
                 <ul className="flex flex-col gap-2 text-sm text-muted-foreground">

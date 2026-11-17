@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+    <title>complydoc contributors</title>
+    <meta
+      name="description"
+      content="The people who build complydoc, and how to make your first contribution."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="complydoc" />
+    <meta property="og:title" content="complydoc contributors" />
+    <meta
+      property="og:description"
+      content="The people who build complydoc, and how to make your first contribution."
+    />
+    <meta property="og:url" content="https://complydoc.github.io/complydoc/contributors/" />
+    <meta property="og:image" content="https://complydoc.github.io/complydoc/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="complydoc. Know your documents before they reach an LLM." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="complydoc contributors" />
+    <meta
+      name="twitter:description"
+      content="The people who build complydoc, and how to make your first contribution."
+    />
+    <meta name="twitter:image" content="https://complydoc.github.io/complydoc/og.png" />
+    <!-- Set the theme before the first paint, so a dark reader never sees a white flash. -->
+    <script>
+      try {
+        const t = localStorage.getItem("complydoc-theme");
+        const dark = t === "dark" || (t !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.classList.toggle("dark", dark);
+      } catch {}
+    </script>
+    <!-- Visits are counted without cookies and nothing is stored in the browser. -->
+    <script data-goatcounter="https://complydoc.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/pages/contributors.tsx"></script>
+  </body>
+</html>

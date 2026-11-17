@@ -4,6 +4,9 @@ const REPO = "https://github.com/complydoc/complydoc";
 
 export const VERSION = "0.7.13";
 
+/** Where companies write: demos of self-hosted complydoc and early access to the cloud version. */
+export const CONTACT_EMAIL = "caldasdcardoso@gmail.com";
+
 export const links = {
   docs: `${DOCS}/`,
   github: REPO,
@@ -31,4 +34,9 @@ export const links = {
   container: `${DOCS}/guides/container/`,
   team: `${DOCS}/guides/team/`,
   identifiers: `${DOCS}/reference/identifiers/`,
+  java: `${DOCS}/guides/java/`,
+  contributing: `${REPO}/blob/main/CONTRIBUTING.md`,
+  goodFirstIssues: `${REPO}/issues?q=is%3Aopen+label%3A%22good+first+issue%22`,
+  newIssue: `${REPO}/issues/new`,
+  image: "https://github.com/complydoc/complydoc/pkgs/container/complydoc",
 } as const;

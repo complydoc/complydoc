@@ -18,6 +18,7 @@ npm run build    # static files in dist/
 | --- | --- |
 | Hero | What complydoc is in a sentence, the install command, the command for a coding agent, and a trace |
 | What to know first | Runs on your machine, network blocked, no account, MIT, and the loaders it works with |
+| Try it | Two demos to play with: four LangChain PDF loaders on a page of your choice, and three documents whose hidden text a switch reveals |
 | Quickstart | Install, wrap a pipeline in `cd.observe`, open the viewer |
 | Features | One row a feature, text beside the thing itself: read, compare, expect, follow, protect, route |
 | Measured | Four figures complydoc prints or its changelog records, each linked to where it is measured |
@@ -39,7 +40,30 @@ Nothing on the page is invented.
 | The policy file | `docs/guides/policy.md` |
 | The quickstart's pipeline | `docs/examples/observe_a_pipeline.py`, with the reader's own loader, splitter and store in place of the example's |
 
-When a release changes what these print, run them again and update the page.
+| The loader comparison, `src/data/loaders.json` | `scripts/demos/make_demos.py`: `cd.compare_loaders` with `PyPDFLoader`, `PDFPlumberLoader`, `PDFMinerLoader` and `PyMuPDF4LLMLoader` on one page each of five documents in `viewer/sample/documents`, with a passage each page must keep |
+| The hidden text, `src/data/hidden.json` | The same script: `complydoc audit` on `vendor-due-diligence.pdf` and the two documents `scripts/demos/make_documents.py` writes, a CV with a line at half a point and an invoice with text under a white box. Where the hidden lines sit is read from the PDF with pdfplumber |
+| The contributors page, `src/data/contributors.json` | `scripts/make_contributors.py`, from GitHub's public API, avatars saved beside it |
+
+When a release changes what these print, run them again and update the page:
+
+```bash
+uv sync --group integrations --group dev
+uv run python landing/scripts/demos/make_documents.py
+uv run python landing/scripts/demos/make_demos.py
+python3 landing/scripts/make_contributors.py
+```
+
+## Pages
+
+Besides the landing page, each in a folder of its own and listed in `vite.config.ts`:
+
+| Page | Says |
+| --- | --- |
+| `enterprise/` | For companies: self-hosted today, the cloud version in early access, what security teams ask, and a form that writes the email to the maintainer |
+| `contributors/` | Everyone with a commit, how to make a first contribution, a link to the good first issues and other ways to help |
+
+A new page is an `index.html` in its folder, an entry in `src/pages/`, and a line in
+`vite.config.ts`. Its folder must not share a name with a documentation page.
 
 ## Screenshots
 
