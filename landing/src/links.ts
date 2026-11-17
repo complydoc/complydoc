@@ -20,6 +20,7 @@ export const links = {
   api: `${DOCS}/reference/api/`,
   reportSchema: `${DOCS}/reference/report/`,
   offline: `${DOCS}/explanation/offline/`,
+  assistant: `${DOCS}/guides/assistant-mcp/`,
   accuracy: `${DOCS}/explanation/accuracy/`,
   hiddenContent: `${DOCS}/explanation/hidden-content/`,
   routing: `${DOCS}/guides/routing/`,

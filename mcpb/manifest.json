@@ -1,0 +1,88 @@
+{
+  "manifest_version": "0.4",
+  "name": "complydoc",
+  "display_name": "complydoc",
+  "version": "0.7.13",
+  "description": "Open your documents in Claude with personal details masked and hidden instructions taken out.",
+  "long_description": "complydoc reads a document on your computer before the assistant does. Bank accounts, tax numbers, card numbers, emails and phone numbers come back masked, and text hidden from a reader, such as a white sentence telling the model what to conclude, is taken out. The file itself never leaves your computer: only the cleaned text joins the conversation, and complydoc makes no network connection while it reads.\n\nAsk for a document instead of attaching it: *Open the Acme proposal and summarise it*, or *Can I share the Nordwind contract?*",
+  "author": {
+    "name": "complydoc",
+    "url": "https://github.com/complydoc"
+  },
+  "homepage": "https://complydoc.github.io/complydoc/",
+  "documentation": "https://complydoc.github.io/complydoc/docs/guides/assistant-mcp/",
+  "support": "https://github.com/complydoc/complydoc/issues",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/complydoc/complydoc"
+  },
+  "icon": "icon.png",
+  "server": {
+    "type": "uv",
+    "entry_point": "src/server.py",
+    "mcp_config": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "${__dirname}",
+        "src/server.py",
+        "--folder",
+        "${user_config.folders}"
+      ]
+    }
+  },
+  "tools": [
+    {
+      "name": "list_documents",
+      "description": "Find a document in your folder by part of its name."
+    },
+    {
+      "name": "check_document",
+      "description": "Say whether a document is safe to share with an AI assistant, and why not."
+    },
+    {
+      "name": "open_document",
+      "description": "Read a document with personal details masked and hidden passages taken out."
+    },
+    {
+      "name": "list_folders",
+      "description": "Say which folders complydoc may open documents from."
+    },
+    {
+      "name": "choose_folder",
+      "description": "Pick another folder to share, in your computer's folder dialog."
+    },
+    {
+      "name": "remove_folder",
+      "description": "Stop sharing a folder."
+    }
+  ],
+  "user_config": {
+    "folders": {
+      "type": "directory",
+      "title": "Folders with your documents",
+      "description": "The folders the assistant may open documents from. You can add more later by asking it to choose a folder.",
+      "required": true,
+      "multiple": true
+    }
+  },
+  "compatibility": {
+    "platforms": [
+      "darwin",
+      "linux",
+      "win32"
+    ],
+    "runtimes": {
+      "python": ">=3.11"
+    }
+  },
+  "keywords": [
+    "documents",
+    "privacy",
+    "personal data",
+    "prompt injection",
+    "pdf"
+  ],
+  "license": "MIT"
+}
