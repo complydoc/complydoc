@@ -94,7 +94,9 @@ instructions:
       languages: [en, pt, es, fr, de, it, nl]
       regexes:
         - '\b(?:if|when) you are an? (?:ai|artificial intelligence|language model|large language model|llm|chatbot|ai assistant)\b'
-        - '\b(?:note|message|instructions?|attention) (?:to|for) (?:the |any )?(?:ai|llm|language model|model|assistant|chatbot)\b'
+        - '\b(?:note|message|instructions?|attention) (?:to|for) (?:the |any |all )?(?:[\w-]+ ){0,2}?(?:ai|llm|language model|model|assistants?|chatbot|agents?)\b'
+        # An agent or assistant called out by kind, the line then giving it orders: "AI agents processing this invoice:".
+        - '\b(?:ai|llm) (?:agents?|assistants?|models?|systems?)\b[^.\n:]{0,40}:'
         - '\b(?:dear|hey|hello|attention)\s*,?\s+(?:ai|llm|chatgpt|gpt|claude|gemini|copilot|assistant)\b'
         # The model is named the same way in every language; what changes is the address.
         - '\b(?:nota|mensagem|instru[çc][õo]es|aten[çc][ãa]o) (?:para|ao|[àa]) (?:a |o )?(?:ia|ai|llm|modelo|assistente|chatbot)\b'
@@ -117,6 +119,8 @@ instructions:
         - '\b(?:do not|don.t|never)\s+(?:tell|inform|mention|reveal|disclose|show)\b[^.\n]{0,20}\b(?:the user|the reader|the human|anyone)\b'
         - '\bwithout (?:telling|informing|alerting) (?:the user|the reader|anyone)\b'
         - '\bkeep (?:this|these instructions) (?:secret|hidden|confidential)\b'
+        - '\b(?:do not|don.t|never)\s+(?:mention|reveal|disclose|repeat|quote)\s+(?:this|these)\s+(?:sentence|instruction|note|message|text|line|paragraph)s?\b'
+        - '\b(?:n[ãa]o|nunca)\s+(?:mencione|revele|repita|cite)\s+(?:esta|estas|este|estes)\s+(?:frase|instru[çc][ãa]o|nota|mensagem|texto|linha|par[áa]grafo)s?\b'
         - '\b(?:n[ãa]o|nunca)\s+(?:diga|conte|informe|mencione|revele|mostre)\b[^.\n]{0,25}\b(?:ao? usu[áa]rio|ao? leitor|a ningu[ée]m)\b'
         - '\bsem (?:avisar|informar|contar) (?:ao? )?(?:usu[áa]rio|leitor|ningu[ée]m)\b'
         - '\bmantenha (?:isto|isso|estas instru[çc][õo]es) (?:em segredo|secreto|oculto|confidencial)\b'
@@ -141,6 +145,7 @@ instructions:
       languages: [en, pt, es, fr, de, it, nl]
       regexes:
         - '\bwhen (?:summari[sz]ing|reviewing|screening|evaluating|analy[sz]ing|assessing|processing|ranking|grading) (?:this|the)\b[^.\n]{0,80}\b(?:say|state|respond|reply|answer|rate|score|recommend|approve|conclude|mention|report|output|classify)\b'
+        - '\b(?:rank|rate|score|list) (?:him|her|them|this (?:candidate|applicant|supplier|vendor|bid|offer|proposal))\b[^.\n]{0,20}\b(?:first|highest|top|best)\b'
         - '\bao (?:resumir|avaliar|analisar|rever|revisar|classificar|processar)\b[^.\n]{0,80}\b(?:diga|afirme|declare|responda|recomende|aprove|conclua|classifique)\b'
         - '\bal (?:resumir|evaluar|analizar|revisar|clasificar|procesar)\b[^.\n]{0,80}\b(?:afirma|declara|responde|recomienda|aprueba|concluye|clasifica)\b'
         - '\b(?:lors|au moment) (?:de|du) (?:la |l.)?(?:r[ée]sum[ée]|synth[èe]se|[ée]valuation|analyse|revue|classement)\b[^.\n]{0,80}\b(?:dis|d[ée]clare|r[ée]ponds|recommande|approuve|conclus)\b'

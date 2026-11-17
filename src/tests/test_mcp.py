@@ -113,3 +113,12 @@ def test_it_reads_nothing_outside_its_folder(folder: Path) -> None:
 def test_an_unknown_method_is_an_error_not_a_crash(folder: Path) -> None:
     (reply,) = talk(folder, {"jsonrpc": "2.0", "id": 1, "method": "resources/list"})
     assert reply["error"]["code"] == -32601
+
+
+def test_any_hidden_text_stops_a_document() -> None:
+    from collections import Counter
+
+    from complydoc.mcp.server import STOP, Findings
+
+    quiet = Findings(identifiers=Counter(), hidden=[(1, "a line in white", False, ["white text"])])
+    assert quiet.verdict == STOP

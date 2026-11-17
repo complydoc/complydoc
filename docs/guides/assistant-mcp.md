@@ -110,8 +110,8 @@ open_document gives a copy with these masked or taken out, which is safe to use.
 | Verdict | When |
 | --- | --- |
 | Ready to send | No identifiers and no hidden text |
-| Send with care | Identifiers that are not sensitive, or hidden text that gives no instruction |
-| Do not send as it is | A sensitive identifier, or hidden text written as instructions to a model |
+| Send with care | Identifiers that are not sensitive, such as an email address or a phone number |
+| Do not send as it is | A sensitive identifier, or any text hidden from a reader: a model reads it whether or not it is worded as an instruction |
 
 ## What it does and does not stop
 

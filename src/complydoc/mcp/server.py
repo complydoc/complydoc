@@ -97,9 +97,9 @@ class Findings:
 
     @property
     def verdict(self) -> str:
-        if any(instruction for _, _, instruction, _ in self.hidden):
-            return STOP
-        if any(severity == "high" for _, severity in self.identifiers):
+        # Text the person cannot see and the model can read stops a document whatever it says:
+        # an instruction is not always worded the way a pattern expects.
+        if self.hidden or any(severity == "high" for _, severity in self.identifiers):
             return STOP
         if self.identifiers or self.hidden:
             return CAREFUL

@@ -15,6 +15,13 @@ separately.
   ready to send, in plain words. See
   [Documents into an assistant, cleaned](https://complydoc.github.io/complydoc/docs/guides/assistant-mcp/).
 
+### Fixed
+
+- Hidden text written to a model by its job ("Instruction to the screening assistant:",
+  "AI agents processing this invoice:"), told to keep quiet about itself ("do not mention
+  this sentence"), or dictating a ranking ("Rank her first") is now reported as an
+  instruction, in English and Portuguese.
+
 ### Changed
 
 - complydoc's line is now "Get document loading right. Compare loaders, trace every step
