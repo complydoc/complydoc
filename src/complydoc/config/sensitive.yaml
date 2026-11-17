@@ -41,6 +41,25 @@ categories:
       A direct identifier under UK data protection law. Uniquely identifies an
       individual and is routinely treated as high risk in a breach assessment.
 
+  uk_nhs_number:
+    enabled: true
+    label: NHS number
+    region: UK
+    detector: regex
+    severity: high
+    context_patterns:
+      # Ten digits, written 3-3-4 with spaces or hyphens, or run together. The
+      # mod-11 check still passes about one ten-digit run in eleven, and a spaced
+      # 3-3-4 number is also how a US phone number is written, so it needs its
+      # label nearby.
+      - '\b(?:\d{3}[ ]\d{3}[ ]\d{4}|\d{3}-\d{3}-\d{4}|\d{10})\b'
+    validators: [uk_nhs_number]
+    context_terms: ["nhs number", "nhs no", "nhs"]
+    gdpr_note: >
+      Health service identifier, validated with its mod-11 check digit. It links
+      a person to their medical records, so a document holding it is likely to
+      hold special-category health data under GDPR Article 9.
+
   sort_code:
     enabled: true
     label: UK sort code

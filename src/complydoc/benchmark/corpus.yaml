@@ -144,6 +144,14 @@ passages:
     expect:
       - [be_national_number, "85.07.30-001.60"]
 
+  - id: uk-nhs-number
+    note: An occupational-health referral. The NHS number is checked with its mod-11 digit.
+    text: |
+      OCCUPATIONAL HEALTH REFERRAL
+      NHS number: 943 476 5919
+    expect:
+      - [uk_nhs_number, "943 476 5919"]
+
   - id: poland
     text: |
       DANE KLIENTA

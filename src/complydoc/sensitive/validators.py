@@ -230,6 +230,17 @@ def plausible_dob(value: str) -> bool:
 # --- other jurisdictions ---------------------------------------------------
 
 
+def uk_nhs_number(value: str) -> bool:
+    """NHS number (England, Wales and the Isle of Man): weighted mod-11 check digit."""
+    digits = _digits(value)
+    if len(digits) != 10 or len(set(digits)) == 1:
+        return False
+    check = 11 - _weighted_mod(digits[:9], (10, 9, 8, 7, 6, 5, 4, 3, 2), 11)
+    if check == 10:
+        return False
+    return int(digits[9]) == (0 if check == 11 else check)
+
+
 def _weighted_mod(digits: str, weights: tuple[int, ...], modulus: int) -> int:
     return sum(int(d) * w for d, w in zip(digits, weights, strict=True)) % modulus
 
@@ -644,6 +655,7 @@ VALIDATORS: dict[str, Callable[[str], bool]] = {
     "card_issuer": card_issuer,
     "iban_mod97": iban_mod97,
     "ni_prefix": ni_prefix,
+    "uk_nhs_number": uk_nhs_number,
     "vat_mod97": vat_mod97,
     "sort_code": sort_code,
     "uk_postcode": uk_postcode,

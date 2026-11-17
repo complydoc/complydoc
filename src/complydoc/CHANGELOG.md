@@ -10,6 +10,10 @@ separately.
 ### Added
 
 
+- NHS numbers (`uk_nhs_number`), checked with their mod-11 check digit and found when an
+  "NHS number" or "NHS no" label is nearby. They are in the `hr` and `legal` policy packs.
+  Closes #34.
+
 - `cd.parsers.markitdown()`, a preset for Microsoft's MarkItDown, to compare it with the
   other loaders. It runs locally on PDF, Word, PowerPoint, Excel and HTML files and returns
   one Markdown document per file, with no page numbers because MarkItDown does not split
