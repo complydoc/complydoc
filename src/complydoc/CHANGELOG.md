@@ -18,6 +18,11 @@ separately.
   a clean copy as a text file; offers every shared document as an MCP resource, so a
   client's attach menu gives the cleaned text; and offers four ready-made prompts, such as
   *Check a document before sharing it*.
+  A document nothing could be read from (empty, damaged, password protected or of an
+  unsupported type) is *Could not be read*, never *Ready to send*; scans are checked with
+  OCR; a hidden passage is taken out whole, however long, and even where masking changed
+  its words; a malformed request is answered with an error instead of ending the session;
+  and a clean copy never replaces another one of the same name.
 
 ### Fixed
 

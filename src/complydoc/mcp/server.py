@@ -18,6 +18,7 @@ from __future__ import annotations
 import base64
 import json
 import sys
+import unicodedata
 from collections.abc import Iterable
 from functools import cache
 from importlib.resources import files
@@ -29,9 +30,9 @@ from complydoc import __version__, offline
 from complydoc.mcp.catalogue import TOOLS
 from complydoc.mcp.folders import STORE, FolderError, Folders, Picker, pick_folder
 from complydoc.mcp.prompts import PROMPTS, get_prompt
-from complydoc.mcp.reading import CAREFUL, READY, STOP, Findings, Reader, short
+from complydoc.mcp.reading import CAREFUL, READY, STOP, UNREAD, Findings, Reader, short
 
-__all__ = ["CAREFUL", "READY", "STOP", "Findings", "Server", "serve"]
+__all__ = ["CAREFUL", "READY", "STOP", "UNREAD", "Findings", "Server", "serve"]
 
 PROTOCOL = "2025-06-18"
 """The protocol version offered when a client does not name one."""
@@ -79,6 +80,21 @@ class Server:
     # The files a person can name: "Contracts/acme.pdf", "acme.pdf", or a full path.
     def resolve(self, name: str) -> Path:
         name = name.strip()
+        try:
+            return self._resolve(name)
+        except ToolError as first:
+            # A name typed by a model is usually composed (NFC), while macOS may keep it
+            # decomposed on disk: try the other spellings before saying there is none.
+            for form in ("NFC", "NFD"):
+                spelling = unicodedata.normalize(form, name)
+                if spelling != name:
+                    try:
+                        return self._resolve(spelling)
+                    except ToolError:
+                        pass
+            raise first
+
+    def _resolve(self, name: str) -> Path:
         if not name:
             raise ToolError("Say which document: give its name as list_documents shows it.")
         if not self.folders.all:
@@ -149,6 +165,11 @@ class Server:
         head = f"{found.verdict}: {path.name}"
         if found.verdict == READY:
             return f"{head}\nNo personal or financial details and no hidden text were found."
+        if found.verdict == UNREAD:
+            return (
+                f"{head}\nNothing in it was checked: {found.unread}. Do not treat it as safe "
+                "to share; ask the person to check it themselves or to share it another way."
+            )
         tail = "\nopen_document gives a copy with these masked or taken out, which is safe to use."
         return "\n".join([head, "Found:", *found.lines()]) + tail
 
@@ -158,7 +179,7 @@ class Server:
         names = self.documents(folder=folder)
         if not names:
             return "There are no documents to check."
-        groups: dict[str, list[str]] = {STOP: [], CAREFUL: [], READY: []}
+        groups: dict[str, list[str]] = {STOP: [], CAREFUL: [], UNREAD: [], READY: []}
         unread: list[str] = []
         for name in names[:MAX_FOLDER]:
             try:
@@ -170,7 +191,7 @@ class Server:
             groups[found.verdict].append(line)
         where = f"in {folder}" if folder else "in the shared folders"
         said = [f"Checked {min(len(names), MAX_FOLDER)} documents {where}."]
-        for verdict in (STOP, CAREFUL):
+        for verdict in (STOP, CAREFUL, UNREAD):
             if groups[verdict]:
                 said += [
                     f"\n{verdict} ({len(groups[verdict])}):",
@@ -223,6 +244,11 @@ class Server:
         reading = self.reader.read(path)
         self.clean_copies.mkdir(parents=True, exist_ok=True)
         target = self.clean_copies / f"{path.stem} (clean).txt"
+        # Never over another copy: two documents can share a name in different folders.
+        number = 2
+        while target.exists():
+            target = self.clean_copies / f"{path.stem} (clean {number}).txt"
+            number += 1
         target.write_text(reading.text() + "\n", encoding="utf-8")
         return f"Saved a clean copy of {path.name} to {target}. " + reading.note(path.name).replace(
             f"complydoc read {path.name} for you. ", ""
@@ -324,6 +350,8 @@ class _RequestError(Exception):
 def _handle(server: Server, request: dict[str, Any]) -> dict[str, Any]:
     method = request.get("method")
     params = request.get("params") or {}
+    if not isinstance(params, dict):
+        raise _RequestError(-32602, "params must be an object")
     if method == "initialize":
         return {
             "protocolVersion": params.get("protocolVersion") or PROTOCOL,
@@ -346,9 +374,15 @@ def _handle(server: Server, request: dict[str, Any]) -> dict[str, Any]:
     if method == "tools/list":
         return {"tools": TOOLS}
     if method == "tools/call":
-        return _call_tool(server, str(params.get("name")), params.get("arguments") or {})
+        arguments = params.get("arguments") or {}
+        if not isinstance(arguments, dict):
+            return _call_tool(server, "", {}, "The tool's arguments must be an object.")
+        return _call_tool(server, str(params.get("name")), arguments)
     if method == "resources/list":
-        return server.resources(params.get("cursor"))
+        cursor = params.get("cursor")
+        if cursor is not None and not str(cursor).isdigit():
+            raise _RequestError(-32602, f"Not a cursor this server gave: {cursor!r}")
+        return server.resources(cursor)
     if method == "resources/templates/list":
         return {"resourceTemplates": []}
     if method == "resources/read":
@@ -368,7 +402,11 @@ def _handle(server: Server, request: dict[str, Any]) -> dict[str, Any]:
     raise _RequestError(-32601, "Method not found")
 
 
-def _call_tool(server: Server, name: str, arguments: dict[str, Any]) -> dict[str, Any]:
+def _call_tool(
+    server: Server, name: str, arguments: dict[str, Any], refused: str = ""
+) -> dict[str, Any]:
+    if refused:
+        return {"content": [{"type": "text", "text": refused}], "isError": True}
     try:
         text = server.call(name, arguments)
         return {"content": [{"type": "text", "text": text}], "isError": False}
@@ -417,6 +455,10 @@ def _loop(server: Server, source: IO[str], out: IO[str]) -> None:
             error = {"code": -32700, "message": "Parse error"}
             _reply(out, {"jsonrpc": "2.0", "id": None, "error": error})
             continue
+        if not isinstance(request, dict):  # A batch, or a bare value: not a request.
+            error = {"code": -32600, "message": "Invalid Request"}
+            _reply(out, {"jsonrpc": "2.0", "id": None, "error": error})
+            continue
         if "id" not in request:  # A notification, such as notifications/initialized.
             continue
         try:
@@ -424,4 +466,8 @@ def _loop(server: Server, source: IO[str], out: IO[str]) -> None:
             _reply(out, {"jsonrpc": "2.0", "id": request["id"], "result": result})
         except _RequestError as invalid:
             error = {"code": invalid.code, "message": str(invalid)}
+            _reply(out, {"jsonrpc": "2.0", "id": request["id"], "error": error})
+        except Exception as crash:  # One bad request never ends the session.
+            print(f"complydoc mcp: {type(crash).__name__}: {crash}", file=sys.stderr)
+            error = {"code": -32603, "message": "Internal error"}
             _reply(out, {"jsonrpc": "2.0", "id": request["id"], "error": error})
