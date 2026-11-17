@@ -235,9 +235,8 @@
   }
 }
 
-/* The backdrop behind a page's first section: a dot grid, as on a page being
-   read, fading out from a glow of the brand blue. Tokens only, so it follows
-   the theme. */
+/* The backdrop behind a page's first section: a glow of the brand blue, or of
+   the blue and the pink, fading out. Tokens only, so it follows the theme. */
 @utility backdrop-duo {
   background-image:
     radial-gradient(ellipse 45% 60% at 20% 0%, color-mix(in oklab, var(--primary) 30%, transparent), transparent 70%),
@@ -245,12 +244,11 @@
   mask-image: linear-gradient(to bottom, black 55%, transparent);
 }
 
-@utility backdrop-dots {
-  background-image:
-    radial-gradient(ellipse 60% 55% at 50% 0%, color-mix(in oklab, var(--primary) 30%, transparent), transparent 70%),
-    radial-gradient(circle at 1px 1px, var(--input) 1px, transparent 0);
-  background-size:
-    100% 100%,
-    22px 22px;
+@utility backdrop-glow {
+  background-image: radial-gradient(
+    ellipse 60% 55% at 50% 0%,
+    color-mix(in oklab, var(--primary) 30%, transparent),
+    transparent 70%
+  );
   mask-image: linear-gradient(to bottom, black 55%, transparent);
 }
