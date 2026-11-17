@@ -24,9 +24,9 @@ export function Demos() {
         </Demo>
         <Demo
           label="Find hidden text"
-          title="A CV that talks to the model."
+          title="Flag malicious attempts on your documents."
           more={<TextLink href={links.hiddenContent}>How hidden text is found</TextLink>}
-          text="A line set at half a point is a hairline on the page and a full sentence in the text layer, addressed to whatever model screens the CV."
+          text="This CV hides an instruction to the model in a line set at half a point. complydoc finds it and says why it was flagged."
         >
           <HiddenTextDemo />
         </Demo>

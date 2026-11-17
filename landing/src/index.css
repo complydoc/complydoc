@@ -241,12 +241,7 @@
 @utility backdrop-duo {
   background-image:
     radial-gradient(ellipse 45% 60% at 20% 0%, color-mix(in oklab, var(--primary) 30%, transparent), transparent 70%),
-    radial-gradient(ellipse 45% 60% at 85% 10%, color-mix(in oklab, var(--blush) 28%, transparent), transparent 70%),
-    radial-gradient(circle at 1px 1px, var(--input) 1px, transparent 0);
-  background-size:
-    100% 100%,
-    100% 100%,
-    22px 22px;
+    radial-gradient(ellipse 45% 60% at 85% 10%, color-mix(in oklab, var(--blush) 28%, transparent), transparent 70%);
   mask-image: linear-gradient(to bottom, black 55%, transparent);
 }
 

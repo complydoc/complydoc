@@ -1,0 +1,1 @@
+`cloud.webp` is the cloud from Microsoft's Fluent Emoji (https://github.com/microsoft/fluentui-emoji), 3D style, as packaged in `@lobehub/fluent-emoji-3d`. MIT License, Copyright (c) Microsoft Corporation.
