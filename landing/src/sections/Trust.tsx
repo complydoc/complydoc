@@ -36,7 +36,19 @@ const MODELS: Provider[] = [
   { name: "xAI", brand: "xai" },
 ];
 
-function Row({ label, providers, more }: { label: string; providers: Provider[]; more: string }) {
+/** Assistants that run a local MCP server, so `complydoc mcp` hands them documents cleaned. */
+const ASSISTANTS: Provider[] = [
+  { name: "Claude", brand: "claude" },
+  { name: "Claude Code", brand: "claudecode" },
+  { name: "Codex", brand: "codex" },
+  { name: "Cursor", brand: "cursor" },
+  { name: "GitHub Copilot", brand: "githubcopilot" },
+  { name: "Windsurf", brand: "windsurf" },
+  { name: "Gemini CLI", brand: "gemini" },
+  { name: "Any MCP client", brand: "mcp" },
+];
+
+function Row({ label, providers, more }: { label: string; providers: Provider[]; more?: string }) {
   return (
     <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:gap-0">
       <p className="shrink-0 text-sm text-muted-foreground xl:w-36">{label}</p>
@@ -47,13 +59,13 @@ function Row({ label, providers, more }: { label: string; providers: Provider[];
             {provider.name}
           </li>
         ))}
-        <li className="text-muted-foreground">{more}</li>
+        {more && <li className="text-muted-foreground">{more}</li>}
       </ul>
     </div>
   );
 }
 
-/** What a careful reader asks first, answered before they ask, then the loaders it reads and the models it prices. */
+/** What a careful reader asks first, answered before they ask, then the loaders it reads, the models it prices and the assistants it serves. */
 export function Trust() {
   return (
     <section aria-label="What to know first" className="border-t bg-muted/30">
@@ -72,6 +84,7 @@ export function Trust() {
         <div className="flex flex-col gap-6 border-t pt-8">
           <Row label="Loaders" providers={LOADERS} more="and more" />
           <Row label="Model providers" providers={MODELS} more="and more" />
+          <Row label="Assistants" providers={ASSISTANTS} />
         </div>
       </div>
     </section>

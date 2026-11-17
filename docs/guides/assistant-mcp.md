@@ -25,7 +25,55 @@ Edit Config), with the folder people keep their documents in:
 }
 ```
 
-Restart Claude Desktop. Any MCP client that runs a local command works the same way.
+Restart Claude Desktop. Desktop apps do not see your shell's `PATH`, so if it does not
+start, give the full path that `which complydoc` prints as `command`.
+
+## Other assistants
+
+Any assistant that runs a local MCP server works the same way: the command is
+`complydoc mcp --folder <dir>`.
+
+### Claude Code
+
+```bash
+claude mcp add complydoc -- complydoc mcp --folder ~/Documents/Contracts
+```
+
+### Codex
+
+In `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.complydoc]
+command = "complydoc"
+args = ["mcp", "--folder", "/Users/ana/Documents/Contracts"]
+```
+
+### Cursor and Windsurf
+
+The same JSON as Claude Desktop, in `~/.cursor/mcp.json` or
+`~/.codeium/windsurf/mcp_config.json`.
+
+### GitHub Copilot in VS Code
+
+In `.vscode/mcp.json`:
+
+```json
+{
+  "servers": {
+    "complydoc": { "command": "complydoc", "args": ["mcp", "--folder", "${workspaceFolder}/documents"] }
+  }
+}
+```
+
+### Gemini CLI
+
+```bash
+gemini mcp add complydoc complydoc mcp --folder ~/Documents/Contracts
+```
+
+Assistants that only reach MCP servers over the network, such as ChatGPT's connectors or
+Microsoft 365 Copilot, are not served by `complydoc mcp` yet.
 
 ## What the person does
 
