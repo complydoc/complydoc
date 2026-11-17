@@ -33,6 +33,8 @@ import re
 import shutil
 import sys
 import tempfile
+from collections.abc import Callable
+from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -44,7 +46,12 @@ if TYPE_CHECKING:
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURES = ROOT / "src" / "tests" / "fixtures" / "java"
 CONFIG = ROOT / "src" / "complydoc" / "config"
-VALIDATOR_TESTS = ("test_validators.py", "test_international.py", "test_scanner.py")
+VALIDATOR_TESTS = (
+    "test_validators.py",
+    "test_international.py",
+    "test_scanner.py",
+    "test_declared_checks.py",
+)
 
 
 def _corpus() -> list[str]:
@@ -80,14 +87,19 @@ def _corpus() -> list[str]:
 
 
 def _validators() -> dict[str, dict[str, bool]]:
-    from complydoc.sensitive.validators import VALIDATORS
+    from complydoc.config.loader import load_config
+    from complydoc.sensitive.validators import VALIDATORS, declared
 
     corpus = _corpus()
+    checks: dict[str, Callable[[str], bool]] = dict(VALIDATORS)
+    # The checks `sensitive.yaml` declares, which complydoc4j reads from the same file.
+    for name, check in load_config().sensitive.checks.items():
+        checks[name] = partial(declared, check)
     # `plausible_dob` depends on today's date: the Java test runs it on the same day or
     # skips it, so it is kept out of the main table.
     return {
         name: {value: bool(check(value)) for value in corpus}
-        for name, check in sorted(VALIDATORS.items())
+        for name, check in sorted(checks.items())
         if name != "plausible_dob"
     }
 

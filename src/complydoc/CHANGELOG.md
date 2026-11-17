@@ -9,6 +9,10 @@ separately.
 
 ### Added
 
+- Portuguese social security numbers (NISS) are found beside their label and confirmed by
+  their check digit, and the `hr` policy covers them.
+- A check digit can be declared in `sensitive.yaml` under `checks`, by its method and
+  weights, and named in a category's `validators` like one written in code.
 - `complydoc mcp --folder <dir>` serves a folder to an AI assistant such as Claude Desktop
   over MCP. A document opened through it reaches the model with personal and financial
   details masked and hidden passages taken out, and `check_document` says whether a file is

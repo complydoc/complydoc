@@ -549,10 +549,69 @@ class CategoryConfig(_Base):
         return links
 
 
+class CheckConfig(_Base):
+    """A check digit declared as data, named in a category's `validators` like the
+    validators written in code.
+
+    Most national numbers are checked one of a few ways, with their own weights: a
+    weighted sum taken modulo a number, or Luhn. Declared here, a new identifier is a
+    few lines of configuration, and complydoc4j reads the same lines.
+
+    Only the digits of a value are checked; spaces and separators are ignored.
+    """
+
+    length: int | list[int]
+    """How many digits the number has, or the lengths it may have."""
+    starts_with: list[str] = Field(default_factory=list)
+    """What its digits may start with; anything when empty."""
+    method: Literal["weighted", "luhn"]
+    weights: list[int] = Field(default_factory=list)
+    """`weighted`: one weight per digit, from the first. With `zero`, they cover the whole
+    number; otherwise the digit after the last weighted one is the check digit."""
+    modulus: int = 10
+    zero: bool = False
+    """`weighted`: the sum of the whole number, check digit included, is a multiple of
+    `modulus`, rather than giving the check digit."""
+    subtract_from: int | None = None
+    """`weighted`: the check digit is this minus the remainder, rather than the remainder."""
+    replace: dict[int, int] = Field(default_factory=dict)
+    """`weighted`: results written as another digit, such as 10 as 0."""
+    invalid: list[int] = Field(default_factory=list)
+    """`weighted`: results no valid number has, such as 10 where no digit can stand for it."""
+
+    @property
+    def lengths(self) -> list[int]:
+        return [self.length] if isinstance(self.length, int) else self.length
+
+    @model_validator(mode="after")
+    def _complete(self) -> CheckConfig:
+        if self.method == "weighted":
+            if not self.weights:
+                raise ValueError("a weighted check needs its weights")
+            wanted = len(self.weights) if self.zero else len(self.weights) + 1
+            if any(n != wanted for n in self.lengths):
+                raise ValueError(
+                    f"a weighted check with {len(self.weights)} weights is of numbers "
+                    f"{wanted} digits long"
+                )
+        return self
+
+
 class SensitiveConfig(_Base):
     schema_version: int
     masking: MaskingConfig
+    checks: dict[str, CheckConfig] = Field(default_factory=dict)
+    """Check digits declared as data, by name."""
     categories: dict[str, CategoryConfig]
+
+    @model_validator(mode="after")
+    def _checks_do_not_shadow_code(self) -> SensitiveConfig:
+        from complydoc.sensitive.validators import VALIDATORS
+
+        taken = sorted(set(self.checks) & set(VALIDATORS))
+        if taken:
+            raise ValueError(f"checks named like a built-in validator: {', '.join(taken)}")
+        return self
 
     @property
     def enabled_categories(self) -> dict[str, CategoryConfig]:

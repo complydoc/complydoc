@@ -13,7 +13,8 @@
 # are only reported when one of `context_terms` appears within
 # `context_window_chars` characters.
 # `validators` are checksum or format functions applied after the regex matches;
-# a match that fails its validators is discarded.
+# a match that fails its validators is discarded. A validator is either written in
+# code or declared under `checks`, by its method and weights.
 
 schema_version: 1
 
@@ -24,6 +25,20 @@ masking:
     # Masked even with --reveal.
     - card_number
     - ni_number
+
+checks:
+  # Check digits declared as data, named in a category's `validators` like those
+  # written in code. `weighted` multiplies each digit by its weight and takes the
+  # sum modulo `modulus`; the next digit is the remainder, or `subtract_from` minus
+  # it. `luhn` is the card checksum.
+  pt_niss:
+    # Portuguese social security number: 1 for a person, 2 for a company.
+    length: 11
+    starts_with: ["1", "2"]
+    method: weighted
+    weights: [29, 23, 19, 17, 13, 11, 7, 5, 3, 2]
+    modulus: 10
+    subtract_from: 9
 
 categories:
 
@@ -365,6 +380,20 @@ categories:
     gdpr_note: >
       Tax identifier for individuals and companies, validated with its mod-11
       check digit.
+
+  pt_niss:
+    enabled: true
+    label: Portuguese social security number (NISS)
+    region: PT
+    detector: regex
+    severity: high
+    context_patterns:
+      - '\b[12]\d{10}\b'
+    validators: [pt_niss]
+    context_terms: ["niss", "segurança social", "seguranca social", "beneficiário", "beneficiario"]
+    gdpr_note: >
+      Social security identifier for people and companies, validated with its
+      weighted check digit.
 
   es_dni:
     enabled: true

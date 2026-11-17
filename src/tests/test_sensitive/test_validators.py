@@ -158,12 +158,13 @@ def test_eu_vat_country_rules(value, expected):
 
 
 def test_every_configured_validator_exists(config):
-    """Every validator named in the config exists."""
+    """Every validator named in the config exists, in code or declared under `checks`."""
     from complydoc.sensitive.validators import VALIDATORS
 
+    known = set(VALIDATORS) | set(config.sensitive.checks)
     for name, category in config.sensitive.categories.items():
         for validator in category.validators:
-            assert validator in VALIDATORS, f"{name} names unknown validator {validator!r}"
+            assert validator in known, f"{name} names unknown validator {validator!r}"
 
 
 def test_categories_cover_more_than_one_jurisdiction(config):

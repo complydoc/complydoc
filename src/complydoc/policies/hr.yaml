@@ -20,6 +20,7 @@ rules:
       - us_ssn
       - ie_pps
       - nl_bsn
+      - pt_niss
       - es_dni
       - fr_nir
       - it_codice_fiscale
