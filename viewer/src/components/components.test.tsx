@@ -79,7 +79,7 @@ describe("Section", () => {
     expect(within(section).getByText("9 documents")).toBeInTheDocument();
   });
 
-  it("separates stacked sections, skipping the ones that render nothing", () => {
+  it("stacks sections without separators, skipping the ones that render nothing", () => {
     render(
       <SectionStack>
         <Section title="One">a</Section>
@@ -88,7 +88,7 @@ describe("Section", () => {
       </SectionStack>,
     );
     expect(screen.getAllByRole("region")).toHaveLength(2);
-    expect(document.querySelectorAll("[data-slot=separator]")).toHaveLength(1);
+    expect(document.querySelectorAll("[data-slot=separator]")).toHaveLength(0);
   });
 });
 

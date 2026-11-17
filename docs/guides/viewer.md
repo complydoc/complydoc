@@ -37,10 +37,12 @@ report without reading the documents again. The audit runs in the command before
 viewer starts. For other options, run `complydoc audit` and
 open its report.
 
-## Audit documents from the viewer
+## Add documents from the viewer
 
 Drop documents or a folder on the viewer, or choose them, and it audits them: from
-the empty page, or from **Audit documents…** in the folder menu. The viewer sends
+**Add documents** in the bar at the top of every page, on the empty page, beside
+**Folders** on the page of all folders, in the folder menu, or from the search menu
+(**⌘K**). The viewer sends
 them to `complydoc ui` on this machine, which copies them to
 `.complydoc/uploads/<name>/`, reads them as `complydoc demo` reads its samples (each
 page's text kept, pypdf compared, OCR on) and writes the report beside them as

@@ -10,8 +10,7 @@ import {
   XIcon,
 } from "lucide-react";
 import { useRef, useState } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { UploadPanel } from "@/features/upload/UploadPanel";
+import { UploadDialog } from "@/features/upload/AuditDocuments";
 import type { Uploader } from "@/hooks/useUpload";
 import {
   DropdownMenu,
@@ -72,7 +71,7 @@ export function CollectionSwitcher({
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton size="lg" tooltip={current?.name ?? "All folders"} aria-label="Switch folder">
               {/* Tinted, so that folded to an icon it reads as which folder is open, not as a page that is. */}
-              <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary ring-1 ring-primary/20 ring-inset">
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary-soft text-primary-ink ring-1 ring-primary/50 ring-inset">
                 {!current ? (
                   <LayoutGridIcon className="size-4" />
                 ) : current.id.startsWith("pipeline:") ? (
@@ -153,7 +152,7 @@ export function CollectionSwitcher({
                 }}
               >
                 <FileUpIcon />
-                Audit documents…
+                Add documents…
               </DropdownMenuItem>
             )}
             <DropdownMenuItem onSelect={() => input.current?.click()}>
@@ -180,18 +179,7 @@ export function CollectionSwitcher({
           }}
         />
       </SidebarMenuItem>
-      {upload && (
-        // Closed once the report opens; reading carries on if it is closed sooner.
-        <Dialog open={uploading && upload.state.phase !== "done"} onOpenChange={setUploading}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Audit documents</DialogTitle>
-              <DialogDescription>Copied to this machine and audited here.</DialogDescription>
-            </DialogHeader>
-            <UploadPanel upload={upload.state} onStart={(picked) => void upload.start(picked)} />
-          </DialogContent>
-        </Dialog>
-      )}
+      {upload && <UploadDialog upload={upload} open={uploading} onOpenChange={setUploading} />}
     </SidebarMenu>
   );
 }

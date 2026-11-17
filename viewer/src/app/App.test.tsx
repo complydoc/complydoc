@@ -133,7 +133,7 @@ describe("App", () => {
       }),
     );
     render(<App />);
-    expect(await screen.findByRole("heading", { name: "Audit documents" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Add documents" })).toBeInTheDocument();
     const files = [new File(["%PDF"], "msa.pdf"), new File(["x"], "notes.exe")];
     await userEvent.upload(screen.getByLabelText("Documents"), files);
     expect(await screen.findByRole("button", { name: "Switch folder" }, { timeout: 5000 })).toBeInTheDocument();

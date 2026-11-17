@@ -8,7 +8,6 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { ChunksPage } from "@/features/chunks/ChunksPage";
 import { CostPage } from "@/features/cost/CostPage";
@@ -39,6 +38,8 @@ import { FolderRunsContext } from "@/hooks/useFolderRuns";
 import { leadRun, type Collection, type Loaded } from "@/report/collections";
 import { fileName } from "@/report/format";
 import type { Uploader } from "@/hooks/useUpload";
+import { AuditDocuments } from "@/features/upload/AuditDocuments";
+import { askToAudit } from "@/features/upload/askToAudit";
 import { AppSidebar } from "./AppSidebar";
 import { PAGES, PAGE_INFO, type Page } from "./pages";
 import { shortcut } from "@/lib/shortcut";
@@ -148,7 +149,6 @@ export function ReportView({
             <Hint label="Collapse or expand the sidebar" keys={[shortcut("").trim(), "B"]}>
               <SidebarTrigger className="-ml-1" />
             </Hint>
-            <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
             <Breadcrumb className="min-w-0 flex-1">
               <BreadcrumbList>
                 <BreadcrumbItem>
@@ -157,6 +157,7 @@ export function ReportView({
               </BreadcrumbList>
             </Breadcrumb>
             <div className="ml-auto flex shrink-0 items-center gap-2">
+              {upload && <AuditDocuments upload={upload} />}
               <ReadOnlyBadge />
               <ModeToggle dark={dark} onToggle={onToggleTheme} />
             </div>
@@ -165,6 +166,7 @@ export function ReportView({
             <PageErrorBoundary>
               <OverviewPage
                 collections={collections}
+                onAudit={upload && askToAudit}
                 onOpen={(id) => onSelect({ collection: id, run: leadIdOf(collections.find((c) => c.id === id)) })}
               />
             </PageErrorBoundary>
@@ -196,7 +198,7 @@ export function ReportView({
               report={report}
               page={page}
               switcher={switcher}
-              search={<GoTo report={report} onShortcuts={() => setShortcuts(true)} />}
+              search={<GoTo report={report} onShortcuts={() => setShortcuts(true)} onAudit={upload && askToAudit} />}
             />
             {/* min-w-0 lets the page shrink to the space beside the sidebar instead of widening to its widest chart. */}
             <SidebarInset className="min-w-0">
@@ -204,7 +206,6 @@ export function ReportView({
                 <Hint label="Collapse or expand the sidebar" keys={[shortcut("").trim(), "B"]}>
                   <SidebarTrigger className="-ml-1" />
                 </Hint>
-                <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
                 {/* One line that gives way to the plan controls: it truncates rather than wraps under the bar. */}
                 <Breadcrumb className="min-w-0 flex-1">
                   <BreadcrumbList className="flex-nowrap overflow-hidden whitespace-nowrap [&>li]:min-w-0 [&>li]:truncate">
@@ -230,6 +231,7 @@ export function ReportView({
                 {/* The plan's pickers give up width before the page scrolls sideways. */}
                 <div className="ml-auto flex min-w-0 items-center gap-2">
                   {PRICED.includes(page) && <PlanBar />}
+                  {upload && <AuditDocuments upload={upload} />}
                   <ReadOnlyBadge />
                   <ModeToggle dark={dark} onToggle={onToggleTheme} />
                 </div>

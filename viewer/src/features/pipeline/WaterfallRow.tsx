@@ -1,4 +1,6 @@
 import { ChevronRightIcon, TriangleAlertIcon } from "lucide-react";
+import { ToolLogo } from "@/components/ToolLogo";
+import { hasToolMark } from "@/components/toolMarks";
 import { cn } from "@/lib/utils";
 import { fileName, formatSeconds, formatUsd, plural } from "@/report/format";
 import type { Span } from "@/report/traceTree";
@@ -62,9 +64,9 @@ function Bar({ span, total }: { span: Span; total: number }) {
   const end = start + width;
   const priced = typeof stage.usd === "number" && stage.usd > 0 && stage.usd_basis !== "local";
   const label = `${formatSeconds(stage.seconds)}${priced ? ` · ${formatUsd(stage.usd ?? 0)}` : ""}`;
-  // The time sits after the bar, in the room the axis leaves at its end; a long label on a
-  // bar that ends late and starts late goes before it instead.
-  const after = end < 0.85 || start < 0.3 || !priced;
+  // The time sits after the bar, in the room the axis leaves at its end. A long label on a
+  // bar that ends late goes before it, or, where the bar fills the row, inside its end.
+  const place = end < 0.85 || !priced ? "after" : start >= 0.3 ? "before" : "inside";
   return (
     <>
       <span
@@ -76,8 +78,17 @@ function Bar({ span, total }: { span: Span; total: number }) {
         style={{ left: `${start * 100}%`, width: `max(2px, ${width * 100}%)` }}
       />
       <span
-        className="absolute top-1/2 -translate-y-1/2 font-mono text-[11px] whitespace-nowrap text-muted-foreground tabular-nums"
-        style={after ? { left: `calc(${end * 100}% + 6px)` } : { right: `calc(${(1 - start) * 100}% + 6px)` }}
+        className={cn(
+          "absolute top-1/2 -translate-y-1/2 font-mono text-[11px] whitespace-nowrap tabular-nums",
+          place === "inside" ? "rounded-sm bg-background/80 px-1 text-foreground" : "text-muted-foreground",
+        )}
+        style={
+          place === "after"
+            ? { left: `calc(${end * 100}% + 6px)` }
+            : place === "before"
+              ? { right: `calc(${(1 - start) * 100}% + 6px)` }
+              : { right: `calc(${(1 - end) * 100}% + 4px)` }
+        }
       >
         {label}
       </span>
@@ -157,7 +168,13 @@ export function WaterfallRow({
         ) : (
           <span className="size-4 shrink-0" />
         )}
-        <kind.icon className={cn("size-3.5 shrink-0", kind.tone)} aria-label={kind.label} />
+        {name === stage.component && hasToolMark(stage.component) ? (
+          <span role="img" aria-label={kind.label} className="inline-flex">
+            <ToolLogo name={stage.component} />
+          </span>
+        ) : (
+          <kind.icon className={cn("size-3.5 shrink-0", kind.tone)} aria-label={kind.label} />
+        )}
         <span className={cn("min-w-0 truncate", span.depth === 0 && "font-medium")}>{name}</span>
         {(stage.warnings?.length ?? 0) > 0 && (
           <TriangleAlertIcon

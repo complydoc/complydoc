@@ -1,6 +1,6 @@
 import { useContext } from "react";
 import { Bar, BarChart, CartesianGrid, Cell, XAxis, YAxis } from "recharts";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel } from "@/components/Panel";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { FolderRunsContext } from "@/hooks/useFolderRuns";
 import { traceOf } from "@/report/auditTrace";
@@ -64,22 +64,22 @@ export function RunTrends() {
       title: "Duration",
       description: "How long each run took",
       format: formatSeconds,
-      color: "var(--chart-1)",
+      color: "var(--viz-violet)",
     },
-    { key: "usd", title: "Cost", description: "What each run spent", format: formatUsd, color: "var(--chart-1)" },
+    { key: "usd", title: "Cost", description: "What each run spent", format: formatUsd, color: "var(--viz-mint)" },
     {
       key: "identifiers",
       title: pipeline ? "Identifiers sent" : "High-severity identifiers",
       description: pipeline ? "Identifiers in what each run sent away" : "Found in each run",
       format: formatCount,
-      color: "var(--destructive)",
+      color: "var(--viz-coral)",
     },
     {
       key: "warnings",
       title: "Warnings",
       description: "What went wrong without an error",
       format: formatCount,
-      color: "var(--warning)",
+      color: "var(--viz-amber)",
     },
   ];
   const shown = metrics.filter((metric) => points.some((point) => (point[metric.key] ?? 0) > 0));
@@ -90,12 +90,7 @@ export function RunTrends() {
       {shown.map((metric) => {
         const config = { [metric.key]: { label: metric.title, color: metric.color } } satisfies ChartConfig;
         return (
-          <Card key={metric.key}>
-            <CardHeader>
-              <CardTitle>{metric.title}</CardTitle>
-              <CardDescription>{metric.description}</CardDescription>
-            </CardHeader>
-            <CardContent>
+          <Panel key={metric.key} title={metric.title} description={metric.description}>
               <ChartContainer config={config} className="aspect-auto h-40 w-full">
                 <BarChart data={points} margin={{ left: 0, right: 8, top: 4, bottom: 0 }}>
                   <CartesianGrid vertical={false} />
@@ -117,7 +112,8 @@ export function RunTrends() {
                   />
                   <Bar
                     dataKey={metric.key}
-                    radius={3}
+                    radius={[2, 2, 0, 0]}
+                    maxBarSize={28}
                     isAnimationActive={false}
                     className="cursor-pointer"
                     onClick={(point: { payload?: Point }) => point.payload && open(point.payload.id)}
@@ -132,8 +128,7 @@ export function RunTrends() {
                   </Bar>
                 </BarChart>
               </ChartContainer>
-            </CardContent>
-          </Card>
+          </Panel>
         );
       })}
     </div>

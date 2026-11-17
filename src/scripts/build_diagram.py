@@ -19,10 +19,10 @@ LIGHT = dict(
     zone_label="rgba(34,39,46,0.40)",
     store_fill="rgba(34,39,46,0.05)",
     input_fill="rgba(79,93,117,0.10)",
-    accent="#1a7f4b",
-    accent_tint="rgba(26,127,75,0.08)",
-    accent_stroke="rgba(26,127,75,0.55)",
-    accent_wash="rgba(26,127,75,0.04)",
+    accent="#3a9fd0",
+    accent_tint="rgba(58,159,208,0.08)",
+    accent_stroke="rgba(58,159,208,0.55)",
+    accent_wash="rgba(58,159,208,0.04)",
 )
 DARK = dict(
     slug="complydoc-architecture-dark",
@@ -37,10 +37,10 @@ DARK = dict(
     zone_label="rgba(245,245,245,0.45)",
     store_fill="rgba(245,245,245,0.06)",
     input_fill="rgba(191,192,192,0.10)",
-    accent="#2fa96a",
-    accent_tint="rgba(47,169,106,0.14)",
-    accent_stroke="rgba(47,169,106,0.60)",
-    accent_wash="rgba(47,169,106,0.05)",
+    accent="#a3dcf1",
+    accent_tint="rgba(163,220,241,0.14)",
+    accent_stroke="rgba(163,220,241,0.60)",
+    accent_wash="rgba(163,220,241,0.05)",
 )
 
 SANS = "'Geist', 'Helvetica Neue', Helvetica, Arial, sans-serif"

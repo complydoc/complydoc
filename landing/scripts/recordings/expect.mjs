@@ -3,6 +3,13 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { open, sleep, SPAN } from "./cdp.mjs";
 const [base, out, theme] = process.argv.slice(2);
+// The run, document and passage shown; set them to match the reports being served.
+const env = process.env;
+const AUDIT = env.AUDIT_RUN ?? "complydoc.json";
+const DOC = env.DOCUMENT ?? "7";
+const FROM = env.PASSAGE_FROM ?? "Invoices are payable within";
+const TO = env.PASSAGE_TO ?? "fourteen days of the invoice date";
+const PASSAGE = env.PASSAGE ?? "Invoices are payable within fourteen days of the invoice date";
 mkdirSync(out, { recursive: true });
 const W = 1440, H = 900, RATIO = 1200 / 750, MIN = 640;
 const b = await open(W, H, 2);
@@ -42,11 +49,11 @@ const box = (expr) => b.evaluate(`(() => { const e = ${expr}; if (!e) return nul
 try {
   // The document, in its Text view.
   await b.goto(base, 1500); await b.evaluate(`localStorage.setItem("complydoc.sidebar", "closed")`);
-  await b.goto(`${base}?run=complydoc.json&theme=${theme}#documents/7`, 4000);
+  await b.goto(`${base}?run=${AUDIT}&theme=${theme}#documents/${DOC}`, 4000);
   const tab = await at("Text"); await b.click(...tab); await sleep(1000);
   await b.evaluate(SPAN); await b.evaluate(CURSOR); await place(...mouse);
-  const start = await b.evaluate(`__span("Invoices are payable within")`);
-  const end = await b.evaluate(`__span("fourteen days of the invoice date")`);
+  const start = await b.evaluate(`__span(${JSON.stringify(FROM)})`);
+  const end = await b.evaluate(`__span(${JSON.stringify(TO)})`);
   const full = cam(null);
   const reading = cam([start.box[0] - 60, start.box[1] - 90, 520, 260], 0);
   await snap(full); hold(full, 26);
@@ -66,11 +73,11 @@ try {
   for (let i = 10; i < 24; i++) { await sleep(40); await snap(mix(reading, full, ease((i + 1) / 24))); }
   hold(full, 34);
   // The Evals page.
-  await b.goto(`${base}?run=complydoc.json&theme=${theme}#evals`, 3500);
+  await b.goto(`${base}?run=${AUDIT}&theme=${theme}#evals`, 3500);
   await b.evaluate(CURSOR);
   await snap(full, { fade: true }); hold(full, 14);
   const board = await box(`document.querySelector("main table")`);
-  const facts = await box(`[...document.querySelectorAll("main *")].find((x) => x.children.length === 0 && x.innerText && x.innerText.trim() === "Invoices are payable within fourteen days of the invoice date")`);
+  const facts = await box(`[...document.querySelectorAll("main *")].find((x) => x.children.length === 0 && x.innerText && x.innerText.trim() === ${JSON.stringify(PASSAGE)})`);
   const target = cam([board[0], board[1] - 50, board[2], (facts ? facts[1] + 90 : board[1] + board[3]) - board[1] + 50], 20);
   for (let i = 1; i <= 30; i++) frames.push({ file: last, cam: mix(full, target, ease(i / 30)) });
   hold(target, 80);

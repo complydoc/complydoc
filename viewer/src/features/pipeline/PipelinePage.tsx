@@ -18,8 +18,8 @@ import { TracesTable, type TracedRun } from "./TracesTable";
 function Figure({ label, children, tone }: { label: string; children: ReactNode; tone?: string }) {
   return (
     <div className="flex min-w-0 flex-col px-4 first:pl-0">
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className={cn("text-sm font-medium whitespace-nowrap tabular-nums", tone)}>{children}</dd>
+      <dt className="caps">{label}</dt>
+      <dd className={cn("figure text-sm font-medium whitespace-nowrap", tone)}>{children}</dd>
     </div>
   );
 }

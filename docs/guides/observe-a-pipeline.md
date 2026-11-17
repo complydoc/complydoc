@@ -171,16 +171,16 @@ cd.expect(run.report).no_identifiers_sent(severity="high").only_hosts(["my-resou
 | `"full"` | Everything at every step | Tracking down where a value leaks |
 | `"off"` | Counts, settings, timings and connections only | Production, where only the shape is wanted |
 
-A step read by patterns alone cannot see a name only the name model finds, so the
-viewer shows such a name as not looked for at that step, never as removed by it.
+A step read by patterns alone cannot see a name only the name model finds, so a name
+missing from such a step is never shown as removed by it.
 Embedding calls and vector stores are always read with the name model where it is
 installed: what they are given is what leaves, or stays.
 
 Without a name model, names cannot be found, so they are neither counted nor masked,
 in the report or in the trace's previews of each step. The trace says so: the steps
-are marked as read by patterns alone, the report's limitations and `run.summary()`
-name what was not looked for and how to install it, and the viewer heads the trace
-with it. See [Name detection models](name-detection-models.md).
+are marked as read by patterns alone, and the report's limitations and `run.summary()`
+name what was not looked for and how to install it. See
+[Name detection models](name-detection-models.md).
 
 ## If something fails
 

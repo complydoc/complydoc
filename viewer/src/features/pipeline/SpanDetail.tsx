@@ -151,7 +151,7 @@ export function SpanDetail({
   return (
     <section
       aria-label={`${stage.component}, call ${stage.index + 1}`}
-      className="flex min-h-0 min-w-0 flex-1 flex-col"
+      className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto"
     >
       <header className="flex flex-col gap-4 px-5 pt-4">
         <div className="flex min-w-0 items-start gap-3">
@@ -186,7 +186,7 @@ export function SpanDetail({
               onClick={() => setTab(t.id)}
               className={cn(
                 "-mb-px flex items-center gap-1.5 border-b-2 border-transparent pb-2 text-sm text-muted-foreground hover:text-foreground",
-                tab === t.id && "border-foreground text-foreground",
+                tab === t.id && "border-primary text-foreground",
               )}
             >
               {t.label}
@@ -197,7 +197,7 @@ export function SpanDetail({
           ))}
         </div>
       </header>
-      <div role="tabpanel" className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+      <div role="tabpanel" className="px-5 py-4">
         {panels[tab]}
       </div>
     </section>

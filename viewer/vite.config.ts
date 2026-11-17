@@ -13,12 +13,26 @@ import { defineConfig } from "vitest/config";
 const ui = process.env.COMPLYDOC_UI?.replace(/\/$/, "");
 
 function localReports(target: string): Plugin {
-  const config = JSON.stringify({ reports: "api/reports", sources: [target] }).replace(/</g, "\\u003c");
+  const fallback = { reports: "api/reports", sources: [target] };
+  // complydoc ui's own page says what it offers, uploads among them; read it there, so the
+  // dev server offers the same, and fall back to its reports alone if it cannot be read.
+  const config = async () => {
+    try {
+      const page = await (await fetch(`${target}/`)).text();
+      const found = /<script[^>]*id="complydoc-local"[^>]*>([\s\S]*?)<\/script>/.exec(page)?.[1];
+      if (found) return { ...(JSON.parse(found) as object), sources: [target] };
+    } catch {
+      // Not running yet: the reports alone.
+    }
+    return fallback;
+  };
   return {
     name: "complydoc-ui-reports",
     apply: "serve",
-    transformIndexHtml: (html) =>
-      html.replace("</head>", `  <script type="application/json" id="complydoc-local">${config}</script>\n  </head>`),
+    transformIndexHtml: async (html) => {
+      const text = JSON.stringify(await config()).replace(/</g, "\\u003c");
+      return html.replace("</head>", `  <script type="application/json" id="complydoc-local">${text}</script>\n  </head>`);
+    },
   };
 }
 

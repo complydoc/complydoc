@@ -23,8 +23,8 @@ function cost(stage: TraceStage): ReactNode {
 function Fact({ label, children, tone }: { label: string; children: ReactNode; tone?: string | undefined }) {
   return (
     <div className="flex min-w-0 flex-col gap-0.5">
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className={cn("truncate text-sm tabular-nums", tone)}>{children}</dd>
+      <dt className="caps">{label}</dt>
+      <dd className={cn("figure truncate text-sm", tone)}>{children}</dd>
     </div>
   );
 }

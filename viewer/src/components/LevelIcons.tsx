@@ -94,7 +94,7 @@ export function EvidenceIcon({ evidence, className }: { evidence: Evidence; clas
 }
 
 const RING: Record<Tone, string> = {
-  good: "text-success",
+  good: "text-primary-ink",
   neutral: "text-muted-foreground",
   warn: "text-warning",
   bad: "text-destructive",

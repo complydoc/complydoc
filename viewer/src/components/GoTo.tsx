@@ -1,5 +1,5 @@
 import { Command as CommandPrimitive } from "cmdk";
-import { FileTextIcon, HistoryIcon, KeyboardIcon, PanelLeftIcon, SearchIcon, XIcon } from "lucide-react";
+import { FileTextIcon, FileUpIcon, HistoryIcon, KeyboardIcon, PanelLeftIcon, SearchIcon, XIcon } from "lucide-react";
 import { useContext, useEffect, useMemo, useState, type KeyboardEvent } from "react";
 import { GO_KEY, PAGE_INFO, PAGES } from "@/app/pages";
 import { FootKey, Row, Section, TypeTab } from "@/components/goto/parts";
@@ -23,7 +23,16 @@ const MOD = shortcut("").trim();
  * one kind of thing at a time from the tabs under the search, and says at its foot which
  * keys work. ⌘K or Ctrl+K opens it from any page.
  */
-export function GoTo({ report, onShortcuts }: { report: Report; onShortcuts?: () => void }) {
+export function GoTo({
+  report,
+  onShortcuts,
+  onAudit,
+}: {
+  report: Report;
+  onShortcuts?: () => void;
+  /** Where `complydoc ui` takes documents: opens the dialog to audit some. */
+  onAudit?: (() => void) | undefined;
+}) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState<Kind>("all");
@@ -123,7 +132,7 @@ export function GoTo({ report, onShortcuts }: { report: Report; onShortcuts?: ()
                 </TypeTab>
               ))}
             </div>
-            <CommandPrimitive.List className="max-h-[min(56vh,30rem)] overflow-y-auto overscroll-contain px-2 pb-1">
+            <CommandPrimitive.List className="h-[min(56vh,30rem)] overflow-y-auto overscroll-contain px-2 pb-1">
               <CommandPrimitive.Empty className="py-10 text-center text-sm text-muted-foreground">
                 Nothing by that name.
               </CommandPrimitive.Empty>
@@ -201,6 +210,11 @@ export function GoTo({ report, onShortcuts }: { report: Report; onShortcuts?: ()
               )}
               {shows("actions") && (
                 <Section heading="Actions">
+                  {onAudit && (
+                    <Row value="add documents upload audit files drop" onSelect={() => act(onAudit)} icon={<FileUpIcon />}>
+                      Add documents
+                    </Row>
+                  )}
                   <Row
                     value="sidebar collapse expand toggle"
                     onSelect={() => act(toggleSidebar)}

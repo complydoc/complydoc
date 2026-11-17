@@ -20,8 +20,8 @@ MARK = (
     "M11 34a13 13 0 1 0 26 0a13 13 0 1 0 -26 0Z"
 )
 THEMES = {
-    "dark": dict(bg="#000000", ink="#e9e9e7", g="#4cc38a", mu="#9aa0a6", fa="#71767b", br="#222427"),
-    "light": dict(bg="#fbfbfa", ink="#111111", g="#1a7f4b", mu="#666666", fa="#999999", br="#e8e8e6"),
+    "dark": dict(bg="#000000", ink="#e9e9e7", g="#a3dcf1", mu="#9aa0a6", fa="#71767b", br="#222427"),
+    "light": dict(bg="#fbfbfa", ink="#111111", g="#56b4e0", mu="#666666", fa="#999999", br="#e8e8e6"),
 }
 SANS = "Geist, 'Helvetica Neue', Helvetica, Arial, sans-serif"
 MONO = "'Geist Mono', ui-monospace, Menlo, monospace"

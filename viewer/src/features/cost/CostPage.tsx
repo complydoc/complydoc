@@ -43,7 +43,7 @@ export function CostPage({ report }: { report: Report }) {
   const models = byProvider(report, path, unit, provider === ALL ? null : provider);
   const providers = providersOf(pricedOn(report, path, unit));
   const series = {
-    usd: { label: UNITS.find((u) => u.key === unit)?.label ?? "", color: "var(--primary)" },
+    usd: { label: UNITS.find((u) => u.key === unit)?.label ?? "", color: "var(--viz-mint)" },
   } satisfies ChartConfig;
 
   return (

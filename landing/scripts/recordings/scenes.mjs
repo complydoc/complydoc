@@ -2,6 +2,13 @@
 //   node scenes.mjs <viewer url on the sample audit and runs> <viewer url on a loader comparison> <out dir> <find|diff> <light|dark>
 import { centre, film } from "./film.mjs";
 const [A, L, out, scene, theme] = process.argv.slice(2);
+// The runs, document and value shown; set them to match the reports being served.
+const env = process.env;
+const AUDIT = env.AUDIT_RUN ?? "complydoc.json";
+const LOADERS = env.LOADERS_RUN ?? "complydoc-loaders.json";
+const DIFF_DOC = env.DIFF_DOCUMENT ?? "0";
+const DIFF_PAGE = env.DIFF_PAGE ?? "6";
+const VALUE = env.FIND_VALUE ?? "GB82 WEST 1234 5698 7654 32";
 // A short label on the page, by where it is: the lowest one, or the leftmost.
 const label = (text, pick) => `(() => { const all = [...document.querySelectorAll("body *")].filter((e) => { if (e.closest("#__cursor")) return false; const t = (e.innerText || "").trim(); return t.startsWith(${JSON.stringify(text)}) && t.length < 60 && e.getClientRects().length; }); if (!all.length) return null; const box = (e) => e.getBoundingClientRect(); all.sort((x, y) => ${pick === "lowest" ? "box(y).y - box(x).y" : "box(x).x - box(y).x"} || box(x).width * box(x).height - box(y).width * box(y).height); const r = box(all[0]); return [r.x, r.y, r.width, r.height]; })()`;
 
@@ -9,13 +16,13 @@ const label = (text, pick) => `(() => { const all = [...document.querySelectorAl
 const scenes = {
   /** Find a value: typed, searched, then the run that stopped it and the run that sent it, each whole. */
   async find(f) {
-    await f.goto(`${A}?run=complydoc.json&theme=${theme}#find`);
+    await f.goto(`${A}?run=${AUDIT}&theme=${theme}#find`);
     await f.snap(); f.hold(18);
     const input = await f.css("main input");
     const typing = f.camera([input[0] - 16, input[1] - 40, 700, 300], 0);
     await f.glide([input[0] + 90, input[1] + input[3] / 2], 24, typing);
     await f.click(2);
-    await f.type("GB82 WEST 1234 5698 7654 32");
+    await f.type(VALUE);
     f.hold(10);
     const button = (await f.css("main form button")) ?? (await f.rect("Find", "button"));
     await f.glide(centre(button), 14);
@@ -36,14 +43,14 @@ const scenes = {
   },
   /** Compare: two loaders on a two-column page, where one reads straight across the columns. */
   async diff(f) {
-    await f.goto(`${L}?run=complydoc-loaders.json&theme=${theme}#documents/0`);
+    await f.goto(`${L}?run=${LOADERS}&theme=${theme}#documents/${DIFF_DOC}`);
     await f.snap(); f.hold(22);
-    const page = await f.eval(`(() => { const e = [...document.querySelectorAll("main button, main a, main li")].find((x) => x.innerText.trim() === "Page 6"); if (!e) return null; const r = e.getBoundingClientRect(); return [r.x, r.y, r.width, r.height]; })()`);
+    const page = await f.eval(`(() => { const e = [...document.querySelectorAll("main button, main a, main li")].find((x) => x.innerText.trim().split(String.fromCharCode(10))[0].trim() === ${JSON.stringify(`Page ${DIFF_PAGE}`)}); if (!e) return null; const r = e.getBoundingClientRect(); return [r.x, r.y, r.width, r.height]; })()`);
     await f.glide(centre(page), 24);
     await f.click(16, 90);
     f.hold(16);
     const table = await f.css("table.diff-table");
-    const top = (await f.rect("# Page 6"))?.[1] ?? table[1];
+    const top = (await f.rect(`# Page ${DIFF_PAGE}`))?.[1] ?? table[1];
     const half = table[2] / 2;
     const kept = f.camera([table[0], top - 8, half, 210], 6, 520);
     const other = f.camera([table[0] + half, top - 8, half, 210], 6, 520);

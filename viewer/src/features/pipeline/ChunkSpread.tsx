@@ -16,7 +16,7 @@ const SMALLEST = 3;
 function Figure({ label, value }: { label: string; value: number }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dt className="caps">{label}</dt>
       <dd className="text-sm tabular-nums">{formatCount(Math.round(value))}</dd>
     </div>
   );

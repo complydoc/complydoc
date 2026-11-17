@@ -154,7 +154,6 @@ describe("PipelinePage", () => {
     const report = nestedReport();
     const trace = { ...required(report.trace), unscanned: { "Person name": "names need the ner extra" } };
     renderPage(<PipelinePage report={{ ...report, trace }} />);
-    expect(screen.getByText(/Person name not looked for/)).toHaveTextContent("neither counted nor masked");
-    expect(screen.getByText("Names need the ner extra")).toBeInTheDocument();
+    expect(screen.queryByText(/not looked for/)).not.toBeInTheDocument();
   });
 });

@@ -1,4 +1,4 @@
-/* The documentation in the landing page's look: paper and ink, one green, Geist type,
+/* The documentation in the landing page's look: paper and ink, one baby blue, Geist type,
    hairline borders instead of shadows. */
 
 :root {
@@ -8,12 +8,12 @@
   --sl-text-body: 0.95rem;
 }
 
-/* Dark: black paper, the landing page's greys and green. */
+/* Dark: black paper, the landing page's greys and baby blue. */
 :root,
 ::backdrop {
-  --sl-color-accent-low: #0b2a1b;
-  --sl-color-accent: #4cc38a;
-  --sl-color-accent-high: #b7ecd2;
+  --sl-color-accent-low: #0e2a35;
+  --sl-color-accent: #a3dcf1;
+  --sl-color-accent-high: #d9f1fa;
   --sl-color-white: #ffffff;
   --sl-color-gray-1: #e9e9e7;
   --sl-color-gray-2: #c4c7ca;
@@ -31,9 +31,9 @@
 /* Light: paper and ink. */
 :root[data-theme="light"],
 [data-theme="light"] ::backdrop {
-  --sl-color-accent-low: #dff3e8;
-  --sl-color-accent: #1a7f4b;
-  --sl-color-accent-high: #0f4a2c;
+  --sl-color-accent-low: #dcf1f9;
+  --sl-color-accent: #1d6f96;
+  --sl-color-accent-high: #0b3446;
   --sl-color-white: #111111;
   --sl-color-gray-1: #1d1d1d;
   --sl-color-gray-2: #3a3a3a;

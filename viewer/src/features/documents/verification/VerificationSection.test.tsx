@@ -9,7 +9,7 @@ describe("the vision check on the Documents page", () => {
     renderPage(<DocumentsPage report={sampleVerified()} open={null} />);
     const section = screen.getByRole("region", { name: "Vision check" });
     expect(within(section).getByRole("status")).toHaveTextContent("1 disagrees");
-    const stat = within(section).getByText("Cost of the reads").closest("[data-slot=card]") as HTMLElement;
+    const stat = within(section).getByText("Cost of the reads").closest("[data-slot=stat]") as HTMLElement;
     expect(stat).toHaveTextContent("$0.0175");
     expect(stat).toHaveTextContent("from the provider's token counts");
   });

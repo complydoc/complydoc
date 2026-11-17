@@ -46,7 +46,7 @@ export function Features() {
             <Screenshot
               src={{ dark: documentDark, light: documentLight }}
               ratio={1856 / 1168}
-              alt="The viewer's reading of an employee record: numbered lines, two chunks drawn over the text, and each identifier masked and underlined where it sits"
+              alt="The viewer's reading of a services agreement: numbered lines, chunks drawn over the text, and each identifier masked and underlined where it sits"
             />
           }
         >
@@ -90,7 +90,7 @@ export function Features() {
             <Recording
               video={{ light: expectLight, dark: expectDark }}
               poster={{ light: expectLightPoster, dark: expectDarkPoster }}
-              label="A recording of the viewer: a clause is selected in a document with the mouse, Expect this passage is pressed, and the Evals page scores two readers on four expected passages"
+              label="A recording of the viewer: a clause is selected in a document with the mouse, Expect this passage is pressed, and the Evals page scores two readers on every expected passage"
             />
           }
         >

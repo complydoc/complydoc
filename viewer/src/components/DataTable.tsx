@@ -11,7 +11,17 @@ import {
   type RowData,
   type RowSelectionState,
 } from "@tanstack/react-table";
-import { ArrowDownIcon, ArrowUpDownIcon, ArrowUpIcon, SearchIcon } from "lucide-react";
+import {
+  ArrowDownIcon,
+  ArrowUpDownIcon,
+  ArrowUpIcon,
+  InboxIcon,
+  ListFilterIcon,
+  SearchIcon,
+  SearchXIcon,
+  type LucideIcon,
+} from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 import { useMemo, useRef, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -76,6 +86,8 @@ interface DataTableProps<T> {
    * these actions, in a bar at the foot of the page. Escape lets them go.
    */
   bulkActions?: (rows: T[], clear: () => void) => ReactNode;
+  /** What to say when there are no rows at all, rather than none that match. */
+  empty?: { icon: LucideIcon; title: string; description?: ReactNode };
 }
 
 const SORT_ICON = {
@@ -107,6 +119,7 @@ export function DataTable<T>({
   rowActions,
   stateKey,
   bulkActions,
+  empty,
 }: DataTableProps<T>) {
   const { sorting, setSorting, query, setQuery } = useTableState(stateKey);
   const [picked, setPicked] = useState<RowSelectionState>({});
@@ -118,7 +131,6 @@ export function DataTable<T>({
   }, [columns, selectable, rowActions]);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: pageSize ?? Number.MAX_SAFE_INTEGER });
   const [expanded, setExpanded] = useState<ExpandedState>(true);
-  // TanStack Table returns functions the React Compiler cannot memoise; it is the documented way to use it.
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data: rows,
@@ -175,7 +187,10 @@ export function DataTable<T>({
           {actions && <div className="ml-auto flex items-center gap-2">{actions}</div>}
         </div>
       )}
-      <Card className="group/table py-0" data-picking={chosen.length > 0 || undefined}>
+      <Card
+        className="group/table gap-0 overflow-hidden rounded-md border bg-card"
+        data-picking={chosen.length > 0 || undefined}
+      >
         <Table>
           <TableCaption className="sr-only">{caption}</TableCaption>
           <TableHeader>
@@ -199,7 +214,7 @@ export function DataTable<T>({
                         <Button
                           variant="ghost"
                           size="sm"
-                          className={cn("-mx-2.5", numeric && "flex-row-reverse")}
+                          className={cn("caps -mx-2.5 h-7 hover:text-foreground", numeric && "flex-row-reverse")}
                           onClick={header.column.getToggleSortingHandler()}
                         >
                           {label}
@@ -246,7 +261,7 @@ export function DataTable<T>({
                       key={cell.id}
                       className={cn(
                         "first:pl-4 last:pr-4",
-                        cell.column.columnDef.meta?.numeric && "text-right",
+                        cell.column.columnDef.meta?.numeric && "figure text-right text-[0.8125rem]",
                         cell.column.columnDef.meta?.narrow && "w-px whitespace-nowrap",
                       )}
                     >
@@ -266,9 +281,23 @@ export function DataTable<T>({
               );
             })}
             {matching === 0 && (
-              <TableRow>
-                <TableCell colSpan={shown.length} className="py-8 text-center text-muted-foreground">
-                  Nothing matches “{query}”.
+              <TableRow className="hover:bg-transparent">
+                <TableCell colSpan={shown.length} className="p-0 whitespace-normal">
+                  {rows.length === 0 ? (
+                    <EmptyState
+                      icon={empty?.icon ?? InboxIcon}
+                      title={empty?.title ?? "Nothing here yet"}
+                      description={empty?.description}
+                    />
+                  ) : query ? (
+                    <EmptyState
+                      icon={SearchXIcon}
+                      title={`Nothing matches “${query}”`}
+                      description="Try fewer words, or part of a file name."
+                    />
+                  ) : (
+                    <EmptyState icon={ListFilterIcon} title="Nothing in this view" description="Clear the filter to see every row." />
+                  )}
                 </TableCell>
               </TableRow>
             )}

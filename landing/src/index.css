@@ -50,6 +50,7 @@
   /* complydoc's states, beyond shadcn's set */
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
+  --color-primary-soft: var(--primary-soft);
   --color-warning: var(--warning);
   --color-warning-soft: var(--warning-soft);
   --color-destructive-soft: var(--destructive-soft);
@@ -72,8 +73,8 @@
   --card-foreground: #111111;
   --popover: #ffffff;
   --popover-foreground: #111111;
-  --primary: #1a7f4b; /* complydoc green */
-  --primary-foreground: #ffffff;
+  --primary: #56b4e0; /* complydoc baby blue */
+  --primary-foreground: #0b3446;
   --secondary: #f1f1ef;
   --secondary-foreground: #333333;
   --muted: #f1f1ef;
@@ -83,29 +84,30 @@
   --destructive: #a4402f; /* Attention */
   --border: #e8e8e6;
   --input: #d8d8d4;
-  --ring: #1a7f4b;
+  --ring: #56b4e0;
 
-  --success: #1a7f4b;
-  --success-soft: #e3f2ea;
+  --success: #1f9470;
+  --success-soft: #e2f5ee;
+  --primary-soft: #e4f4fb;
   --warning: #b0740f;
   --warning-soft: #f7ecd8;
   --destructive-soft: #f6e5e1;
   --faint: #999999;
 
-  --chart-1: #1a7f4b;
+  --chart-1: #56b4e0;
   --chart-2: #8b939c;
   --chart-3: #b0740f;
   --chart-4: #a4402f;
-  --chart-5: #2a78d6;
+  --chart-5: #1f9470;
 
   --sidebar: #f4f4f2;
   --sidebar-foreground: #333333;
-  --sidebar-primary: #1a7f4b;
-  --sidebar-primary-foreground: #ffffff;
+  --sidebar-primary: #56b4e0;
+  --sidebar-primary-foreground: #0b3446;
   --sidebar-accent: #e9e9e6;
   --sidebar-accent-foreground: #111111;
   --sidebar-border: #e8e8e6;
-  --sidebar-ring: #1a7f4b;
+  --sidebar-ring: #56b4e0;
 
   /* One colour per model provider, told apart at a glance, never meaning good or bad. */
   --provider-1: #c96442;
@@ -127,8 +129,8 @@
   --card-foreground: #e9e9e7;
   --popover: #0d0e0f;
   --popover-foreground: #e9e9e7;
-  --primary: #4cc38a;
-  --primary-foreground: #000000;
+  --primary: #a3dcf1;
+  --primary-foreground: #06222e;
   --secondary: #18191b;
   --secondary-foreground: #c9c9c6;
   --muted: #18191b;
@@ -138,29 +140,30 @@
   --destructive: #e08a72;
   --border: #222427;
   --input: #2e3135;
-  --ring: #4cc38a;
+  --ring: #a3dcf1;
 
-  --success: #4cc38a;
-  --success-soft: #1e3a2a;
+  --success: #6ad9b6;
+  --success-soft: #11302a;
+  --primary-soft: #0d222b;
   --warning: #d9a441;
   --warning-soft: #3a2f1b;
   --destructive-soft: #3a2622;
   --faint: #71767b;
 
-  --chart-1: #4cc38a;
+  --chart-1: #a3dcf1;
   --chart-2: #7d858d;
   --chart-3: #d9a441;
   --chart-4: #e08a72;
-  --chart-5: #3987e5;
+  --chart-5: #6ad9b6;
 
   --sidebar: #000000;
   --sidebar-foreground: #c9c9c6;
-  --sidebar-primary: #4cc38a;
-  --sidebar-primary-foreground: #000000;
+  --sidebar-primary: #a3dcf1;
+  --sidebar-primary-foreground: #06222e;
   --sidebar-accent: #18191b;
   --sidebar-accent-foreground: #e9e9e7;
   --sidebar-border: #222427;
-  --sidebar-ring: #4cc38a;
+  --sidebar-ring: #a3dcf1;
 
   --provider-1: #e0876a;
   --provider-2: #3987e5;
@@ -203,7 +206,7 @@
   user-select: none;
 }
 
-/* Code colours, from complydoc's tokens: the brand green for keywords, and the
+/* Code colours, from complydoc's tokens: the brand blue for keywords, and the
    chart and provider hues for the rest, so code matches the viewer in both themes. */
 :root {
   --code-foreground: var(--foreground);
