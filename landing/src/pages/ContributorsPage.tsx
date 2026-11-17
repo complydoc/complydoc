@@ -2,6 +2,8 @@ import { ArrowRightIcon, BugIcon, CoffeeIcon, FileTextIcon, IdCardIcon, Terminal
 import { CodeBlock } from "@/components/CodeBlock";
 import { Section, TextLink } from "@/components/Section";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Item, ItemContent, ItemGroup, ItemMedia, ItemTitle } from "@/components/ui/item";
 import contributors from "@/data/contributors.json";
 import { links } from "@/links";
 import { Page, PageHeader } from "@/pages/Page";
@@ -71,36 +73,26 @@ export function ContributorsPage() {
       </PageHeader>
 
       <Section id="people" eyebrow="The people" title="Everyone with a commit in complydoc.">
-        <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+        <ItemGroup className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {contributors.contributors.map((person) => (
-            <li key={person.login}>
-              <a
-                href={person.url}
-                className="flex items-center gap-4 rounded-2xl border bg-card p-4 shadow-sm transition-colors hover:border-primary"
-              >
-                <img
-                  src={avatar(person.login)}
-                  alt=""
-                  width={48}
-                  height={48}
-                  className="size-12 shrink-0 rounded-full border bg-muted"
-                />
-                <span className="flex min-w-0 flex-col">
-                  <span className="truncate font-medium">@{person.login}</span>
-                  <span className="text-sm text-muted-foreground tabular-nums">
-                    {person.commits} {person.commits === 1 ? "commit" : "commits"}
-                  </span>
-                </span>
+            <Item key={person.login} variant="outline" className="bg-card" asChild>
+              <a href={person.url}>
+                <ItemMedia variant="image" className="rounded-full">
+                  <img src={avatar(person.login)} alt="" width={40} height={40} />
+                </ItemMedia>
+                <ItemContent>
+                  <ItemTitle>@{person.login}</ItemTitle>
+                </ItemContent>
               </a>
-            </li>
+            </Item>
           ))}
-        </ul>
-        <p className="mt-6 text-xs text-muted-foreground">From GitHub on {contributors.as_of}. Bots are left out.</p>
+        </ItemGroup>
+        <p className="mt-4 text-xs text-muted-foreground">From GitHub on {contributors.as_of}. Bots are left out.</p>
       </Section>
 
       <Section id="start" eyebrow="Your first contribution" title="From a clone to a pull request.">
-        <div className="grid gap-10 lg:grid-cols-2">
-          <div className="flex flex-col gap-5">
+        <div className="grid gap-8 lg:grid-cols-2">
+          <div className="flex flex-col gap-4">
             <ol className="flex list-decimal flex-col gap-3 pl-5 text-pretty marker:text-muted-foreground">
               <li>Pick an issue, or open one to say what you would like to change.</li>
               <li>Fork the repository, then set it up and run the checks, as on the right.</li>
@@ -119,39 +111,42 @@ export function ContributorsPage() {
       </Section>
 
       <Section id="issues" eyebrow="Good first issues" title="Small, well described, and waiting.">
-        {contributors.good_first_issues.length > 0 ? (
-          <ul className="flex flex-col divide-y rounded-2xl border bg-card">
-            {contributors.good_first_issues.map((issue) => (
-              <li key={issue.number}>
-                <a href={issue.url} className="flex items-center gap-4 px-5 py-4 hover:bg-muted/50">
-                  <span className="font-mono text-sm text-muted-foreground">#{issue.number}</span>
-                  <span className="font-medium">{issue.title}</span>
-                  <ArrowRightIcon aria-hidden className="ml-auto size-4 shrink-0 text-muted-foreground" />
-                </a>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-muted-foreground">None open right now.</p>
-        )}
-        <p className="mt-4 text-sm">
-          <TextLink href={links.goodFirstIssues}>Every good first issue on GitHub</TextLink>
-        </p>
+        <Card className="max-w-2xl">
+          <CardHeader>
+            <CardTitle className="text-lg">Issues labelled for a first contribution</CardTitle>
+            <CardDescription>
+              Issues marked as a good place to start. Most of them add an identifier complydoc should
+              recognise.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild>
+              <a href={links.goodFirstIssues}>
+                See the good first issues on GitHub
+                <ArrowRightIcon data-icon="inline-end" />
+              </a>
+            </Button>
+          </CardContent>
+        </Card>
       </Section>
 
       <Section id="ways" eyebrow="Other ways to help" title="Not all of it is code.">
-        <ul className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-2">
           {WAYS.map((way) => (
-            <li key={way.title} className="flex flex-col gap-3 rounded-2xl border bg-card p-6">
-              <way.icon aria-hidden className="size-5 text-primary" />
-              <p className="font-medium">{way.title}</p>
-              <p className="text-sm text-pretty text-muted-foreground">{way.text}</p>
-              <a href={way.href} className="mt-auto text-sm font-medium hover:text-primary hover:underline">
-                {way.more}
-              </a>
-            </li>
+            <Card key={way.title}>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <way.icon aria-hidden className="size-4 text-primary" />
+                  {way.title}
+                </CardTitle>
+                <CardDescription className="text-pretty">{way.text}</CardDescription>
+              </CardHeader>
+              <CardFooter className="mt-auto">
+                <TextLink href={way.href}>{way.more}</TextLink>
+              </CardFooter>
+            </Card>
           ))}
-        </ul>
+        </div>
       </Section>
     </Page>
   );

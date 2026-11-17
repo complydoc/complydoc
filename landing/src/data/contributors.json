@@ -3,40 +3,19 @@
  "contributors": [
   {
    "login": "duartecaldascardoso",
-   "commits": 536,
    "url": "https://github.com/duartecaldascardoso"
   },
   {
    "login": "divya-o",
-   "commits": 2,
    "url": "https://github.com/divya-o"
   },
   {
    "login": "ace-ify",
-   "commits": 2,
    "url": "https://github.com/ace-ify"
   },
   {
    "login": "himanshu748",
-   "commits": 1,
    "url": "https://github.com/himanshu748"
-  }
- ],
- "good_first_issues": [
-  {
-   "number": 36,
-   "title": "Accept Norwegian H-numbers in no_fnr",
-   "url": "https://github.com/complydoc/complydoc/issues/36"
-  },
-  {
-   "number": 35,
-   "title": "Detect Finnish personal identity codes (henkilötunnus)",
-   "url": "https://github.com/complydoc/complydoc/issues/35"
-  },
-  {
-   "number": 34,
-   "title": "Detect UK NHS numbers",
-   "url": "https://github.com/complydoc/complydoc/issues/34"
   }
  ]
 }

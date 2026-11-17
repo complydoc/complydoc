@@ -28,13 +28,13 @@ export function PageHeader({
 }) {
   return (
     <section id="top" aria-labelledby="page-title">
-      <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 pt-16 pb-16 md:pt-24 md:pb-20">
+      <div className="mx-auto flex max-w-6xl flex-col gap-4 px-6 pt-16 pb-16 md:pt-24 md:pb-20">
         <p className="text-sm font-medium text-primary">{eyebrow}</p>
         <h1 id="page-title" className="max-w-3xl text-4xl font-semibold tracking-tight text-balance md:text-5xl">
           {title}
         </h1>
         <p className="max-w-2xl text-lg text-pretty text-muted-foreground">{lead}</p>
-        {children}
+        {children && <div className="mt-4">{children}</div>}
       </div>
     </section>
   );

@@ -1,4 +1,5 @@
 import { Section, TextLink } from "@/components/Section";
+import { Separator } from "@/components/ui/separator";
 import { HiddenTextDemo } from "@/demos/HiddenTextDemo";
 import { LoaderDiffDemo } from "@/demos/LoaderDiffDemo";
 import { links } from "@/links";
@@ -12,9 +13,9 @@ export function Demos() {
       title="See what your model would be given."
       lead="Two things complydoc shows you on your own documents, here on sample ones. Every reading and every finding below is complydoc's real output; nothing is mocked up."
     >
-      <div className="flex flex-col gap-16">
-        <div className="flex flex-col gap-5">
-          <header className="flex max-w-3xl flex-col gap-2">
+      <div className="flex flex-col gap-8">
+        <div className="flex flex-col gap-8">
+          <header className="flex max-w-3xl flex-col gap-4">
             <p className="font-mono text-xs tracking-wide text-primary uppercase">Compare loaders</p>
             <h3 className="text-2xl font-semibold tracking-tight text-balance">
               Four popular PDF loaders, one page, four different texts.
@@ -28,8 +29,9 @@ export function Demos() {
           </header>
           <LoaderDiffDemo />
         </div>
-        <div className="flex flex-col gap-5">
-          <header className="flex max-w-3xl flex-col gap-2">
+        <Separator className="my-8" />
+        <div className="flex flex-col gap-8">
+          <header className="flex max-w-3xl flex-col gap-4">
             <p className="font-mono text-xs tracking-wide text-primary uppercase">Find hidden text</p>
             <h3 className="text-2xl font-semibold tracking-tight text-balance">
               Text a person cannot see, and a model reads.

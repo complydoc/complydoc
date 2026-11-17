@@ -60,7 +60,7 @@ Besides the landing page, each in a folder of its own and listed in `vite.config
 | Page | Says |
 | --- | --- |
 | `enterprise/` | For companies: self-hosted today, the cloud version in early access, what security teams ask, and a form that writes the email to the maintainer |
-| `contributors/` | Everyone with a commit, how to make a first contribution, the open good first issues and other ways to help |
+| `contributors/` | Everyone with a commit, how to make a first contribution, a link to the good first issues and other ways to help |
 
 A new page is an `index.html` in its folder, an entry in `src/pages/`, and a line in
 `vite.config.ts`. Its folder must not share a name with a documentation page.
