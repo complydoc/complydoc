@@ -199,6 +199,13 @@ def test_a_chosen_folder_can_be_removed_but_not_one_given_at_install(
     assert "contracts" not in text(listed)
 
 
+def test_folders_of_code_are_left_out_of_the_listing(folder: Path, tmp_path: Path) -> None:
+    (folder / "node_modules" / "pkg").mkdir(parents=True)
+    shutil.copy(FIXTURES / "native_text.pdf", folder / "node_modules" / "pkg" / "readme.pdf")
+    (listed,) = talk([folder], call(1, "list_documents"), store=tmp_path / "store.json")
+    assert "node_modules" not in text(listed)
+
+
 def test_with_no_folder_it_says_how_to_choose_one(tmp_path: Path) -> None:
     (listed,) = talk([], call(1, "list_documents"), store=tmp_path / "store.json")
     assert "No folder is shared" in text(listed)

@@ -37,6 +37,9 @@ MAX_LIST = 50
 MAX_TEXT = 200_000
 """Characters of document text returned at most, so one huge file cannot flood a context."""
 
+SKIPPED_FOLDERS = frozenset({"node_modules", ".venv", "venv", ".git", "__pycache__", ".complydoc"})
+"""Folders of code and tooling, never of a person's documents: left out of every listing."""
+
 READY, CAREFUL, STOP = "Ready to send", "Send with care", "Do not send as it is"
 
 TOOLS: list[dict[str, Any]] = [
@@ -206,7 +209,11 @@ class Server:
         names: list[str] = []
         for label, folder in self.folders.labels().items():
             files, _ = discover(folder, recurse=True)
-            names += sorted(f"{label}/{path.relative_to(folder)}" for path in files)
+            names += sorted(
+                f"{label}/{path.relative_to(folder)}"
+                for path in files
+                if not SKIPPED_FOLDERS & set(path.relative_to(folder).parts[:-1])
+            )
         query = query.lower().strip()
         return [name for name in names if query in name.lower()] if query else names
 
