@@ -38,12 +38,24 @@
       "description": "Find a document in your folder by part of its name."
     },
     {
+      "name": "search_documents",
+      "description": "Find which documents mention something, with the page."
+    },
+    {
       "name": "check_document",
       "description": "Say whether a document is safe to share with an AI assistant, and why not."
     },
     {
+      "name": "check_folder",
+      "description": "Say which documents in a folder are safe to share."
+    },
+    {
       "name": "open_document",
       "description": "Read a document with personal details masked and hidden passages taken out."
+    },
+    {
+      "name": "save_clean_copy",
+      "description": "Save a clean copy as a text file, to send or upload elsewhere."
     },
     {
       "name": "list_folders",
@@ -84,5 +96,6 @@
     "prompt injection",
     "pdf"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "prompts_generated": true
 }

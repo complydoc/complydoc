@@ -14,6 +14,10 @@ separately.
   details masked and hidden passages taken out, and `check_document` says whether a file is
   ready to send, in plain words. See
   [Documents into an assistant, cleaned](https://complydoc.github.io/complydoc/docs/guides/assistant-mcp/).
+  It can also search the shared documents' cleaned text, check a whole folder, and save
+  a clean copy as a text file; offers every shared document as an MCP resource, so a
+  client's attach menu gives the cleaned text; and offers four ready-made prompts, such as
+  *Check a document before sharing it*.
 
 ### Fixed
 

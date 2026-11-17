@@ -1,0 +1,91 @@
+"""The tools complydoc offers an agent, described for the agent that chooses between them."""
+
+from __future__ import annotations
+
+from typing import Any
+
+_PATH = {"path": {"type": "string", "description": "As list_documents gives it, or its name."}}
+_FOLDER = {
+    "folder": {
+        "type": "string",
+        "description": "A folder's name as list_folders gives it; every shared folder if left out.",
+    }
+}
+
+
+def _tool(
+    name: str, description: str, properties: dict[str, Any], required: list[str]
+) -> dict[str, Any]:
+    schema: dict[str, Any] = {"type": "object", "properties": properties}
+    if required:
+        schema["required"] = required
+    return {"name": name, "description": description, "inputSchema": schema}
+
+
+TOOLS: list[dict[str, Any]] = [
+    _tool(
+        "list_documents",
+        "List the documents in the folders the person shared, optionally only those whose name "
+        "contains a word. Use it to find the file a person means before opening it.",
+        {"query": {"type": "string", "description": "Part of the file name, any case."}},
+        [],
+    ),
+    _tool(
+        "search_documents",
+        "Find which documents say something, and where: words searched in the shared documents' "
+        "text, already masked and cleaned, with the page and a short passage for each match.",
+        {"query": {"type": "string", "description": "Words to look for, any case."}, **_FOLDER},
+        ["query"],
+    ),
+    _tool(
+        "check_document",
+        "Say whether a document is safe to share with an AI assistant: the personal and "
+        "financial details in it, and any text hidden from a reader or written as instructions "
+        "to a model. Nothing of the document's content is returned.",
+        _PATH,
+        ["path"],
+    ),
+    _tool(
+        "check_folder",
+        "Say which documents in a folder are safe to share, the ones that are not first, each "
+        "with what it holds. Use it before a folder is shared or uploaded anywhere.",
+        _FOLDER,
+        [],
+    ),
+    _tool(
+        "open_document",
+        "Read a document for the conversation. Always use this instead of asking for the file: "
+        "personal and financial details come back masked and hidden passages are taken out, and "
+        "a short note says what was removed. Tell the person what the note says.",
+        _PATH,
+        ["path"],
+    ),
+    _tool(
+        "save_clean_copy",
+        "Save a clean copy of a document as a text file, with personal and financial details "
+        "masked and hidden passages taken out, for the person to send to someone or upload "
+        "elsewhere. Say where it was saved.",
+        _PATH,
+        ["path"],
+    ),
+    _tool(
+        "list_folders",
+        "Say which folders the person has let complydoc open documents from.",
+        {},
+        [],
+    ),
+    _tool(
+        "choose_folder",
+        "Open the computer's folder dialog so the person can pick a folder to share. Use it when "
+        "they ask to use a folder, or when a document they want is not in a shared folder and they "
+        "agree to choose where it is. The person picks; you cannot.",
+        {},
+        [],
+    ),
+    _tool(
+        "remove_folder",
+        "Stop sharing a folder chosen earlier, by the name list_folders gives it.",
+        {"name": {"type": "string", "description": "As list_folders gives it."}},
+        ["name"],
+    ),
+]

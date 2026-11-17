@@ -125,9 +125,30 @@ open_document gives a copy with these masked or taken out, which is safe to use.
 | Send with care | Identifiers that are not sensitive, such as an email address or a phone number |
 | Do not send as it is | A sensitive identifier, or any text hidden from a reader: a model reads it whether or not it is worded as an instruction |
 
+## Everything it offers
+
+| Tool | What the person can ask |
+| --- | --- |
+| `list_documents` | *Which documents do I have about Acme?* |
+| `search_documents` | *Which contracts mention penalties?* Words looked up in the masked, cleaned text, with the page and a short passage |
+| `check_document` | *Can I share the Nordwind contract?* |
+| `check_folder` | *Can I share the Proposals folder?* Every document's verdict, the ones not to share first |
+| `open_document` | *Open the Acme proposal and summarise it.* |
+| `save_clean_copy` | *Save me a clean copy to send to the client.* A text file in `Downloads/complydoc clean copies` |
+| `list_folders`, `choose_folder`, `remove_folder` | *Use my Contracts folder too.* |
+
+complydoc also offers every shared document as an MCP **resource**, and four **prompts**:
+*Check a document before sharing it*, *Summarise a document safely*, *Check a whole folder*
+and *Compare two versions of a document*. Clients differ in whether they show them. Claude
+Code lists the documents when you type `@` and the prompts when you type `/`; what is
+attached is the cleaned text, not the file. Claude Desktop does not show an extension's
+resources or prompts in its chat, so there the person asks for the document instead, and
+the tools do the rest.
+
 ## What it does and does not stop
 
-- Only files inside `--folder` can be read, and the network is blocked for the whole
+- Only files inside the shared folders can be read, the one place written to is
+  `Downloads/complydoc clean copies`, and the network is blocked for the whole
   session, as on every complydoc path.
 - Names of people and companies are masked only with a [name model](name-detection-models.md)
   installed; without one, the identifiers complydoc recognises by pattern are masked.
