@@ -23,6 +23,11 @@ separately.
   OCR; a hidden passage is taken out whole, however long, and even where masking changed
   its words; a malformed request is answered with an error instead of ending the session;
   and a clean copy never replaces another one of the same name.
+- The Claude Desktop extension comes in two editions, built by `make mcpb`: the light one,
+  and `complydoc-names.mcpb`, which also masks names of people and companies. It downloads
+  the name model once, about 700 MB, in a process of its own, outside the session's
+  network guard; until it arrives, every reading says names are not masked yet.
+  `complydoc mcp --fetch-name-model` does the same by hand.
 
 ### Fixed
 
