@@ -8,7 +8,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { CONTACT_EMAIL } from "@/links";
 
 const INTERESTS = [
-  { id: "pilot", label: "A pilot for my team" },
+  { id: "pilot", label: "Early access for my team" },
   { id: "server", label: "A server inside our network" },
   { id: "engineering", label: "complydoc for our engineers" },
   { id: "other", label: "Something else" },
