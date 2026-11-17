@@ -418,3 +418,54 @@ def test_a_name_is_found_however_its_accents_are_composed(tmp_path: Path) -> Non
     (opened,) = talk([docs], call(1, "open_document", path="orçamento.txt"),
                      store=tmp_path / "s.json")  # fmt: skip
     assert opened["result"]["isError"] is False
+
+
+def test_while_the_name_model_downloads_every_reading_says_names_are_not_masked(
+    folder: Path, tmp_path: Path
+) -> None:
+    import subprocess
+    import sys
+    import time
+
+    from complydoc.mcp.folders import Folders
+    from complydoc.mcp.server import Server
+
+    download = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(0.5)"])
+    server = Server(Folders([folder], store=tmp_path / "s.json"), fetching=download)
+    first_reader = server.reader
+    while_fetching = server.call("check_document", {"path": "invoice_de.pdf"})
+    listing = server.call("list_folders", {})
+    assert "still downloading" in while_fetching
+    assert "downloading" not in listing, "only answers that depend on names say so"
+
+    download.wait()
+    time.sleep(0.05)
+    after = server.call("check_document", {"path": "invoice_de.pdf"})
+    assert "downloading" not in after
+    assert server.reader is not first_reader, "documents read without names are read again"
+
+
+def test_a_failed_download_is_said_and_not_retried_silently(folder: Path, tmp_path: Path) -> None:
+    import subprocess
+    import sys
+
+    from complydoc.mcp.folders import Folders
+    from complydoc.mcp.server import Server
+
+    failed = subprocess.Popen([sys.executable, "-c", "raise SystemExit(1)"])
+    failed.wait()
+    server = Server(Folders([folder], store=tmp_path / "s.json"), fetching=failed)
+    said = server.call("check_document", {"path": "invoice_de.pdf"})
+    assert "could not be downloaded" in said
+
+
+def test_nothing_is_fetched_when_the_model_is_on_disk(monkeypatch: pytest.MonkeyPatch) -> None:
+    from complydoc.mcp import models
+
+    monkeypatch.setattr(models, "can_read_names", lambda: True)
+    monkeypatch.setattr(models, "name_model_on_disk", lambda: True)
+    assert models.fetch_name_model() is None
+    monkeypatch.setattr(models, "can_read_names", lambda: False)
+    assert models.fetch_name_model() is None, (
+        "without the extra there is nothing to read names with"
+    )
