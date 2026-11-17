@@ -1,14 +1,16 @@
 """The MCP server: JSON-RPC 2.0 over stdio, one message a line, no dependency beyond complydoc.
 
-Three tools, worded for people who do not read reports:
+Its tools are worded for people who do not read reports:
 
-- `list_documents` finds a file in the folder by part of its name.
+- `list_documents` finds a file in the person's folders by part of its name.
 - `check_document` says whether a document is ready to send, and why not.
 - `open_document` returns the document's text with identifiers masked and hidden passages
   taken out, so that is all the model ever reads of it.
+- `list_folders`, `choose_folder` and `remove_folder` say and change which folders those are;
+  a folder is only added through the system's own folder dialog, clicked by the person.
 
-Only files inside the folder the server was started on can be read, and the network
-guard is armed for the whole session, as on every other complydoc path.
+Only files inside those folders can be read, and the network guard is armed for the whole
+session, as on every other complydoc path.
 """
 
 from __future__ import annotations
@@ -18,6 +20,7 @@ import json
 import re
 import sys
 from collections import Counter
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from functools import cache
 from importlib.resources import files
@@ -25,6 +28,7 @@ from pathlib import Path
 from typing import IO, Any
 
 from complydoc import __version__, offline
+from complydoc.mcp.folders import STORE, FolderError, Folders, Picker, pick_folder
 
 PROTOCOL = "2025-06-18"
 """The protocol version offered when a client does not name one."""
@@ -39,7 +43,7 @@ TOOLS: list[dict[str, Any]] = [
     {
         "name": "list_documents",
         "description": (
-            "List the documents in the folder complydoc was given, optionally only those whose "
+            "List the documents in the folders the person shared, optionally only those whose "
             "name contains a word. Use it to find the file a person means before opening it."
         ),
         "inputSchema": {
@@ -77,6 +81,29 @@ TOOLS: list[dict[str, Any]] = [
                 "path": {"type": "string", "description": "As list_documents gives it."}
             },
             "required": ["path"],
+        },
+    },
+    {
+        "name": "list_folders",
+        "description": "Say which folders the person has let complydoc open documents from.",
+        "inputSchema": {"type": "object", "properties": {}},
+    },
+    {
+        "name": "choose_folder",
+        "description": (
+            "Open the computer's folder dialog so the person can pick a folder to share. Use it "
+            "when they ask to use a folder, or when a document they want is not in a shared "
+            "folder and they agree to choose where it is. The person picks; you cannot."
+        ),
+        "inputSchema": {"type": "object", "properties": {}},
+    },
+    {
+        "name": "remove_folder",
+        "description": "Stop sharing a folder chosen earlier, by the name list_folders gives it.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {"name": {"type": "string", "description": "As list_folders gives it."}},
+            "required": ["name"],
         },
     },
 ]
@@ -127,30 +154,59 @@ def _short(text: str, limit: int = 160) -> str:
     return text if len(text) <= limit else text[: limit - 1] + "…"
 
 
-class Server:
-    def __init__(self, folder: Path) -> None:
-        self.folder = folder.expanduser().resolve()
-        if not self.folder.is_dir():
-            raise NotADirectoryError(f"not a folder: {self.folder}")
+NO_FOLDER = (
+    "No folder is shared with complydoc yet. Ask the person whether to choose one: "
+    "choose_folder opens their computer's folder dialog."
+)
 
-    # The files a person can name.
+
+class Server:
+    def __init__(self, folders: Folders, picker: Picker = pick_folder) -> None:
+        self.folders = folders
+        self.picker = picker
+
+    # The files a person can name: "Contracts/acme.pdf", "acme.pdf", or a full path.
     def _resolve(self, name: str) -> Path:
-        if not name.strip():
+        name = name.strip()
+        if not name:
             raise ToolError("Say which document: give its name as list_documents shows it.")
-        path = (self.folder / name).expanduser().resolve()
-        if path != self.folder and self.folder not in path.parents:
-            raise ToolError("That file is outside the folder complydoc was given.")
-        if not path.is_file():
-            matches = self._documents(Path(name).name)
-            hint = f" Did you mean: {', '.join(matches[:5])}?" if matches else ""
-            raise ToolError(f"There is no document called {name!r}.{hint}")
-        return path
+        if not self.folders.all:
+            raise ToolError(NO_FOLDER)
+        candidates: list[Path] = []
+        given = Path(name).expanduser()
+        if given.is_absolute():
+            candidates.append(given.resolve())
+        else:
+            label, _, rest = name.partition("/")
+            labels = self.folders.labels()
+            if rest and label in labels:
+                candidates.append((labels[label] / rest).resolve())
+            candidates += [(folder / name).resolve() for folder in self.folders.all]
+        for path in candidates:
+            if path.is_file() and self.folders.contains(path):
+                return path
+        if any(path.is_file() for path in candidates) or ".." in Path(name).parts:
+            raise ToolError(
+                "That file is outside the folders the person shared. Ask whether to choose the "
+                "folder it is in: choose_folder opens their computer's folder dialog."
+            )
+        matches = self._documents(Path(name).name)
+        if len(matches) == 1:
+            return self._resolve(matches[0])
+        if matches:
+            raise ToolError(f"Several documents match {name!r}: {', '.join(matches[:8])}.")
+        raise ToolError(
+            f"There is no document called {name!r} in the shared folders. If it is somewhere "
+            "else, ask whether to choose the folder it is in with choose_folder."
+        )
 
     def _documents(self, query: str = "") -> list[str]:
         from complydoc.audit.discovery import discover
 
-        files, _ = discover(self.folder, recurse=True)
-        names = sorted(str(path.relative_to(self.folder)) for path in files)
+        names: list[str] = []
+        for label, folder in self.folders.labels().items():
+            files, _ = discover(folder, recurse=True)
+            names += sorted(f"{label}/{path.relative_to(folder)}" for path in files)
         query = query.lower().strip()
         return [name for name in names if query in name.lower()] if query else names
 
@@ -175,9 +231,12 @@ class Server:
 
     # The tools.
     def list_documents(self, query: str = "") -> str:
+        if not self.folders.all:
+            return NO_FOLDER
         names = self._documents(query)
         if not names:
-            return f"No document{' matching ' + repr(query) if query else ''} in the folder."
+            matching = f" matching {query!r}" if query else ""
+            return f"No document{matching} in the shared folders."
         shown = names[:MAX_LIST]
         more = (
             f"\n…and {len(names) - len(shown)} more; narrow it with a word from the name."
@@ -239,6 +298,28 @@ class Server:
         return " ".join(note) + "\n\n" + body
 
 
+def _folder_tools(server: Server, name: str, arguments: dict[str, Any]) -> str | None:
+    """The tools about folders; None for any other tool."""
+    folders = server.folders
+    if name == "list_folders":
+        labels = folders.labels()
+        if not labels:
+            return NO_FOLDER
+        return "complydoc can open documents from:\n" + "\n".join(
+            f"- {label} ({path})" for label, path in labels.items()
+        )
+    if name == "choose_folder":
+        chosen = server.picker("Choose a folder complydoc may open documents from")
+        if chosen is None:
+            return "No folder was chosen; nothing changed."
+        label = folders.add(chosen)
+        return f"complydoc can now open documents from {label} ({chosen})."
+    if name == "remove_folder":
+        removed = folders.remove(str(arguments.get("name", "")))
+        return f"complydoc no longer opens documents from {removed}."
+    return None
+
+
 def _remove(text: str, excerpt: str) -> tuple[str, int]:
     """Take a hidden passage out of the text, however the reader broke its lines."""
     words = excerpt.split()
@@ -283,7 +364,8 @@ def _handle(server: Server, request: dict[str, Any]) -> dict[str, Any] | None:
             },
             "instructions": (
                 "Open documents with open_document, never by asking for the file: it masks "
-                "personal details and removes hidden instructions before you read it."
+                "personal details and removes hidden instructions before you read it. If a "
+                "document is not in a shared folder, offer to choose its folder with choose_folder."
             ),
         }
     if method == "ping":
@@ -294,7 +376,10 @@ def _handle(server: Server, request: dict[str, Any]) -> dict[str, Any] | None:
         name = params.get("name")
         arguments = params.get("arguments") or {}
         try:
-            if name == "list_documents":
+            folder_answer = _folder_tools(server, str(name), arguments)
+            if folder_answer is not None:
+                text = folder_answer
+            elif name == "list_documents":
                 text = server.list_documents(str(arguments.get("query", "")))
             elif name == "check_document":
                 text = server.check_document(str(arguments.get("path", "")))
@@ -303,7 +388,7 @@ def _handle(server: Server, request: dict[str, Any]) -> dict[str, Any] | None:
             else:
                 raise ToolError(f"No tool called {name!r}.")
             return {"content": [{"type": "text", "text": text}], "isError": False}
-        except ToolError as error:
+        except (ToolError, FolderError) as error:
             return {"content": [{"type": "text", "text": str(error)}], "isError": True}
         except Exception as error:  # A document that cannot be read is an answer, not a crash.
             print(f"complydoc mcp: {type(error).__name__}: {error}", file=sys.stderr)
@@ -319,10 +404,22 @@ def _handle(server: Server, request: dict[str, Any]) -> dict[str, Any] | None:
     raise LookupError(method)
 
 
-def serve(folder: str | Path, stdin: IO[str] | None = None, stdout: IO[str] | None = None) -> None:
-    """Answer MCP requests on stdin until it closes. Logs go to stderr, never stdout."""
+def serve(
+    folders: Iterable[str | Path] | str | Path = (),
+    stdin: IO[str] | None = None,
+    stdout: IO[str] | None = None,
+    *,
+    store: Path | None = STORE,
+    picker: Picker = pick_folder,
+) -> None:
+    """Answer MCP requests on stdin until it closes. Logs go to stderr, never stdout.
+
+    `folders` are the ones given at start; those chosen in a conversation are kept in
+    `store` and added to them.
+    """
     source, out = stdin or sys.stdin, stdout or sys.stdout
-    server = Server(Path(folder))
+    given = [folders] if isinstance(folders, (str, Path)) else list(folders)
+    server = Server(Folders(given, store=store), picker=picker)
     # The guard holds for the whole session, and lets go when the client hangs up.
     with offline.guarded(True):
         _loop(server, source, out)

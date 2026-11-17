@@ -22,7 +22,14 @@
     "entry_point": "src/server.py",
     "mcp_config": {
       "command": "uv",
-      "args": ["run", "--directory", "${__dirname}", "src/server.py", "--folder", "${user_config.folder}"]
+      "args": [
+        "run",
+        "--directory",
+        "${__dirname}",
+        "src/server.py",
+        "--folder",
+        "${user_config.folders}"
+      ]
     }
   },
   "tools": [
@@ -37,23 +44,45 @@
     {
       "name": "open_document",
       "description": "Read a document with personal details masked and hidden passages taken out."
+    },
+    {
+      "name": "list_folders",
+      "description": "Say which folders complydoc may open documents from."
+    },
+    {
+      "name": "choose_folder",
+      "description": "Pick another folder to share, in your computer's folder dialog."
+    },
+    {
+      "name": "remove_folder",
+      "description": "Stop sharing a folder."
     }
   ],
   "user_config": {
-    "folder": {
+    "folders": {
       "type": "directory",
-      "title": "Documents folder",
-      "description": "The folder the assistant may open documents from. Nothing outside it is read.",
+      "title": "Folders with your documents",
+      "description": "The folders the assistant may open documents from. You can add more later by asking it to choose a folder.",
       "required": true,
-      "default": "${DOCUMENTS}"
+      "multiple": true
     }
   },
   "compatibility": {
-    "platforms": ["darwin", "linux", "win32"],
+    "platforms": [
+      "darwin",
+      "linux",
+      "win32"
+    ],
     "runtimes": {
       "python": ">=3.11"
     }
   },
-  "keywords": ["documents", "privacy", "personal data", "prompt injection", "pdf"],
+  "keywords": [
+    "documents",
+    "privacy",
+    "personal data",
+    "prompt injection",
+    "pdf"
+  ],
   "license": "MIT"
 }

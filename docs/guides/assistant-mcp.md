@@ -12,7 +12,7 @@ taken out. The file itself never does.
 ## Install it in Claude Desktop
 
 The easiest way is the extension: open `complydoc.mcpb` (built with `make mcpb`), click
-**Install**, and choose the documents folder. Claude Desktop sets up Python and complydoc on
+**Install**, and choose the folders with the documents. Claude Desktop sets up Python and complydoc on
 its own, so nothing else needs installing. This light version masks identifiers found by
 pattern; names of people and companies need a name model, set up as below.
 
@@ -81,6 +81,18 @@ gemini mcp add complydoc complydoc mcp --folder ~/Documents/Contracts
 
 Assistants that only reach MCP servers over the network, such as ChatGPT's connectors or
 Microsoft 365 Copilot, are not served by `complydoc mcp` yet.
+
+## Choosing folders from the conversation
+
+The person does not need the settings to share another folder. They ask: *"Use my
+Contracts folder too"*, and `choose_folder` opens their computer's own folder dialog
+(Finder on a Mac, Explorer on Windows). The folder they click is shared from then on and
+kept for the next conversation, in `~/.complydoc/mcp-folders.json`. *"Which folders do you
+have?"* lists them, and *"Stop using Invoices"* removes one chosen this way.
+
+When a document they ask for is not in a shared folder, the assistant says so and offers
+to open the dialog. The model can ask for the dialog but never choose what it lands on: the
+folder is always the one the person clicks.
 
 ## What the person does
 

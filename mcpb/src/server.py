@@ -5,5 +5,6 @@ import argparse
 from complydoc.mcp import serve
 
 parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument("--folder", required=True, help="The folder documents may be opened from.")
+# The extension's settings expand a list of folders as separate arguments after one --folder.
+parser.add_argument("--folder", nargs="*", default=[], help="Folders documents may be opened from.")
 serve(parser.parse_args().folder)
