@@ -5,10 +5,13 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
-## Unreleased
+## [0.7.13] — 2026-11-17
+
+The viewer gets one palette, a dashboard of framed panels and a way to add documents from
+any page, and complydoc's colour turns baby blue. MarkItDown joins the loaders to compare,
+and a fact can be pinned to its page. The report stays at schema 27.
 
 ### Added
-
 
 - `cd.parsers.markitdown()`, a preset for Microsoft's MarkItDown, to compare it with the
   other loaders. It runs locally on PDF, Word, PowerPoint, Excel and HTML files and returns
