@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { Backdrop } from "@/components/Backdrop";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Footer } from "@/sections/Footer";
 import { Nav } from "@/sections/Nav";
@@ -31,12 +30,11 @@ export function PageHeader({
   children?: ReactNode;
 }) {
   return (
-    <section id="top" aria-labelledby="page-title" className="relative isolate overflow-hidden">
-      <Backdrop tone="duo" />
+    <section id="top" aria-labelledby="page-title" className="overflow-hidden">
       <div className="mx-auto grid max-w-6xl items-center gap-8 px-6 pt-16 pb-16 md:pt-24 md:pb-20 lg:grid-cols-[3fr_2fr]">
         <div className="flex flex-col gap-4">
-          <p className="text-sm font-medium text-primary">{eyebrow}</p>
-          <h1 id="page-title" className="max-w-3xl text-4xl font-semibold tracking-tight text-balance md:text-5xl">
+          <p className="font-mono text-xs tracking-wide text-muted-foreground uppercase">{eyebrow}</p>
+          <h1 id="page-title" className="max-w-3xl text-4xl font-medium tracking-tight text-balance md:text-5xl">
             {title}
           </h1>
           <p className="max-w-2xl text-lg text-pretty text-muted-foreground">{lead}</p>

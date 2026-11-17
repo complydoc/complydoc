@@ -102,7 +102,7 @@ export function ContributorsPage() {
       <Section
         id="people"
         eyebrow="The people"
-        title="Everyone with a commit in complydoc."
+        title="The ones building complydoc."
       >
         <ItemGroup className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {contributors.contributors.map((person) => (

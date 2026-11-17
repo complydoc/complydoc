@@ -21,13 +21,15 @@ export function Nav({ home = "" }: { home?: string }) {
   return (
     <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-6 px-6">
-        <a href={home || "#top"} aria-label={home ? "complydoc, home" : "complydoc, back to the top"}>
+        <a href={home || "#top"} data-page={home ? "" : undefined} aria-label={home ? "complydoc, home" : "complydoc, back to the top"}>
           <Logo size={20} />
         </a>
         <nav aria-label="Pages" className="hidden items-center gap-1 sm:flex">
           {PAGES.map((page) => (
             <Button key={page.href} variant="ghost" size="sm" asChild>
-              <a href={`${home}${page.href}`}>{page.label}</a>
+              <a href={`${home}${page.href}`} data-page="">
+                {page.label}
+              </a>
             </Button>
           ))}
         </nav>

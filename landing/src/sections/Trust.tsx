@@ -1,12 +1,28 @@
-import { FileLock2Icon, KeyRoundIcon, ScaleIcon, WifiOffIcon, type LucideIcon } from "lucide-react";
+import { ActivityIcon, TriangleAlertIcon, WifiOffIcon, type LucideIcon } from "lucide-react";
+import traceDark from "@/assets/screens/trace-dark.webp";
+import traceLight from "@/assets/screens/trace-light.webp";
 import { BrandLogo } from "@/components/BrandLogo";
+import { Screenshot } from "@/components/Screenshot";
+import { Section } from "@/components/Section";
 import type { Brand } from "@/lib/logos";
 
+/** What the trace above shows, one idea each. */
 const FACTS: { icon: LucideIcon; title: string; detail: string }[] = [
-  { icon: FileLock2Icon, title: "Runs on your machine", detail: "Documents and reports stay where you run it." },
-  { icon: WifiOffIcon, title: "Network blocked", detail: "While documents are read, and the report records it." },
-  { icon: KeyRoundIcon, title: "No account, no key", detail: "Install it and point it at a folder." },
-  { icon: ScaleIcon, title: "MIT licensed", detail: "Open source, all of it." },
+  {
+    icon: ActivityIcon,
+    title: "Every call, timed and priced",
+    detail: "Loaders, splitters and embeddings on one time axis, with what each call took and cost.",
+  },
+  {
+    icon: TriangleAlertIcon,
+    title: "Problems where they start",
+    detail: "A scan that loaded no text is flagged on the step that read it, not three steps later.",
+  },
+  {
+    icon: WifiOffIcon,
+    title: "Nothing leaves your machine",
+    detail: "The network is blocked while documents are read, and every report records that it was.",
+  },
 ];
 
 interface Provider {
@@ -53,27 +69,36 @@ function Row({ label, providers, more }: { label: string; providers: Provider[];
   );
 }
 
-/** What a careful reader asks first, answered before they ask, then the loaders it reads and the models it prices. */
+/** The viewer's trace, what it shows in three short points, then the loaders it reads and the models it prices. */
 export function Trust() {
   return (
-    <section aria-label="What to know first" className="border-t bg-muted/30">
-      <div className="mx-auto flex max-w-6xl flex-col gap-10 px-6 py-12">
-        <dl className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+    <Section
+      id="trace"
+      eyebrow="Observe"
+      title="Every step your pipeline takes, on one trace."
+      lead="Open a run in the viewer and see what each call was given, what it returned, how long it took and what it cost."
+    >
+      <div className="flex flex-col gap-16">
+        <Screenshot
+          src={{ dark: traceDark, light: traceLight }}
+          alt="The viewer's trace of an ingestion pipeline: every call on a time axis with its time, cost and identifiers, a warning on a scanned file that loaded no text, and the embedding call's input"
+        />
+        <dl className="grid gap-10 md:grid-cols-3">
           {FACTS.map((fact) => (
-            <div key={fact.title} className="flex flex-col gap-1">
-              <dt className="flex items-center gap-2 font-medium">
-                <fact.icon className="size-4 text-primary" />
-                {fact.title}
-              </dt>
-              <dd className="text-sm text-muted-foreground">{fact.detail}</dd>
+            <div key={fact.title} className="flex gap-4">
+              <fact.icon className="mt-1 size-5 shrink-0 text-muted-foreground" />
+              <div className="flex flex-col gap-2">
+                <dt className="text-lg font-medium">{fact.title}</dt>
+                <dd className="text-pretty text-muted-foreground">{fact.detail}</dd>
+              </div>
             </div>
           ))}
         </dl>
-        <div className="flex flex-col gap-6 border-t pt-8">
+        <div className="flex flex-col gap-6 border-t pt-12">
           <Row label="Loaders" providers={LOADERS} more="and more" />
           <Row label="Model providers" providers={MODELS} more="and more" />
         </div>
       </div>
-    </section>
+    </Section>
   );
 }
