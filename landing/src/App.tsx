@@ -1,4 +1,5 @@
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Demos } from "@/sections/Demos";
 import { Faq } from "@/sections/Faq";
 import { Features } from "@/sections/Features";
 import { Footer } from "@/sections/Footer";
@@ -18,6 +19,7 @@ export function App() {
       <main>
         <Hero />
         <Trust />
+        <Demos />
         <Quickstart />
         <Features />
         <Numbers />
