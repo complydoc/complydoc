@@ -1,8 +1,9 @@
 # Personnel files.
 # Personal identity numbers, names, email and phone numbers, and date of birth.
-# There is no category for a diagnosis or a medical record. Date of birth is the
-# health-adjacent identifier, and several of the numbers below encode birth date
-# or sex (French NIR, Belgian national number, PESEL, personnummer, CPR).
+# There is no category for a diagnosis or a medical record. The NHS number links a
+# person to their health records, date of birth is health-adjacent, and several of
+# the numbers below encode birth date or sex (French NIR, Belgian national number,
+# PESEL, personnummer, CPR).
 # Names are medium severity, so the floor is medium.
 # A street or a postcode is left out: the firm's own address is on every letter.
 version: 1
@@ -17,6 +18,7 @@ rules:
       - international_phone
       - us_phone
       - ni_number
+      - uk_nhs_number
       - us_ssn
       - ie_pps
       - nl_bsn

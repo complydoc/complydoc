@@ -11,13 +11,13 @@ complydoc benchmark --json scores.json
 
 ## The corpus
 
-51 passages. 32 of them hold 68 labelled values, 9 are labelled as holding
+52 passages. 33 of them hold 69 labelled values, 9 are labelled as holding
 nothing at all, and 10 are labelled for hidden instructions rather than
 identifiers and scored separately, below. Every value in it is fake, a published
 test value, or a documented example.
 
-53 of those values are identifiers with a shape a pattern can match, across
-39 categories. The other 15 are person and organisation names, which a
+54 of those values are identifiers with a shape a pattern can match, across
+40 categories. The other 15 are person and organisation names, which a
 statistical model finds, and they are scored apart from the rest.
 
 The passages that hold nothing are the point of the exercise. They carry invoice
@@ -43,14 +43,14 @@ cover the patterns for the same reason.
 
 | | |
 | --- | --- |
-| Labelled identifiers | 53 |
-| Found | 53 |
+| Labelled identifiers | 54 |
+| Found | 54 |
 | Missed | 0 |
 | Wrongly flagged | 5 |
 | Recall | 100.0% |
-| Precision | 91.4% |
+| Precision | 91.5% |
 
-By evidence tier, across every pattern finding the run reported: 35 `confirmed`,
+By evidence tier, across every pattern finding the run reported: 36 `confirmed`,
 15 `corroborated`, 8 `pattern`. Of the 9 passages labelled as holding nothing, 3
 produced at least one finding.
 

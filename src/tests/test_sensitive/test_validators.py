@@ -10,6 +10,7 @@ from complydoc.sensitive.validators import (
     ni_prefix,
     plausible_dob,
     sort_code,
+    uk_nhs_number,
     uk_phone,
     uk_postcode,
     validate,
@@ -102,6 +103,52 @@ def test_unknown_validator_name_is_ignored_not_fatal():
     ok, passed = validate("anything", ["no_such_validator"])
     assert ok is True
     assert passed == []
+
+
+# --- NHS number --------------------------------------------------------------
+
+
+@pytest.mark.parametrize("value", ["943 476 5919", "943-476-5919", "9434765919", "401 023 2137"])
+def test_nhs_number_accepts_a_valid_check_digit(value):
+    assert uk_nhs_number(value) is True
+
+
+@pytest.mark.parametrize(
+    ("value", "why"),
+    [
+        ("943 476 5918", "last digit changed"),
+        ("943 476 5929", "a middle digit changed"),
+        ("1000000010", "the check digit works out as 10, so no number has these nine digits"),
+        ("0000000000", "all the same digit"),
+        ("943 476 591", "nine digits"),
+    ],
+)
+def test_nhs_number_rejects_invalid(value, why):
+    assert uk_nhs_number(value) is False, why
+
+
+@pytest.mark.parametrize(
+    "text", ["NHS number: 943 476 5919", "NHS No. 943-476-5919", "Patient NHS 9434765919"]
+)
+def test_a_labelled_nhs_number_is_found(text):
+    import complydoc as cd
+
+    found = {m.category for m in cd.scan_text(text).matches}
+    assert "uk_nhs_number" in found, found
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Reference 9434765919 for the delivery.",
+        "Call 943 476 5919 today.",
+        "NHS number: 943 476 5918",
+    ],
+)
+def test_an_nhs_number_needs_its_label_and_its_check_digit(text):
+    import complydoc as cd
+
+    assert "uk_nhs_number" not in {m.category for m in cd.scan_text(text).matches}
 
 
 # --- other jurisdictions ---------------------------------------------------

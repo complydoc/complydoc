@@ -11,6 +11,7 @@ rules:
     severity: high
     categories:
       - ni_number
+      - uk_nhs_number
       - us_ssn
       - ie_pps
       - nl_bsn

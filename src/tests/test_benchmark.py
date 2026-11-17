@@ -10,13 +10,13 @@ from tests.helpers import spacy_model_available
 # The numbers published in docs/explanation/accuracy.md. A change in detection
 # that moves them fails here, so the page cannot quietly go out of date.
 PUBLISHED = {
-    "passages": 51,
-    "labelled": 53,
-    "found": 53,
+    "passages": 52,
+    "labelled": 54,
+    "found": 54,
     "missed": 0,
     "wrongly_flagged": 5,
     "recall_pct": 100.0,
-    "precision_pct": 91.4,
+    "precision_pct": 91.5,
     "clean_passages": 9,
     "clean_passages_with_a_flag": 3,
 }

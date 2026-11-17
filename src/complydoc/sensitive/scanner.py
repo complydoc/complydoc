@@ -35,6 +35,7 @@ __all__ = ["ScanResult", "UnscannedCategory", "scan", "scan_text"]
 _EXCLUSIVE_GROUP = frozenset(
     {
         "ni_number",
+        "uk_nhs_number",
         "sort_code",
         "bank_account_number",
         "iban",
