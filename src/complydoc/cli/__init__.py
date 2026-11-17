@@ -28,6 +28,7 @@ from __future__ import annotations
 from complydoc.cli import (
     audits,
     ui,
+    mcp,
     routing,
     loaders,
     check,
@@ -51,6 +52,7 @@ __all__ = ["app"]
 COMMAND_MODULES = (
     audits,
     ui,
+    mcp,
     routing,
     loaders,
     check,

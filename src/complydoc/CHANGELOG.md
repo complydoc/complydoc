@@ -7,6 +7,14 @@ separately.
 
 ## Unreleased
 
+### Added
+
+- `complydoc mcp --folder <dir>` serves a folder to an AI assistant such as Claude Desktop
+  over MCP. A document opened through it reaches the model with personal and financial
+  details masked and hidden passages taken out, and `check_document` says whether a file is
+  ready to send, in plain words. See
+  [Documents into an assistant, cleaned](https://complydoc.github.io/complydoc/docs/guides/assistant-mcp/).
+
 ### Changed
 
 - complydoc's line is now "Get document loading right. Compare loaders, trace every step
