@@ -38,6 +38,13 @@
     </script>
     <!-- Visits are counted without cookies and nothing is stored in the browser. -->
     <script data-goatcounter="https://complydoc.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+    <!-- Load the other pages of the site in the background as soon as a link to one is pointed at, so moving between them is instant. -->
+    <script type="speculationrules">
+      {
+        "prerender": [{ "where": { "selector_matches": "a[data-page]" }, "eagerness": "moderate" }],
+        "prefetch": [{ "where": { "selector_matches": "a[data-page]" }, "eagerness": "eager" }]
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

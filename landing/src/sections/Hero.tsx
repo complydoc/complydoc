@@ -1,55 +1,59 @@
-import { ArrowRightIcon } from "lucide-react";
-import traceDark from "@/assets/screens/trace-dark.webp";
-import traceLight from "@/assets/screens/trace-light.webp";
-import { Backdrop } from "@/components/Backdrop";
+import { ArrowRightIcon, FileLock2Icon, KeyRoundIcon, ScaleIcon, type LucideIcon } from "lucide-react";
 import { CopyButton } from "@/components/CopyButton";
-import { Screenshot } from "@/components/Screenshot";
+import { ShowcaseVideo } from "@/components/ShowcaseVideo";
 import { Button } from "@/components/ui/button";
 import { ButtonGroup, ButtonGroupText } from "@/components/ui/button-group";
 import { links } from "@/links";
 
 const INSTALL = "uv tool install complydoc";
-const SKILL = "complydoc skill --install";
+
+const BADGES: { icon: LucideIcon; label: string }[] = [
+  { icon: FileLock2Icon, label: "Runs on your machine" },
+  { icon: KeyRoundIcon, label: "No account, no key" },
+  { icon: ScaleIcon, label: "MIT licensed" },
+];
 
 export function Hero() {
   return (
-    <section id="top" aria-labelledby="hero-title" className="relative isolate overflow-hidden">
-      <Backdrop />
-      <div className="mx-auto flex max-w-6xl flex-col items-center gap-10 px-6 pt-16 pb-20 text-center md:pt-24 md:pb-28">
-        <div className="flex max-w-3xl flex-col items-center gap-6">
-          <p className="font-mono text-xs text-muted-foreground">open source · runs on your machine</p>
-          <h1 id="hero-title" className="text-4xl font-semibold tracking-tight text-balance md:text-6xl">
-            Get document loading right.
-          </h1>
-          <p className="max-w-2xl text-lg text-pretty text-muted-foreground">
-            Compare loaders, trace every step and evaluate what reaches your model.
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            <ButtonGroup>
-              <ButtonGroupText className="font-mono text-sm">
-                <span className="text-muted-foreground select-none">$</span>
-                {INSTALL}
-              </ButtonGroupText>
-              <CopyButton text={INSTALL} label="Copy the install command" variant="outline" size="icon" />
-            </ButtonGroup>
-            <Button size="lg" asChild>
-              <a href={links.docs}>
-                Get started
-                <ArrowRightIcon data-icon="inline-end" />
-              </a>
-            </Button>
+    <section id="top" aria-labelledby="hero-title">
+      <div className="mx-auto flex max-w-6xl flex-col gap-16 px-6 pt-20 pb-24 md:pt-28 md:pb-32">
+        <div className="grid gap-10 md:grid-cols-2 md:gap-16">
+          <div className="flex flex-col gap-10">
+            <h1 id="hero-title" className="text-5xl font-medium tracking-tight text-balance md:text-6xl">
+              Get document loading right.
+            </h1>
+            <div className="flex flex-wrap items-center gap-3">
+              <Button size="lg" asChild>
+                <a href={links.docs}>
+                  Get started
+                  <ArrowRightIcon data-icon="inline-end" />
+                </a>
+              </Button>
+              <ButtonGroup>
+                <ButtonGroupText className="font-mono text-sm">
+                  <span className="text-muted-foreground select-none">$</span>
+                  {INSTALL}
+                </ButtonGroupText>
+                <CopyButton text={INSTALL} label="Copy the install command" variant="outline" size="icon" />
+              </ButtonGroup>
+            </div>
           </div>
-          <p className="flex flex-wrap items-center justify-center gap-2 text-sm text-muted-foreground">
-            Working with a coding agent?
-            <code className="rounded-md border bg-card px-2 py-0.5 font-mono text-xs text-foreground">{SKILL}</code>
-            <CopyButton text={SKILL} label="Copy the skill command" variant="ghost" size="icon" />
-          </p>
+          <div className="flex flex-col justify-between gap-10">
+            <p className="text-xl text-pretty md:pt-2">
+              Compare loaders, trace every step and evaluate what reaches your model. complydoc
+              reads your documents the way your pipeline does, and shows you what it got wrong.
+            </p>
+            <ul className="flex flex-wrap gap-x-6 gap-y-3 text-sm text-muted-foreground">
+              {BADGES.map((badge) => (
+                <li key={badge.label} className="flex items-center gap-2">
+                  <badge.icon className="size-4" />
+                  {badge.label}
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
-        <Screenshot
-          src={{ dark: traceDark, light: traceLight }}
-          alt="The viewer's trace of an ingestion pipeline: every call on a time axis with its time, cost and identifiers, a warning on a scanned file that loaded no text, and the embedding call's input"
-          className="w-full text-left"
-        />
+        <ShowcaseVideo />
       </div>
     </section>
   );
