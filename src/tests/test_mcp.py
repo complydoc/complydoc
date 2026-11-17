@@ -43,10 +43,18 @@ def talk(
     *messages: dict[str, Any],
     store: Path,
     picker: Callable[[str], Path | None] = lambda prompt: None,
+    clean_copies: Path | None = None,
 ) -> list[dict[str, Any]]:
     lines = "".join(json.dumps(message) + "\n" for message in messages)
     out = io.StringIO()
-    serve(folders, stdin=io.StringIO(lines), stdout=out, store=store, picker=picker)
+    serve(
+        folders,
+        stdin=io.StringIO(lines),
+        stdout=out,
+        store=store,
+        picker=picker,
+        clean_copies=clean_copies or store.parent / "clean copies",
+    )
     return [json.loads(line) for line in out.getvalue().splitlines()]
 
 
@@ -81,10 +89,14 @@ def test_it_introduces_itself_with_its_icon_and_tools(folder: Path, tmp_path: Pa
     assert [icon["mimeType"] for icon in icons] == ["image/png", "image/svg+xml"]
     assert icons[0]["src"].startswith("data:image/png;base64,")
     assert first["result"]["protocolVersion"] == "2025-06-18"
+    assert first["result"]["capabilities"] == {"tools": {}, "resources": {}, "prompts": {}}
     assert [tool["name"] for tool in second["result"]["tools"]] == [
         "list_documents",
+        "search_documents",
         "check_document",
+        "check_folder",
         "open_document",
+        "save_clean_copy",
         "list_folders",
         "choose_folder",
         "remove_folder",
@@ -214,7 +226,9 @@ def test_with_no_folder_it_says_how_to_choose_one(tmp_path: Path) -> None:
 
 def test_an_unknown_method_is_an_error_not_a_crash(folder: Path, tmp_path: Path) -> None:
     (reply,) = talk(
-        [folder], {"jsonrpc": "2.0", "id": 1, "method": "resources/list"}, store=tmp_path / "s.json"
+        [folder],
+        {"jsonrpc": "2.0", "id": 1, "method": "sampling/createMessage"},
+        store=tmp_path / "s.json",
     )
     assert reply["error"]["code"] == -32601
 
@@ -226,3 +240,76 @@ def test_any_hidden_text_stops_a_document() -> None:
 
     quiet = Findings(identifiers=Counter(), hidden=[(1, "a line in white", False, ["white text"])])
     assert quiet.verdict == STOP
+
+
+def request(n: int, method: str, **params: Any) -> dict[str, Any]:
+    return {"jsonrpc": "2.0", "id": n, "method": method, "params": params}
+
+
+def test_a_folder_is_checked_the_worst_first(folder: Path, tmp_path: Path) -> None:
+    (checked,) = talk([folder], call(1, "check_folder"), store=tmp_path / "store.json")
+    said = text(checked)
+    assert said.startswith("Checked 3 documents")
+    assert said.index("Do not send as it is") < said.index("docs/native_text.pdf")
+    assert "docs/hidden_instructions.pdf" in said
+
+
+def test_a_search_finds_the_page_and_never_a_masked_value(folder: Path, tmp_path: Path) -> None:
+    found, nothing = talk(
+        [folder],
+        call(1, "search_documents", query="IBAN"),
+        call(2, "search_documents", query="zebra crossing"),
+        store=tmp_path / "store.json",
+    )
+    assert "docs/invoice_de.pdf, page" in text(found)
+    assert "DE89" not in text(found), "identifiers stay masked in search results"
+    assert "No document mentions" in text(nothing)
+
+
+def test_a_clean_copy_is_saved_where_it_says(folder: Path, tmp_path: Path) -> None:
+    out = tmp_path / "copies"
+    (saved,) = talk(
+        [folder],
+        call(1, "save_clean_copy", path="hidden_instructions.pdf"),
+        store=tmp_path / "store.json",
+        clean_copies=out,
+    )
+    copy = out / "hidden_instructions (clean).txt"
+    assert str(copy) in text(saved)
+    assert "[hidden text removed]" in copy.read_text(encoding="utf-8")
+
+
+def test_documents_are_resources_and_read_cleaned(folder: Path, tmp_path: Path) -> None:
+    listed, read, wrong = talk(
+        [folder],
+        request(1, "resources/list"),
+        request(2, "resources/read", uri="complydoc:///docs/hidden_instructions.pdf"),
+        request(3, "resources/read", uri="file:///etc/passwd"),
+        store=tmp_path / "store.json",
+    )
+    uris = [resource["uri"] for resource in listed["result"]["resources"]]
+    assert "complydoc:///docs/invoice_de.pdf" in uris
+    contents = read["result"]["contents"][0]
+    assert contents["mimeType"] == "text/plain"
+    assert "[hidden text removed]" in contents["text"]
+    assert wrong["error"]["code"] == -32002
+
+
+def test_prompts_are_offered_and_filled_in(folder: Path, tmp_path: Path) -> None:
+    listed, filled, missing = talk(
+        [folder],
+        request(1, "prompts/list"),
+        request(2, "prompts/get", name="check_before_sharing", arguments={"document": "acme"}),
+        request(3, "prompts/get", name="compare_versions", arguments={"first": "v2"}),
+        store=tmp_path / "store.json",
+    )
+    names = [prompt["name"] for prompt in listed["result"]["prompts"]]
+    assert names == [
+        "check_before_sharing",
+        "summarise_safely",
+        "check_a_folder",
+        "compare_versions",
+    ]
+    message = filled["result"]["messages"][0]["content"]["text"]
+    assert "acme" in message and "check_document" in message
+    assert missing["error"]["code"] == -32602
