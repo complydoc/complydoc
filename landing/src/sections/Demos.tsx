@@ -1,5 +1,5 @@
+import type { ReactNode } from "react";
 import { Section, TextLink } from "@/components/Section";
-import { Separator } from "@/components/ui/separator";
 import { HiddenTextDemo } from "@/demos/HiddenTextDemo";
 import { LoaderDiffDemo } from "@/demos/LoaderDiffDemo";
 import { links } from "@/links";
@@ -11,41 +11,51 @@ export function Demos() {
       id="try"
       eyebrow="Try it"
       title="See what your model would be given."
-      lead="Two things complydoc shows you on your own documents, here on sample ones. Every reading and every finding below is complydoc's real output; nothing is mocked up."
+      lead="complydoc's real output on two sample documents. Nothing here is mocked up."
     >
-      <div className="flex flex-col gap-8">
-        <div className="flex flex-col gap-8">
-          <header className="flex max-w-3xl flex-col gap-4">
-            <p className="font-mono text-xs tracking-wide text-primary uppercase">Compare loaders</p>
-            <h3 className="text-2xl font-semibold tracking-tight text-balance">
-              Four popular PDF loaders, one page, four different texts.
-            </h3>
-            <p className="text-pretty text-muted-foreground">
-              A loader decides what your model will ever read, and it fails without an error: a table read cell by
-              cell, two columns spliced into one sentence, an email address glued to the word before it. Pick a page
-              and two loaders and read the difference.{" "}
-              <TextLink href={links.compareLoaders}>Compare yours</TextLink>
-            </p>
-          </header>
+      <div className="grid gap-8 lg:grid-cols-2">
+        <Demo
+          label="Compare loaders"
+          title="Same page, two loaders, two different texts."
+          more={<TextLink href={links.compareLoaders}>Compare yours</TextLink>}
+          text="PyPDF reads each column in turn. PDFPlumber reads straight across both and splices the clauses together, with no error."
+        >
           <LoaderDiffDemo />
-        </div>
-        <Separator className="my-8" />
-        <div className="flex flex-col gap-8">
-          <header className="flex max-w-3xl flex-col gap-4">
-            <p className="font-mono text-xs tracking-wide text-primary uppercase">Find hidden text</p>
-            <h3 className="text-2xl font-semibold tracking-tight text-balance">
-              Text a person cannot see, and a model reads.
-            </h3>
-            <p className="text-pretty text-muted-foreground">
-              White text, a font half a point high, words under a white box: the page looks clean, and the text layer
-              carries a message for whatever model summarises it. complydoc draws each page and checks every
-              character against what is drawn there.{" "}
-              <TextLink href={links.hiddenContent}>How hidden text is found</TextLink>
-            </p>
-          </header>
+        </Demo>
+        <Demo
+          label="Find hidden text"
+          title="A CV that talks to the model."
+          more={<TextLink href={links.hiddenContent}>How hidden text is found</TextLink>}
+          text="A line set at half a point is a hairline on the page and a full sentence in the text layer, addressed to whatever model screens the CV."
+        >
           <HiddenTextDemo />
-        </div>
+        </Demo>
       </div>
     </Section>
+  );
+}
+
+function Demo({
+  label,
+  title,
+  text,
+  more,
+  children,
+}: {
+  label: string;
+  title: string;
+  text: string;
+  more: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-4">
+      <p className="font-mono text-xs tracking-wide text-primary uppercase">{label}</p>
+      <h3 className="text-xl font-semibold tracking-tight text-balance">{title}</h3>
+      <p className="text-sm text-pretty text-muted-foreground">
+        {text} {more}
+      </p>
+      {children}
+    </div>
   );
 }

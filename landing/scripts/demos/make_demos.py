@@ -6,13 +6,13 @@ Run from the repository root, after `make_documents.py`, with the
     uv sync --group integrations --group dev
     uv run python landing/scripts/demos/make_demos.py
 
-- `src/data/loaders.json`: four LangChain PDF loaders run through
-  `cd.compare_loaders` on five pages of `viewer/sample/documents`, each page's
-  text as every loader returned it, the identifiers some loaders found and
-  others missed, and whether each loader kept a passage the page must keep.
-- `src/data/hidden.json`: `complydoc audit` on three documents with hidden
-  text, the finding as the report gives it, where the hidden lines sit on the
-  page, and the text PyPDFLoader hands the model.
+- `src/data/loaders.json`: two LangChain PDF loaders run through
+  `cd.compare_loaders` on a two-column page of `viewer/sample/documents`, the
+  page's text as each returned it, and whether each kept a passage the page
+  must keep.
+- `src/data/hidden.json`: `complydoc audit` on the CV `make_documents.py`
+  writes, the finding as the report gives it, where the hidden line sits on
+  the page, and the text PyPDFLoader hands the model.
 - `src/assets/demos/*.webp`: the pages, drawn with pypdfium2.
 
 Nothing in the files is written by hand: change a document or a loader here
@@ -45,8 +45,6 @@ WIDTH_PX = 900
 LOADERS = {
     "PyPDFLoader": "pypdf",
     "PDFPlumberLoader": "pdfplumber",
-    "PDFMinerLoader": "pdfminer.six",
-    "PyMuPDF4LLMLoader": "PyMuPDF4LLM",
 }
 
 # One page each, and the passage it must come out with. The story is what the
@@ -62,34 +60,6 @@ PAGES = [
             " by both parties before work begins."
         ),
     },
-    {
-        "file": "annual-report-2025.pdf",
-        "page": 3,
-        "title": "Financial table",
-        "story": "An annual report's financial summary: one table, four columns of figures.",
-        "fact": "Warehousing 21.4 24.1 3.2 3.9",
-    },
-    {
-        "file": "employee-handbook.pdf",
-        "page": 6,
-        "title": "Contact list",
-        "story": "The handbook's appendix: names, emails, phone numbers and NI numbers in a table.",
-        "fact": "Aisha Khan Occupational health aisha.khan@harbour.example",
-    },
-    {
-        "file": "rechnungen-2026-de.pdf",
-        "page": 1,
-        "title": "German invoice",
-        "story": "An invoice in German, with a tax number and an IBAN to pay into.",
-        "fact": "Wartung 12 354,17 4.250,00",
-    },
-    {
-        "file": "supplier-invoices-scanned.pdf",
-        "page": 1,
-        "title": "Scanned invoice",
-        "story": "A supplier invoice printed and scanned: a picture of a page.",
-        "fact": "Invoice",
-    },
 ]
 
 HIDDEN = [
@@ -98,18 +68,6 @@ HIDDEN = [
         "title": "A CV",
         "story": (
             "A candidate's CV, read by a screening assistant before anyone on the hiring team."
-        ),
-    },
-    {
-        "file": DEMO_DOCUMENTS / "supplier-invoice.pdf",
-        "title": "A supplier invoice",
-        "story": "An invoice in the accounts payable inbox, read by an agent that drafts payments.",
-    },
-    {
-        "file": SAMPLES / "vendor-due-diligence.pdf",
-        "title": "A vendor questionnaire",
-        "story": (
-            "A supplier's security questionnaire, summarised by a model for the procurement team."
         ),
     },
 ]
@@ -146,8 +104,7 @@ def merge_spacing(differences: list[dict]) -> list[dict]:
 
 
 def loaders_demo() -> dict:
-    from langchain_community.document_loaders import PDFMinerLoader, PDFPlumberLoader, PyPDFLoader
-    from langchain_pymupdf4llm import PyMuPDF4LLMLoader
+    from langchain_community.document_loaders import PDFPlumberLoader, PyPDFLoader
 
     pages = []
     for spec in PAGES:
@@ -156,8 +113,6 @@ def loaders_demo() -> dict:
             {
                 "PyPDFLoader": PyPDFLoader(str(path)),
                 "PDFPlumberLoader": PDFPlumberLoader(str(path)),
-                "PDFMinerLoader": PDFMinerLoader(str(path), mode="page"),
-                "PyMuPDF4LLMLoader": PyMuPDF4LLMLoader(str(path), mode="page"),
             },
             facts=[spec["fact"]],
             # The values are synthetic test data, and the demo is about how each loader spells them.

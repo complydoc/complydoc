@@ -1,6 +1,7 @@
 import { ArrowRightIcon } from "lucide-react";
 import traceDark from "@/assets/screens/trace-dark.webp";
 import traceLight from "@/assets/screens/trace-light.webp";
+import { Backdrop } from "@/components/Backdrop";
 import { CopyButton } from "@/components/CopyButton";
 import { Screenshot } from "@/components/Screenshot";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,8 @@ const SKILL = "complydoc skill --install";
 
 export function Hero() {
   return (
-    <section id="top" aria-labelledby="hero-title" className="overflow-hidden">
+    <section id="top" aria-labelledby="hero-title" className="relative isolate overflow-hidden">
+      <Backdrop />
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-10 px-6 pt-16 pb-20 text-center md:pt-24 md:pb-28">
         <div className="flex max-w-3xl flex-col items-center gap-6">
           <p className="font-mono text-xs text-muted-foreground">open source · runs on your machine</p>
