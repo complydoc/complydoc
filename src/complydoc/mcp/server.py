@@ -28,10 +28,11 @@ from typing import IO, Any
 from urllib.parse import quote, unquote, urlparse
 
 from complydoc import __version__, offline
-from complydoc.mcp.catalogue import TOOLS
+from complydoc.mcp.catalogue import RUN_TOOLS, TOOLS
 from complydoc.mcp.folders import STORE, FolderError, Folders, Picker, pick_folder
 from complydoc.mcp.prompts import PROMPTS, get_prompt
 from complydoc.mcp.reading import CAREFUL, READY, STOP, UNREAD, Findings, Reader, short
+from complydoc.mcp.runs import RunError, Runs
 
 __all__ = ["CAREFUL", "READY", "STOP", "UNREAD", "Findings", "Server", "serve"]
 
@@ -68,6 +69,17 @@ READS_DOCUMENTS = frozenset(
 """The tools whose answer depends on names being masked."""
 
 
+INSTRUCTIONS = (
+    "Open documents with open_document, never by asking for the file: it masks "
+    "personal details and removes hidden instructions before you read it. If a "
+    "document is not in a shared folder, offer to choose its folder with choose_folder."
+)
+RUN_INSTRUCTIONS = (
+    " For questions about ingestion pipelines, loaders, load times or evals, read the runs "
+    "complydoc recorded with list_runs and show_run rather than the report files."
+)
+
+
 class ToolError(Exception):
     """Something the person can act on, returned to the client as the tool's answer."""
 
@@ -79,8 +91,11 @@ class Server:
         picker: Picker = pick_folder,
         clean_copies: Path = CLEAN_COPIES,
         fetching: subprocess.Popen[bytes] | None = None,
+        runs: Runs | None = None,
     ) -> None:
         self.folders = folders
+        self.runs = runs
+        """The folders of recorded runs an engineer's tools read, when given."""
         self.picker = picker
         self.clean_copies = clean_copies
         self.reader = Reader()
@@ -321,9 +336,23 @@ class Server:
             text += "\n\n" + pending
         return text
 
+    def tools(self) -> list[dict[str, Any]]:
+        return TOOLS + RUN_TOOLS if self.runs is not None else TOOLS
+
     def _dispatch(self, name: str, arguments: dict[str, Any]) -> str:
         def argument(key: str) -> str:
             return str(arguments.get(key, ""))
+
+        runs = self.runs
+        if runs is not None:
+            if name == "list_runs":
+                return runs.list_runs(argument("query"))
+            if name == "show_run":
+                return runs.show_run(argument("run"))
+            if name == "compare_runs":
+                return runs.compare_runs(argument("run"), argument("against"))
+            if name == "find_value":
+                return runs.find_value(argument("value"))
 
         folders = self.folders
         if name == "list_documents":
@@ -401,16 +430,12 @@ def _handle(server: Server, request: dict[str, Any]) -> dict[str, Any]:
                 "websiteUrl": "https://complydoc.github.io/complydoc/",
                 "icons": _icons(),
             },
-            "instructions": (
-                "Open documents with open_document, never by asking for the file: it masks "
-                "personal details and removes hidden instructions before you read it. If a "
-                "document is not in a shared folder, offer to choose its folder with choose_folder."
-            ),
+            "instructions": INSTRUCTIONS + (RUN_INSTRUCTIONS if server.runs is not None else ""),
         }
     if method == "ping":
         return {}
     if method == "tools/list":
-        return {"tools": TOOLS}
+        return {"tools": server.tools()}
     if method == "tools/call":
         arguments = params.get("arguments") or {}
         if not isinstance(arguments, dict):
@@ -448,7 +473,7 @@ def _call_tool(
     try:
         text = server.call(name, arguments)
         return {"content": [{"type": "text", "text": text}], "isError": False}
-    except (ToolError, FolderError) as error:
+    except (ToolError, FolderError, RunError) as error:
         return {"content": [{"type": "text", "text": str(error)}], "isError": True}
     except Exception as error:  # A document that cannot be read is an answer, not a crash.
         print(f"complydoc mcp: {type(error).__name__}: {error}", file=sys.stderr)
@@ -465,13 +490,15 @@ def serve(
     picker: Picker = pick_folder,
     clean_copies: Path = CLEAN_COPIES,
     fetch_name_model: bool = False,
+    runs: Iterable[str | Path] = (),
 ) -> None:
     """Answer MCP requests on stdin until it closes. Logs go to stderr, never stdout.
 
     `folders` are the ones given at start; those chosen in a conversation are kept in
     `store` and added to them. Clean copies are written to `clean_copies`. With
     `fetch_name_model`, the model that finds names is downloaded once if it is missing, by a
-    process of its own, before this one's network guard is armed.
+    process of its own, before this one's network guard is armed. `runs` are folders of
+    reports complydoc wrote; given them, the server offers an engineer's tools on them too.
     """
     from complydoc.mcp.models import fetch_name_model as start_fetch
 
@@ -479,7 +506,11 @@ def serve(
     given = [folders] if isinstance(folders, (str, Path)) else list(folders)
     fetching = start_fetch() if fetch_name_model else None
     server = Server(
-        Folders(given, store=store), picker=picker, clean_copies=clean_copies, fetching=fetching
+        Folders(given, store=store),
+        picker=picker,
+        clean_copies=clean_copies,
+        fetching=fetching,
+        runs=Runs([Path(r) for r in runs]) if runs else None,
     )
     # The guard holds for the whole session, and lets go when the client hangs up.
     with offline.guarded(True):

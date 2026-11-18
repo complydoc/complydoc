@@ -9,6 +9,10 @@ separately.
 
 ### Added
 
+- `complydoc mcp --runs .complydoc` gives an engineer's assistant the runs complydoc
+  recorded: `list_runs`, `show_run` (each step's time, what it passed on and where it sent
+  anything; loaders compared; evals), `compare_runs` (step times against the run before)
+  and `find_value`. They read the reports and run nothing.
 - Portuguese social security numbers (NISS) are found beside their label and confirmed by
   their check digit, and the `hr` policy covers them.
 - A check digit can be declared in `sensitive.yaml` under `checks`, by its method and

@@ -163,6 +163,27 @@ attached is the cleaned text, not the file. Claude Desktop does not show an exte
 resources or prompts in its chat, so there the person asks for the document instead, and
 the tools do the rest.
 
+## For engineers: ask about your runs
+
+Every pipeline run inside `cd.observe(...)`, every `complydoc compare-loaders` and every
+audit leaves a report in `.complydoc`. Give the server that folder and an engineer can ask
+about them from Claude Code, Cursor or any MCP client, in the repository:
+
+```bash
+claude mcp add complydoc -- complydoc mcp --runs .complydoc
+```
+
+| Tool | What an engineer can ask |
+| --- | --- |
+| `list_runs` | *Which ingestion runs do we have?* Newest first, with the commit and how long each took |
+| `show_run` | *Where does the contracts pipeline spend its time?* Each step's time, documents and characters, the identifiers it passed on, and any host it sent to. For a loader comparison, each loader's time, pages and facts kept; for evals, which facts each reader kept |
+| `compare_runs` | *Did the last change make loading slower?* Step times against the run before, or another one |
+| `find_value` | *Where did this IBAN go?* The documents it was read from, the steps that still held it and the hosts it reached |
+
+These read the reports and run nothing. Reports hold values masked, so the answers are
+masked too; `find_value` hashes the value it is given and never writes it down. The same
+server can share document folders as well: `--folder` and `--runs` go together.
+
 ## What it does and does not stop
 
 - Only files inside the shared folders can be read, the one place written to is
