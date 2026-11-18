@@ -55,7 +55,7 @@ export function LayerArt() {
         <div className="flex flex-col gap-4 rounded-xl border-2 border-primary bg-card p-5 shadow-sm">
           <div className="flex flex-col gap-2">
             <Logo size={20} />
-            <span className="font-mono text-[11px] tracking-wide text-muted-foreground uppercase">On your computer</span>
+            <span className="text-sm text-muted-foreground">On your computer</span>
           </div>
           <ul className="flex flex-col gap-3">
             {STEPS.map((step) => (
@@ -90,7 +90,7 @@ export function LayerArt() {
 function Column({ label, note, children }: { label: string; note: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-4 rounded-xl border bg-card p-5">
-      <p className="font-mono text-[11px] tracking-wide text-muted-foreground uppercase">{label}</p>
+      <p className="text-sm font-medium">{label}</p>
       <div className="flex-1">{children}</div>
       <p className="border-t pt-3 text-xs text-muted-foreground">{note}</p>
     </div>

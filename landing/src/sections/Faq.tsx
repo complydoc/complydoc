@@ -61,7 +61,7 @@ const QUESTIONS: { question: string; answer: ReactNode }[] = [
 
 export function Faq() {
   return (
-    <Section id="faq" eyebrow="Questions" title="Asked before installing.">
+    <Section id="faq" title="Asked before installing.">
       <div className="flex max-w-3xl flex-col">
         {QUESTIONS.map((item) => (
           <details key={item.question} className="group border-b first:border-t">

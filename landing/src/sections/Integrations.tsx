@@ -123,7 +123,6 @@ export function Integrations() {
   return (
     <Section
       id="integrations"
-      eyebrow="Integrations"
       title="Works with your existing loaders"
       lead="complydoc reads documents by their shape, so it needs no adapter per loader and imports no framework you do not use. Pass it a loader, a folder or a list of documents."
     >
