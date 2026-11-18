@@ -22,6 +22,7 @@ rules:
       - se_personnummer
       - dk_cpr
       - no_fnr
+      - fi_hetu
       - ch_ahv
       - in_aadhaar
       - ca_sin
