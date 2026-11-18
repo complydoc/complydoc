@@ -196,7 +196,10 @@ class Server:
         return [name for name in names if query in name.lower()] if query else names
 
     # The tools.
-    def list_documents(self, query: str = "", page: int = 1) -> str:
+    def list_documents(self, query: str = "", page: object = 1) -> str:
+        # A model sometimes writes a number as text: "2" is page 2.
+        if isinstance(page, str) and page.strip().isdigit():
+            page = int(page)
         if type(page) is not int or page < 1:
             raise ToolError("The page must be a positive integer, starting at 1.")
         if not self.folders.all:
@@ -207,6 +210,8 @@ class Server:
             return f"No document{matching} in the shared folders."
         pages = (len(names) + MAX_LIST - 1) // MAX_LIST
         if page > pages:
+            if pages == 1:
+                return "There is only 1 page of documents; ask for page 1."
             return f"There are only {pages} pages of documents; ask for a page from 1 to {pages}."
         end = page * MAX_LIST
         shown = names[end - MAX_LIST : end]

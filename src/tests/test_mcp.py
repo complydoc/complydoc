@@ -93,13 +93,31 @@ def test_it_lists_every_page_of_a_large_shared_folder(tmp_path: Path, page: int)
             assert "more;" not in listed
 
 
-@pytest.mark.parametrize("page", [0, -1, True, 1.5, "2", None])
+@pytest.mark.parametrize("page", [0, -1, True, 1.5, "two", None])
 def test_it_explains_that_a_page_must_be_a_positive_integer(
     tmp_path: Path, folder: Path, page: Any
 ) -> None:
     (reply,) = talk([folder], call(1, "list_documents", page=page), store=tmp_path / "s.json")
     assert reply["result"]["isError"] is True
     assert "positive integer" in text(reply)
+
+
+def test_a_page_written_as_text_is_that_page_and_one_page_is_said_so(
+    tmp_path: Path, folder: Path
+) -> None:
+    docs = tmp_path / "many"
+    docs.mkdir()
+    for n in range(60):
+        (docs / f"contract-{n:02}.txt").write_text("synthetic contract", encoding="utf-8")
+    as_number, as_text = talk(
+        [docs],
+        call(1, "list_documents", page=2),
+        call(2, "list_documents", page="2"),
+        store=tmp_path / "s.json",
+    )
+    assert text(as_text) == text(as_number)
+    (past,) = talk([folder], call(1, "list_documents", page=2), store=tmp_path / "t.json")
+    assert text(past) == "There is only 1 page of documents; ask for page 1."
 
 
 def test_it_filters_names_before_choosing_a_page(tmp_path: Path) -> None:
