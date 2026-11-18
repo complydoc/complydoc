@@ -5,6 +5,12 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
+## Unreleased
+
+### Added
+
+- UK NHS numbers are found beside their label and confirmed by their check digit.
+
 ## [0.8.0] — 2026-11-18
 
 complydoc reaches the assistant. `complydoc mcp` lets Claude Desktop, Claude Code, Cursor

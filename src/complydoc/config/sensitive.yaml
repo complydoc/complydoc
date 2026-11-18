@@ -40,6 +40,15 @@ checks:
     modulus: 10
     subtract_from: 9
 
+  uk_nhs_number:
+    length: 10
+    method: weighted
+    weights: [10, 9, 8, 7, 6, 5, 4, 3, 2]
+    modulus: 11
+    subtract_from: 11
+    replace: {11: 0}
+    invalid: [10]
+
 categories:
 
   ni_number:
@@ -55,6 +64,19 @@ categories:
     gdpr_note: >
       A direct identifier under UK data protection law. Uniquely identifies an
       individual and is routinely treated as high risk in a breach assessment.
+
+  uk_nhs_number:
+    enabled: true
+    label: NHS number
+    region: UK
+    detector: regex
+    severity: high
+    context_patterns:
+      - '\b\d{3}[ -]?\d{3}[ -]?\d{4}\b'
+    validators: [uk_nhs_number]
+    context_terms: ["nhs number", "nhs no"]
+    gdpr_note: >
+      A patient identifier and special-category health data under the UK GDPR.
 
   sort_code:
     enabled: true
