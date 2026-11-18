@@ -4,10 +4,8 @@ import {
   CoffeeIcon,
   FileTextIcon,
   IdCardIcon,
-  TerminalIcon,
 } from "lucide-react";
 import { BlameArt } from "@/art/BlameArt";
-import { CodeBlock } from "@/components/CodeBlock";
 import { Section, TextLink } from "@/components/Section";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,12 +37,6 @@ function avatar(login: string): string | undefined {
     path.endsWith(`/${login}.png`),
   )?.[1];
 }
-
-/** From CONTRIBUTING.md: the setup, and the check CI runs. */
-const SETUP = `git clone https://github.com/<you>/complydoc
-cd complydoc
-make install-all   # dependencies, optional extras and the spaCy model
-make check         # lint, types and tests, as CI runs them`;
 
 const WAYS = [
   {
@@ -128,38 +120,39 @@ export function ContributorsPage() {
         </ItemGroup>
       </Section>
 
-      <Section
-        id="start"
-        title="From a clone to a pull request."
-      >
+      <Section id="together" title="How we work together.">
         <div className="grid gap-8 lg:grid-cols-2">
+          <p className="text-lg text-pretty">
+            We appreciate every pull request, from a one-line fix to a new
+            loader. What we are building is a community of engineers who know
+            complydoc deeply, and are at ease putting it into their own document
+            pipelines.
+          </p>
           <div className="flex flex-col gap-4">
-            <ol className="flex list-decimal flex-col gap-3 pl-5 text-pretty marker:text-muted-foreground">
+            <ul className="flex list-disc flex-col gap-3 pl-5 text-pretty marker:text-muted-foreground">
               <li>
-                Pick an issue, or open one to say what you would like to change.
+                Comment on an issue to be assigned before you start, so no two
+                people do the same work.
               </li>
               <li>
-                Fork the repository, then set it up and run the checks, as on
-                the right.
+                Keep a pull request to one issue, with a test that fails without
+                the change.
               </li>
-              <li>Make the change, with a test that fails without it.</li>
               <li>
-                Open a pull request into{" "}
-                <code className="font-mono text-sm">development</code>. Releases
-                are cut from there.
+                Open it into{" "}
+                <code className="font-mono text-sm">development</code>. Every
+                one is read and answered.
               </li>
-            </ol>
+              <li>
+                Everyone whose work ships is thanked by name in the release
+                notes.
+              </li>
+            </ul>
             <p className="text-sm text-muted-foreground">
-              Layout, conventions and how the sample documents are made:{" "}
+              Setup, layout and conventions:{" "}
               <TextLink href={links.contributing}>CONTRIBUTING.md</TextLink>
             </p>
           </div>
-          <CodeBlock
-            title="Set up and check"
-            icon={<TerminalIcon className="size-3.5" />}
-            lang="bash"
-            code={SETUP}
-          />
         </div>
       </Section>
 
