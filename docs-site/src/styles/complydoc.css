@@ -80,6 +80,11 @@ h1#_top {
 .sl-markdown-content th {
   background: var(--sl-color-gray-6);
 }
+/* Starlight drops the padding on a row's first and last cell, which leaves text against
+   the border once the table has one. Every cell gets the same inner space. */
+.sl-markdown-content :is(th, td) {
+  padding: 0.6rem 1rem;
+}
 .card {
   border-radius: 0.75rem;
   border-color: var(--sl-color-hairline) !important;
