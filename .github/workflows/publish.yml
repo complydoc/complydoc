@@ -11,6 +11,9 @@
 # for the one with a name model, each for amd64 and arm64. They are then pulled back and
 # run, so a release whose image does not work fails here and not on someone's server.
 #
+# Once PyPI serves the version, it is listed in the official MCP Registry from
+# `server.json`, signed in with the same kind of OIDC token.
+#
 # Authentication is PyPI Trusted Publishing: GitHub proves this workflow's
 # identity with a short-lived OIDC token and PyPI checks it against the
 # publisher configured for the project. There is no token to store or rotate.
@@ -73,6 +76,66 @@ jobs:
           # files that already landed.
           skip-existing: true
           print-hash: true
+
+  mcp-registry:
+    name: list the version in the MCP Registry
+    needs: pypi
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Signing in to the registry as this repository's owner, io.github.complydoc.
+      id-token: write
+    env:
+      TAG: ${{ github.event.inputs.tag || github.event.release.tag_name }}
+      # Pinned and verified below; move it deliberately, never to releases/latest.
+      MCP_PUBLISHER_VERSION: v1.8.1
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.inputs.tag || github.event.release.tag_name }}
+
+      - name: server.json lists the version being released
+        run: |
+          version="${TAG#v}"
+          for listed in "$(jq -r .version server.json)" "$(jq -r '.packages[] | select(.registryType == "pypi") | .version' server.json)"; do
+            if [ "${listed}" != "${version}" ]; then
+              echo "::error::server.json lists ${listed}, not ${version} from tag ${TAG}"; exit 1
+            fi
+          done
+
+      # The registry reads the PyPI page to find mcp-name in the description, and the
+      # upload above can take a few minutes to show there.
+      - name: wait for PyPI to serve the version
+        run: |
+          version="${TAG#v}"
+          for _ in $(seq 30); do
+            if curl -fsS "https://pypi.org/pypi/complydoc/${version}/json" > /dev/null; then
+              echo "PyPI has complydoc ${version}"; exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::PyPI did not serve complydoc ${version} within 5 minutes"; exit 1
+
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      - name: download and verify mcp-publisher
+        run: |
+          set -euo pipefail
+          archive="mcp-publisher_linux_amd64.tar.gz"
+          base_url="https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}"
+          curl -fsSL --output "$archive" "$base_url/$archive"
+          curl -fsSL --output "$archive.sigstore.json" "$base_url/$archive.sigstore.json"
+          cosign verify-blob \
+            --bundle "$archive.sigstore.json" \
+            --certificate-identity "https://github.com/modelcontextprotocol/registry/.github/workflows/release.yml@refs/tags/${MCP_PUBLISHER_VERSION}" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+            "$archive"
+          tar xzf "$archive" mcp-publisher
+          rm -f "$archive" "$archive.sigstore.json"
+
+      - run: ./mcp-publisher validate
+      - run: ./mcp-publisher login github-oidc
+      - run: ./mcp-publisher publish
 
   image:
     name: publish the container images
