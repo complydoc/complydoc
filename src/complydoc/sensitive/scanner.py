@@ -57,6 +57,7 @@ _EXCLUSIVE_GROUP = frozenset(
         "se_personnummer",
         "dk_cpr",
         "no_fnr",
+        "fi_hetu",
         "ch_ahv",
         "br_cpf",
         "br_cnpj",

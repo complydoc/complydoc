@@ -7,6 +7,11 @@ separately.
 
 ## Unreleased
 
+### Added
+
+- Finnish personal identity codes (henkilötunnus) are found beside their label and confirmed by
+  their century sign, date and check character, and the `hr` and `legal` policies cover them.
+
 ### Fixed
 
 - A Portuguese social security number is one identifier: a match for it is no longer also
