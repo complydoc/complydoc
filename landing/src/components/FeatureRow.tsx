@@ -3,8 +3,6 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 interface FeatureRowProps {
-  /** The step of the loop this feature belongs to, above the title. */
-  label: string;
   title: string;
   children: ReactNode;
   /** Two or three things it does, said in a line each. */
@@ -17,7 +15,7 @@ interface FeatureRowProps {
 }
 
 /** One feature: what it is in a few lines on one side, and the thing itself on the other. */
-export function FeatureRow({ label, title, children, points, more, visual, flip = false }: FeatureRowProps) {
+export function FeatureRow({ title, children, points, more, visual, flip = false }: FeatureRowProps) {
   return (
     <article
       className={cn(
@@ -26,7 +24,6 @@ export function FeatureRow({ label, title, children, points, more, visual, flip 
       )}
     >
       <div className="flex flex-col justify-center gap-4 p-8 md:p-12">
-        <p className="font-mono text-xs tracking-wide text-primary uppercase">{label}</p>
         <h3 className="text-2xl font-semibold tracking-tight text-balance md:text-3xl">{title}</h3>
         <p className="text-pretty text-muted-foreground">{children}</p>
         <ul className="flex flex-col gap-2 text-sm">

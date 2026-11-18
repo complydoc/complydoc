@@ -81,7 +81,6 @@ export function ContributorsPage() {
   return (
     <Page>
       <PageHeader
-        eyebrow="Contributors"
         title="Built in the open."
         art={<BlameArt avatar={avatar} />}
         lead="complydoc is MIT licensed and made by the people below. Every pull request is read, and a first one is welcome."
@@ -101,7 +100,6 @@ export function ContributorsPage() {
 
       <Section
         id="people"
-        eyebrow="The people"
         title="The ones building complydoc."
       >
         <ItemGroup className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -132,7 +130,6 @@ export function ContributorsPage() {
 
       <Section
         id="start"
-        eyebrow="Your first contribution"
         title="From a clone to a pull request."
       >
         <div className="grid gap-8 lg:grid-cols-2">
@@ -168,7 +165,6 @@ export function ContributorsPage() {
 
       <Section
         id="issues"
-        eyebrow="Good first issues"
         title="A good place to start."
       >
         <Card className="max-w-2xl">
@@ -194,7 +190,6 @@ export function ContributorsPage() {
 
       <Section
         id="ways"
-        eyebrow="Other ways to help"
         title="Not all of it is code."
       >
         <div className="grid gap-4 md:grid-cols-2">

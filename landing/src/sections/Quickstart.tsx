@@ -51,7 +51,6 @@ export function Quickstart() {
   return (
     <Section
       id="quickstart"
-      eyebrow="Quickstart"
       title="Three steps to your first trace."
       lead="No change to your loader, your splitter or your vector store. complydoc watches the calls they make and reads what each one returned."
     >

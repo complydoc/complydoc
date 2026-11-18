@@ -85,7 +85,6 @@ export function Trust() {
   return (
     <Section
       id="trace"
-      eyebrow="Observe"
       title="Every step your pipeline takes, on one trace."
       lead="Open a run in the viewer and see what each call was given, what it returned, how long it took and what it cost."
     >

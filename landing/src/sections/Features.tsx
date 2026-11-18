@@ -28,13 +28,11 @@ export function Features() {
   return (
     <Section
       id="features"
-      eyebrow="What it does"
       title="Read it. Compare it. Expect it. Follow it."
       lead="Ingestion decides what your model will ever see, and none of its failures raise an error: a table flattened into lines, a scan that loads as no text, a clause cut in half, an account number sent to a hosted model. Each of these is a page in the viewer."
     >
       <div className="flex flex-col gap-6">
         <FeatureRow
-          label="Read"
           title="The document as your pipeline read it."
           points={[
             "Every page as text, with numbered lines",
@@ -56,7 +54,6 @@ export function Features() {
 
         <FeatureRow
           flip
-          label="Compare"
           title="Two loaders, the same page, line by line."
           points={[
             "Any two loaders or readers, side by side or unified",
@@ -78,7 +75,6 @@ export function Features() {
         </FeatureRow>
 
         <FeatureRow
-          label="Expect"
           title="Mark what a reading must keep, where you read it."
           points={[
             "Select a passage and press Expect",
@@ -100,7 +96,6 @@ export function Features() {
 
         <FeatureRow
           flip
-          label="Follow"
           title="Ask where a value went."
           points={[
             "Every document it was read from",
@@ -122,7 +117,6 @@ export function Features() {
         </FeatureRow>
 
         <FeatureRow
-          label="Protect"
           title="Identifiers and hidden instructions, before they are indexed."
           points={[
             "Personal and financial identifiers, by kind and by document",
@@ -144,7 +138,6 @@ export function Features() {
 
         <FeatureRow
           flip
-          label="Route"
           title="Send a page to a vision model only when it needs one."
           points={[
             "The text layer where it is usable",

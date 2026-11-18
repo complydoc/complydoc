@@ -38,7 +38,7 @@ const FIGURES: { value: string; what: string; where: string; href: string; sourc
 
 export function Numbers() {
   return (
-    <Section id="numbers" eyebrow="Measured" title="Numbers you can run again.">
+    <Section id="numbers" title="Numbers you can run again.">
       <dl className="grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
         {FIGURES.map((figure) => (
           <div key={figure.what} className="flex flex-col gap-2 border-t pt-6">

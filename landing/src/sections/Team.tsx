@@ -20,13 +20,11 @@ export function Team() {
   return (
     <Section
       id="team"
-      eyebrow="For a team"
       title="From one laptop to every run your team makes."
       lead="The same reports, written by your pipelines and CI jobs, read by everyone who should see them and enforced where code is merged."
     >
       <div className="flex flex-col gap-6">
         <FeatureRow
-          label="Share"
           title="One place where the whole team reads the same runs."
           points={[
             "A container that serves the viewer, read-only",
@@ -41,7 +39,6 @@ export function Team() {
         </FeatureRow>
         <FeatureRow
           flip
-          label="Enforce"
           title="Fail the build when ingestion gets worse."
           points={[
             "No hidden instructions, no identifier sent to a host",
