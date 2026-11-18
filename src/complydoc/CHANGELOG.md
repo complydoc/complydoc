@@ -12,6 +12,11 @@ separately.
 - Finnish personal identity codes (henkilötunnus) are found beside their label and confirmed by
   their century sign, date and check character, and the `hr` and `legal` policies cover them.
 
+### Fixed
+
+- A Portuguese social security number is one identifier: a match for it is no longer also
+  reported as another category over the same digits.
+
 ## [0.8.0] — 2026-11-18
 
 complydoc reaches the assistant. `complydoc mcp` lets Claude Desktop, Claude Code, Cursor

@@ -50,6 +50,7 @@ _EXCLUSIVE_GROUP = frozenset(
         "us_routing_number",
         "nl_bsn",
         "pt_nif",
+        "pt_niss",
         "de_steuer_id",
         "be_national_number",
         "pl_pesel",
