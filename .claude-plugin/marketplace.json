@@ -1,0 +1,15 @@
+{
+  "name": "complydoc",
+  "description": "complydoc for Claude: documents opened with personal and financial details masked and hidden instructions taken out.",
+  "owner": {
+    "name": "complydoc",
+    "url": "https://github.com/complydoc"
+  },
+  "plugins": [
+    {
+      "name": "complydoc",
+      "source": "./plugin",
+      "description": "Open documents with personal and financial details masked and hidden instructions taken out, on your machine."
+    }
+  ]
+}

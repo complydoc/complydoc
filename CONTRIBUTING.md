@@ -165,8 +165,9 @@ git push origin "v$VERSION"
 ```
 
 The tag must match `complydoc.__version__` and have a changelog entry. `server.json` (the
-MCP Registry entry) carries the same version twice, and `test_mcp_registry.py` fails until
-both are bumped. `release.yml` builds the
+MCP Registry entry) carries the same version twice, as do the Claude plugin's
+`plugin/.claude-plugin/plugin.json` and `plugin/.mcp.json`; `test_mcp_registry.py` fails until
+all are bumped. `release.yml` builds the
 wheel and sdist, an SBOM and checksums, attests the artefacts, and drafts a release:
 
 ```bash

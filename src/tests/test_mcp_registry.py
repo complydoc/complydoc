@@ -43,3 +43,10 @@ def test_the_command_is_the_mcp_command() -> None:
 
 def test_the_description_fits_the_registry() -> None:
     assert 1 <= len(SERVER["description"]) <= 100
+
+
+def test_the_claude_plugin_runs_this_version() -> None:
+    plugin = json.loads((ROOT / "plugin/.claude-plugin/plugin.json").read_text(encoding="utf-8"))
+    servers = json.loads((ROOT / "plugin/.mcp.json").read_text(encoding="utf-8"))["mcpServers"]
+    assert plugin["version"] == complydoc.__version__
+    assert servers["complydoc"]["args"] == [f"complydoc@{complydoc.__version__}", "mcp"]
