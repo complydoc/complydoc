@@ -147,7 +147,7 @@ rests on the same text the assistant would get.
 
 | Tool | What the person can ask |
 | --- | --- |
-| `list_documents` | *Which documents do I have about Acme?* |
+| `list_documents` | *Which documents do I have about Acme?* Optional `page`: 1 for the first 50 documents, 2 for the next, and so on. |
 | `search_documents` | *Which contracts mention penalties?* Words looked up in the masked, cleaned text, with the page and a short passage |
 | `check_document` | *Can I share the Nordwind contract?* |
 | `check_folder` | *Can I share the Proposals folder?* Every document's verdict, the ones not to share first |

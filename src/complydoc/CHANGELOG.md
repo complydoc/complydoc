@@ -9,6 +9,8 @@ separately.
 
 ### Added
 
+- MCP `list_documents` accepts a page number, so every document in a large shared folder
+  can be listed. Name filtering applies before pagination.
 - `complydoc mcp --runs .complydoc` gives an engineer's assistant the runs complydoc
   recorded: `list_runs`, `show_run` (each step's time, what it passed on and where it sent
   anything; loaders compared; evals), `compare_runs` (step times against the run before)

@@ -196,14 +196,27 @@ class Server:
         return [name for name in names if query in name.lower()] if query else names
 
     # The tools.
-    def list_documents(self, query: str = "") -> str:
+    def list_documents(self, query: str = "", page: int = 1) -> str:
+        if type(page) is not int or page < 1:
+            raise ToolError("The page must be a positive integer, starting at 1.")
         if not self.folders.all:
             return NO_FOLDER
         names = self.documents(query)
         if not names:
             matching = f" matching {query!r}" if query else ""
             return f"No document{matching} in the shared folders."
-        return _capped(names, MAX_LIST, "narrow it with a word from the name")
+        pages = (len(names) + MAX_LIST - 1) // MAX_LIST
+        if page > pages:
+            return f"There are only {pages} pages of documents; ask for a page from 1 to {pages}."
+        end = page * MAX_LIST
+        shown = names[end - MAX_LIST : end]
+        more = (
+            f"\n…and {len(names) - end} more; ask for page {page + 1}, "
+            "or narrow it with a word from the name."
+            if end < len(names)
+            else ""
+        )
+        return "\n".join(shown) + more
 
     def check_document(self, name: str) -> str:
         path = self.resolve(name)
@@ -356,7 +369,7 @@ class Server:
 
         folders = self.folders
         if name == "list_documents":
-            return self.list_documents(argument("query"))
+            return self.list_documents(argument("query"), arguments.get("page", 1))
         if name == "search_documents":
             return self.search_documents(argument("query"), argument("folder"))
         if name == "check_document":

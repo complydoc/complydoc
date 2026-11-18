@@ -58,7 +58,7 @@ def talk(
     return [json.loads(line) for line in out.getvalue().splitlines()]
 
 
-def call(n: int, tool: str, **arguments: str) -> dict[str, Any]:
+def call(n: int, tool: str, **arguments: Any) -> dict[str, Any]:
     return {
         "jsonrpc": "2.0",
         "id": n,
@@ -69,6 +69,53 @@ def call(n: int, tool: str, **arguments: str) -> dict[str, Any]:
 
 def text(reply: dict[str, Any]) -> str:
     return str(reply["result"]["content"][0]["text"])
+
+
+@pytest.mark.parametrize("page", [1, 2, 3])
+def test_it_lists_every_page_of_a_large_shared_folder(tmp_path: Path, page: int) -> None:
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    for n in range(60):
+        (docs / f"contract-{n:02}.txt").write_text("synthetic contract", encoding="utf-8")
+    (reply,) = talk([docs], call(1, "list_documents", page=page), store=tmp_path / "s.json")
+    listed = text(reply)
+    assert reply["result"]["isError"] is False
+    if page == 3:
+        assert "2 pages" in listed and "contract-" not in listed
+    else:
+        expected = range(0, 50) if page == 1 else range(50, 60)
+        assert [line for line in listed.splitlines() if line.startswith("docs/")] == [
+            f"docs/contract-{n:02}.txt" for n in expected
+        ]
+        if page == 1:
+            assert "10 more; ask for page 2" in listed
+        else:
+            assert "more;" not in listed
+
+
+@pytest.mark.parametrize("page", [0, -1, True, 1.5, "2", None])
+def test_it_explains_that_a_page_must_be_a_positive_integer(
+    tmp_path: Path, folder: Path, page: Any
+) -> None:
+    (reply,) = talk([folder], call(1, "list_documents", page=page), store=tmp_path / "s.json")
+    assert reply["result"]["isError"] is True
+    assert "positive integer" in text(reply)
+
+
+def test_it_filters_names_before_choosing_a_page(tmp_path: Path) -> None:
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    for n in range(60):
+        (docs / f"invoice-{n:02}.txt").write_text("synthetic invoice", encoding="utf-8")
+    (docs / "unrelated.txt").write_text("synthetic note", encoding="utf-8")
+    first, second = talk(
+        [docs],
+        call(1, "list_documents", query="INVOICE"),
+        call(2, "list_documents", query="INVOICE", page=2),
+        store=tmp_path / "s.json",
+    )
+    assert "unrelated" not in text(first) + text(second)
+    assert "invoice-50.txt" in text(second) and "invoice-49.txt" not in text(second)
 
 
 def test_it_introduces_itself_with_its_icon_and_tools(folder: Path, tmp_path: Path) -> None:
