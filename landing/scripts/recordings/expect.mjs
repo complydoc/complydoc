@@ -76,9 +76,24 @@ try {
   await b.goto(`${base}?run=${AUDIT}&theme=${theme}#evals`, 3500);
   await b.evaluate(CURSOR);
   await snap(full, { fade: true }); hold(full, 14);
-  const board = await box(`document.querySelector("main table")`);
-  const facts = await box(`[...document.querySelectorAll("main *")].find((x) => x.children.length === 0 && x.innerText && x.innerText.trim() === ${JSON.stringify(PASSAGE)})`);
-  const target = cam([board[0], board[1] - 50, board[2], (facts ? facts[1] + 90 : board[1] + board[3]) - board[1] + 50], 20);
+  // Run the evals, so the passage just expected is scored with the rest.
+  await place(...mouse);
+  const runButton = await at("Run evals");
+  await glide(runButton, 24, full, full);
+  hold(full, 6);
+  await b.click(...runButton);
+  for (let i = 0; i < 12; i++) { await sleep(60); await snap(full); }
+  // Scroll to it: the newest passage is the last in the list.
+  const ROW = `[...document.querySelectorAll("main *")].find((x) => x.children.length === 0 && x.innerText && x.innerText.trim() === ${JSON.stringify(PASSAGE)})`;
+  await b.evaluate(`(() => { const e = ${ROW}; let p = e && e.parentElement; while (p && !(p.scrollHeight > p.clientHeight && getComputedStyle(p).overflowY !== "visible")) p = p.parentElement; window.__scroller = p || document.scrollingElement; const r = e.getBoundingClientRect(); window.__scrollFrom = window.__scroller.scrollTop; window.__scrollTo = window.__scrollFrom + r.top - ${H} * 0.55; })()`);
+  for (let i = 1; i <= 30; i++) {
+    const t = ease(i / 30);
+    await b.evaluate(`window.__scroller.scrollTop = window.__scrollFrom + (window.__scrollTo - window.__scrollFrom) * ${t}`);
+    await sleep(20); await snap(full);
+  }
+  hold(full, 10);
+  const row = await box(ROW);
+  const target = row ? cam([Math.max(row[0] - 20, 0), row[1] - 70, W - Math.max(row[0] - 20, 0) - 30, 150], 20) : full;
   for (let i = 1; i <= 30; i++) frames.push({ file: last, cam: mix(full, target, ease(i / 30)) });
   hold(target, 80);
   for (let i = 1; i <= 26; i++) frames.push({ file: last, cam: mix(target, full, ease(i / 26)) });
