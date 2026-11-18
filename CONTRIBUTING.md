@@ -3,6 +3,12 @@
 Thank you for helping. If complydoc is useful to you, a star on the repository helps other
 engineers find it.
 
+## Picking an issue
+
+Comment on the issue to be assigned before you start, and wait for it: the first person
+assigned takes it. A pull request for an issue assigned to someone else is closed, so that
+two people do not do the same work. One issue per pull request, with its tests.
+
 ## Setup
 
 ```bash
