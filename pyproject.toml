@@ -221,6 +221,8 @@ module = [
     "spacy.*",
     "torch.*",
     "transformers.*",
+    "huggingface_hub",
+    "huggingface_hub.*",
     "tiktoken.*",
     "docx.*",
     "openpyxl.*",

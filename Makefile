@@ -125,10 +125,8 @@ diagrams: ## Re-export the README architecture diagrams to SVG
 # ----------------------------------------------------------------- misc ----
 
 .PHONY: mcpb
-mcpb: ## Pack the Claude Desktop extension into dist/complydoc.mcpb
-	mkdir -p dist
-	rm -f dist/complydoc.mcpb
-	cd mcpb && zip -qr ../dist/complydoc.mcpb manifest.json pyproject.toml icon.png src -x '*/__pycache__/*'
+mcpb: ## Pack the Claude Desktop extension, light and with names, into dist/
+	$(PYTHON) python src/scripts/pack_mcpb.py dist
 
 .PHONY: viewer-bundle
 viewer-bundle: ## Build the React viewer into the package, for `complydoc ui`

@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import base64
 import json
+import subprocess
 import sys
 import unicodedata
 from collections.abc import Iterable
@@ -61,6 +62,12 @@ NO_FOLDER = (
 SCHEME = "complydoc"
 
 
+READS_DOCUMENTS = frozenset(
+    {"check_document", "check_folder", "open_document", "save_clean_copy", "search_documents"}
+)
+"""The tools whose answer depends on names being masked."""
+
+
 class ToolError(Exception):
     """Something the person can act on, returned to the client as the tool's answer."""
 
@@ -71,11 +78,35 @@ class Server:
         folders: Folders,
         picker: Picker = pick_folder,
         clean_copies: Path = CLEAN_COPIES,
+        fetching: subprocess.Popen[bytes] | None = None,
     ) -> None:
         self.folders = folders
         self.picker = picker
         self.clean_copies = clean_copies
         self.reader = Reader()
+        self.fetching = fetching
+        """The name model being downloaded, until it is on disk."""
+        self.fetch_failed = False
+
+    def _names_pending(self) -> str | None:
+        """What to say while the name model is not there yet; None once it is, or was never
+        asked for. When the download ends, documents read without it are read again."""
+        if self.fetching is not None and self.fetching.poll() is not None:
+            self.fetch_failed = self.fetching.returncode != 0
+            self.fetching = None
+            if not self.fetch_failed:
+                self.reader = Reader()
+        if self.fetching is not None:
+            return (
+                "Names of people and companies are not masked yet: complydoc is still "
+                "downloading the model that finds them (about 700 MB, once). Say so to the person."
+            )
+        if self.fetch_failed:
+            return (
+                "Names of people and companies are not masked: the model that finds them could "
+                "not be downloaded. Say so to the person."
+            )
+        return None
 
     # The files a person can name: "Contracts/acme.pdf", "acme.pdf", or a full path.
     def resolve(self, name: str) -> Path:
@@ -284,6 +315,13 @@ class Server:
         return {"contents": [{"uri": uri, "mimeType": "text/plain", "text": text}]}
 
     def call(self, name: str, arguments: dict[str, Any]) -> str:
+        pending = self._names_pending()
+        text = self._dispatch(name, arguments)
+        if pending and name in READS_DOCUMENTS:
+            text += "\n\n" + pending
+        return text
+
+    def _dispatch(self, name: str, arguments: dict[str, Any]) -> str:
         def argument(key: str) -> str:
             return str(arguments.get(key, ""))
 
@@ -426,15 +464,23 @@ def serve(
     store: Path | None = STORE,
     picker: Picker = pick_folder,
     clean_copies: Path = CLEAN_COPIES,
+    fetch_name_model: bool = False,
 ) -> None:
     """Answer MCP requests on stdin until it closes. Logs go to stderr, never stdout.
 
     `folders` are the ones given at start; those chosen in a conversation are kept in
-    `store` and added to them. Clean copies are written to `clean_copies`.
+    `store` and added to them. Clean copies are written to `clean_copies`. With
+    `fetch_name_model`, the model that finds names is downloaded once if it is missing, by a
+    process of its own, before this one's network guard is armed.
     """
+    from complydoc.mcp.models import fetch_name_model as start_fetch
+
     source, out = stdin or sys.stdin, stdout or sys.stdout
     given = [folders] if isinstance(folders, (str, Path)) else list(folders)
-    server = Server(Folders(given, store=store), picker=picker, clean_copies=clean_copies)
+    fetching = start_fetch() if fetch_name_model else None
+    server = Server(
+        Folders(given, store=store), picker=picker, clean_copies=clean_copies, fetching=fetching
+    )
     # The guard holds for the whole session, and lets go when the client hangs up.
     with offline.guarded(True):
         _loop(server, source, out)

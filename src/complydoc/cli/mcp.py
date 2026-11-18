@@ -22,6 +22,16 @@ def mcp(
             ),
         ),
     ] = None,
+    fetch_name_model: Annotated[
+        bool,
+        typer.Option(
+            "--fetch-name-model",
+            help=(
+                "Download the model that finds names of people and companies (about 700 MB) "
+                "once, if it is missing. It needs the multilingual-names extra."
+            ),
+        ),
+    ] = False,
 ) -> None:
     """Let an AI assistant open documents through complydoc, over MCP on stdio.
 
@@ -37,4 +47,4 @@ def mcp(
         if not folder.expanduser().is_dir():
             errors.print(f"Not a folder: {folder}")
             raise typer.Exit(2)
-    serve(folders or [])
+    serve(folders or [], fetch_name_model=fetch_name_model)

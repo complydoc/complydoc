@@ -11,10 +11,24 @@ taken out. The file itself never does.
 
 ## Install it in Claude Desktop
 
-The easiest way is the extension: open `complydoc.mcpb` (built with `make mcpb`), click
-**Install**, and choose the folders with the documents. Claude Desktop sets up Python and complydoc on
-its own, so nothing else needs installing. This light version masks identifiers found by
-pattern; names of people and companies need a name model, set up as below.
+The easiest way is the extension. `make mcpb` builds two editions:
+
+| Edition | Masks | Size |
+| --- | --- | --- |
+| `complydoc.mcpb` | Identifiers found by pattern: IBANs, tax numbers, emails, phones | Small |
+| `complydoc-names.mcpb` | The same, and names of people and companies | About 700 MB more, once |
+
+Open one, click **Install**, and choose the folders with the documents. Claude Desktop sets
+up Python and complydoc on its own, so nothing else needs installing. Install one edition
+at a time.
+
+The edition with names downloads its [name model](name-detection-models.md) once, the
+first time it starts, in a process of its own: the session itself never opens a
+connection. Until the model is on disk, every reading says names are not masked yet, so
+the assistant can tell the person; documents are read again once it arrives. If the
+download fails, readings say so too. Started by hand, the same is
+`complydoc mcp --fetch-name-model --folder <dir>`, with the `multilingual-names` extra
+installed.
 
 ## Set it up by hand in Claude Desktop
 
@@ -155,7 +169,8 @@ the tools do the rest.
   `Downloads/complydoc clean copies`, and the network is blocked for the whole
   session, as on every complydoc path.
 - Names of people and companies are masked only with a [name model](name-detection-models.md)
-  installed; without one, the identifiers complydoc recognises by pattern are masked.
+  installed, as in the edition with names; without one, the identifiers complydoc
+  recognises by pattern are masked.
 - It is a safe way in, not a barrier. A file attached to the chat still reaches the model
   whole. Where that must not happen, turn off file uploads in the assistant's admin
   settings and leave complydoc as the way documents come in.
