@@ -9,6 +9,10 @@ separately.
 
 ### Added
 
+- complydoc is a Claude Code plugin: `/plugin install complydoc --marketplace
+  complydoc/complydoc` adds the MCP server, run with `uvx`. Every MCP tool now has a title
+  and says whether it only reads or changes something on the machine.
+- Each release is listed in the official MCP Registry as `io.github.complydoc/complydoc`.
 - Finnish personal identity codes (henkilötunnus) are found beside their label and confirmed by
   their century sign, date and check character, and the `hr` and `legal` policies cover them.
 
