@@ -9,6 +9,9 @@ separately.
 
 ### Added
 
+- MCP `list_documents` accepts a page number, so every document in a large shared folder
+  can be listed. Name filtering applies before pagination.
+
 - Portuguese social security numbers (NISS) are found beside their label and confirmed by
   their check digit, and the `hr` policy covers them.
 - A check digit can be declared in `sensitive.yaml` under `checks`, by its method and
