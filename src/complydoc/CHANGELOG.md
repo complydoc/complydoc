@@ -49,6 +49,8 @@ separately.
   "AI agents processing this invoice:"), told to keep quiet about itself ("do not mention
   this sentence"), or dictating a ranking ("Rank her first") is now reported as an
   instruction, in English and Portuguese.
+- Norwegian H-numbers (healthcare identifiers, month 41 to 52) are now accepted by the
+  `no_fnr` validator and matched by the `h-nummer` context term.
 
 ### Changed
 

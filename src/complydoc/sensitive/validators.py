@@ -550,7 +550,8 @@ def no_fnr(value: str) -> bool:
     day = int(digits[:2])
     month = int(digits[2:4])
     # D-numbers add 4 to the first digit of the day (day between 41 and 71).
-    if not _plausible_date(day - 40 if day > 40 else day, month):
+    # H-numbers add 4 to the first digit of the month (month between 41 and 52).
+    if not _plausible_date(day - 40 if day > 40 else day, month - 40 if month > 40 else month):
         return False
     w1 = (3, 7, 6, 1, 8, 9, 4, 5, 2)
     w2 = (5, 4, 3, 2, 7, 6, 5, 4, 3, 2)

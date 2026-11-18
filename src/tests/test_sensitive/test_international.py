@@ -38,6 +38,13 @@ def test_published_examples_pass_and_a_changed_digit_fails(checker, value):
     assert checker(change_last_digit(value)) is False
 
 
+def test_norwegian_h_number_passes_and_a_month_past_52_fails():
+    # 010190 100 46 with 40 added to the month (41) and both check digits recomputed.
+    assert v.no_fnr("014190 10029") is True
+    # Same digits with the month at 53, check digits recomputed: only the month is wrong.
+    assert v.no_fnr("015390 10057") is False
+
+
 def test_verhoeff_rejects_a_single_digit_change():
     number = "234123412346"
     assert v.verhoeff(number) is True

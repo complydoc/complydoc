@@ -612,7 +612,7 @@ categories:
     context_patterns:
       - '\b\d{6}[ .-]?\d{5}\b'
     validators: [no_fnr]
-    context_terms: ["fødselsnummer", "fodselsnummer", "fnr", "personnummer", "d-nummer"]
+    context_terms: ["fødselsnummer", "fodselsnummer", "fnr", "personnummer", "d-nummer", "h-nummer"]
     gdpr_note: >
       Direct identifier encoding birth date, validated with its two mod-11 check digits.
 
