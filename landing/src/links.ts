@@ -2,7 +2,7 @@
 const DOCS = "https://complydoc.github.io/complydoc/docs";
 const REPO = "https://github.com/complydoc/complydoc";
 
-export const VERSION = "0.7.13";
+export const VERSION = "0.8.0";
 
 /** Where companies write: demos of self-hosted complydoc and early access to the cloud version. */
 export const CONTACT_EMAIL = "caldasdcardoso@gmail.com";

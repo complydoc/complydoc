@@ -2,7 +2,7 @@
 
     python src/scripts/pack_mcpb.py dist [--ref BRANCH]
 
-`--ref` builds a test copy that installs complydoc from a branch instead of main.
+`--ref` builds a test copy that installs complydoc from a branch instead of the release.
 
 - `complydoc.mcpb`, the light edition: identifiers found by pattern and hidden text.
 - `complydoc-names.mcpb`, which also masks names of people and companies in the European
@@ -22,10 +22,14 @@ SOURCE = ROOT / "mcpb"
 FILES = ("manifest.json", "pyproject.toml", "icon.png", "src/server.py")
 
 
-def pack(out: Path, *, names: bool, ref: str = "main") -> Path:
+def pack(out: Path, *, names: bool, ref: str | None = None) -> Path:
     manifest = json.loads((SOURCE / "manifest.json").read_text(encoding="utf-8"))
     pyproject = (SOURCE / "pyproject.toml").read_text(encoding="utf-8")
-    pyproject = pyproject.replace("complydoc/complydoc@main", f"complydoc/complydoc@{ref}")
+    released = f'"complydoc=={manifest["version"]}"'
+    if ref is not None:
+        # A test copy, installing complydoc from a branch rather than the release.
+        branch = f'"complydoc @ git+https://github.com/complydoc/complydoc@{ref}"'
+        pyproject = pyproject.replace(released, branch)
     target = out / ("complydoc-names.mcpb" if names else "complydoc.mcpb")
     if names:
         manifest["name"] = "complydoc-names"
@@ -44,6 +48,7 @@ def pack(out: Path, *, names: bool, ref: str = "main") -> Path:
         # Before --folder, whose folders the client expands into several arguments.
         args.insert(args.index("--folder"), "--fetch-name-model")
         pyproject = pyproject.replace('"complydoc @ git+', '"complydoc[multilingual-names] @ git+')
+        pyproject = pyproject.replace('"complydoc==', '"complydoc[multilingual-names]==')
         pyproject = pyproject.replace(
             'name = "complydoc-claude-extension"', 'name = "complydoc-claude-extension-names"'
         )
@@ -61,7 +66,7 @@ def pack(out: Path, *, names: bool, ref: str = "main") -> Path:
 
 if __name__ == "__main__":
     arguments = sys.argv[1:]
-    ref = "main"
+    ref = None
     if "--ref" in arguments:
         at = arguments.index("--ref")
         ref = arguments[at + 1]

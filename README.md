@@ -68,7 +68,7 @@ time, tokens, cost and the identifiers it passed on. Open it with `complydoc ui`
 ## In CI
 
 ```yaml
-- uses: complydoc/complydoc@v0.7.13
+- uses: complydoc/complydoc@v0.8.0
   with:
     path: documents
     policy: policy.yaml

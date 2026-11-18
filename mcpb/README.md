@@ -14,5 +14,5 @@ The extension uses the `uv` server type: Claude Desktop installs Python and comp
 [Name detection models](../docs/guides/name-detection-models.md) for the model the names
 edition uses.
 
-On a release, set `version` in `manifest.json` and `pyproject.toml`, and point the
-dependency at the released `complydoc` instead of the branch.
+On a release, set `version` in `manifest.json` and `pyproject.toml`, and the `complydoc==`
+dependency in `pyproject.toml`, to the release.

@@ -5,7 +5,17 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
-## Unreleased
+## [0.8.0] — 2026-11-18
+
+complydoc reaches the assistant. `complydoc mcp` lets Claude Desktop, Claude Code, Cursor
+and other MCP clients open documents with personal and financial details masked and hidden
+passages taken out, and say whether a file is fit to share; it installs in Claude Desktop as
+an extension, in an edition that also masks names. Engineers can ask the same server about
+the runs complydoc recorded: step times, loaders compared, evals and where a value went.
+Check digits can now be declared in `sensitive.yaml`, which complydoc4j reads too, and
+Portuguese social security numbers are found. The report stays at schema 27.
+
+Thanks to jay23606, jwalith4418-Mj, fuleinist and jaesungkr for their contributions.
 
 ### Added
 
