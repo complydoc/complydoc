@@ -150,14 +150,30 @@ class Server:
         return [name for name in names if query in name.lower()] if query else names
 
     # The tools.
-    def list_documents(self, query: str = "") -> str:
+    def list_documents(self, query: str = "", page: int = 1) -> str:
         if not self.folders.all:
             return NO_FOLDER
         names = self.documents(query)
         if not names:
             matching = f" matching {query!r}" if query else ""
             return f"No document{matching} in the shared folders."
-        return _capped(names, MAX_LIST, "narrow it with a word from the name")
+        pages = -(-len(names) // MAX_LIST)
+        page = max(page, 1)
+        if page > pages:
+            counted = "1 page" if pages == 1 else f"{pages} pages"
+            return (
+                f"There is no page {page}: the {len(names)} documents take {counted}. "
+                "Ask for page 1 to see them."
+            )
+        shown = names[(page - 1) * MAX_LIST : page * MAX_LIST]
+        more = len(names) - page * MAX_LIST
+        if more <= 0:
+            return "\n".join(shown)
+        return (
+            "\n".join(shown)
+            + f"\n…and {more} more; ask for page {page + 1}, "
+            + "or narrow it with a word from the name."
+        )
 
     def check_document(self, name: str) -> str:
         path = self.resolve(name)
@@ -289,7 +305,7 @@ class Server:
 
         folders = self.folders
         if name == "list_documents":
-            return self.list_documents(argument("query"))
+            return self.list_documents(argument("query"), _page(arguments.get("page")))
         if name == "search_documents":
             return self.search_documents(argument("query"), argument("folder"))
         if name == "check_document":
@@ -323,6 +339,14 @@ def _capped(lines: list[str], limit: int, how: str) -> str:
     shown = lines[:limit]
     more = f"\n…and {len(lines) - len(shown)} more; {how}." if len(lines) > len(shown) else ""
     return "\n".join(shown) + more
+
+
+def _page(value: Any) -> int:
+    """The page asked for. A client may send a number or a word; anything else is page 1."""
+    try:
+        return max(int(value), 1)
+    except (TypeError, ValueError):
+        return 1
 
 
 @cache

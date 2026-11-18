@@ -26,8 +26,15 @@ TOOLS: list[dict[str, Any]] = [
     _tool(
         "list_documents",
         "List the documents in the folders the person shared, optionally only those whose name "
-        "contains a word. Use it to find the file a person means before opening it.",
-        {"query": {"type": "string", "description": "Part of the file name, any case."}},
+        "contains a word. Use it to find the file a person means before opening it. Fifty "
+        "documents at a time: ask for the next page when it says there are more.",
+        {
+            "query": {"type": "string", "description": "Part of the file name, any case."},
+            "page": {
+                "type": "integer",
+                "description": "1 for the first 50 documents, 2 for the next, and so on.",
+            },
+        },
         [],
     ),
     _tool(

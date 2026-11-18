@@ -9,6 +9,9 @@ separately.
 
 ### Added
 
+- `list_documents` in `complydoc mcp` reaches every shared document: it shows fifty at a time,
+  says how many are left, and `page 2` lists the next fifty, so the fifty-first document in a
+  folder can be opened from the conversation.
 - `complydoc mcp --folder <dir>` serves a folder to an AI assistant such as Claude Desktop
   over MCP. A document opened through it reaches the model with personal and financial
   details masked and hidden passages taken out, and `check_document` says whether a file is

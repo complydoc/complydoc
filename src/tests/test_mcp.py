@@ -58,7 +58,7 @@ def talk(
     return [json.loads(line) for line in out.getvalue().splitlines()]
 
 
-def call(n: int, tool: str, **arguments: str) -> dict[str, Any]:
+def call(n: int, tool: str, **arguments: Any) -> dict[str, Any]:
     return {
         "jsonrpc": "2.0",
         "id": n,
@@ -222,6 +222,51 @@ def test_with_no_folder_it_says_how_to_choose_one(tmp_path: Path) -> None:
     (listed,) = talk([], call(1, "list_documents"), store=tmp_path / "store.json")
     assert "No folder is shared" in text(listed)
     assert "choose_folder" in text(listed)
+
+
+def test_a_folder_of_sixty_documents_is_listed_fifty_at_a_time(
+    folder: Path, tmp_path: Path
+) -> None:
+    for number in range(57):
+        shutil.copy(FIXTURES / "native_text.pdf", folder / f"note_{number:02d}.pdf")
+    first, second, third = talk(
+        [folder],
+        call(1, "list_documents"),
+        call(2, "list_documents", page=2),
+        call(3, "list_documents", page=3),
+        store=tmp_path / "store.json",
+    )
+    first_lines = text(first).splitlines()
+    assert len(first_lines) == 51, "fifty names and the line that says there are more"
+    assert first_lines[-1] == (
+        "…and 10 more; ask for page 2, or narrow it with a word from the name."
+    )
+    second_lines = text(second).splitlines()
+    assert len(second_lines) == 10, "the rest, with nothing left to ask for"
+    assert len(set(first_lines[:-1] + second_lines)) == 60
+    assert text(third) == (
+        "There is no page 3: the 60 documents take 2 pages. Ask for page 1 to see them."
+    )
+
+
+def test_a_page_sent_as_text_or_out_of_range_lists_the_first_page(
+    folder: Path, tmp_path: Path
+) -> None:
+    for number in range(57):
+        shutil.copy(FIXTURES / "native_text.pdf", folder / f"note_{number:02d}.pdf")
+    first, second, as_text, below, word = talk(
+        [folder],
+        call(1, "list_documents"),
+        call(2, "list_documents", page=2),
+        call(3, "list_documents", page="2"),
+        call(4, "list_documents", page=0),
+        call(5, "list_documents", page="all"),
+        store=tmp_path / "store.json",
+    )
+    assert text(second) != text(first), "the pages differ, so the comparisons below mean something"
+    assert text(as_text) == text(second), "a page sent as text is the same page"
+    assert text(below) == text(first), "page 0 is the first page"
+    assert text(word) == text(first), "a page that is not a number is the first page"
 
 
 def test_an_unknown_method_is_an_error_not_a_crash(folder: Path, tmp_path: Path) -> None:
