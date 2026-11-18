@@ -86,7 +86,7 @@ export function Features() {
             <Recording
               video={{ light: expectLight, dark: expectDark }}
               poster={{ light: expectLightPoster, dark: expectDarkPoster }}
-              label="A recording of the viewer: a clause is selected in a document with the mouse, Expect this passage is pressed, and the Evals page scores two readers on every expected passage"
+              label="A recording of the viewer: a clause is selected in a document with the mouse and Expect this passage is pressed; on the Evals page, Run evals scores it, and the new passage is kept by both readers"
             />
           }
         >
