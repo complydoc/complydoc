@@ -37,6 +37,14 @@
           "format": "filepath",
           "isRepeated": true,
           "isRequired": false
+        },
+        {
+          "type": "named",
+          "name": "--runs",
+          "description": "A folder of complydoc reports, such as .complydoc. Adds the tools for engineers: recorded runs, step times and where a value went.",
+          "format": "filepath",
+          "isRepeated": true,
+          "isRequired": false
         }
       ]
     }

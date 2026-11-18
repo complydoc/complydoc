@@ -38,7 +38,7 @@ def test_the_command_is_the_mcp_command() -> None:
     assert PYPI["transport"] == {"type": "stdio"}
     assert PYPI["packageArguments"][0] == {"type": "positional", "value": "mcp"}
     flags = {a["name"] for a in PYPI["packageArguments"] if a["type"] == "named"}
-    assert flags == {"--folder"}
+    assert flags == {"--folder", "--runs"}
 
 
 def test_the_description_fits_the_registry() -> None:
