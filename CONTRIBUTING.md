@@ -1,5 +1,8 @@
 # Contributing
 
+Thank you for helping. If complydoc is useful to you, a star on the repository helps other
+engineers find it.
+
 ## Setup
 
 ```bash
