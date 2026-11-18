@@ -13,6 +13,8 @@
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-56b4e0" alt="License"></a>
 </div>
 
+<!-- mcp-name: io.github.complydoc/complydoc -->
+
 <br>
 
 <picture>
