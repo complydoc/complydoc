@@ -89,3 +89,5 @@ ready policies. See [GitHub Action](https://complydoc.github.io/complydoc/docs/g
   add the rest
 - [Changelog](https://github.com/complydoc/complydoc/blob/main/src/complydoc/CHANGELOG.md) ·
   [Contributing](https://github.com/complydoc/complydoc/blob/main/CONTRIBUTING.md) · MIT
+
+If complydoc is useful to you, a star helps other engineers find it.
