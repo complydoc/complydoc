@@ -96,3 +96,50 @@ TOOLS: list[dict[str, Any]] = [
         ["name"],
     ),
 ]
+
+_RUN = {
+    "run": {
+        "type": "string",
+        "description": "A run's name as list_runs gives it, or part of it; the newest if left out.",
+    }
+}
+
+RUN_TOOLS: list[dict[str, Any]] = [
+    _tool(
+        "list_runs",
+        "List the runs complydoc recorded, newest first: pipelines observed with cd.observe, "
+        "loader comparisons and audits, with when they ran, how long they took and the commit.",
+        {"query": {"type": "string", "description": "Part of a run's name, any case."}},
+        [],
+    ),
+    _tool(
+        "show_run",
+        "Show one run: for a pipeline, the time of each step, what it passed on and where it "
+        "sent anything; for a loader comparison, each loader's time, pages, characters and facts "
+        "kept; for evals, which facts each reader kept. Values in it are already masked.",
+        _RUN,
+        [],
+    ),
+    _tool(
+        "compare_runs",
+        "Compare a pipeline run's step times with an earlier run of the same pipeline, the one "
+        "before it unless `against` names another: what got slower, faster, new or gone.",
+        {
+            **_RUN,
+            "against": {
+                "type": "string",
+                "description": "The run to compare with, if not the one before.",
+            },
+        },
+        [],
+    ),
+    _tool(
+        "find_value",
+        "Find where a value, such as an IBAN or an email address, went across the recorded runs: "
+        "the documents it was read from, the pipeline steps that still held it and the hosts it "
+        "was sent to. The answer shows it masked.",
+        {"value": {"type": "string", "description": "The value as it is written."}},
+        ["value"],
+    ),
+]
+"""The tools for engineers, offered when the server is given folders of runs."""

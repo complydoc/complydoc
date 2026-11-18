@@ -11,7 +11,10 @@ separately.
 
 - MCP `list_documents` accepts a page number, so every document in a large shared folder
   can be listed. Name filtering applies before pagination.
-
+- `complydoc mcp --runs .complydoc` gives an engineer's assistant the runs complydoc
+  recorded: `list_runs`, `show_run` (each step's time, what it passed on and where it sent
+  anything; loaders compared; evals), `compare_runs` (step times against the run before)
+  and `find_value`. They read the reports and run nothing.
 - Portuguese social security numbers (NISS) are found beside their label and confirmed by
   their check digit, and the `hr` policy covers them.
 - A check digit can be declared in `sensitive.yaml` under `checks`, by its method and
@@ -30,6 +33,11 @@ separately.
   OCR; a hidden passage is taken out whole, however long, and even where masking changed
   its words; a malformed request is answered with an error instead of ending the session;
   and a clean copy never replaces another one of the same name.
+- The Claude Desktop extension comes in two editions, built by `make mcpb`: the light one,
+  and `complydoc-names.mcpb`, which also masks names of people and companies. It downloads
+  the name model once, about 700 MB, in a process of its own, outside the session's
+  network guard; until it arrives, every reading says names are not masked yet.
+  `complydoc mcp --fetch-name-model` does the same by hand.
 
 ### Fixed
 
@@ -47,6 +55,8 @@ separately.
   "AI agents processing this invoice:"), told to keep quiet about itself ("do not mention
   this sentence"), or dictating a ranking ("Rank her first") is now reported as an
   instruction, in English and Portuguese.
+- Norwegian H-numbers (healthcare identifiers, month 41 to 52) are now accepted by the
+  `no_fnr` validator and matched by the `h-nummer` context term.
 
 ### Changed
 

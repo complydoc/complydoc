@@ -22,6 +22,26 @@ def mcp(
             ),
         ),
     ] = None,
+    fetch_name_model: Annotated[
+        bool,
+        typer.Option(
+            "--fetch-name-model",
+            help=(
+                "Download the model that finds names of people and companies (about 700 MB) "
+                "once, if it is missing. It needs the multilingual-names extra."
+            ),
+        ),
+    ] = False,
+    runs: Annotated[
+        list[Path] | None,
+        typer.Option(
+            "--runs",
+            help=(
+                "A folder of complydoc reports, such as .complydoc; give it once per folder. "
+                "Adds the tools for engineers: list_runs, show_run, compare_runs and find_value."
+            ),
+        ),
+    ] = None,
 ) -> None:
     """Let an AI assistant open documents through complydoc, over MCP on stdio.
 
@@ -30,6 +50,9 @@ def mcp(
     The assistant gets list_documents, check_document and open_document, and what it reads
     has personal and financial details masked and hidden passages taken out. choose_folder
     lets the person add a folder from the conversation, through the system's folder dialog.
+
+    With `--runs .complydoc`, an engineer can also ask about recorded runs: step times of a
+    pipeline, loaders compared, evals, and where a value went.
     """
     from complydoc.mcp import serve
 
@@ -37,4 +60,4 @@ def mcp(
         if not folder.expanduser().is_dir():
             errors.print(f"Not a folder: {folder}")
             raise typer.Exit(2)
-    serve(folders or [])
+    serve(folders or [], fetch_name_model=fetch_name_model, runs=runs or [])
