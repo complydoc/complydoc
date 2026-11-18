@@ -44,7 +44,13 @@ export default defineConfig({
       ],
       expressiveCode: {
         themes: ["github-dark-default", "github-light-default"],
-        styleOverrides: { borderRadius: "0.6rem", codeFontFamily: "'Geist Mono Variable', ui-monospace, monospace" },
+        styleOverrides: {
+          borderRadius: "0.6rem",
+          codePaddingInline: "1.25rem",
+          codePaddingBlock: "1rem",
+          uiPaddingInline: "1.25rem",
+          codeFontFamily: "'Geist Mono Variable', ui-monospace, monospace",
+        },
       },
       sidebar: [
         { label: "Home", link: "/" },
