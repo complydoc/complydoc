@@ -5,7 +5,14 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
-## Unreleased
+## [0.8.1] — 2026-11-18
+
+complydoc is listed in the official MCP Registry and installs as a Claude Code plugin, and
+every MCP tool says whether it only reads or changes something. Finnish personal identity
+codes are found, and a Portuguese social security number counts as one identifier. The
+report stays at schema 27.
+
+Thanks to P1LOTRX for the Finnish identity codes.
 
 ### Added
 
