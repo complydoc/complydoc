@@ -10,8 +10,8 @@ As for Word, visibility is read from the markup rather than from a rendering.
   off screen is reported as suspected, since that depends on the layout.
 - Markdown: HTML comments and link references used as comments, which are not
   rendered, and inline HTML hidden as above. Code blocks are ignored.
-- PowerPoint: hidden slides, shapes placed outside the slide, and text below the
-  minimum size.
+- PowerPoint: hidden slides, shapes hidden in the Selection Pane or placed outside
+  the slide, and text below the minimum size.
 - Email: the HTML body, checked as HTML.
 
 Web pages and Markdown routinely hide menus, dialogs, licence notices and
@@ -324,6 +324,8 @@ def pptx_hidden_runs(
                 reasons.append("placed outside the slide")
             if shape.largest_size is not None and shape.largest_size < smallest:
                 reasons.append(f"font size below {config.min_font_size_pt:g}pt")
+            if shape.hidden:
+                reasons.append("hidden in the Selection Pane")
             if reasons:
                 _add(runs, shape.text, "confirmed", reasons, config, page=slide.number)
     return runs, [], True

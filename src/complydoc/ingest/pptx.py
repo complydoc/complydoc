@@ -50,6 +50,8 @@ class Shape:
     """Placed entirely outside the slide area."""
     largest_size: float | None
     """The largest font size set on the shape's text, in hundredths of a point."""
+    hidden: bool = False
+    """Hidden in the Selection Pane, while its text remains in the file."""
 
 
 @dataclass(slots=True)
@@ -183,7 +185,9 @@ def _slide(
             if placement is not None and width_emu > 0 and height_emu > 0:
                 x, y, cx, cy = placement
                 outside = x >= width_emu or y >= height_emu or x + cx <= 0 or y + cy <= 0
-            slide.shapes.append(Shape(text, outside, max(sizes) if sizes else None))
+            properties = node.find(f"{_P}nvSpPr/{_P}cNvPr")
+            hidden = properties is not None and properties.get("hidden") in ("1", "true")
+            slide.shapes.append(Shape(text, outside, max(sizes) if sizes else None, hidden))
             slide.lines.append(text)
         elif node.tag == f"{_P}graphicFrame":
             table = node.find(f".//{_A}tbl")

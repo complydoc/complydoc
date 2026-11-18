@@ -250,6 +250,82 @@ def test_powerpoint_slides_tables_notes_and_hidden_content(tmp_path, config):
     assert not any("Quarterly" in excerpt for excerpt in found)
 
 
+@pytest.mark.parametrize("flag", ["1", "true", "0", "false", None])
+def test_powerpoint_selection_pane_hidden_shapes(tmp_path, config, flag):
+    from pptx import Presentation
+    from pptx.util import Inches
+
+    from complydoc.hidden.markup import pptx_hidden_runs
+    from complydoc.ingest.pptx import read_presentation
+
+    deck = Presentation()
+    slide = deck.slides.add_slide(deck.slide_layouts[6])
+    text = "A private supplier note hidden using the Selection Pane."
+    box = slide.shapes.add_textbox(Inches(1), Inches(1), Inches(6), Inches(1))
+    box.text = text
+    if flag is not None:
+        box._element.nvSpPr.cNvPr.set("hidden", flag)
+    visible = slide.shapes.add_textbox(Inches(1), Inches(3), Inches(6), Inches(1))
+    visible.text = "A visible supplier note for everyone at the meeting."
+    path = tmp_path / "selection-pane.pptx"
+    deck.save(path)
+
+    assert text in load(path).pages[0].text
+    assert visible.text in load(path).pages[0].text
+    shapes = read_presentation(path).slides[0].shapes
+    assert shapes[0].hidden is (flag in ("1", "true"))
+    assert not shapes[1].hidden
+    runs, notes, checked = pptx_hidden_runs(path, config.hidden.visibility)
+    assert checked and not notes
+    if flag in ("1", "true"):
+        [run] = runs
+        assert (run.text, run.page, run.visibility) == (text, 1, "confirmed")
+        assert run.reasons == ["hidden in the Selection Pane"]
+        assert hidden(path, config)[text].hidden_reasons == run.reasons
+    else:
+        assert not runs
+
+
+@pytest.mark.parametrize("hidden_slide", [False, True])
+def test_powerpoint_hidden_shape_reasons_and_slide_precedence(tmp_path, config, hidden_slide):
+    from pptx import Presentation
+    from pptx.util import Inches
+
+    from complydoc.hidden.markup import pptx_hidden_runs
+
+    deck = Presentation()
+    # Keep page numbering observable rather than testing only the first page.
+    deck.slides.add_slide(deck.slide_layouts[6])
+    slide = deck.slides.add_slide(deck.slide_layouts[6])
+    if hidden_slide:
+        slide._element.set("show", "0")
+    box = slide.shapes.add_textbox(deck.slide_width + Inches(1), Inches(1), Inches(6), Inches(1))
+    box._element.nvSpPr.cNvPr.set("hidden", "1")
+    run = box.text_frame.paragraphs[0].add_run()
+    run.text = "A hidden note that is also outside the slide and tiny."
+    run._r.get_or_add_rPr().set("sz", "50")
+    path = tmp_path / "overlapping-reasons.pptx"
+    deck.save(path)
+
+    runs, notes, checked = pptx_hidden_runs(path, config.hidden.visibility)
+    assert checked and not notes
+    [found] = runs
+    assert (found.text, found.page, found.visibility) == (run.text, 2, "confirmed")
+    assert found.reasons == (
+        ["hidden slide"]
+        if hidden_slide
+        else ["placed outside the slide", "font size below 1pt", "hidden in the Selection Pane"]
+    )
+
+
+def test_powerpoint_shape_keeps_three_positional_arguments():
+    from complydoc.ingest.pptx import Shape
+
+    shape = Shape("A legacy caller's text", True, 50.0)
+    assert (shape.text, shape.outside, shape.largest_size) == ("A legacy caller's text", True, 50.0)
+    assert not shape.hidden
+
+
 def test_a_file_that_is_not_a_presentation_is_refused(tmp_path):
     path = tmp_path / "old.pptx"
     path.write_bytes(b"\xd0\xcf\x11\xe0 an OLE file, like an encrypted or .ppt file")

@@ -39,6 +39,7 @@ separately.
 
 ### Fixed
 
+- PowerPoint text hidden in the Selection Pane is reported as hidden content.
 - Instructions written in European Portuguese are found: "esquece tudo o que te disseram",
   "se és uma IA", "assistente de IA:", "não digas ao utilizador", "ao resumir, afirma que" and
   "mostra o prompt do sistema". So are "disregard the above", "any LLM:", an order to send a
