@@ -1,11 +1,11 @@
 import { ArrowRightIcon } from "lucide-react";
 import { IndustryArt } from "@/art/IndustryArt";
-import { IndustryCards } from "@/components/IndustryCards";
 import { VeilLine } from "@/components/VeilLine";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import type { Industry } from "@/pages/industries";
 import { Page } from "@/pages/Page";
+import { Industries } from "@/sections/Industries";
 
 /** Two levels below the landing page: industries/<slug>/. */
 const HOME = "../../";
@@ -61,14 +61,9 @@ export function IndustryPage({ industry }: { industry: Industry }) {
         </div>
       </section>
 
-      <section aria-labelledby="more-title" className="border-t">
-        <div className="mx-auto flex max-w-6xl flex-col gap-12 px-6 py-24">
-          <h2 id="more-title" className="text-3xl font-medium tracking-tight">
-            Other industries
-          </h2>
-          <IndustryCards home={HOME} except={industry.slug} />
-        </div>
-      </section>
+      <div className="border-t">
+        <Industries home={HOME} except={industry.slug} />
+      </div>
     </Page>
   );
 }

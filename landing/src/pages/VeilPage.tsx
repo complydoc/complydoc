@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import { ArrowRightIcon } from "lucide-react";
 import { VeilOrb } from "@/art/VeilOrb";
 import { VeilScan } from "@/art/VeilScan";
-import { IndustryCards } from "@/components/IndustryCards";
-import { Section, TextLink } from "@/components/Section";
+import { Section } from "@/components/Section";
 import { Button } from "@/components/ui/button";
 import { Page } from "@/pages/Page";
+import { Industries } from "@/sections/Industries";
 import { COUNTRIES, MODELS } from "@/pages/veil-data";
 
 const EARLY_ACCESS = "../enterprise/#contact";
@@ -61,18 +61,7 @@ export function VeilPage() {
         </ul>
       </Section>
 
-      <Section
-        id="industries"
-        title="By industry."
-        lead={
-          <>
-            Each industry has its own documents and its own personal data. Veil runs inside complydoc's{" "}
-            <TextLink href="../gateway/">router and gateway</TextLink>.
-          </>
-        }
-      >
-        <IndustryCards home="../" />
-      </Section>
+      <Industries home="../" />
 
       <section id="access" aria-labelledby="access-title" className="border-t">
         <div className="mx-auto flex max-w-6xl flex-col items-center gap-8 px-6 py-24 text-center md:py-32">
