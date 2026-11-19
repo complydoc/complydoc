@@ -41,6 +41,20 @@ nor an image over half the page or more, which is a scan's picture of its own
 text layer. Such text is reported only when it reads as an instruction to a
 model: a figure painted over its own labels is covered text too, and common.
 
+Some text is hidden by the way documents are laid out rather than by anyone, and is
+reported only when it reads as an instruction to a model:
+
+- the end of a line that runs past the page's edge, or past the clip of the table cell
+  it sits in, such as `2030-01-01 00:00:00` in a narrow date column
+- a hidden copy of words the page shows anyway, as spreadsheet exports draw an
+  overflowing cell a second time, in white, letter by letter
+- e-signature anchor tags, which DocuSign and Acrobat Sign templates leave in white where
+  a field will go: `\s1\`, `\ponum1\`, `{{Sig_es_:signer1:signature}}`, `[[...]]` and runs
+  of `x` or `_`
+
+The page is checked at the size it is drawn, its crop box within its media box, either of
+them inherited from the page tree as many producers write them.
+
 Invisible render mode over an image of the same words, as on a scanned page
 with an OCR layer, has ink under it and is not reported. That stays the case
 when the picture is painted after the text: invisible text is still judged by
