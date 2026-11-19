@@ -1,6 +1,8 @@
 import { ArrowRightIcon, FileLock2Icon, KeyRoundIcon, ScaleIcon, type LucideIcon } from "lucide-react";
 import { CopyButton } from "@/components/CopyButton";
-import { ShowcaseVideo } from "@/components/ShowcaseVideo";
+import traceDark from "@/assets/screens/trace-dark.webp";
+import traceLight from "@/assets/screens/trace-light.webp";
+import { Screenshot } from "@/components/Screenshot";
 import { Button } from "@/components/ui/button";
 import { ButtonGroup, ButtonGroupText } from "@/components/ui/button-group";
 import { links } from "@/links";
@@ -40,7 +42,7 @@ export function Hero() {
           </div>
           <div className="flex flex-col justify-between gap-10">
             <p className="text-xl text-pretty md:pt-2">
-              Compare loaders, trace every step and evaluate what reaches your model. complydoc
+              Route every page, trace every step and check what reaches your model. complydoc
               reads your documents the way your pipeline does, and shows you what it got wrong.
             </p>
             <ul className="flex flex-wrap gap-x-6 gap-y-3 text-sm text-muted-foreground">
@@ -53,7 +55,10 @@ export function Hero() {
             </ul>
           </div>
         </div>
-        <ShowcaseVideo />
+        <Screenshot
+          src={{ dark: traceDark, light: traceLight }}
+          alt="The viewer's trace of an ingestion pipeline: every call on a time axis with its time, cost and identifiers, a warning on a scanned file that loaded no text, and the embedding call's input"
+        />
       </div>
     </section>
   );

@@ -5,12 +5,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { links, VERSION } from "@/links";
 
 /** The pages besides this one, each in a folder of its own. */
-const PAGES = [
-  { href: "veil/", label: "Veil" },
-  { href: "gateway/", label: "Gateway" },
-  { href: "contributors/", label: "Contributors" },
-  { href: "enterprise/", label: "For teams" },
-];
+const PAGES = [{ href: "contributors/", label: "Contributors" }];
 
 /**
  * A thin bar across the top, as in the viewer: the mark, where to go, the theme at the right.

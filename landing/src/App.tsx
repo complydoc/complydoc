@@ -3,7 +3,7 @@ import { Demos } from "@/sections/Demos";
 import { Footer } from "@/sections/Footer";
 import { GetStarted } from "@/sections/GetStarted";
 import { Hero } from "@/sections/Hero";
-import { Industries } from "@/sections/Industries";
+import { HowItWorks } from "@/sections/HowItWorks";
 import { Integrations } from "@/sections/Integrations";
 import { Nav } from "@/sections/Nav";
 
@@ -13,8 +13,8 @@ export function App() {
       <Nav />
       <main>
         <Hero />
+        <HowItWorks />
         <Demos />
-        <Industries />
         <Integrations />
         <GetStarted />
       </main>
