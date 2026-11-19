@@ -247,3 +247,32 @@
 @view-transition {
   navigation: auto;
 }
+
+/* Veil's page: the name rises into place letter by letter, and the country code turns over. */
+@keyframes veil-rise {
+  from { transform: translateY(105%); }
+  to { transform: translateY(0); }
+}
+@keyframes veil-turn {
+  from { transform: translateY(70%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@layer components {
+  .veil-letter {
+    animation: veil-rise 0.9s cubic-bezier(0.2, 0.7, 0.1, 1) both;
+  }
+  .veil-turn {
+    animation: veil-turn 0.45s cubic-bezier(0.2, 0.7, 0.1, 1) both;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .veil-letter,
+  .veil-turn {
+    animation: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .flow-motion {
+    display: none;
+  }
+}

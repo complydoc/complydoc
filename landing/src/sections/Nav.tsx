@@ -6,6 +6,8 @@ import { links, VERSION } from "@/links";
 
 /** The pages besides this one, each in a folder of its own. */
 const PAGES = [
+  { href: "veil/", label: "Veil" },
+  { href: "gateway/", label: "Gateway" },
   { href: "contributors/", label: "Contributors" },
   { href: "enterprise/", label: "For teams" },
 ];
