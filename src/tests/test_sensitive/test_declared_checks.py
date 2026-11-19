@@ -54,7 +54,8 @@ def test_a_uk_nhs_number_passes_and_a_changed_digit_fails():
 
 
 def test_a_uk_nhs_number_beside_its_label_is_found_and_confirmed():
-    found = [m for m in cd.scan_text("NHS number: 943 476 5919").matches if m.category == "uk_nhs_number"]
+    matches = cd.scan_text("NHS number: 943 476 5919").matches
+    found = [m for m in matches if m.category == "uk_nhs_number"]
     assert len(found) == 1
     assert found[0].evidence == "confirmed"
     assert found[0].validators_passed == ["uk_nhs_number"]
