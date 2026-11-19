@@ -11,6 +11,8 @@ const columns = (home: string) => [
       { label: "Quickstart", href: `${home}#quickstart` },
       { label: "Integrations", href: `${home}#integrations` },
       { label: "For teams", href: `${home}enterprise/` },
+      { label: "Veil", href: `${home}veil/` },
+      { label: "Router and gateway", href: `${home}gateway/` },
       { label: "Report viewer", href: links.viewer },
       { label: "Changelog", href: links.changelog },
     ],

@@ -3,6 +3,9 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
+/** The industry pages, each in industries/<slug>/ (src/pages/industries.ts). */
+const INDUSTRIES = ["legal", "healthcare", "finance", "insurance", "hr"];
+
 export default defineConfig(({ isSsrBuild }) => ({
   plugins: [react(), tailwindcss()],
   resolve: { alias: { "@": path.resolve(import.meta.dirname, "src") } },
@@ -14,6 +17,11 @@ export default defineConfig(({ isSsrBuild }) => ({
         main: path.resolve(import.meta.dirname, "index.html"),
         enterprise: path.resolve(import.meta.dirname, "enterprise/index.html"),
         contributors: path.resolve(import.meta.dirname, "contributors/index.html"),
+        veil: path.resolve(import.meta.dirname, "veil/index.html"),
+        gateway: path.resolve(import.meta.dirname, "gateway/index.html"),
+        ...Object.fromEntries(
+          INDUSTRIES.map((slug) => [`industry-${slug}`, path.resolve(import.meta.dirname, `industries/${slug}/index.html`)]),
+        ),
       },
     },
   },

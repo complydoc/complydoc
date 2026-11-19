@@ -3,13 +3,13 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Footer } from "@/sections/Footer";
 import { Nav } from "@/sections/Nav";
 
-/** A page in a folder of its own, one level below the landing page. */
-export function Page({ children }: { children: ReactNode }) {
+/** A page in a folder of its own, one level below the landing page unless `home` says otherwise. */
+export function Page({ children, home = "../" }: { children: ReactNode; home?: string }) {
   return (
     <TooltipProvider>
-      <Nav home="../" />
+      <Nav home={home} />
       <main>{children}</main>
-      <Footer home="../" />
+      <Footer home={home} />
     </TooltipProvider>
   );
 }
