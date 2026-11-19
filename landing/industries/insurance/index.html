@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en" data-industry="insurance">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="../../favicon.svg" type="image/svg+xml" />
+    <title>Veil for insurance | complydoc</title>
+    <meta
+      name="description"
+      content="How Veil, complydoc's model for personal data, covers people's details in insurance documents before they reach a model."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="complydoc" />
+    <meta property="og:title" content="Veil for insurance | complydoc" />
+    <meta
+      property="og:description"
+      content="How Veil, complydoc's model for personal data, covers people's details in insurance documents before they reach a model."
+    />
+    <meta property="og:url" content="https://complydoc.github.io/complydoc/industries/insurance/" />
+    <meta property="og:image" content="https://complydoc.github.io/complydoc/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="complydoc. Get document loading right." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Veil for insurance | complydoc" />
+    <meta
+      name="twitter:description"
+      content="How Veil, complydoc's model for personal data, covers people's details in insurance documents before they reach a model."
+    />
+    <meta name="twitter:image" content="https://complydoc.github.io/complydoc/og.png" />
+    <!-- Set the theme before the first paint, so a dark reader never sees a white flash. -->
+    <script>
+      try {
+        const t = localStorage.getItem("complydoc-theme");
+        const dark = t === "dark" || (t !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.classList.toggle("dark", dark);
+      } catch {}
+    </script>
+    <!-- Visits are counted without cookies and nothing is stored in the browser. -->
+    <script data-goatcounter="https://complydoc.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+    <!-- Load the other pages of the site in the background as soon as a link to one is pointed at, so moving between them is instant. -->
+    <script type="speculationrules">
+      {
+        "prerender": [{ "where": { "selector_matches": "a[data-page]" }, "eagerness": "moderate" }],
+        "prefetch": [{ "where": { "selector_matches": "a[data-page]" }, "eagerness": "eager" }]
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/pages/industry.tsx"></script>
+  </body>
+</html>

@@ -42,6 +42,24 @@ def mcp(
             ),
         ),
     ] = None,
+    engine: Annotated[
+        str | None,
+        typer.Option(
+            "--engine",
+            help=(
+                "The detection engine to read documents with, when a package installed one, "
+                "such as veil. The first installed is used unless this says otherwise; "
+                "`none` reads with complydoc's own configuration."
+            ),
+        ),
+    ] = None,
+    config_dir: Annotated[
+        Path | None,
+        typer.Option(
+            "--config-dir",
+            help="Read documents with this configuration directory, instead of any engine's.",
+        ),
+    ] = None,
 ) -> None:
     """Let an AI assistant open documents through complydoc, over MCP on stdio.
 
@@ -53,11 +71,25 @@ def mcp(
 
     With `--runs .complydoc`, an engineer can also ask about recorded runs: step times of a
     pipeline, loaders compared, evals, and where a value went.
+
+    When a detection engine such as Veil is installed, documents are read with it.
     """
-    from complydoc.mcp import serve
+    from complydoc.mcp import engines, serve
 
     for folder in folders or []:
         if not folder.expanduser().is_dir():
             errors.print(f"Not a folder: {folder}")
             raise typer.Exit(2)
-    serve(folders or [], fetch_name_model=fetch_name_model, runs=runs or [])
+    if engine not in (None, "none") and engine not in engines.installed():
+        errors.print(f"No engine called {engine!r} is installed.")
+        raise typer.Exit(2)
+    if config_dir is not None and not config_dir.expanduser().is_dir():
+        errors.print(f"Not a folder: {config_dir}")
+        raise typer.Exit(2)
+    serve(
+        folders or [],
+        fetch_name_model=fetch_name_model,
+        runs=runs or [],
+        engine=engine,
+        config_dir=config_dir.expanduser() if config_dir else None,
+    )

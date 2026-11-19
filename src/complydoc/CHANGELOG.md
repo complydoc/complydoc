@@ -10,7 +10,38 @@ separately.
 ### Added
 
 - `cd.parsers.kreuzberg()`, a local parser preset for Kreuzberg.
+- `complydoc mcp` reads documents with a detection engine another package installs, such as
+  Veil, through the `complydoc.engines` entry point group, and tells the assistant which
+  one found the details. `--engine` chooses one (`none` for complydoc's own configuration)
+  and `--config-dir` reads with a directory of your own.
+- The container image is listed in the MCP Registry next to the PyPI package, and the
+  install guide covers every common client, with one-click installs for VS Code and Cursor.
 - UK NHS numbers are found beside their label and confirmed by their check digit.
+- Credentials are found: API keys by their service's prefix (AWS, GitHub, Slack, Stripe,
+  OpenAI, Anthropic, Google) or beside a label such as `api_key`, JSON Web Tokens confirmed
+  by their header, private key blocks, and passwords in connection strings or after their
+  label. A value that reads as a placeholder, `your_api_key_here` or `${TOKEN}`, is left
+  alone, and the four categories are never revealed, even with `--reveal`.
+- Portuguese NIFs starting with 3, 45 and 7 are valid, and a company's NIF is found beside
+  `NIPC`.
+
+### Fixed
+
+- Fewer wrong identifier flags in business documents. A context label counts only on the
+  value's own line, or the line above when that line has no words before the value, and
+  only as whole words: "ach" in "Machado" no longer makes a NIF a US routing number. A
+  value after the label of another field (order, serial, batch, EAN, IMEI, policy, phone,
+  in seven languages) is not reported as an identifier its digits happen to fit; an IBAN,
+  an email address and a grouped card number still are. An unbroken card number needs a
+  card word on its line, an unspaced UK phone number from 0 needs a phone word, an IBAN
+  must have its country's length, and a spaced French social security number is no longer
+  also a phone number. The shipped benchmark goes from 91.4% to 100% precision.
+- Fewer false hidden-text flags in PDFs. A page whose MediaBox sits on the page tree rather
+  than the page was checked as US Letter while drawn as A4, so every glyph was looked for on
+  the wrong rows: white headings on coloured bars read as white on white, and a footer as
+  nothing drawn. A value cut off by its table cell, a white copy of words the page shows
+  anyway, and e-signature anchor tags such as `\s1\` are now reported only when they read as
+  an instruction to a model.
 
 ## [0.8.1] — 2026-11-18
 

@@ -8,6 +8,7 @@ Pages with no readable text are recorded by number.
 
 from __future__ import annotations
 
+import re
 from bisect import bisect_right
 from collections import Counter
 from dataclasses import dataclass, field
@@ -58,12 +59,16 @@ _EXCLUSIVE_GROUP = frozenset(
         "dk_cpr",
         "no_fnr",
         "fi_hetu",
+        "fr_nir",
         "ch_ahv",
         "br_cpf",
         "br_cnpj",
         "in_aadhaar",
         "ca_sin",
         "au_tfn",
+        "api_key",
+        "access_token",
+        "password",
     }
 )
 
@@ -149,6 +154,75 @@ def _label_near(text: str, finding: Finding, category: CategoryConfig) -> bool:
         )
         is not None
     )
+
+
+_CONNECTION_USER = re.compile(r"://[^\s:/@]{1,64}:$")
+
+
+def _in_a_connection_string(text: str, start: int) -> bool:
+    """Whether an email-shaped match is the `password@host` of `scheme://user:password@host`.
+
+    That is a password, reported as one, and no one's email address.
+    """
+    return _CONNECTION_USER.search(text, max(0, start - 90), start) is not None
+
+
+# A value written after the label of another kind of field is that field, whatever its
+# digits happen to satisfy: `Encomenda: 0209396017` is an order number, not a UK phone
+# number, and `Tel.: 222880546` is a phone number, not a NIF. Matched against the words
+# just before the value on its own line.
+_OTHER_FIELD = re.compile(
+    r"(?i)\b(?:invoice|fatura|factura|facture|rechnung|fattura|factuur|order|encomenda|"
+    r"requisi[çc][ãa]o|pedido|commande|bestell\w*|auftrag|ordine|bestelnummer|purchase order|po|"
+    r"ean|gtin|isbn|imei|serial|s[ée]rie|serien\w*|matricola|lote?|lotto|batch|charge|partij|"
+    r"tracking|policy|ap[óo]lice|polizza|ticket|ref(?:er[êe]ncia|erence|erenz|erentie|erencia|"
+    r"érence)?\.?|kenmerk|vorgang|customer no|account ref|kundennummer|klantnummer|"
+    r"delivery note|guia(?: de remessa)?|lieferschein|job(?: number)?|licen[cs]e|"
+    r"meter|cpe|hs code|cae|build|version|commit|entidade|atcud|"
+    r"tel(?:efone|efon|efoon|[ée]phone|efono)?\.?|phone|mobile?|telem[óo]vel|m[óo]vil|portable|"
+    r"cellulare|fax)\b[^\n:]{0,20}[:#]?[ \t]*$"
+)
+_PHONE_WORDS = re.compile(
+    r"(?i)\b(?:tel|phone|mobile|telefone|telem[óo]vel|tel[ée]fono|m[óo]vil|t[ée]l[ée]phone|"
+    r"portable|telefon|mobil|telefoon|mobiel|cellulare|telefono|contacto?|fax|call)\b"
+)
+_CARD_WORDS = re.compile(r"(?i)\b(?:card|cart[ãa]o|tarjeta|carte|karte|visa|mastercard|amex|pan)\b")
+_PHONES = frozenset({"phone_number", "international_phone", "us_phone"})
+
+
+def _another_fields_value(text: str, start: int, end: int, category_id: str) -> bool:
+    """Whether a pattern's match is better read as some other field's value.
+
+    Values whose shape is evidence enough stay: an IBAN, an email address, and a card
+    number written in a card's groups. A card number in an invoice-number field is still
+    a card number.
+    """
+    value = text[start:end]
+    line_start = text.rfind("\n", 0, start) + 1
+    line_end = text.find("\n", end)
+    line = text[line_start : len(text) if line_end < 0 else line_end]
+    before = text[line_start:start]
+    if category_id == "card_number" and value.isdigit() and not _CARD_WORDS.search(line):
+        # Thirteen to nineteen digits in a row pass Luhn one time in ten: an IMEI, an
+        # EAN-13 barcode, a serial number. Unbroken, it is a card only beside a card word.
+        return True
+    if (
+        category_id == "phone_number"
+        and re.fullmatch(r"0\d{9,10}", value)
+        and not _PHONE_WORDS.search(line)
+    ):
+        # Ten or eleven digits from a 0, unspaced, are a UK number in shape only: so is
+        # half the order, policy and tracking numbers in a folder.
+        return True
+    if category_id in ("iban", "email_address") or (
+        category_id == "card_number" and not value.isdigit()
+    ):
+        return False
+    label = _OTHER_FIELD.search(before)
+    if label is None:
+        return False
+    # A phone number after a phone label is where it belongs.
+    return not (category_id in _PHONES and _PHONE_WORDS.search(label.group(0)))
 
 
 def _line_starts(text: str) -> list[int]:
@@ -281,6 +355,16 @@ def _scan_page(
             value = text[finding.start : finding.end]
             passed, names = validate(value, category.validators, config.checks)
             if not passed:
+                continue
+            if category_id == "email_address" and _in_a_connection_string(text, finding.start):
+                continue
+            # Only the identifiers that rest on a shape and a checksum: a pattern of the
+            # caller's own, such as a concept, means what it says wherever it is.
+            if (
+                category.detector == "regex"
+                and (category_id in _EXCLUSIVE_GROUP or category.validators)
+                and _another_fields_value(text, finding.start, finding.end, category_id)
+            ):
                 continue
             candidates.append(Candidate(category_id, category, finding, names))
 

@@ -30,15 +30,43 @@ def _compiled(pattern: str) -> re.Pattern[str]:
 def _nearby_term(
     text: str, start: int, end: int, terms: tuple[str, ...], window: int
 ) -> str | None:
-    """The first configured label found within `window` characters of the match."""
+    """The first configured label found within `window` characters of the match.
+
+    The label has to be on the match's own line, or on the line above when the match's
+    line has no words before it: a value under its column header, or alone on the line
+    after its label. A label two lines away belongs to another field, so "Data de
+    nascimento" under a meter reading does not make the reading's date a birth date.
+
+    A term matches whole words only. As a substring, "ach" was found in "Machado" and
+    "nie" in "Daniel".
+    """
     if not terms:
         return None
-    left = max(0, start - window)
-    haystack = text[left:start].lower() + " " + text[end : end + window].lower()
+    line_start = text.rfind("\n", 0, start) + 1
+    line_end = text.find("\n", end)
+    if line_end < 0:
+        line_end = len(text)
+    before = text[max(line_start, start - window) : start]
+    if line_start > 0 and not _WORDS.search(before):
+        above = text.rfind("\n", 0, line_start - 1) + 1
+        before = text[max(above, start - window) : line_start - 1] + " " + before
+    haystack = before.lower() + " " + text[end : min(line_end, end + window)].lower()
     for term in terms:
-        if term.lower() in haystack:
+        if _term_pattern(term.lower()).search(haystack):
             return term
     return None
+
+
+_WORDS = re.compile(r"[^\W\d_]{2,}")
+
+
+@lru_cache(maxsize=1024)
+def _term_pattern(term: str) -> re.Pattern[str]:
+    """A context term as whole words. A term that ends in punctuation, `zip:`, ends there."""
+    core = term.strip()
+    tail = r"(?![^\W_])" if core[-1:].isalnum() else ""
+    head = r"(?<![^\W_])" if core[:1].isalnum() else ""
+    return re.compile(head + re.escape(core) + tail)
 
 
 def _inside_a_number(text: str, start: int, end: int) -> bool:
