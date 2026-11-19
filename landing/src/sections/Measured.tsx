@@ -35,61 +35,69 @@ const DETECTION: { value: string; label: string }[] = [
 
 const BENCHMARK = "complydoc benchmark --verbose";
 
-/** How the core is measured: the router's rules and the detection benchmark, both rerunnable. */
-export function Measured() {
+/** The router's rules and what each was tested on. */
+export function RouterMeasured() {
   return (
     <Section
       id="measured"
-      title="How we measure it"
-      lead="Every rule in the router was kept because it won on a benchmark, page by page, against the cheapest reader that loses nothing. Detection is scored on a labelled corpus you can run yourself."
+      title="How the router is measured"
+      lead="Every rule was kept because it won on a benchmark, page by page, against the cheapest reader that loses nothing."
     >
-      <div className="flex flex-col gap-20">
-        <div className="flex flex-col gap-6">
-          <h3 className="text-2xl font-medium tracking-tight">The router</h3>
-          <div className="overflow-x-auto rounded-xl border bg-card">
-            <table className="w-full min-w-[44rem] text-left text-sm">
-              <thead className="border-b text-muted-foreground">
-                <tr>
-                  <th className="px-5 py-3 font-medium">Tested on</th>
-                  <th className="px-5 py-3 font-medium">What it showed</th>
-                  <th className="px-5 py-3 font-medium">What the router does</th>
+      <div className="flex flex-col gap-6">
+        <div className="overflow-x-auto rounded-xl border bg-card">
+          <table className="w-full min-w-[44rem] text-left text-sm">
+            <thead className="border-b text-muted-foreground">
+              <tr>
+                <th className="px-5 py-3 font-medium">Tested on</th>
+                <th className="px-5 py-3 font-medium">What it showed</th>
+                <th className="px-5 py-3 font-medium">What the router does</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ROUTER_FINDINGS.map((row) => (
+                <tr key={row.test} className="border-b align-top last:border-b-0">
+                  <td className="px-5 py-4">{row.test}</td>
+                  <td className="px-5 py-4 text-muted-foreground">{row.found}</td>
+                  <td className="px-5 py-4 font-mono text-xs leading-5">{row.decided}</td>
                 </tr>
-              </thead>
-              <tbody>
-                {ROUTER_FINDINGS.map((row) => (
-                  <tr key={row.test} className="border-b last:border-b-0 align-top">
-                    <td className="px-5 py-4">{row.test}</td>
-                    <td className="px-5 py-4 text-muted-foreground">{row.found}</td>
-                    <td className="px-5 py-4 font-mono text-xs leading-5">{row.decided}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <p className="text-muted-foreground">
-            The thresholds live in <code className="font-mono text-sm">readiness.yaml</code>, and every page carries the
-            reason for its route, so a plan can be argued with. <TextLink href={links.routing}>Routing</TextLink>
-          </p>
+              ))}
+            </tbody>
+          </table>
         </div>
+        <p className="text-muted-foreground">
+          Every page carries the reason for its route, so a plan can be argued with.{" "}
+          <TextLink href={links.routing}>The routing guide</TextLink>
+        </p>
+      </div>
+    </Section>
+  );
+}
 
-        <div className="flex flex-col gap-8">
-          <h3 className="text-2xl font-medium tracking-tight">Detection</h3>
-          <dl className="grid gap-10 sm:grid-cols-3">
-            {DETECTION.map((item) => (
-              <div key={item.label} className="flex flex-col gap-2 border-t pt-5">
-                <dt className="text-4xl font-medium tracking-tight tabular-nums">{item.value}</dt>
-                <dd className="text-pretty text-muted-foreground">{item.label}</dd>
-              </div>
-            ))}
-          </dl>
-          <div className="flex flex-wrap items-center gap-3">
-            <code className="rounded-md border bg-card px-3 py-2 font-mono text-sm">
-              <span className="text-muted-foreground select-none">$ </span>
-              {BENCHMARK}
-            </code>
-            <CopyButton text={BENCHMARK} label="Copy the benchmark command" variant="ghost" size="icon" />
-            <TextLink href={links.accuracy}>How it is scored</TextLink>
-          </div>
+/** The detection benchmark, rerunnable from the command line. */
+export function DetectionMeasured({ home = "" }: { home?: string }) {
+  return (
+    <Section
+      id="measured"
+      title="Measured, and rerunnable"
+      lead="Detection is scored on a labelled corpus that ships with the package. The router's rules each won on a public benchmark."
+    >
+      <div className="flex flex-col gap-8">
+        <dl className="grid gap-10 sm:grid-cols-3">
+          {DETECTION.map((item) => (
+            <div key={item.label} className="flex flex-col gap-2 border-t pt-5">
+              <dt className="text-4xl font-medium tracking-tight tabular-nums">{item.value}</dt>
+              <dd className="text-pretty text-muted-foreground">{item.label}</dd>
+            </div>
+          ))}
+        </dl>
+        <div className="flex flex-wrap items-center gap-3">
+          <code className="rounded-md border bg-card px-3 py-2 font-mono text-sm">
+            <span className="text-muted-foreground select-none">$ </span>
+            {BENCHMARK}
+          </code>
+          <CopyButton text={BENCHMARK} label="Copy the benchmark command" variant="ghost" size="icon" />
+          <TextLink href={links.accuracy}>How it is scored</TextLink>
+          <TextLink href={`${home}router/#measured`}>How the router is measured</TextLink>
         </div>
       </div>
     </Section>
