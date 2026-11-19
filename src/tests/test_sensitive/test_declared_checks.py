@@ -92,7 +92,7 @@ AS_DATA = {
     ),
     "pt_nif": _check(
         length=9,
-        starts_with=list("125689"),
+        starts_with=[*"1235689", "45", "70", "71", "72", "74", "75", "77", "78", "79"],
         method="weighted",
         weights=[9, 8, 7, 6, 5, 4, 3, 2],
         modulus=11,

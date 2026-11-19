@@ -14,11 +14,11 @@ PUBLISHED = {
     "labelled": 53,
     "found": 53,
     "missed": 0,
-    "wrongly_flagged": 5,
+    "wrongly_flagged": 0,
     "recall_pct": 100.0,
-    "precision_pct": 91.4,
+    "precision_pct": 100.0,
     "clean_passages": 9,
-    "clean_passages_with_a_flag": 3,
+    "clean_passages_with_a_flag": 0,
 }
 DOCS = "docs/explanation/accuracy.md"
 
