@@ -639,6 +639,21 @@ categories:
       Direct identifier encoding birth date, validated with its two mod-11 check digits.
 
 
+  fi_hetu:
+    enabled: true
+    label: Finnish personal identity code
+    region: FI
+    detector: regex
+    severity: high
+    context_patterns:
+      - '\b\d{6}[+\-A-FU-Y]\d{3}[0-9A-FHJ-NPR-Y]\b'
+    validators: [fi_hetu]
+    context_terms: ["henkilötunnus", "henkilotunnus", "hetu", "personbeteckning"]
+    gdpr_note: >
+      Direct identifier encoding birth date, validated with its century sign and check
+      character (the nine-digit number modulo 31).
+
+
   ch_ahv:
     enabled: true
     label: Swiss AHV number

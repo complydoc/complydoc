@@ -534,3 +534,17 @@ def test_nothing_is_fetched_when_the_model_is_on_disk(monkeypatch: pytest.Monkey
     assert models.fetch_name_model() is None, (
         "without the extra there is nothing to read names with"
     )
+
+
+def test_every_tool_says_what_it_does_to_the_machine() -> None:
+    from complydoc.mcp.catalogue import RUN_TOOLS, TOOLS
+
+    for tool in [*TOOLS, *RUN_TOOLS]:
+        hints = tool["annotations"]
+        assert tool["title"] and hints["title"] == tool["title"]
+        assert isinstance(hints["readOnlyHint"], bool) and isinstance(
+            hints["destructiveHint"], bool
+        )
+        assert hints["openWorldHint"] is False
+        writes = tool["name"] in {"save_clean_copy", "choose_folder", "remove_folder"}
+        assert hints["readOnlyHint"] is not writes, tool["name"]

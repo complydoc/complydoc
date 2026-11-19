@@ -164,7 +164,10 @@ git tag -a "v$VERSION" -m "complydoc v$VERSION"
 git push origin "v$VERSION"
 ```
 
-The tag must match `complydoc.__version__` and have a changelog entry. `release.yml` builds the
+The tag must match `complydoc.__version__` and have a changelog entry. `server.json` (the
+MCP Registry entry) carries the same version twice, as do the Claude plugin's
+`plugin/.claude-plugin/plugin.json` and `plugin/.mcp.json`; `test_mcp_registry.py` fails until
+all are bumped. `release.yml` builds the
 wheel and sdist, an SBOM and checksums, attests the artefacts, and drafts a release:
 
 ```bash
@@ -174,4 +177,6 @@ gh attestation verify complydoc-$VERSION-py3-none-any.whl --repo complydoc/compl
 Publishing the draft runs `publish.yml`, which uploads the attached artefacts to PyPI through
 Trusted Publishing (owner `complydoc`, repository `complydoc`, workflow
 `publish.yml`, environment `pypi`). `workflow_dispatch` with a tag re-runs a partial upload and
-skips files already present.
+skips files already present. Once PyPI has the version, the same workflow lists it in the
+[MCP Registry](https://registry.modelcontextprotocol.io) as `io.github.complydoc/complydoc`,
+signing in with the workflow's GitHub OIDC token, so there is no secret to store.

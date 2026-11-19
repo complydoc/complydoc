@@ -13,6 +13,8 @@
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-56b4e0" alt="License"></a>
 </div>
 
+<!-- mcp-name: io.github.complydoc/complydoc -->
+
 <br>
 
 <picture>
@@ -39,6 +41,21 @@ complydoc ui ./documents
 `complydoc ui` audits the folder and opens the viewer on it, served from your machine. To
 see a hidden clause caught, try the one-page contract in
 [`examples/hidden_clause.pdf`](examples/hidden_clause.pdf).
+
+## In your assistant
+
+`complydoc mcp` lets Claude, Cursor or any MCP client open documents with personal and
+financial details masked and hidden instructions taken out. In Claude Code:
+
+```text
+/plugin install complydoc --marketplace complydoc/complydoc
+```
+
+Elsewhere, run it with `uvx complydoc mcp`; it is in the
+[MCP Registry](https://registry.modelcontextprotocol.io) as `io.github.complydoc/complydoc`.
+Claude Desktop installs it from the extension on the
+[releases page](https://github.com/complydoc/complydoc/releases/latest). See
+[Documents into an assistant, cleaned](https://complydoc.github.io/complydoc/docs/guides/assistant-mcp/).
 
 ## Observe a pipeline
 
@@ -68,7 +85,7 @@ time, tokens, cost and the identifiers it passed on. Open it with `complydoc ui`
 ## In CI
 
 ```yaml
-- uses: complydoc/complydoc@v0.8.0
+- uses: complydoc/complydoc@v0.8.1
   with:
     path: documents
     policy: policy.yaml

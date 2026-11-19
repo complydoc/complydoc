@@ -564,6 +564,20 @@ def no_fnr(value: str) -> bool:
     return k2 == int(digits[10])
 
 
+def fi_hetu(value: str) -> bool:
+    """Finnish identity code (henkilötunnus): DDMMYY, century sign, 3 digits, check character."""
+    code = value.strip().upper()
+    if re.fullmatch(r"\d{6}[+\-A-FU-Y]\d{3}[0-9A-Z]", code) is None:
+        return False
+    sign = code[6]
+    century = 1800 if sign == "+" else 1900 if sign in "-YXWVU" else 2000
+    try:
+        dt.date(century + int(code[4:6]), int(code[2:4]), int(code[:2]))
+    except ValueError:
+        return False
+    return "0123456789ABCDEFHJKLMNPRSTUVWXY"[int(code[:6] + code[7:10]) % 31] == code[10]
+
+
 def ch_ahv(value: str) -> bool:
     """Swiss AHV number: 756, then an EAN-13 check digit."""
     digits = _digits(value)
@@ -681,6 +695,7 @@ VALIDATORS: dict[str, Callable[[str], bool]] = {
     "se_personnummer": se_personnummer,
     "dk_cpr": dk_cpr,
     "no_fnr": no_fnr,
+    "fi_hetu": fi_hetu,
     "ch_ahv": ch_ahv,
     "br_cpf": br_cpf,
     "br_cnpj": br_cnpj,

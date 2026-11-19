@@ -143,3 +143,34 @@ RUN_TOOLS: list[dict[str, Any]] = [
     ),
 ]
 """The tools for engineers, offered when the server is given folders of runs."""
+
+
+# What each tool does to the person's machine, for clients that ask before a tool changes
+# something and for directories that review a server. Nothing reaches the network.
+_HINTS: dict[str, tuple[str, bool, bool]] = {
+    # name: (title, read only, destructive)
+    "list_documents": ("List shared documents", True, False),
+    "search_documents": ("Search shared documents", True, False),
+    "check_document": ("Check a document before sharing it", True, False),
+    "check_folder": ("Check a whole folder", True, False),
+    "open_document": ("Open a document, cleaned", True, False),
+    "save_clean_copy": ("Save a clean copy", False, False),
+    "list_folders": ("List shared folders", True, False),
+    "choose_folder": ("Choose a folder to share", False, False),
+    "remove_folder": ("Stop sharing a folder", False, True),
+    "list_runs": ("List recorded runs", True, False),
+    "show_run": ("Show a run", True, False),
+    "compare_runs": ("Compare two runs", True, False),
+    "find_value": ("Find where a value went", True, False),
+}
+
+for _entry in [*TOOLS, *RUN_TOOLS]:
+    _title, _read_only, _destructive = _HINTS[_entry["name"]]
+    _entry["title"] = _title
+    _entry["annotations"] = {
+        "title": _title,
+        "readOnlyHint": _read_only,
+        "destructiveHint": _destructive,
+        "idempotentHint": _read_only or _entry["name"] == "remove_folder",
+        "openWorldHint": False,
+    }

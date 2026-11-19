@@ -24,6 +24,7 @@ VALID = [
     (v.pl_pesel, "44051401359"),
     (v.se_personnummer, "811228-9874"),
     (v.no_fnr, "010190 10046"),
+    (v.fi_hetu, "131052-308T"),
     (v.ch_ahv, "756.1234.5678.97"),
     (v.br_cpf, "529.982.247-25"),
     (v.br_cnpj, "11.222.333/0001-81"),
@@ -43,6 +44,14 @@ def test_norwegian_h_number_passes_and_a_month_past_52_fails():
     assert v.no_fnr("014190 10029") is True
     # Same digits with the month at 53, check digits recomputed: only the month is wrong.
     assert v.no_fnr("015390 10057") is False
+
+
+@pytest.mark.parametrize("sign", ["+", "-", "Y", "U", "A", "F"])
+def test_finnish_century_signs_are_accepted_and_others_rejected(sign):
+    body = "131052" + sign + "308"
+    check = "0123456789ABCDEFHJKLMNPRSTUVWXY"[131052308 % 31]
+    assert v.fi_hetu(body + check) is True
+    assert v.fi_hetu("131052G308" + check) is False
 
 
 def test_verhoeff_rejects_a_single_digit_change():
@@ -65,6 +74,11 @@ def test_verhoeff_rejects_a_single_digit_change():
         (v.dk_cpr, "010190-1234", True),
         (v.dk_cpr, "320190-1234", False),
         (v.no_fnr, "320190 10046", False),
+        (v.fi_hetu, "131052-308U", False),
+        (v.fi_hetu, "131052*308T", False),
+        (v.fi_hetu, "311152-308T", False),
+        (v.fi_hetu, "290201-308T", False),
+        (v.fi_hetu, "131052-30T", False),
         (v.in_pan, "ABCPE1234F", True),
         (v.in_pan, "ABCXE1234F", False),
         (v.se_personnummer, "811268-9874", False),
@@ -91,6 +105,7 @@ def test_format_rules(checker, value, expected):
         ("se_personnummer", "Personnummer 811228-9874"),
         ("dk_cpr", "CPR-nummer: 010190-1234"),
         ("no_fnr", "Fødselsnummer: 010190 10046"),
+        ("fi_hetu", "Henkilötunnus: 131052-308T"),
         ("ch_ahv", "AHV-Nr. 756.1234.5678.97"),
         ("br_cpf", "CPF 529.982.247-25"),
         ("br_cnpj", "CNPJ 11.222.333/0001-81"),

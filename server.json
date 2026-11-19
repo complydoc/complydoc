@@ -1,0 +1,52 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.complydoc/complydoc",
+  "title": "complydoc",
+  "description": "Open documents with personal details masked and hidden instructions taken out, on your machine.",
+  "version": "0.8.1",
+  "websiteUrl": "https://complydoc.github.io/complydoc/",
+  "repository": {
+    "url": "https://github.com/complydoc/complydoc",
+    "source": "github"
+  },
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/complydoc/complydoc/main/mcpb/icon.png",
+      "mimeType": "image/png"
+    }
+  ],
+  "packages": [
+    {
+      "registryType": "pypi",
+      "registryBaseUrl": "https://pypi.org",
+      "identifier": "complydoc",
+      "version": "0.8.1",
+      "runtimeHint": "uvx",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "mcp"
+        },
+        {
+          "type": "named",
+          "name": "--folder",
+          "description": "A folder the assistant may open documents from. More can be chosen from the conversation; nothing outside them is read.",
+          "format": "filepath",
+          "isRepeated": true,
+          "isRequired": false
+        },
+        {
+          "type": "named",
+          "name": "--runs",
+          "description": "A folder of complydoc reports, such as .complydoc. Adds the tools for engineers: recorded runs, step times and where a value went.",
+          "format": "filepath",
+          "isRepeated": true,
+          "isRequired": false
+        }
+      ]
+    }
+  ]
+}
