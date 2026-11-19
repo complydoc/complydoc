@@ -8,7 +8,11 @@ something.
 
 from __future__ import annotations
 
+import base64
+import binascii
 import datetime as dt
+import json
+import math
 import re
 from collections.abc import Callable, Mapping
 from typing import TYPE_CHECKING
@@ -42,6 +46,7 @@ FORMAT_ONLY: frozenset[str] = frozenset(
         "ni_prefix",
         "us_ein",
         "us_ssn",
+        "real_secret",
     }
 )
 """Validators that check a shape rather than compute a check digit.
@@ -666,6 +671,46 @@ def au_tfn(value: str) -> bool:
     return _weighted_mod(digits, (1, 4, 3, 7, 5, 8, 6, 9, 10), 11) == 0
 
 
+def jwt_header(value: str) -> bool:
+    """A JSON Web Token: its first part decodes to a JSON object that names an `alg`.
+
+    Three runs of base64 joined by dots are common enough in URLs and logs. The header is
+    what makes one a token.
+    """
+
+    header = value.split(".", 1)[0]
+    try:
+        decoded = base64.urlsafe_b64decode(header + "=" * (-len(header) % 4))
+        parsed = json.loads(decoded)
+    except (binascii.Error, ValueError):
+        return False
+    return isinstance(parsed, dict) and "alg" in parsed
+
+
+_PLACEHOLDER = re.compile(
+    r"(?i)^(?:x+|\*+|\.+|-+|_+|0+|1234\w*|changeme\w*|password\w*|passw(?:or)?d?|secret\w*|"
+    r"your[_-]?\w*|my[_-]?\w*|example\w*|sample\w*|dummy\w*|test\w*|placeholder\w*|"
+    r"redacted|none|null|undefined|todo|tbd|<[^>]*>|.*example.*|\$\{[^}]*\}|\{\{[^}]*\}\}|%\w+%|\$\w+)$"
+)
+
+
+def real_secret(value: str) -> bool:
+    """A value that could be a working secret rather than a placeholder for one.
+
+    Documentation is full of `api_key=your_key_here` and `postgres://user:password@host`.
+    A real key mixes letters and digits and does not repeat itself much.
+    """
+
+    secret = value.strip("'\"")
+    if len(secret) < 8 or _PLACEHOLDER.match(secret):
+        return False
+    counts = {char: secret.count(char) for char in set(secret)}
+    entropy = -sum(n / len(secret) * math.log2(n / len(secret)) for n in counts.values())
+    has_digit = any(char.isdigit() for char in secret)
+    has_letter = any(char.isalpha() for char in secret)
+    return has_digit and has_letter and entropy >= 3.0
+
+
 VALIDATORS: dict[str, Callable[[str], bool]] = {
     "luhn": luhn,
     "card_issuer": card_issuer,
@@ -703,6 +748,8 @@ VALIDATORS: dict[str, Callable[[str], bool]] = {
     "in_pan": in_pan,
     "ca_sin": ca_sin,
     "au_tfn": au_tfn,
+    "jwt_header": jwt_header,
+    "real_secret": real_secret,
 }
 
 

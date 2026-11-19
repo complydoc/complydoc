@@ -10,6 +10,11 @@ separately.
 ### Added
 
 - UK NHS numbers are found beside their label and confirmed by their check digit.
+- Credentials are found: API keys by their service's prefix (AWS, GitHub, Slack, Stripe,
+  OpenAI, Anthropic, Google) or beside a label such as `api_key`, JSON Web Tokens confirmed
+  by their header, private key blocks, and passwords in connection strings or after their
+  label. A value that reads as a placeholder, `your_api_key_here` or `${TOKEN}`, is left
+  alone, and the four categories are never revealed, even with `--reveal`.
 
 ## [0.8.1] — 2026-11-18
 
