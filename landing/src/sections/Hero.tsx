@@ -57,7 +57,7 @@ export function Hero() {
         </div>
         <Screenshot
           src={{ dark: traceDark, light: traceLight }}
-          alt="The viewer's trace of an ingestion pipeline: every call on a time axis with its time, cost and identifiers, a warning on a scanned file that loaded no text, and the embedding call's input"
+          alt="The viewer's dashboard for a run: where the time went step by step, readiness, the identifiers that need attention, the documents to look at first and what each one cost"
         />
       </div>
     </section>

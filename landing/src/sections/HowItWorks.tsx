@@ -68,8 +68,8 @@ export function HowItWorks() {
           evidence={
             <Screenshot
               src={{ dark: securityDark, light: securityLight }}
-              ratio={1856 / 1769}
-              alt="The viewer's findings for a folder: identifiers by kind and by document, by severity, and one hidden instruction"
+              ratio={2880 / 1800}
+              alt="The viewer's findings for a folder: counts by severity, identifiers by kind and by document, how sure each one is, and one hidden instruction"
             />
           }
         >
@@ -84,8 +84,8 @@ export function HowItWorks() {
           evidence={
             <Screenshot
               src={{ dark: documentDark, light: documentLight }}
-              ratio={1856 / 1083}
-              alt="The text a loader returned for a contract, line by line, with personal data masked and each finding marked"
+              ratio={2880 / 1120}
+              alt="The viewer's documents table: pages, readiness, how far the readers agree, identifiers, and the cost and time of each document"
             />
           }
         >
