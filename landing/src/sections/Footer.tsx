@@ -7,8 +7,6 @@ const columns = (home: string) => [
     title: "Product",
     items: [
       { label: "Try it", href: `${home}#try` },
-      { label: "Features", href: `${home}#features` },
-      { label: "Quickstart", href: `${home}#quickstart` },
       { label: "Integrations", href: `${home}#integrations` },
       { label: "For teams", href: `${home}enterprise/` },
       { label: "Veil", href: `${home}veil/` },

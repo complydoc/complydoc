@@ -14,8 +14,6 @@ export interface Industry {
   /** One line for the cards that link here. */
   headline: string;
   lead: string;
-  /** A photo on Unsplash, loaded from Unsplash's own servers as its licence asks, and who took it. */
-  photo?: { src: string; by: string; page: string };
   documents: string[];
   veiled: string[];
   kept: string[];
@@ -23,13 +21,9 @@ export interface Industry {
   example: Piece[];
 }
 
-/** A photo from Unsplash, wide enough for the top of a page. */
-const unsplash = (id: string) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=2400&q=80`;
-
 export const INDUSTRIES: Industry[] = [
   {
     slug: "legal",
-    photo: { src: unsplash("photo-1562564055-71e051d33c19"), by: "Gabrielle Henderson", page: "https://unsplash.com/photos/woman-signing-on-white-printer-paper-beside-woman-about-to-touch-the-documents-HJckKnwCXxQ" },
     name: "Legal",
     audience: "legal teams",
     headline: "Contracts and court filings, with clients' details covered.",
@@ -50,7 +44,6 @@ export const INDUSTRIES: Industry[] = [
   },
   {
     slug: "healthcare",
-    photo: { src: unsplash("photo-1777269749032-d8d458ae594d"), by: "Tasha Kostyuk", page: "https://unsplash.com/photos/empty-hospital-corridor-with-benches-and-doors-Pk-KuizxQv8" },
     name: "Healthcare",
     audience: "healthcare",
     headline: "Referral letters and discharge notes, with patients' details covered.",
@@ -71,7 +64,6 @@ export const INDUSTRIES: Industry[] = [
   },
   {
     slug: "finance",
-    photo: { src: unsplash("photo-1753955900090-d252808f350d"), by: "Giorgio Tomassetti", page: "https://unsplash.com/photos/bills-and-calculator-sit-on-a-desk-hBhouoXClKw" },
     name: "Banking and finance",
     audience: "banking and finance",
     headline: "Statements and onboarding files, with customers' details covered.",
@@ -90,7 +82,6 @@ export const INDUSTRIES: Industry[] = [
   },
   {
     slug: "insurance",
-    photo: { src: unsplash("photo-1597328290883-50c5787b7c7e"), by: "Clark Van Der Beken", page: "https://unsplash.com/photos/damaged-silver-car-with-crushed-hood-CSkriQWeTVs" },
     name: "Insurance",
     audience: "insurance",
     headline: "Claim files, with claimants' details covered.",
@@ -111,7 +102,6 @@ export const INDUSTRIES: Industry[] = [
   },
   {
     slug: "hr",
-    photo: { src: unsplash("photo-1758691737278-3af15b37af48"), by: "Vitaly Gariev", page: "https://unsplash.com/photos/two-colleagues-discussing-work-in-a-modern-office-E3TJIo5E9Gg" },
     name: "HR and recruiting",
     audience: "HR and recruiting",
     headline: "CVs and payslips, with candidates' details covered.",

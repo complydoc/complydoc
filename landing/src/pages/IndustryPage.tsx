@@ -1,6 +1,6 @@
 import { ArrowRightIcon } from "lucide-react";
+import { IndustryArt } from "@/art/IndustryArt";
 import { IndustryCards } from "@/components/IndustryCards";
-import { IndustryPhoto } from "@/components/IndustryPhoto";
 import { VeilLine } from "@/components/VeilLine";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -10,7 +10,7 @@ import { Page } from "@/pages/Page";
 /** Two levels below the landing page: industries/<slug>/. */
 const HOME = "../../";
 
-/** How Veil helps one industry: a headline, a photo, its documents, and a line as the model reads it. */
+/** How Veil helps one industry: a headline, a drawing, its documents, and a line as the model reads it. */
 export function IndustryPage({ industry }: { industry: Industry }) {
   return (
     <Page home={HOME}>
@@ -22,18 +22,7 @@ export function IndustryPage({ industry }: { industry: Industry }) {
             </h1>
             <p className="max-w-2xl text-xl text-pretty text-muted-foreground">{industry.lead}</p>
           </div>
-          <figure className="flex flex-col gap-3">
-            <IndustryPhoto industry={industry} className="aspect-[16/9] md:aspect-[21/9]" />
-            {industry.photo && (
-              <figcaption className="text-xs text-muted-foreground">
-                Photo by{" "}
-                <a href={industry.photo.page} className="underline underline-offset-4 hover:text-foreground">
-                  {industry.photo.by}
-                </a>{" "}
-                on Unsplash
-              </figcaption>
-            )}
-          </figure>
+          <IndustryArt slug={industry.slug} className="aspect-[16/9] md:aspect-[21/9]" />
         </div>
       </section>
 
