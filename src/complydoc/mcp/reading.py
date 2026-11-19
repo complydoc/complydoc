@@ -10,6 +10,10 @@ import re
 from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from complydoc.config.schema import Config
 
 READY, CAREFUL, STOP = "Ready to send", "Send with care", "Do not send as it is"
 UNREAD = "Could not be read"
@@ -111,8 +115,12 @@ class Reading:
 class Reader:
     """Reads documents once each, and again only when the file changes."""
 
-    def __init__(self) -> None:
+    def __init__(self, config_dir: Path | None = None) -> None:
         self._kept: dict[Path, tuple[tuple[float, int], Reading]] = {}
+        self.config_dir = config_dir
+        """Read with this configuration directory, such as an engine's; complydoc's own
+        when None."""
+        self._config: Config | None = None
 
     def read(self, path: Path) -> Reading:
         stat = path.stat()
@@ -120,17 +128,21 @@ class Reader:
         kept = self._kept.get(path)
         if kept and kept[0] == stamp:
             return kept[1]
-        reading = _read(path)
+        if self._config is None:
+            from complydoc.config.loader import load_config
+
+            self._config = load_config(self.config_dir)
+        reading = _read(path, self._config)
         self._kept[path] = (stamp, reading)
         return reading
 
 
-def _read(path: Path) -> Reading:
+def _read(path: Path, config: Config) -> Reading:
     import complydoc as cd
 
     # OCR on, as open_document reads the document: a scan's identifiers are found by the
     # same reading that masks them, so a check never says "ready" about text it never saw.
-    report = cd.security_audit(path, ocr=True)
+    report = cd.security_audit(path, ocr=True, config=config)
     found = Findings()
     if not report.documents:
         skipped = [record.reason for record in report.skipped]
@@ -152,7 +164,7 @@ def _read(path: Path) -> Reading:
             found.unread = "it is password protected"
     if found.unread and not report.documents:
         return Reading(findings=found, pages=[], masked=0, removed=0)
-    result = cd.extract_text(path, mask=True)
+    result = cd.extract_text(path, mask=True, config=config)
     removed = 0
     pages: list[tuple[int, str]] = []
     for chunk in result.chunks:
