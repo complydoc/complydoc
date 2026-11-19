@@ -1,16 +1,13 @@
 import { Logo } from "@/components/Logo";
 import { Separator } from "@/components/ui/separator";
-import { links } from "@/links";
+import { links, VEIL } from "@/links";
 
 const columns = (home: string) => [
   {
-    title: "Product",
+    title: "complydoc",
     items: [
       { label: "Try it", href: `${home}#try` },
       { label: "Integrations", href: `${home}#integrations` },
-      { label: "For teams", href: `${home}enterprise/` },
-      { label: "Veil", href: `${home}veil/` },
-      { label: "Router and gateway", href: `${home}gateway/` },
       { label: "Report viewer", href: links.viewer },
       { label: "Changelog", href: links.changelog },
     ],
@@ -45,10 +42,11 @@ export function Footer({ home = "" }: { home?: string }) {
           <div className="flex max-w-lg flex-col gap-4">
             <Logo size={22} />
             <p className="text-sm text-muted-foreground">
-              Get document loading right. For teams whose assistants read documents:{" "}
-              <a href={`${home}enterprise/`} className="text-foreground underline underline-offset-4">
-                talk to us
+              Get document loading right. For teams, there is{" "}
+              <a href={VEIL} className="text-foreground underline underline-offset-4">
+                Veil
               </a>
+              .
             </p>
           </div>
           <nav aria-label="Footer" className="grid grid-cols-2 gap-10 sm:grid-cols-3">

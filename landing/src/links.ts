@@ -4,8 +4,8 @@ const REPO = "https://github.com/complydoc/complydoc";
 
 export const VERSION = "0.8.1";
 
-/** Where companies write: demos of self-hosted complydoc and early access to the cloud version. */
-export const CONTACT_EMAIL = "caldasdcardoso@gmail.com";
+/** Veil, the product for teams built on complydoc, on its own site. */
+export const VEIL = "https://veil.pages.dev/";
 
 export const links = {
   docs: `${DOCS}/`,
