@@ -9,6 +9,7 @@ separately.
 
 ### Added
 
+- `cd.parsers.kreuzberg()`, a local parser preset for Kreuzberg.
 - UK NHS numbers are found beside their label and confirmed by their check digit.
 
 ## [0.8.1] — 2026-11-18
