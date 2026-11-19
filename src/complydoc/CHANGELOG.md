@@ -24,9 +24,6 @@ separately.
   card word on its line, an unspaced UK phone number from 0 needs a phone word, an IBAN
   must have its country's length, and a spaced French social security number is no longer
   also a phone number. The shipped benchmark goes from 91.4% to 100% precision.
-
-### Fixed
-
 - Fewer false hidden-text flags in PDFs. A page whose MediaBox sits on the page tree rather
   than the page was checked as US Letter while drawn as A4, so every glyph was looked for on
   the wrong rows: white headings on coloured bars read as white on white, and a footer as
