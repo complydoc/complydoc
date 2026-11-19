@@ -400,7 +400,7 @@ categories:
     context_patterns:
       - '\b\d{9}\b'
     validators: [pt_nif]
-    context_terms: ["nif", "contribuinte", "número fiscal", "numero fiscal"]
+    context_terms: ["nif", "nipc", "contribuinte", "número fiscal", "numero fiscal"]
     gdpr_note: >
       Tax identifier for individuals and companies, validated with its mod-11
       check digit.
