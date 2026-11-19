@@ -13,14 +13,14 @@ const ROUTES = [
   { name: "Vision", detail: "Used for tables with merged headers, pictures, and pages that plain text would lose." },
 ];
 
-/** What the gateway decides for each request. */
+/** What the gateway does with each request. */
 const RULES = [
-  { name: "Which model", detail: "Set per team and per type of document, for example a closed model for some and your own model for the rest." },
-  { name: "What it sees", detail: "Only the text after Veil. Pages that need vision go to a local model, or go out as an image with personal data covered." },
-  { name: "A record", detail: "Each request is logged: who asked, which document, which model, and what was covered." },
+  { name: "A filter", detail: "It does not choose a model. Only clean text goes on to the model or tool your team already uses." },
+  { name: "Three checks at once", detail: "Deterministic rules, the Veil model and Veil Judge read each page side by side. Text goes out only once all three clear it." },
+  { name: "A record", detail: "Each request is logged: who asked, which document, and what was covered." },
 ];
 
-/** The router and the gateway: how each page is read, and who reads it. */
+/** The router and the gateway: how each page is read, and what gets through to the model. */
 export function GatewayPage() {
   return (
     <Page>
@@ -31,8 +31,8 @@ export function GatewayPage() {
               Router and gateway
             </h1>
             <p className="max-w-2xl text-xl text-pretty text-muted-foreground">
-              The router chooses how each page is read. Veil covers people's data. The gateway chooses which model
-              gets each request, and logs it.
+              The router chooses how each page is read. The gateway is a filter in front of the model you already
+              use: rules, Veil and Veil Judge check the text side by side, and only clean text gets through.
             </p>
             <Button size="lg" asChild>
               <a href="../enterprise/#contact" data-page="">
@@ -59,7 +59,7 @@ export function GatewayPage() {
       <Part
         id="gateway"
         title="Gateway"
-        lead="It sits between a team and the models it uses. It is part of the team version, in early access."
+        lead="It sits between your documents and the model or tool your team already uses, and lets only clean text through. It is part of the team version, in early access."
         items={RULES}
       />
     </Page>
