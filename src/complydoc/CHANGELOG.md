@@ -9,6 +9,7 @@ separately.
 
 ### Added
 
+- `cd.parsers.kreuzberg()`, a local parser preset for Kreuzberg.
 - `complydoc mcp` reads documents with a detection engine another package installs, such as
   Veil, through the `complydoc.engines` entry point group, and tells the assistant which
   one found the details. `--engine` chooses one (`none` for complydoc's own configuration)
