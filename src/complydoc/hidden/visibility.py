@@ -38,6 +38,7 @@ import contextlib
 import ctypes
 import functools
 import math
+import re
 from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -175,7 +176,7 @@ def _page_runs(
         missed = _runs_pdfium_skipped(skipped, path, number, password, config)
         if count <= 0:
             return missed
-        left, bottom, right, top = page.get_cropbox()
+        left, bottom, right, top = _page_box(page)
         scale = config.render_dpi / 72.0
         bitmap = page.render(scale=scale, grayscale=True)
         try:
@@ -188,6 +189,7 @@ def _page_runs(
         r, g, b, a = (ctypes.c_uint() for _ in range(4))
 
         tallest = _tallest_letters(raw, textpage, count)
+        clips: dict[int, tuple[float, float, float, float] | None] = {}
         glyphs: list[Glyph] = []
         doubtful: dict[int, tuple[float, float, float, float]] = {}
         for i in range(count):
@@ -262,6 +264,8 @@ def _page_runs(
                     if explained:
                         reasons.extend(explained)
                         confirming = True
+                    elif text_object and _clipped_away(raw, text_object, (x0, y0, x1, y1), clips):
+                        reasons.append(_CLIPPED)
                     else:
                         reasons.append(_BLANK)
                         if (y1 - y0) * scale < _SMALL_GLYPH_PX:
@@ -286,6 +290,19 @@ def _page_runs(
 
 
 _OUTSIDE = "outside the visible page area"
+_CLIPPED = "cut off by a clipping path"
+
+
+def _page_box(page: Any) -> tuple[float, float, float, float]:
+    """The part of the page a reader sees, the box the page is drawn at.
+
+    `get_cropbox()` does not inherit: a page whose MediaBox sits on the /Pages node
+    reads as US Letter there while it is drawn at its real size, say A4, and every
+    glyph box then lands on the wrong rows of the drawing. `get_bbox()` is the
+    crop box intersected with the media box, both inherited, which is what the
+    page is rendered at.
+    """
+    return tuple(float(v) for v in page.get_bbox())  # type: ignore[return-value]
 
 
 def _handle(obj: Any) -> int:
@@ -295,6 +312,33 @@ def _handle(obj: Any) -> int:
         return raw_obj
     pointer = ctypes.cast(raw_obj, ctypes.c_void_p)
     return int(pointer.value or 0)
+
+
+def _clipped_away(
+    raw: Any,
+    text_object: Any,
+    glyph: tuple[float, float, float, float],
+    clips: dict[int, tuple[float, float, float, float] | None],
+) -> bool:
+    """Whether the glyph's middle lies outside its text object's clip, as far as a box says."""
+    key = _handle(text_object)
+    if key not in clips:
+        box = None
+        clip = raw.FPDFPageObj_GetClipPath(text_object)
+        if clip:
+            try:
+                paths = int(raw.FPDFClipPath_CountPaths(clip))
+            except Exception:
+                paths = 0
+            if paths > 0:
+                box = _clip_box(raw, clip, paths)
+        clips[key] = box
+    box = clips[key]
+    if box is None:
+        return False
+    x = (glyph[0] + glyph[2]) / 2
+    y = (glyph[1] + glyph[3]) / 2
+    return not (box[0] <= x <= box[2] and box[1] <= y <= box[3])
 
 
 def _object_font_size(raw: Any, text_object: Any) -> float | None:
@@ -375,7 +419,7 @@ def _page_objects(
         if obj:
             seen.add(_handle(obj))
 
-    left, bottom, right, top = page.get_cropbox()
+    left, bottom, right, top = _page_box(page)
     page_area = max((right - left) * (top - bottom), 1.0)
     covers: list[_ImageCover] = []
     text_order: dict[int, int] = {}
@@ -693,7 +737,7 @@ def _drawn_after_all(
     """
     if not boxes:
         return []
-    left, bottom, right, top = page.get_cropbox()
+    left, bottom, right, top = _page_box(page)
     x0 = max(left, min(box[0] for box in boxes.values()) - 1)
     y0 = max(bottom, min(box[1] for box in boxes.values()) - 1)
     x1 = min(right, max(box[2] for box in boxes.values()) + 1)
@@ -741,12 +785,14 @@ def _drawn_after_all(
 
 
 def _overflows(glyphs: list[Glyph], start: int, reasons: list[str]) -> bool:
-    """Whether a run is the end of a visible line that ran past the page's edge.
+    """Whether a run is the end of a visible line that ran past the page's edge or its clip.
 
     A line set too long for its page carries on beyond the margin: the words are off the
-    page, but nobody hid them. Text placed off the page on its own is another matter.
+    page, but nobody hid them. A value too long for its table cell is cut off by the
+    cell's clip the same way, `2030-01-01 00:00:00` in a narrow date column. Text placed
+    off the page or clipped away on its own is another matter.
     """
-    if reasons != [_OUTSIDE]:
+    if reasons not in ([_OUTSIDE], [_CLIPPED]):
         return False
     for glyph in reversed(glyphs[:start]):
         if glyph.newline:
@@ -754,6 +800,42 @@ def _overflows(glyphs: list[Glyph], start: int, reasons: list[str]) -> bool:
         if not glyph.space:
             return not glyph.hidden
     return False
+
+
+_ANCHOR = re.compile(
+    r"\\\w+\\"  # DocuSign: \s1\, \ponum1\, \d1\
+    r"|/\w+/"  # DocuSign's other spelling: /sn1/
+    r"|\{\{[^{}]*\}\}"  # Adobe Acrobat Sign: {{Sig_es_:signer1:signature}}
+    r"|\[\[[^\[\]]*\]\]"  # [[ponum|req|signer1]]
+    r"|[xX_]{4,}"  # a placeholder of x's or underscores
+)
+_MIN_REPEAT = 8
+"""Letters and digits a hidden passage needs before matching visible text says anything."""
+
+
+def _compact(text: str) -> str:
+    return "".join(char for char in text.casefold() if char.isalnum())
+
+
+def _repeats_visible(hidden: list[Glyph], visible: str) -> bool:
+    """Whether the hidden glyphs spell words the page shows in plain sight.
+
+    A spreadsheet exported to PDF draws an overflowing cell twice, the second time in
+    white, letter by letter, beside the first. The copy is in the text layer, but a
+    reader who sees the page has already read it.
+    """
+    words = _compact("".join(glyph.char for glyph in hidden))
+    return len(words) >= _MIN_REPEAT and words in visible
+
+
+def _signing_anchors(members: list[Glyph]) -> bool:
+    """Whether a passage is nothing but e-signature anchor tags.
+
+    DocuSign and Acrobat Sign templates place fields where white tags such as `\\s1\\`
+    sit, white on white by design.
+    """
+    text = "".join(glyph.char for glyph in members)
+    return bool(text.strip()) and not _ANCHOR.sub(" ", text).strip()
 
 
 def runs_from_chars(
@@ -766,6 +848,9 @@ def runs_from_chars(
     its own reason.
     """
     runs: list[HiddenRun] = []
+    visible = _compact(
+        "".join(glyph.char for glyph in glyphs if not glyph.space and not glyph.hidden)
+    )
     i, n = 0, len(glyphs)
     while i < n:
         if glyphs[i].space or not glyphs[i].hidden:
@@ -808,7 +893,12 @@ def runs_from_chars(
                     # A line that ran off the page is layout, not hiding, and text under a
                     # picture is most often a figure's own labels under the figure: each is
                     # worth a word only if it reads as an instruction.
-                    only_if_instruction=_overflows(glyphs, start, reasons) or reasons == [_COVERED],
+                    # A copy of words the page shows anyway, and the anchor tags e-signature
+                    # templates leave in white for the signing tool, hide nothing either.
+                    only_if_instruction=_overflows(glyphs, start, reasons)
+                    or reasons == [_COVERED]
+                    or _repeats_visible(hidden, visible)
+                    or _signing_anchors(members),
                 )
             )
         i = end + 1
