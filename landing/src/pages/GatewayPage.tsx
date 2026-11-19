@@ -15,8 +15,8 @@ const ROUTES = [
 
 /** What the gateway does with each request. */
 const RULES = [
-  { name: "A filter", detail: "It does not choose a model. Requests go to the model or tool your team already uses." },
-  { name: "What passes", detail: "Only the text after Veil, with hidden instructions flagged. The original stays on your side." },
+  { name: "A filter", detail: "It does not choose a model. Only clean text goes on to the model or tool your team already uses." },
+  { name: "Three checks at once", detail: "Deterministic rules, the Veil model and Veil Judge read each page side by side. Text goes out only once all three clear it." },
   { name: "A record", detail: "Each request is logged: who asked, which document, and what was covered." },
 ];
 
@@ -31,8 +31,8 @@ export function GatewayPage() {
               Router and gateway
             </h1>
             <p className="max-w-2xl text-xl text-pretty text-muted-foreground">
-              The router chooses how each page is read. Veil covers people's data. The gateway is a filter in front
-              of the model you already use: only the clean text gets through.
+              The router chooses how each page is read. The gateway is a filter in front of the model you already
+              use: rules, Veil and Veil Judge check the text side by side, and only clean text gets through.
             </p>
             <Button size="lg" asChild>
               <a href="../enterprise/#contact" data-page="">
