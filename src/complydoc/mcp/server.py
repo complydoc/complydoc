@@ -458,7 +458,7 @@ def _handle(server: Server, request: dict[str, Any]) -> dict[str, Any]:
                 "name": "complydoc",
                 "title": "complydoc",
                 "version": __version__,
-                "websiteUrl": "https://complydoc.github.io/complydoc/",
+                "websiteUrl": "https://complydoc.io/",
                 "icons": _icons(),
             },
             "instructions": server.instructions(),

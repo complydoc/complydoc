@@ -5,8 +5,8 @@ import starlight from "@astrojs/starlight";
 import { defineConfig } from "astro/config";
 
 export default defineConfig({
-  site: "https://complydoc.github.io",
-  base: "/complydoc/docs",
+  site: "https://complydoc.io",
+  base: "/docs",
   trailingSlash: "always",
   integrations: [
     starlight({
@@ -24,7 +24,7 @@ export default defineConfig({
         // The card a shared docs link shows. Same image as the landing page, served from the site root.
         {
           tag: "meta",
-          attrs: { property: "og:image", content: "https://complydoc.github.io/complydoc/og.png" },
+          attrs: { property: "og:image", content: "https://complydoc.io/og.png" },
         },
         {
           tag: "meta",
@@ -32,7 +32,7 @@ export default defineConfig({
         },
         {
           tag: "meta",
-          attrs: { name: "twitter:image", content: "https://complydoc.github.io/complydoc/og.png" },
+          attrs: { name: "twitter:image", content: "https://complydoc.io/og.png" },
         },
       ],
       social: [{ icon: "github", label: "GitHub", href: "https://github.com/complydoc/complydoc" }],
