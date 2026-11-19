@@ -1,6 +1,6 @@
 // Put each page's HTML into its file in dist/, rendered from the server build in dist-ssr/.
 // Asset addresses come out of the server build as `__BASE__/assets/...` and are made
-// relative to the page here: `./` for the landing page, `../` for one in a folder.
+// relative to the page here: `./` for the landing page, `../` for one in a folder, `../../` a level deeper.
 import { readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -10,7 +10,8 @@ const { render, files } = await import(pathToFileURL(path.join(root, "dist-ssr/p
 
 for (const file of files) {
   const target = path.join(root, "dist", file);
-  const base = file.includes("/") ? ".." : ".";
+  const depth = file.split("/").length - 1;
+  const base = depth ? Array(depth).fill("..").join("/") : ".";
   const html = render(file).replaceAll("__BASE__", base);
   const page = readFileSync(target, "utf8");
   if (!page.includes('<div id="root"></div>')) throw new Error(`${file} has no empty #root`);
