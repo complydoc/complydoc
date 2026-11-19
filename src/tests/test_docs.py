@@ -95,7 +95,7 @@ def test_the_site_content_builds_with_every_reference_page(tmp_path: Path):
         text = page.read_text(encoding="utf-8")
         assert "--8<--" not in text and "\n!!! " not in text, page
         assert not re.search(r"\]\((?!https?:)[^)]*\.md[)#]", text), page
-        for target in re.findall(r"\]\(/complydoc/docs/([^)#]*)", text):
+        for target in re.findall(r"\]\(/docs/([^)#]*)", text):
             slug = target.strip("/") or "index"
             if slug.startswith("schema/"):
                 # The report's JSON Schemas are served as files, not as pages.

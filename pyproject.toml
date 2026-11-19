@@ -5,7 +5,7 @@ description = "Compare loaders, trace every step and evaluate what reaches your 
 readme = "README.md"
 requires-python = ">=3.11,<3.14"
 license = { text = "MIT" }
-authors = [{ name = "Duarte Cardoso", email = "caldasdcardoso@gmail.com" }]
+authors = [{ name = "Duarte Cardoso", email = "hi@complydoc.io" }]
 keywords = [
     "pdf",
     "ocr",
@@ -84,7 +84,8 @@ complydoc = "complydoc.cli:app"
 
 # Rendered as links down the side of the PyPI page.
 [project.urls]
-Homepage = "https://github.com/complydoc/complydoc"
+Homepage = "https://complydoc.io/"
+Documentation = "https://complydoc.io/docs/"
 Repository = "https://github.com/complydoc/complydoc"
 Changelog = "https://github.com/complydoc/complydoc/blob/main/src/complydoc/CHANGELOG.md"
 Issues = "https://github.com/complydoc/complydoc/issues"
