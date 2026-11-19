@@ -29,6 +29,12 @@ separately.
   card word on its line, an unspaced UK phone number from 0 needs a phone word, an IBAN
   must have its country's length, and a spaced French social security number is no longer
   also a phone number. The shipped benchmark goes from 91.4% to 100% precision.
+- Fewer false hidden-text flags in PDFs. A page whose MediaBox sits on the page tree rather
+  than the page was checked as US Letter while drawn as A4, so every glyph was looked for on
+  the wrong rows: white headings on coloured bars read as white on white, and a footer as
+  nothing drawn. A value cut off by its table cell, a white copy of words the page shows
+  anyway, and e-signature anchor tags such as `\s1\` are now reported only when they read as
+  an instruction to a model.
 
 ## [0.8.1] — 2026-11-18
 
