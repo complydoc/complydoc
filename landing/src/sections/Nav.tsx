@@ -6,8 +6,8 @@ import { links, VERSION } from "@/links";
 
 /** The pages besides this one, each in a folder of its own. */
 const PAGES = [
-  { href: "#how", label: "How it works" },
-  { href: "#gateway", label: "Gateway" },
+  { href: "router/", label: "Router" },
+  { href: "gateway/", label: "Gateway" },
   { href: "#measured", label: "Benchmarks" },
   { href: "contributors/", label: "Contributors" },
 ];

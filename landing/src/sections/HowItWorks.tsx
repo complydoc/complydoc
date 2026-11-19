@@ -46,7 +46,7 @@ export function HowItWorks() {
         <Stage
           step="01 · route"
           title="Each page goes the cheapest way that reads it"
-          more={<TextLink href={links.routing}>Routing</TextLink>}
+          more={<TextLink href="router/">How the router works</TextLink>}
           evidence={
             <div className="flex flex-col gap-4 rounded-xl border bg-card p-6">
               <RouteMap documents={ROUTED_DOCUMENTS} />
