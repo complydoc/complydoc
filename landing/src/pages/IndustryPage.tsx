@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import type { Industry } from "@/pages/industries";
 import { Page } from "@/pages/Page";
+import { PHOTOS } from "@/pages/industry-photos";
 import { Industries } from "@/sections/Industries";
 
 /** Two levels below the landing page: industries/<slug>/. */
@@ -22,7 +23,15 @@ export function IndustryPage({ industry }: { industry: Industry }) {
             </h1>
             <p className="max-w-2xl text-xl text-pretty text-muted-foreground">{industry.lead}</p>
           </div>
-          <IndustryArt slug={industry.slug} className="aspect-[16/9] md:aspect-[21/9]" />
+          {PHOTOS[industry.slug] ? (
+            <img
+              src={PHOTOS[industry.slug]}
+              alt=""
+              className="aspect-[4/3] w-full rounded-2xl bg-muted object-cover md:aspect-[21/9]"
+            />
+          ) : (
+            <IndustryArt slug={industry.slug} className="aspect-[16/9] md:aspect-[21/9]" />
+          )}
         </div>
       </section>
 
