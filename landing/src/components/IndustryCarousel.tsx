@@ -2,14 +2,9 @@ import { useRef } from "react";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { IndustryArt } from "@/art/IndustryArt";
 import { Button } from "@/components/ui/button";
+import { PHOTOS } from "@/pages/industry-photos";
 import { INDUSTRIES, industryPath } from "@/pages/industries";
 
-/** One photo per industry, by slug: src/assets/industries/<slug>.jpg. A drawing stands in for a missing one. */
-const PHOTOS = Object.fromEntries(
-  Object.entries(
-    import.meta.glob<string>("../assets/industries/*.jpg", { eager: true, import: "default" }),
-  ).map(([path, src]) => [path.split("/").pop()?.replace(".jpg", "") ?? "", src]),
-);
 
 /** Tall photo cards, one per industry page, in a row that scrolls sideways. */
 export function IndustryCarousel({ home, except }: { home: string; except?: string | undefined }) {
@@ -27,7 +22,7 @@ export function IndustryCarousel({ home, except }: { home: string; except?: stri
     <div className="flex flex-col gap-8">
       <ul
         ref={row}
-        className="-mx-6 flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth px-6 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="-ml-6 mr-[calc(50%-50vw)] flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth px-6 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {shown.map((industry) => {
           const photo = PHOTOS[industry.slug];
