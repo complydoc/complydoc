@@ -360,6 +360,7 @@ def sensitive_sample(path: Path) -> None:
         "Employer: Acme Holdings Ltd",
         "Date of birth: 14/03/1985",
         "National Insurance number: AB123456C",
+        "NHS number: 943 476 5919",
         "Email: jane.doe@example.com",
         "Telephone: 020 7946 0958",
         "Address: 42 Example Road",

@@ -76,7 +76,9 @@ categories:
     validators: [uk_nhs_number]
     context_terms: ["nhs number", "nhs no"]
     gdpr_note: >
-      A patient identifier and special-category health data under the UK GDPR.
+      A patient identifier, and health data where it is attached to care, so it
+      is personal data and usually special-category data under data-protection
+      law. Treat a breach as high risk.
 
   sort_code:
     enabled: true
