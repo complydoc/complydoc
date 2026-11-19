@@ -2,7 +2,7 @@ import { Logo } from "@/components/Logo";
 import { ModeToggle } from "@/components/ModeToggle";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/useTheme";
-import { links, VEIL, VERSION } from "@/links";
+import { links, VERSION } from "@/links";
 
 /** The pages besides this one, each in a folder of its own. */
 const PAGES = [{ href: "contributors/", label: "Contributors" }];
@@ -36,9 +36,6 @@ export function Nav({ home = "" }: { home?: string }) {
           </Button>
           <Button variant="ghost" size="sm" asChild>
             <a href={links.docs}>Docs</a>
-          </Button>
-          <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
-            <a href={VEIL}>Veil, for teams</a>
           </Button>
           <Button variant="outline" size="sm" asChild>
             <a href={links.github}>GitHub</a>
