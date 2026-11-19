@@ -1,5 +1,5 @@
 /** Where the page points. The docs site is built from docs/ by docs-site/. */
-const DOCS = "https://complydoc.github.io/complydoc/docs";
+const DOCS = "https://complydoc.io/docs";
 const REPO = "https://github.com/complydoc/complydoc";
 
 export const VERSION = "0.8.1";
