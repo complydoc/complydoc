@@ -66,6 +66,9 @@ _EXCLUSIVE_GROUP = frozenset(
         "in_aadhaar",
         "ca_sin",
         "au_tfn",
+        "api_key",
+        "access_token",
+        "password",
     }
 )
 
@@ -151,6 +154,17 @@ def _label_near(text: str, finding: Finding, category: CategoryConfig) -> bool:
         )
         is not None
     )
+
+
+_CONNECTION_USER = re.compile(r"://[^\s:/@]{1,64}:$")
+
+
+def _in_a_connection_string(text: str, start: int) -> bool:
+    """Whether an email-shaped match is the `password@host` of `scheme://user:password@host`.
+
+    That is a password, reported as one, and no one's email address.
+    """
+    return _CONNECTION_USER.search(text, max(0, start - 90), start) is not None
 
 
 # A value written after the label of another kind of field is that field, whatever its
@@ -341,6 +355,8 @@ def _scan_page(
             value = text[finding.start : finding.end]
             passed, names = validate(value, category.validators, config.checks)
             if not passed:
+                continue
+            if category_id == "email_address" and _in_a_connection_string(text, finding.start):
                 continue
             # Only the identifiers that rest on a shape and a checksum: a pattern of the
             # caller's own, such as a concept, means what it says wherever it is.
