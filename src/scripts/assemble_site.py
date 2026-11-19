@@ -1,7 +1,7 @@
 """Put the landing page and the documentation together as one GitHub Pages site.
 
 A repository gets one Pages site, so both share it: the landing page at the root,
-`https://complydoc.github.io/complydoc/`, and the documentation under `docs/`.
+`https://complydoc.io/`, and the documentation under `docs/`.
 
 The documentation used to be the root, and its addresses are in READMEs, issues
 and search results. Every page it had gets a small page at its old address that

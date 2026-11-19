@@ -4,7 +4,7 @@
   "title": "complydoc",
   "description": "Open documents with personal details masked and hidden instructions taken out, on your machine.",
   "version": "0.8.1",
-  "websiteUrl": "https://complydoc.github.io/complydoc/",
+  "websiteUrl": "https://complydoc.io/",
   "repository": {
     "url": "https://github.com/complydoc/complydoc",
     "source": "github"

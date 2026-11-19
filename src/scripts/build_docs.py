@@ -28,7 +28,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[2]
 DOCS = ROOT / "docs"
 OUT = ROOT / "docs-site" / "src" / "content" / "docs"
-BASE = "/complydoc/docs"
+BASE = "/docs"
 """Where the site is served from, which absolute links between pages start with."""
 
 SKIP = {"design", "examples", "assets", "schema"}
