@@ -6,7 +6,7 @@
     "name": "complydoc",
     "url": "https://github.com/complydoc"
   },
-  "homepage": "https://complydoc.github.io/complydoc/",
+  "homepage": "https://complydoc.io/",
   "repository": "https://github.com/complydoc/complydoc",
   "license": "MIT",
   "keywords": ["documents", "privacy", "pii", "prompt-injection", "masking", "mcp"]

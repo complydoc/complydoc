@@ -9,7 +9,7 @@
 
   <a href="https://pypi.org/project/complydoc/"><img src="https://img.shields.io/pypi/v/complydoc?color=56b4e0&label=pypi" alt="PyPI"></a>
   <a href="https://github.com/complydoc/complydoc/actions/workflows/checks.yml"><img src="https://github.com/complydoc/complydoc/actions/workflows/checks.yml/badge.svg?branch=main" alt="Tests"></a>
-  <a href="https://complydoc.github.io/complydoc/docs/"><img src="https://img.shields.io/badge/docs-complydoc-56b4e0" alt="Documentation"></a>
+  <a href="https://complydoc.io/docs/"><img src="https://img.shields.io/badge/docs-complydoc-56b4e0" alt="Documentation"></a>
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-56b4e0" alt="License"></a>
 </div>
 
@@ -55,7 +55,7 @@ Elsewhere, run it with `uvx complydoc mcp`; it is in the
 [MCP Registry](https://registry.modelcontextprotocol.io) as `io.github.complydoc/complydoc`.
 Claude Desktop installs it from the extension on the
 [releases page](https://github.com/complydoc/complydoc/releases/latest). See
-[Documents into an assistant, cleaned](https://complydoc.github.io/complydoc/docs/guides/assistant-mcp/).
+[Documents into an assistant, cleaned](https://complydoc.io/docs/guides/assistant-mcp/).
 
 ## Observe a pipeline
 
@@ -92,15 +92,15 @@ time, tokens, cost and the identifiers it passed on. Open it with `complydoc ui`
 ```
 
 `complydoc check` fails when a folder breaks your rules; `finance`, `legal` and `hr` ship as
-ready policies. See [GitHub Action](https://complydoc.github.io/complydoc/docs/guides/github-action/).
+ready policies. See [GitHub Action](https://complydoc.io/docs/guides/github-action/).
 
 ## More
 
-- [Documentation](https://complydoc.github.io/complydoc/docs/), and the
+- [Documentation](https://complydoc.io/docs/), and the
   [playground](https://github.com/complydoc/playground) with everything ready to run
-- [Run it for your team](https://complydoc.github.io/complydoc/docs/guides/team/), in a
-  [container](https://complydoc.github.io/complydoc/docs/guides/container/) or from a bucket
-- [Network isolation](https://complydoc.github.io/complydoc/docs/explanation/offline/): every
+- [Run it for your team](https://complydoc.io/docs/guides/team/), in a
+  [container](https://complydoc.io/docs/guides/container/) or from a bucket
+- [Network isolation](https://complydoc.io/docs/explanation/offline/): every
   run blocks outbound connections and records that it did
 - Optional extras for scans and names: `complydoc doctor` says what is installed and how to
   add the rest
