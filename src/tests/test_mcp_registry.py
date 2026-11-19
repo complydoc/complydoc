@@ -16,6 +16,7 @@ import complydoc
 ROOT = Path(__file__).resolve().parents[2]
 SERVER = json.loads((ROOT / "server.json").read_text(encoding="utf-8"))
 PYPI = next(p for p in SERVER["packages"] if p["registryType"] == "pypi")
+OCI = next(p for p in SERVER["packages"] if p["registryType"] == "oci")
 
 
 def test_the_readme_proves_the_name_to_the_registry() -> None:
@@ -32,6 +33,22 @@ def test_the_listed_package_is_this_one() -> None:
 def test_the_versions_are_the_packaged_version() -> None:
     assert SERVER["version"] == complydoc.__version__
     assert PYPI["version"] == complydoc.__version__
+    assert OCI["identifier"] == f"ghcr.io/complydoc/complydoc:{complydoc.__version__}"
+
+
+def test_the_image_proves_the_name_to_the_registry() -> None:
+    dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
+    assert f'io.modelcontextprotocol.server.name="{SERVER["name"]}"' in dockerfile
+
+
+def test_the_image_serves_the_shared_folder_over_stdio() -> None:
+    assert OCI["transport"] == {"type": "stdio"}
+    assert OCI["runtimeHint"] == "docker"
+    assert {"type": "positional", "value": "-i"} in OCI["runtimeArguments"]
+    assert OCI["packageArguments"] == [
+        {"type": "positional", "value": "mcp"},
+        {"type": "named", "name": "--folder", "value": "/documents"},
+    ]
 
 
 def test_the_command_is_the_mcp_command() -> None:

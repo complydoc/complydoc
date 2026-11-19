@@ -79,7 +79,8 @@ jobs:
 
   mcp-registry:
     name: list the version in the MCP Registry
-    needs: pypi
+    # The registry checks the image's label, so it must be pushed first.
+    needs: [pypi, image]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -102,6 +103,10 @@ jobs:
               echo "::error::server.json lists ${listed}, not ${version} from tag ${TAG}"; exit 1
             fi
           done
+          image="$(jq -r '.packages[] | select(.registryType == "oci") | .identifier' server.json)"
+          if [ "${image}" != "ghcr.io/complydoc/complydoc:${version}" ]; then
+            echo "::error::server.json lists the image ${image}, not ghcr.io/complydoc/complydoc:${version}"; exit 1
+          fi
 
       # The registry reads the PyPI page to find mcp-name in the description, and the
       # upload above can take a few minutes to show there.

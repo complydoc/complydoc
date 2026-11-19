@@ -47,6 +47,49 @@
           "isRequired": false
         }
       ]
+    },
+    {
+      "registryType": "oci",
+      "identifier": "ghcr.io/complydoc/complydoc:0.8.1",
+      "runtimeHint": "docker",
+      "transport": {
+        "type": "stdio"
+      },
+      "runtimeArguments": [
+        {
+          "type": "positional",
+          "value": "--rm"
+        },
+        {
+          "type": "positional",
+          "value": "-i"
+        },
+        {
+          "type": "named",
+          "name": "-v",
+          "value": "{documents}:/documents:ro",
+          "description": "The folder with the documents, shared read-only with the container.",
+          "isRequired": true,
+          "variables": {
+            "documents": {
+              "description": "The folder on your computer with the documents.",
+              "format": "filepath",
+              "isRequired": true
+            }
+          }
+        }
+      ],
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "mcp"
+        },
+        {
+          "type": "named",
+          "name": "--folder",
+          "value": "/documents"
+        }
+      ]
     }
   ]
 }

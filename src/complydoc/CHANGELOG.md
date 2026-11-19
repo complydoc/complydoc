@@ -9,6 +9,12 @@ separately.
 
 ### Added
 
+- `complydoc mcp` reads documents with a detection engine another package installs, such as
+  Veil, through the `complydoc.engines` entry point group, and tells the assistant which
+  one found the details. `--engine` chooses one (`none` for complydoc's own configuration)
+  and `--config-dir` reads with a directory of your own.
+- The container image is listed in the MCP Registry next to the PyPI package, and the
+  install guide covers every common client, with one-click installs for VS Code and Cursor.
 - UK NHS numbers are found beside their label and confirmed by their check digit.
 - Credentials are found: API keys by their service's prefix (AWS, GitHub, Slack, Stripe,
   OpenAI, Anthropic, Google) or beside a label such as `api_key`, JSON Web Tokens confirmed
