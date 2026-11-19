@@ -5,7 +5,12 @@ import { useTheme } from "@/hooks/useTheme";
 import { links, VERSION } from "@/links";
 
 /** The pages besides this one, each in a folder of its own. */
-const PAGES = [{ href: "contributors/", label: "Contributors" }];
+const PAGES = [
+  { href: "#how", label: "How it works" },
+  { href: "#gateway", label: "Gateway" },
+  { href: "#measured", label: "Benchmarks" },
+  { href: "contributors/", label: "Contributors" },
+];
 
 /**
  * A thin bar across the top, as in the viewer: the mark, where to go, the theme at the right.
@@ -21,23 +26,26 @@ export function Nav({ home = "" }: { home?: string }) {
         <a href={home || "#top"} data-page={home ? "" : undefined} aria-label={home ? "complydoc, home" : "complydoc, back to the top"}>
           <Logo size={20} />
         </a>
-        <nav aria-label="Pages" className="hidden items-center gap-1 sm:flex">
+        <nav aria-label="Pages" className="hidden items-center gap-1 md:flex">
           {PAGES.map((page) => (
             <Button key={page.href} variant="ghost" size="sm" asChild>
-              <a href={`${home}${page.href}`} data-page="">
+              <a href={`${home}${page.href}`} data-page={page.href.startsWith("#") ? undefined : ""}>
                 {page.label}
               </a>
             </Button>
           ))}
         </nav>
         <div className="ml-auto flex items-center gap-1">
-          <Button variant="ghost" size="sm" asChild className="hidden font-mono text-xs text-muted-foreground sm:inline-flex">
-            <a href={links.changelog}>v{VERSION}</a>
-          </Button>
+          <a
+            href={links.changelog}
+            className="hidden px-2 font-mono text-xs text-muted-foreground hover:text-foreground md:inline"
+          >
+            v{VERSION}
+          </a>
           <Button variant="ghost" size="sm" asChild>
             <a href={links.docs}>Docs</a>
           </Button>
-          <Button variant="outline" size="sm" asChild>
+          <Button variant="ghost" size="sm" asChild>
             <a href={links.github}>GitHub</a>
           </Button>
           <ModeToggle dark={dark} onToggle={toggle} />
