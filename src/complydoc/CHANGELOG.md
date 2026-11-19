@@ -10,6 +10,20 @@ separately.
 ### Added
 
 - UK NHS numbers are found beside their label and confirmed by their check digit.
+- Portuguese NIFs starting with 3, 45 and 7 are valid, and a company's NIF is found beside
+  `NIPC`.
+
+### Fixed
+
+- Fewer wrong identifier flags in business documents. A context label counts only on the
+  value's own line, or the line above when that line has no words before the value, and
+  only as whole words: "ach" in "Machado" no longer makes a NIF a US routing number. A
+  value after the label of another field (order, serial, batch, EAN, IMEI, policy, phone,
+  in seven languages) is not reported as an identifier its digits happen to fit; an IBAN,
+  an email address and a grouped card number still are. An unbroken card number needs a
+  card word on its line, an unspaced UK phone number from 0 needs a phone word, an IBAN
+  must have its country's length, and a spaced French social security number is no longer
+  also a phone number. The shipped benchmark goes from 91.4% to 100% precision.
 
 ## [0.8.1] — 2026-11-18
 

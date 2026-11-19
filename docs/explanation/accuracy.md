@@ -46,13 +46,13 @@ cover the patterns for the same reason.
 | Labelled identifiers | 53 |
 | Found | 53 |
 | Missed | 0 |
-| Wrongly flagged | 5 |
+| Wrongly flagged | 0 |
 | Recall | 100.0% |
-| Precision | 91.4% |
+| Precision | 100.0% |
 
-By evidence tier, across every pattern finding the run reported: 35 `confirmed`,
-15 `corroborated`, 8 `pattern`. Of the 9 passages labelled as holding nothing, 3
-produced at least one finding.
+By evidence tier, across every pattern finding the run reported: 24 `confirmed`,
+20 `corroborated`, 9 `pattern`. None of the 9 passages labelled as holding nothing
+produced a finding.
 
 ## What it missed
 
@@ -63,19 +63,32 @@ statement about the corpus as much as about the detectors.
 
 ## What it wrongly flagged
 
-| Category | Value | Why |
-| --- | --- | --- |
-| `date_of_birth` | a contract start date | `plausible_dob` asks only whether the date is a plausible one, and the words "date of birth" appeared elsewhere within the 60-character window |
-| `date_of_birth` | a review date | the same window |
-| `ch_ahv` | a serial number | the digits satisfy the Swiss AHV checksum |
-| `it_codice_fiscale` | a licence code | the same shape as an Italian fiscal code |
-| `sort_code` | a delivery note number | six digits punctuated like a sort code |
+Nothing, on this corpus. It used to flag five values, and each is now read as what
+its line says it is:
 
-Both date findings are reported at the `corroborated` tier: the words "date of
-birth" appear within the window, and nothing stronger is established. They were
-`confirmed` until `plausible_dob` stopped conferring that tier, which overstated
-them — a passing check there means the value is a date, not that it is someone's
-date of birth. They are still wrong; they now say so more quietly.
+| Category | Value | Why it is no longer flagged |
+| --- | --- | --- |
+| `date_of_birth` | a contract start date | the words "date of birth" were on another line: a label counts only on the value's own line, or the line above when the value's line has no words before it |
+| `date_of_birth` | a review date | the same |
+| `ch_ahv` | a serial number | the digits satisfy the Swiss AHV checksum, but they follow a `Serial` label |
+| `it_codice_fiscale` | a licence code | the same shape as an Italian fiscal code, after a `Licence` label |
+| `sort_code` | a delivery note number | six digits punctuated like a sort code, after a `Delivery note` label |
+
+A value written after the label of another kind of field (an invoice, order, serial,
+batch, EAN, IMEI, policy, tracking or phone number, in seven languages) is not reported
+as an identifier its digits happen to fit. The exceptions are values whose shape is
+evidence enough: an IBAN, an email address, and a card number written in a card's
+groups, which is still a card number in an invoice-number field. The last three rows
+were fixed by adding the labels this corpus uses, so read them as a check that the rule
+works rather than as an independent measurement.
+
+A larger synthetic benchmark, 3,000 documents across 15 kinds of business document and
+9 countries with every value labelled, went from 248 wrong flags to none with the same
+changes, and found 1% more of what it holds. The causes there, beside the line rule:
+context terms matched inside other words ("ach" in "Machado" read as a US routing
+label), IMEI and EAN-13 barcodes passing the card checksum, unspaced order numbers
+starting with 0 read as UK phone numbers, an IBAN not held to its country's length, and
+a spaced French social security number also reported as a phone number.
 
 ## Names
 
