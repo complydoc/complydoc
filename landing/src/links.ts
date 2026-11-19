@@ -4,9 +4,6 @@ const REPO = "https://github.com/complydoc/complydoc";
 
 export const VERSION = "0.8.1";
 
-/** Veil, the product for teams built on complydoc, on its own site. */
-export const VEIL = "https://veil-dau.pages.dev/";
-
 export const links = {
   docs: `${DOCS}/`,
   github: REPO,

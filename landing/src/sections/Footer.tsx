@@ -1,6 +1,6 @@
 import { Logo } from "@/components/Logo";
 import { Separator } from "@/components/ui/separator";
-import { links, VEIL } from "@/links";
+import { links } from "@/links";
 
 const columns = (home: string) => [
   {
@@ -42,11 +42,7 @@ export function Footer({ home = "" }: { home?: string }) {
           <div className="flex max-w-lg flex-col gap-4">
             <Logo size={22} />
             <p className="text-sm text-muted-foreground">
-              Get document loading right. For teams, there is{" "}
-              <a href={VEIL} className="text-foreground underline underline-offset-4">
-                Veil
-              </a>
-              .
+              Get document loading right.
             </p>
           </div>
           <nav aria-label="Footer" className="grid grid-cols-2 gap-10 sm:grid-cols-3">
