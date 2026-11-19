@@ -111,6 +111,6 @@ own copy.
 
 The landing page and the documentation share one GitHub Pages site, published
 from `main` by `.github/workflows/docs.yml`: the landing page at
-`https://complydoc.github.io/complydoc/`, the documentation under `docs/`.
+`https://complydoc.io/`, the documentation under `docs/`.
 `src/scripts/assemble_site.py` puts them together and leaves a redirect at every
 address the documentation had before it moved.
