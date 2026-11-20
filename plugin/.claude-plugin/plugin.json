@@ -1,12 +1,12 @@
 {
   "name": "complydoc",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "description": "Open documents with personal and financial details masked and hidden instructions taken out, on your machine, and check whether a file is safe to share.",
   "author": {
     "name": "complydoc",
     "url": "https://github.com/complydoc"
   },
-  "homepage": "https://complydoc.github.io/complydoc/",
+  "homepage": "https://complydoc.io/",
   "repository": "https://github.com/complydoc/complydoc",
   "license": "MIT",
   "keywords": ["documents", "privacy", "pii", "prompt-injection", "masking", "mcp"]

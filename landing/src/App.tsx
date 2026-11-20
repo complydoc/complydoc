@@ -3,7 +3,9 @@ import { Demos } from "@/sections/Demos";
 import { Footer } from "@/sections/Footer";
 import { GetStarted } from "@/sections/GetStarted";
 import { Hero } from "@/sections/Hero";
+import { HowItWorks } from "@/sections/HowItWorks";
 import { Integrations } from "@/sections/Integrations";
+import { DetectionMeasured } from "@/sections/Measured";
 import { Nav } from "@/sections/Nav";
 
 export function App() {
@@ -12,6 +14,8 @@ export function App() {
       <Nav />
       <main>
         <Hero />
+        <HowItWorks />
+        <DetectionMeasured />
         <Demos />
         <Integrations />
         <GetStarted />

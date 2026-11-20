@@ -2,19 +2,48 @@
  "contributors": [
   {
    "login": "duartecaldascardoso",
-   "url": "https://github.com/duartecaldascardoso"
+   "url": "https://github.com/duartecaldascardoso",
+   "latest": "Gateway page: a filter, not a model picker"
   },
   {
    "login": "divya-o",
-   "url": "https://github.com/divya-o"
+   "url": "https://github.com/divya-o",
+   "latest": "Add a parser preset for Microsoft MarkItDown"
   },
   {
    "login": "ace-ify",
-   "url": "https://github.com/ace-ify"
+   "url": "https://github.com/ace-ify",
+   "latest": "Detect Norwegian fødselsnummer identifiers"
+  },
+  {
+   "login": "P1LOTRX",
+   "url": "https://github.com/P1LOTRX",
+   "latest": "Find Finnish personal identity codes (henkilötunnus)"
+  },
+  {
+   "login": "jwalith4418-Mj",
+   "url": "https://github.com/jwalith4418-Mj",
+   "latest": "Paginate document listings"
+  },
+  {
+   "login": "jaesungkr",
+   "url": "https://github.com/jaesungkr",
+   "latest": "Detect shapes hidden in the Selection Pane"
+  },
+  {
+   "login": "jay23606",
+   "url": "https://github.com/jay23606",
+   "latest": "Accept Norwegian H-numbers in no_fnr"
   },
   {
    "login": "himanshu748",
-   "url": "https://github.com/himanshu748"
+   "url": "https://github.com/himanshu748",
+   "latest": "Add local OpenDataLoader PDF parser preset"
+  },
+  {
+   "login": "Mr-Neutr0n",
+   "url": "https://github.com/Mr-Neutr0n",
+   "latest": "Detect UK NHS numbers"
   }
  ]
 }

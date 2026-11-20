@@ -28,7 +28,9 @@ from typing import IO, Any
 from urllib.parse import quote, unquote, urlparse
 
 from complydoc import __version__, offline
+from complydoc.mcp import engines
 from complydoc.mcp.catalogue import RUN_TOOLS, TOOLS
+from complydoc.mcp.engines import Engine
 from complydoc.mcp.folders import STORE, FolderError, Folders, Picker, pick_folder
 from complydoc.mcp.prompts import PROMPTS, get_prompt
 from complydoc.mcp.reading import CAREFUL, READY, STOP, UNREAD, Findings, Reader, short
@@ -92,13 +94,18 @@ class Server:
         clean_copies: Path = CLEAN_COPIES,
         fetching: subprocess.Popen[bytes] | None = None,
         runs: Runs | None = None,
+        engine: Engine | None = None,
+        config_dir: Path | None = None,
     ) -> None:
         self.folders = folders
+        self.engine = engine
+        """The engine documents are read with, when another package installed one."""
+        self.config_dir = config_dir or (engine.config_dir if engine else None)
         self.runs = runs
         """The folders of recorded runs an engineer's tools read, when given."""
         self.picker = picker
         self.clean_copies = clean_copies
-        self.reader = Reader()
+        self.reader = Reader(self.config_dir)
         self.fetching = fetching
         """The name model being downloaded, until it is on disk."""
         self.fetch_failed = False
@@ -110,7 +117,7 @@ class Server:
             self.fetch_failed = self.fetching.returncode != 0
             self.fetching = None
             if not self.fetch_failed:
-                self.reader = Reader()
+                self.reader = Reader(self.config_dir)
         if self.fetching is not None:
             return (
                 "Names of people and companies are not masked yet: complydoc is still "
@@ -354,6 +361,12 @@ class Server:
             text += "\n\n" + pending
         return text
 
+    def instructions(self) -> str:
+        said = INSTRUCTIONS
+        if self.engine is not None:
+            said += f" Personal details are found by {self.engine.name}, read through complydoc."
+        return said + (RUN_INSTRUCTIONS if self.runs is not None else "")
+
     def tools(self) -> list[dict[str, Any]]:
         return TOOLS + RUN_TOOLS if self.runs is not None else TOOLS
 
@@ -445,10 +458,10 @@ def _handle(server: Server, request: dict[str, Any]) -> dict[str, Any]:
                 "name": "complydoc",
                 "title": "complydoc",
                 "version": __version__,
-                "websiteUrl": "https://complydoc.github.io/complydoc/",
+                "websiteUrl": "https://complydoc.io/",
                 "icons": _icons(),
             },
-            "instructions": INSTRUCTIONS + (RUN_INSTRUCTIONS if server.runs is not None else ""),
+            "instructions": server.instructions(),
         }
     if method == "ping":
         return {}
@@ -509,6 +522,8 @@ def serve(
     clean_copies: Path = CLEAN_COPIES,
     fetch_name_model: bool = False,
     runs: Iterable[str | Path] = (),
+    engine: str | None = None,
+    config_dir: Path | None = None,
 ) -> None:
     """Answer MCP requests on stdin until it closes. Logs go to stderr, never stdout.
 
@@ -517,18 +532,26 @@ def serve(
     `fetch_name_model`, the model that finds names is downloaded once if it is missing, by a
     process of its own, before this one's network guard is armed. `runs` are folders of
     reports complydoc wrote; given them, the server offers an engineer's tools on them too.
+    `engine` names the detection engine to read with (see `complydoc.mcp.engines`): the
+    first installed when None, complydoc's own configuration with "none". `config_dir`,
+    when given, is read instead of any engine's.
     """
     from complydoc.mcp.models import fetch_name_model as start_fetch
 
     source, out = stdin or sys.stdin, stdout or sys.stdout
     given = [folders] if isinstance(folders, (str, Path)) else list(folders)
     fetching = start_fetch() if fetch_name_model else None
+    chosen = None if config_dir is not None else engines.find(engine)
+    if chosen is not None:
+        print(f"complydoc mcp: reading with {chosen.name}", file=sys.stderr)
     server = Server(
         Folders(given, store=store),
         picker=picker,
         clean_copies=clean_copies,
         fetching=fetching,
         runs=Runs([Path(r) for r in runs]) if runs else None,
+        engine=chosen,
+        config_dir=config_dir,
     )
     # The guard holds for the whole session, and lets go when the client hangs up.
     with offline.guarded(True):

@@ -38,6 +38,7 @@ __all__ = [
     "LoaderSpec",
     "azure_document_intelligence",
     "docling",
+    "kreuzberg",
     "llamaparse",
     "markitdown",
     "opendataloader_pdf",
@@ -193,6 +194,30 @@ def markitdown(**options: Any) -> LoaderSpec:
         factory=factory,
         tags=("MarkItDown",),
         formats=extensions(("pdf", "docx", "pptx", "xlsx", "html")),
+    )
+
+
+def kreuzberg(**options: Any) -> LoaderSpec:
+    """Kreuzberg through its Python package, run locally.
+
+    Returns one document per file. `options` are passed to `ExtractionConfig`.
+    """
+
+    def factory(path: str) -> _WithSource:
+        module = _require("kreuzberg", "kreuzberg")
+        config = module.ExtractionConfig(**options)
+
+        def load() -> list[dict[str, Any]]:
+            result = module.extract_file_sync(path, config=config)
+            return [{"page_content": result.content, "metadata": {"source": path}}]
+
+        return _WithSource(load, path)
+
+    return LoaderSpec(
+        name="kreuzberg",
+        factory=factory,
+        tags=("Kreuzberg",),
+        formats=extensions(("pdf", "docx", "xlsx", "pptx", "html", "image")),
     )
 
 
