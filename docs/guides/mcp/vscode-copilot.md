@@ -16,7 +16,9 @@ Click [Install in VS Code](https://insiders.vscode.dev/redirect/mcp/install?name
 Needs [uv](https://docs.astral.sh/uv/) and a GitHub account with Copilot (Free works).
 Open Copilot Chat in agent mode and ask: *Open hidden_clause.pdf and summarise it.*
 
-In the chat panel, use a **Local** session. A **Copilot CLI** session inside VS Code refuses
-servers from `.vscode/mcp.json` ("blocked by the managed policy") before complydoc starts.
+In the chat panel, use a **Local** session. In VS Code 1.144 and later, a **Copilot CLI**
+session refuses servers from `.vscode/mcp.json` ("blocked by the managed policy") before
+complydoc starts. To make Local the default, turn off the setting
+`chat.defaultToCopilotHarness`.
 
 **If it does not work.** Run **MCP: List Servers** and check that complydoc is running.
