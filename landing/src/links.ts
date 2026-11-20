@@ -2,6 +2,18 @@
 const DOCS = "https://complydoc.io/docs";
 const REPO = "https://github.com/complydoc/complydoc";
 
+/** Where people write to the project. */
+export const CONTACT_EMAIL = "hi@complydoc.io";
+
+/** The project's LinkedIn page. The footer leaves the icon out while this is empty. */
+export const LINKEDIN = "";
+
+/**
+ * Google Analytics 4 measurement ID, shared by complydoc.io and veil.complydoc.io. It loads only
+ * after a visitor accepts cookies. Empty: nothing loads; visits are still counted by GoatCounter.
+ */
+export const GA_ID = "G-Y736EB7TXC";
+
 export const VERSION = "0.8.2";
 
 export const links = {
@@ -33,6 +45,7 @@ export const links = {
   team: `${DOCS}/guides/team/`,
   identifiers: `${DOCS}/reference/identifiers/`,
   java: `${DOCS}/guides/java/`,
+  license: `${REPO}/blob/main/LICENSE`,
   contributing: `${REPO}/blob/main/CONTRIBUTING.md`,
   goodFirstIssues: `${REPO}/issues?q=is%3Aopen+label%3A%22good+first+issue%22`,
   newIssue: `${REPO}/issues/new`,
