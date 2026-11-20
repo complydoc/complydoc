@@ -462,6 +462,17 @@ class NerModelSpec(_Base):
     drop_numbered_headings: bool = True
     """Drop an all-capitals entity that ends in a bare number, such as `CONDITIONS 4`: a
     heading run into the number of the clause after it, which the models take for a name."""
+    drop_non_names: bool = False
+    """Drop a span that cannot be a person's name by its shape: digits, a word in lower
+    case that is not a particle, a street, clause or form word first (`Rua Augusta`), a
+    company word (`Ribeira Software`), or a heading in capitals. For person names only."""
+    drop_non_organisations: bool = False
+    """Drop a span that cannot be an organisation by its shape: lower case first, more
+    than six words, a code of three or more digits, or a heading in capitals with no
+    company word. For organisation names only."""
+    min_words: int = 1
+    """Drop a name of fewer words. A lone capitalised word is as often a city, a month
+    or a heading as a first name, for a model reading a language it was not trained on."""
     spans_key: str | None = None
     """Read entities and scores from `doc.spans[spans_key]` instead of `doc.ents`.
 

@@ -270,14 +270,19 @@ categories:
     model:
       name: Babelscape/wikineural-multilingual-ner
       entity_labels: [PER]
+      drop_non_names: true
     # Tried when the model above is not installed, so a plain install
-    # still finds names. It reads English only: see Detection accuracy.
+    # still finds names. It reads English only: see Detection accuracy. On other
+    # languages it reads a lone capitalised word (a city, a heading) as a name, so a
+    # name it finds needs two words.
     fallback:
       - detector: ner
         min_confidence: 0.0
         model:
           name: en_core_web_sm
           entity_labels: [PERSON]
+          drop_non_names: true
+          min_words: 2
     # Names a rule can find without the model, and whether or not the model agrees:
     # the name after its label at the start of a line, and the one after "signed by".
     # `value` is the name; `label` is what it was found by. The name itself is read
@@ -299,6 +304,7 @@ categories:
     model:
       name: Babelscape/wikineural-multilingual-ner
       entity_labels: [ORG]
+      drop_non_organisations: true
     # Tried when the model above is not installed, so a plain install
     # still finds names. It reads English only: see Detection accuracy.
     fallback:
@@ -307,6 +313,7 @@ categories:
         model:
           name: en_core_web_sm
           entity_labels: [ORG]
+          drop_non_organisations: true
     # Names a rule can find without the model: one that ends in a company form, such
     # as "Acme Holdings Ltd" or "HARBOUR LOGISTICS LTD". The form is read with its
     # capitals, so "the limited edition" is no company; a name does not start with a
