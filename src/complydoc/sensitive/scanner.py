@@ -53,6 +53,8 @@ _EXCLUSIVE_GROUP = frozenset(
         "nl_bsn",
         "pt_nif",
         "pt_niss",
+        "pt_civil_id",
+        "pt_phone",
         "de_steuer_id",
         "be_national_number",
         "pl_pesel",
@@ -188,7 +190,7 @@ _PHONE_WORDS = re.compile(
     r"portable|telefon|mobil|telefoon|mobiel|cellulare|telefono|contacto?|fax|call)\b"
 )
 _CARD_WORDS = re.compile(r"(?i)\b(?:card|cart[ãa]o|tarjeta|carte|karte|visa|mastercard|amex|pan)\b")
-_PHONES = frozenset({"phone_number", "international_phone", "us_phone"})
+_PHONES = frozenset({"phone_number", "international_phone", "us_phone", "pt_phone"})
 
 
 def _another_fields_value(text: str, start: int, end: int, category_id: str) -> bool:

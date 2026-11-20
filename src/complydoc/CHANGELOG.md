@@ -15,6 +15,12 @@ separately.
   value confirmed by its check digit or a credential, and a company's identifiers stay
   masked unless the policy says `business: pass`. `src/scripts/train_judge.py` trains
   one from labelled findings. See Decision model.
+- Portuguese civil ID numbers, on the Cartão de Cidadão and the old BI, beside their label
+  and checked with their mod-11 digit (`pt_civil_id`). The card's version, `ZZ4`, is left
+  as it is.
+- Portuguese phone numbers written without +351, beside a phone label such as `Telemóvel`,
+  `Tel.` or `Contacto` (`pt_phone`). Nine digits alone stay an order or a tax number.
+- `N.º Seg. Social` counts as a social security label for the NISS.
 
 ### Fixed
 

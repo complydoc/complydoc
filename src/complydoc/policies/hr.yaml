@@ -16,11 +16,13 @@ rules:
       - phone_number
       - international_phone
       - us_phone
+      - pt_phone
       - ni_number
       - us_ssn
       - ie_pps
       - nl_bsn
       - pt_niss
+      - pt_civil_id
       - es_dni
       - fr_nir
       - it_codice_fiscale
