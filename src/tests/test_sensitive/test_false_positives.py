@@ -36,6 +36,14 @@ def test_a_context_term_with_its_own_word_still_counts(config):
     assert "us_routing_number" in _categories("ACH routing: 021000021", config)
 
 
+def test_a_capitalised_label_ocr_ran_into_the_next_word_still_counts(config):
+    # OCR of a scanned invoice drops the space after the capitals: "NIF do cliente".
+    assert "pt_nif" in _categories("NIFdocliente: 168567954", config)
+    # A word that only starts like the label is not the label.
+    assert "pt_nif" not in _categories("Nifty order 168567954", config)
+    assert "pt_nif" not in _categories("NIFTY order 168567954", config)
+
+
 def test_a_label_on_the_next_line_belongs_to_the_next_field(config):
     text = "Meter reading 727611 kWh, 08/08/1996\nData de nascimento: 14/03/1985"
     found = _found(text, config)
