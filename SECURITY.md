@@ -61,7 +61,7 @@ projects.
 Every release ships a CycloneDX bill of materials (`complydoc-sbom.json`), a
 `SHA256SUMS` file and signed build provenance for each file, so you can check that what
 you install was built from this repository by its release workflow. From 0.8.3 the
-Claude Desktop extensions (`complydoc.mcpb`, `complydoc-names.mcpb`) carry it too:
+Claude Desktop extension (`complydoc.mcpb`) carries it too:
 
 ```bash
 gh attestation verify complydoc-0.8.2-py3-none-any.whl --repo complydoc/complydoc

@@ -155,7 +155,7 @@ jobs:
 
           ${provenance}
 
-          \`complydoc.mcpb\` and \`complydoc-names.mcpb\` are the Claude Desktop extensions: open one to install it. The second also masks names, and downloads its model (about 700 MB) the first time it starts.
+          \`complydoc.mcpb\` is the Claude Desktop extension: open it to install it. It also masks names, and downloads its model (about 700 MB) the first time it starts.
 
           \`complydoc-sbom.json\` is a CycloneDX bill of materials for a full install, built from the lockfile." \
             --draft
