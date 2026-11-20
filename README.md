@@ -58,7 +58,7 @@ uvx complydoc mcp --folder ~/Documents/Contracts
 It is in the [MCP Registry](https://registry.modelcontextprotocol.io) as
 `io.github.complydoc/complydoc`, as a Claude Desktop extension on the
 [releases page](https://github.com/complydoc/complydoc/releases/latest), as a Claude Code
-plugin (`/plugin install complydoc --marketplace complydoc/complydoc`) and as the image
+plugin (`/plugin marketplace add complydoc/complydoc`, then `/plugin install complydoc@complydoc`) and as the image
 `ghcr.io/complydoc/complydoc`. The setup for each client is in
 [Documents into an assistant, cleaned](https://complydoc.io/docs/guides/assistant-mcp/).
 

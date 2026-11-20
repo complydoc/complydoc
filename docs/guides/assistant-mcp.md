@@ -105,10 +105,18 @@ Codex reads `~/.codex/config.toml`:
 [mcp_servers.complydoc]
 command = "uvx"
 args = ["complydoc", "mcp", "--folder", "/Users/ana/Documents/Contracts"]
+startup_timeout_sec = 60
 ```
 
+The first start downloads complydoc, which can take longer than Codex's default 10
+seconds to wait for a server; the line above gives it a minute.
+
 Claude Code can also install it as a plugin, which pins the version:
-`/plugin install complydoc --marketplace complydoc/complydoc`.
+
+```text
+/plugin marketplace add complydoc/complydoc
+/plugin install complydoc@complydoc
+```
 
 ### In a container
 
