@@ -9,6 +9,10 @@ separately.
 
 ### Fixed
 
+- `complydoc mcp` no longer says "Ready to send" about a document it read only in part. A
+  contract whose scanned page holds a NIF and an IBAN was "Ready to send" from an install
+  without OCR, such as the Claude Desktop extension, because that page was never read. Pages
+  the reader leaves unread now make it "Send with care", and the check names them.
 - Fewer wrong names. What a name model reads as a person is held to the shape of a name:
   no digits, no lower-case words but particles, no street, clause or form word first
   (`Rua Augusta`, `Cláusula Terceira`), no company word (`Ribeira Software`). The English

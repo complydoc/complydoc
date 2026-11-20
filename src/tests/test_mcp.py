@@ -548,3 +548,31 @@ def test_every_tool_says_what_it_does_to_the_machine() -> None:
         assert hints["openWorldHint"] is False
         writes = tool["name"] in {"save_clean_copy", "choose_folder", "remove_folder"}
         assert hints["readOnlyHint"] is not writes, tool["name"]
+
+
+def test_a_document_with_pages_left_unread_is_never_ready(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The Claude Desktop extension installs no OCR: the scanned page of a contract that is
+    # otherwise text is not read, and may hold anything.
+    import pypdfium2 as pdfium
+
+    from complydoc.ingest import ocr
+
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    merged = pdfium.PdfDocument.new()
+    merged.import_pages(pdfium.PdfDocument(FIXTURES / "native_text.pdf"), [0])
+    merged.import_pages(pdfium.PdfDocument(FIXTURES / "scanned_page.pdf"), [0])
+    merged.save(docs / "contract.pdf")
+    monkeypatch.setattr(ocr, "available", lambda: False)
+    checked, folder = talk(
+        [docs],
+        call(1, "check_document", path="contract.pdf"),
+        call(2, "check_folder"),
+        store=tmp_path / "s.json",
+    )
+    assert text(checked).startswith("Send with care"), text(checked)
+    assert "page 2 has no text layer and was not read" in text(checked)
+    assert "part not read" in text(folder)
+    assert "Ready to send" not in text(folder)
