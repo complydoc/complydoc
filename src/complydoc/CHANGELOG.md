@@ -5,6 +5,17 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
+## Unreleased
+
+### Added
+
+- A decision model can take a second look at each finding before it is reported
+  (`sensitive.judge`, off by default): it reads the words around a value and says
+  whether it is a person's identifier, a business's, or noise. It never takes away a
+  value confirmed by its check digit or a credential, and a company's identifiers stay
+  masked unless the policy says `business: pass`. `src/scripts/train_judge.py` trains
+  one from labelled findings. See Decision model.
+
 ## [0.8.2] — 2026-11-20
 
 complydoc finds credentials: API keys, access tokens, private keys and passwords, which are
