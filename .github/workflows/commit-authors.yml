@@ -1,0 +1,40 @@
+name: commit authors
+
+# Every commit in a pull request must carry a real person as author and committer, and no
+# tool attribution in its message. A squash merge turns each commit author into a
+# "Co-authored-by" line, and an author that maps to a GitHub account joins the
+# contributors list, so this has to be caught before merging.
+
+on:
+  pull_request:
+
+jobs:
+  authors:
+    name: commit authors and trailers
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Check the pull request's commits
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          bad=0
+          for c in $(git rev-list "$BASE..$HEAD"); do
+            who="$(git log -1 --format='%an <%ae> / %cn <%ce>' "$c")"
+            if echo "$who" | grep -qiE 'noreply@anthropic\.com|^claude <|/ claude <'; then
+              echo "::error::$(git log -1 --format='%h %s' "$c"): author or committer is $who"
+              bad=1
+            fi
+            if git log -1 --format='%B' "$c" | grep -qiE '^(co-authored-by:.*(claude|anthropic)|claude-session:)|generated with \[?claude code'; then
+              echo "::error::$(git log -1 --format='%h %s' "$c"): message carries a Claude attribution line"
+              bad=1
+            fi
+          done
+          if [ "$bad" = 1 ]; then
+            echo "Rewrite the commits with your own identity (git commit --amend --reset-author, or git rebase -i with --exec) and drop the trailers."
+            exit 1
+          fi
+          echo "All commits are authored by people, with no attribution trailers."
