@@ -26,7 +26,7 @@ try (Observation observation = Observation.start("contracts-ingest")) {
 ```
 
 Each loader, transformer, splitter, embedding call and store becomes a stage, as in
-[Observe a pipeline](/complydoc/docs/guides/observe-a-pipeline/). When the block closes,
+[Observe a pipeline](/docs/guides/observe-a-pipeline/). When the block closes,
 the report is written to `.complydoc/contracts-ingest-<time>.json`. Run `complydoc ui` in
 the same folder to open it.
 
@@ -47,7 +47,7 @@ HTML and email files too. It checks each one for:
   and comments in HTML, email and Markdown;
 - passages written as instructions to a model.
 
-It also checks the folder's [evals file](/complydoc/docs/guides/evals/), with near misses
+It also checks the folder's [evals file](/docs/guides/evals/), with near misses
 scored as complydoc scores them.
 
 ## What is the same, and what is not yet

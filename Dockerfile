@@ -38,7 +38,8 @@ FROM python:3.12-slim AS plain
 LABEL org.opencontainers.image.title="complydoc" \
       org.opencontainers.image.description="Compare loaders, trace every step and evaluate what reaches your model. Catch hidden text and personal data, and gate it in CI." \
       org.opencontainers.image.source="https://github.com/complydoc/complydoc" \
-      org.opencontainers.image.licenses="MIT"
+      org.opencontainers.image.licenses="MIT" \
+      io.modelcontextprotocol.server.name="io.github.complydoc/complydoc"
 # What the OCR engine's image library loads at run time.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends libgl1 libglib2.0-0 \

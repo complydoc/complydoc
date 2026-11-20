@@ -3,8 +3,8 @@
   "name": "io.github.complydoc/complydoc",
   "title": "complydoc",
   "description": "Open documents with personal details masked and hidden instructions taken out, on your machine.",
-  "version": "0.8.1",
-  "websiteUrl": "https://complydoc.github.io/complydoc/",
+  "version": "0.8.2",
+  "websiteUrl": "https://complydoc.io/",
   "repository": {
     "url": "https://github.com/complydoc/complydoc",
     "source": "github"
@@ -20,7 +20,7 @@
       "registryType": "pypi",
       "registryBaseUrl": "https://pypi.org",
       "identifier": "complydoc",
-      "version": "0.8.1",
+      "version": "0.8.2",
       "runtimeHint": "uvx",
       "transport": {
         "type": "stdio"
@@ -45,6 +45,49 @@
           "format": "filepath",
           "isRepeated": true,
           "isRequired": false
+        }
+      ]
+    },
+    {
+      "registryType": "oci",
+      "identifier": "ghcr.io/complydoc/complydoc:0.8.2",
+      "runtimeHint": "docker",
+      "transport": {
+        "type": "stdio"
+      },
+      "runtimeArguments": [
+        {
+          "type": "positional",
+          "value": "--rm"
+        },
+        {
+          "type": "positional",
+          "value": "-i"
+        },
+        {
+          "type": "named",
+          "name": "-v",
+          "value": "{documents}:/documents:ro",
+          "description": "The folder with the documents, shared read-only with the container.",
+          "isRequired": true,
+          "variables": {
+            "documents": {
+              "description": "The folder on your computer with the documents.",
+              "format": "filepath",
+              "isRequired": true
+            }
+          }
+        }
+      ],
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "mcp"
+        },
+        {
+          "type": "named",
+          "name": "--folder",
+          "value": "/documents"
         }
       ]
     }

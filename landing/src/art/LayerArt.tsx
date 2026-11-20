@@ -9,9 +9,9 @@ const DOCUMENTS = ["contract.pdf", "invoices-2026.pdf", "cv-candidate.pdf", "han
 
 /** What complydoc does to every document before an assistant sees it. */
 const STEPS = [
+  "Read with complydoc's loader, scans through local OCR",
   "Personal and financial details masked",
-  "Hidden instructions taken out",
-  "Read with complydoc's loader, OCR where needed",
+  "Hidden passages taken out",
   "A verdict: ready, with care, or not as it is",
 ];
 
@@ -60,7 +60,7 @@ export function LayerArt() {
           <ul className="flex flex-col gap-3">
             {STEPS.map((step) => (
               <li key={step} className="flex items-start gap-2 text-sm">
-                <CheckIcon className="mt-0.5 size-4 shrink-0 text-primary-ink" />
+                <CheckIcon className="mt-0.5 size-4 shrink-0 text-primary" />
                 {step}
               </li>
             ))}
@@ -109,7 +109,7 @@ function Link({ label, strong = false }: { label: string; strong?: boolean }) {
       <span
         className={cn(
           "rounded-full border px-2.5 py-1 text-xs font-medium whitespace-nowrap",
-          strong ? "border-primary/60 bg-primary-soft text-primary-ink" : "bg-card text-muted-foreground",
+          strong ? "border-primary/60 bg-primary-soft text-primary" : "bg-card text-muted-foreground",
         )}
       >
         {label}

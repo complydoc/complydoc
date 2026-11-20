@@ -2,15 +2,15 @@
   "manifest_version": "0.4",
   "name": "complydoc",
   "display_name": "complydoc",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "description": "Open your documents in Claude with personal details masked and hidden instructions taken out.",
   "long_description": "complydoc reads a document on your computer before the assistant does. Bank accounts, tax numbers, card numbers, emails and phone numbers come back masked, and text hidden from a reader, such as a white sentence telling the model what to conclude, is taken out. The file itself never leaves your computer: only the cleaned text joins the conversation, and complydoc makes no network connection while it reads.\n\nAsk for a document instead of attaching it: *Open the Acme proposal and summarise it*, or *Can I share the Nordwind contract?*",
   "author": {
     "name": "complydoc",
     "url": "https://github.com/complydoc"
   },
-  "homepage": "https://complydoc.github.io/complydoc/",
-  "documentation": "https://complydoc.github.io/complydoc/docs/guides/assistant-mcp/",
+  "homepage": "https://complydoc.io/",
+  "documentation": "https://complydoc.io/docs/guides/assistant-mcp/",
   "support": "https://github.com/complydoc/complydoc/issues",
   "repository": {
     "type": "git",
