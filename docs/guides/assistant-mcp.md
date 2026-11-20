@@ -33,20 +33,14 @@ Both install `uvx complydoc mcp` with no folder; the person chooses one from the
 
 ### Claude Desktop
 
-The easiest way is the extension, on the
-[releases page](https://github.com/complydoc/complydoc/releases/latest). `make mcpb` builds
-the same two editions:
+The easiest way is the extension: download `complydoc.mcpb` from the
+[releases page](https://github.com/complydoc/complydoc/releases/latest), open it, click
+**Install**, and choose the folders with the documents. Claude Desktop sets up Python and
+complydoc on its own, so nothing else needs installing. It masks identifiers found by
+pattern (IBANs, tax numbers, emails, phones) and names of people and companies. If you
+installed `complydoc-names.mcpb` from an earlier release, remove it first.
 
-| Edition | Masks | Size |
-| --- | --- | --- |
-| `complydoc.mcpb` | Identifiers found by pattern: IBANs, tax numbers, emails, phones | Small |
-| `complydoc-names.mcpb` | The same, and names of people and companies | About 700 MB more, once |
-
-Open one, click **Install**, and choose the folders with the documents. Claude Desktop sets
-up Python and complydoc on its own, so nothing else needs installing. Install one edition
-at a time.
-
-The edition with names downloads its [name model](name-detection-models.md) once, the
+The extension downloads its [name model](name-detection-models.md) once, the
 first time it starts, in a process of its own: the session itself never opens a
 connection. Until the model is on disk, every reading says names are not masked yet, so
 the assistant can tell the person; documents are read again once it arrives. If the
@@ -259,7 +253,7 @@ server can share document folders as well: `--folder` and `--runs` go together.
   `Downloads/complydoc clean copies`, and the network is blocked for the whole
   session, as on every complydoc path.
 - Names of people and companies are masked only with a [name model](name-detection-models.md)
-  installed, as in the edition with names; without one, the identifiers complydoc
+  installed, as in the Claude Desktop extension; without one, the identifiers complydoc
   recognises by pattern are masked.
 - It is a safe way in, not a barrier. A file attached to the chat still reaches the model
   whole. Where that must not happen, turn off file uploads in the assistant's admin

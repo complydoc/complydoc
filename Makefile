@@ -125,7 +125,7 @@ diagrams: ## Re-export the README architecture diagrams to SVG
 # ----------------------------------------------------------------- misc ----
 
 .PHONY: mcpb
-mcpb: ## Pack the Claude Desktop extension, light and with names, into dist/
+mcpb: ## Pack the Claude Desktop extension into dist/
 	$(PYTHON) python src/scripts/pack_mcpb.py dist
 
 .PHONY: viewer-bundle
