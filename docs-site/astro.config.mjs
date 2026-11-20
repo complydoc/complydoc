@@ -98,7 +98,7 @@ export default defineConfig({
         },
         {
           label: "Reference",
-          items: ["reference/cli", "reference/api", "reference/report", "reference/configuration", "reference/identifiers"],
+          items: ["reference/cli", "reference/api", "reference/report", "reference/configuration", "reference/identifiers", "explanation/versioning"],
         },
         {
           label: "How it works",

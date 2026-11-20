@@ -3,7 +3,8 @@
 Newest first. Releases increment the patch number; the minor number changes for a new
 way of using complydoc, such as a command, or for a breaking change to the report JSON or
 a config key, which the release then says. `schema_version` in the JSON is versioned
-separately.
+separately. What counts as breaking, and how long a deprecated
+feature keeps working, is in [Versions and deprecations](https://complydoc.io/docs/explanation/versioning/).
 
 ## Unreleased
 
@@ -29,6 +30,9 @@ separately.
 - Portuguese phone numbers written without +351, beside a phone label such as `Telemóvel`,
   `Tel.` or `Contacto` (`pt_phone`). Nine digits alone stay an order or a tax number.
 - `N.º Seg. Social` counts as a social security label for the NISS.
+- A versioning policy, Versions and deprecations: what a patch and a minor release may
+  change, which parts are covered, and that something deprecated keeps working for two
+  minor releases before it can go.
 
 ### Fixed
 
