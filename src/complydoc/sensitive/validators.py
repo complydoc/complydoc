@@ -8,7 +8,11 @@ something.
 
 from __future__ import annotations
 
+import base64
+import binascii
 import datetime as dt
+import json
+import math
 import re
 from collections.abc import Callable, Mapping
 from typing import TYPE_CHECKING
@@ -42,6 +46,7 @@ FORMAT_ONLY: frozenset[str] = frozenset(
         "ni_prefix",
         "us_ein",
         "us_ssn",
+        "real_secret",
     }
 )
 """Validators that check a shape rather than compute a check digit.
@@ -156,10 +161,26 @@ def card_grouping(value: str) -> bool:
     return len(groups) == 1 or groups in _CARD_GROUPS or groups.count(4) >= 3
 
 
+# ISO 13616 lengths for the countries whose IBANs these documents most often carry.
+# A country not listed is checked by mod-97 and the general length range alone.
+_IBAN_LENGTHS = {
+    "AD": 24, "AE": 23, "AT": 20, "BE": 16, "BG": 22, "BR": 29, "CH": 21, "CY": 28,
+    "CZ": 24, "DE": 22, "DK": 18, "EE": 20, "ES": 24, "FI": 18, "FR": 27, "GB": 22,
+    "GI": 23, "GR": 27, "HR": 21, "HU": 28, "IE": 22, "IS": 26, "IT": 27, "LI": 21,
+    "LT": 20, "LU": 20, "LV": 21, "MC": 27, "MT": 31, "NL": 18, "NO": 15, "PL": 28,
+    "PT": 25, "RO": 24, "SA": 24, "SE": 24, "SI": 19, "SK": 24, "SM": 27, "TR": 26,
+}  # fmt: skip
+
+
 def iban_mod97(value: str) -> bool:
     """ISO 13616: move the first four characters to the end, then mod 97 must be 1."""
     cleaned = "".join(value.split()).upper()
     if not 15 <= len(cleaned) <= 34 or not cleaned[:2].isalpha() or not cleaned[2:4].isdigit():
+        return False
+    # Each country's IBAN has one length. Without it, a Portuguese CPE code and the word
+    # after it pass mod-97 about once in 97 tries.
+    expected = _IBAN_LENGTHS.get(cleaned[:2])
+    if expected is not None and len(cleaned) != expected:
         return False
     rearranged = cleaned[4:] + cleaned[:4]
     converted = ""
@@ -280,10 +301,15 @@ def nl_bsn(value: str) -> bool:
     return total % 11 == 0
 
 
+_PT_NIF_PREFIXES = ("45", "70", "71", "72", "74", "75", "77", "78", "79")
+
+
 def pt_nif(value: str) -> bool:
     """Portuguese tax number, mod-11 check digit."""
     digits = _digits(value)
-    if len(digits) != 9 or digits[0] not in "125689":
+    # People: 1, 2 and, since the 2s ran out, 3; 45 for non-residents. Companies and other
+    # entities: 5, 6, 8, 9 and the 7s (estates, funds, non-resident bodies).
+    if len(digits) != 9 or not (digits[0] in "1235689" or digits[:2] in _PT_NIF_PREFIXES):
         return False
     total = sum(int(d) * (9 - i) for i, d in enumerate(digits[:8]))
     check = 11 - (total % 11)
@@ -666,6 +692,46 @@ def au_tfn(value: str) -> bool:
     return _weighted_mod(digits, (1, 4, 3, 7, 5, 8, 6, 9, 10), 11) == 0
 
 
+def jwt_header(value: str) -> bool:
+    """A JSON Web Token: its first part decodes to a JSON object that names an `alg`.
+
+    Three runs of base64 joined by dots are common enough in URLs and logs. The header is
+    what makes one a token.
+    """
+
+    header = value.split(".", 1)[0]
+    try:
+        decoded = base64.urlsafe_b64decode(header + "=" * (-len(header) % 4))
+        parsed = json.loads(decoded)
+    except (binascii.Error, ValueError):
+        return False
+    return isinstance(parsed, dict) and "alg" in parsed
+
+
+_PLACEHOLDER = re.compile(
+    r"(?i)^(?:x+|\*+|\.+|-+|_+|0+|1234\w*|changeme\w*|password\w*|passw(?:or)?d?|secret\w*|"
+    r"your[_-]?\w*|my[_-]?\w*|example\w*|sample\w*|dummy\w*|test\w*|placeholder\w*|"
+    r"redacted|none|null|undefined|todo|tbd|<[^>]*>|.*example.*|\$\{[^}]*\}|\{\{[^}]*\}\}|%\w+%|\$\w+)$"
+)
+
+
+def real_secret(value: str) -> bool:
+    """A value that could be a working secret rather than a placeholder for one.
+
+    Documentation is full of `api_key=your_key_here` and `postgres://user:password@host`.
+    A real key mixes letters and digits and does not repeat itself much.
+    """
+
+    secret = value.strip("'\"")
+    if len(secret) < 8 or _PLACEHOLDER.match(secret):
+        return False
+    counts = {char: secret.count(char) for char in set(secret)}
+    entropy = -sum(n / len(secret) * math.log2(n / len(secret)) for n in counts.values())
+    has_digit = any(char.isdigit() for char in secret)
+    has_letter = any(char.isalpha() for char in secret)
+    return has_digit and has_letter and entropy >= 3.0
+
+
 VALIDATORS: dict[str, Callable[[str], bool]] = {
     "luhn": luhn,
     "card_issuer": card_issuer,
@@ -703,6 +769,8 @@ VALIDATORS: dict[str, Callable[[str], bool]] = {
     "in_pan": in_pan,
     "ca_sin": ca_sin,
     "au_tfn": au_tfn,
+    "jwt_header": jwt_header,
+    "real_secret": real_secret,
 }
 
 

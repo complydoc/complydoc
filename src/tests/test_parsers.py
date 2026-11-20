@@ -104,6 +104,7 @@ def test_parser_cost_comes_from_pricing(folder):
         (lambda: parsers.unstructured(), "langchain_unstructured", "langchain-unstructured"),
         (lambda: parsers.llamaparse(), "llama_parse", "llama-parse"),
         (lambda: parsers.markitdown(), "markitdown", "pip install markitdown"),
+        (lambda: parsers.kreuzberg(), "kreuzberg", "kreuzberg"),
     ],
 )
 def test_a_missing_library_says_what_to_install(monkeypatch, preset, module, package):
@@ -125,6 +126,26 @@ def test_presets_declare_network_and_price():
         False,
         None,
         (".pdf", ".docx", ".pptx", ".xlsx", ".xlsm", ".html", ".htm"),
+    )
+    kreuzberg = parsers.kreuzberg()
+    assert (kreuzberg.network, kreuzberg.price_key, kreuzberg.formats) == (
+        False,
+        None,
+        (
+            ".pdf",
+            ".docx",
+            ".xlsx",
+            ".xlsm",
+            ".pptx",
+            ".html",
+            ".htm",
+            ".png",
+            ".jpg",
+            ".jpeg",
+            ".tif",
+            ".tiff",
+            ".bmp",
+        ),
     )
     assert parsers.unstructured().price_key is None
     assert parsers.unstructured(api=True).network
@@ -182,6 +203,36 @@ def test_markitdown_returns_one_document_per_file_with_its_source(monkeypatch, f
             {"page_content": f"# Terms\n\nFrom {pdf}.", "metadata": {"source": str(pdf)}}
         ]
     assert created == [{"enable_plugins": False}] * 2
+
+
+def test_kreuzberg_returns_one_document_per_file_with_its_source(monkeypatch, folder):
+    configs: list[dict[str, object]] = []
+    requests: list[tuple[str, object]] = []
+
+    class FakeExtractionConfig:
+        def __init__(self, **options: object) -> None:
+            configs.append(options)
+
+    def extract_file_sync(path: str, *, config: object) -> types.SimpleNamespace:
+        requests.append((path, config))
+        return types.SimpleNamespace(content=f"# Terms\n\nFrom {path}.")
+
+    monkeypatch.setitem(
+        sys.modules,
+        "kreuzberg",
+        types.SimpleNamespace(
+            ExtractionConfig=FakeExtractionConfig,
+            extract_file_sync=extract_file_sync,
+        ),
+    )
+    preset = parsers.kreuzberg(use_cache=False)
+    for pdf in (folder / "a.pdf", folder / "b.pdf"):
+        assert preset.factory(str(pdf)).load() == [
+            {"page_content": f"# Terms\n\nFrom {pdf}.", "metadata": {"source": str(pdf)}}
+        ]
+    assert configs == [{"use_cache": False}] * 2
+    assert [path for path, _ in requests] == [str(folder / "a.pdf"), str(folder / "b.pdf")]
+    assert requests[0][1] is not requests[1][1]
 
 
 def test_opendataloader_pages_count_from_one_even_with_an_empty_last_page(monkeypatch, folder):

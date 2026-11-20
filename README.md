@@ -44,17 +44,22 @@ see a hidden clause caught, try the one-page contract in
 
 ## In your assistant
 
-`complydoc mcp` lets Claude, Cursor or any MCP client open documents with personal and
-financial details masked and hidden instructions taken out. In Claude Code:
+`complydoc mcp` lets any MCP client, such as Claude, Cursor, VS Code (Copilot),
+Windsurf or Codex, open documents with personal and financial details masked and hidden
+instructions taken out. It runs on your machine:
 
-```text
-/plugin install complydoc --marketplace complydoc/complydoc
+```bash
+uvx complydoc mcp --folder ~/Documents/Contracts
 ```
 
-Elsewhere, run it with `uvx complydoc mcp`; it is in the
-[MCP Registry](https://registry.modelcontextprotocol.io) as `io.github.complydoc/complydoc`.
-Claude Desktop installs it from the extension on the
-[releases page](https://github.com/complydoc/complydoc/releases/latest). See
+[![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_complydoc-0098FF?logo=visualstudiocode&logoColor=white)](https://insiders.vscode.dev/redirect/mcp/install?name=complydoc&config=%7B%22name%22%3A%22complydoc%22%2C%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22complydoc%22%2C%22mcp%22%5D%7D)
+[![Install in Cursor](https://img.shields.io/badge/Cursor-Install_complydoc-000000?logo=cursor&logoColor=white)](https://cursor.com/en/install-mcp?name=complydoc&config=eyJjb21tYW5kIjoidXZ4IiwiYXJncyI6WyJjb21wbHlkb2MiLCJtY3AiXX0=)
+
+It is in the [MCP Registry](https://registry.modelcontextprotocol.io) as
+`io.github.complydoc/complydoc`, as a Claude Desktop extension on the
+[releases page](https://github.com/complydoc/complydoc/releases/latest), as a Claude Code
+plugin (`/plugin install complydoc --marketplace complydoc/complydoc`) and as the image
+`ghcr.io/complydoc/complydoc`. The setup for each client is in
 [Documents into an assistant, cleaned](https://complydoc.io/docs/guides/assistant-mcp/).
 
 ## Observe a pipeline
@@ -85,7 +90,7 @@ time, tokens, cost and the identifiers it passed on. Open it with `complydoc ui`
 ## In CI
 
 ```yaml
-- uses: complydoc/complydoc@v0.8.1
+- uses: complydoc/complydoc@v0.8.2
   with:
     path: documents
     policy: policy.yaml
@@ -93,6 +98,15 @@ time, tokens, cost and the identifiers it passed on. Open it with `complydoc ui`
 
 `complydoc check` fails when a folder breaks your rules; `finance`, `legal` and `hr` ship as
 ready policies. See [GitHub Action](https://complydoc.io/docs/guides/github-action/).
+
+## Privacy
+
+complydoc runs on your machine and sends nothing anywhere: every run blocks outbound
+connections. `complydoc mcp` reads only the folders you share, keeps the list of folders
+chosen in a conversation in `~/.complydoc/mcp-folders.json` and writes clean copies only
+where you ask. The one download is the optional name model, fetched once from Hugging Face
+when you ask for it. Questions go to the
+[issue tracker](https://github.com/complydoc/complydoc/issues).
 
 ## More
 

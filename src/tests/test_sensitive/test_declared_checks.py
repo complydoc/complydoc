@@ -13,6 +13,7 @@ from complydoc.config.schema import CheckConfig, SensitiveConfig
 from complydoc.sensitive import validators as v
 
 NISS = load_config().sensitive.checks["pt_niss"]
+UK_NHS_NUMBER = load_config().sensitive.checks["uk_nhs_number"]
 
 
 def test_a_portuguese_social_security_number_passes_and_a_changed_digit_fails():
@@ -44,6 +45,27 @@ def test_a_bare_niss_shaped_number_is_not_reported():
     assert "pt_niss" not in found
 
 
+def test_a_uk_nhs_number_passes_and_a_changed_digit_fails():
+    assert v.declared(UK_NHS_NUMBER, "9434765919") is True
+    assert v.declared(UK_NHS_NUMBER, "943 476 5919") is True
+    assert v.declared(UK_NHS_NUMBER, "9434765918") is False
+    # A check that works out to 10 is invalid.
+    assert v.declared(UK_NHS_NUMBER, "0000000060") is False
+
+
+def test_a_uk_nhs_number_beside_its_label_is_found_and_confirmed():
+    matches = cd.scan_text("NHS number: 943 476 5919").matches
+    found = [m for m in matches if m.category == "uk_nhs_number"]
+    assert len(found) == 1
+    assert found[0].evidence == "confirmed"
+    assert found[0].validators_passed == ["uk_nhs_number"]
+
+
+def test_a_bare_uk_nhs_number_is_not_reported():
+    found = {m.category for m in cd.scan_text("Reference 943 476 5919 filed.").matches}
+    assert "uk_nhs_number" not in found
+
+
 def _check(**fields: object) -> CheckConfig:
     return CheckConfig.model_validate(fields)
 
@@ -70,7 +92,7 @@ AS_DATA = {
     ),
     "pt_nif": _check(
         length=9,
-        starts_with=list("125689"),
+        starts_with=[*"1235689", "45", "70", "71", "72", "74", "75", "77", "78", "79"],
         method="weighted",
         weights=[9, 8, 7, 6, 5, 4, 3, 2],
         modulus=11,

@@ -9,9 +9,33 @@ hidden from the reader, such as a white sentence telling the model what to concl
 reaches the model with its personal and financial details masked and its hidden passages
 taken out. The file itself never does.
 
-## Install it in Claude Desktop
+## Install it
 
-The easiest way is the extension. `make mcpb` builds two editions:
+`complydoc mcp` is a local MCP server: it runs on the person's computer and speaks over
+stdio, so any assistant that runs local MCP servers can use it. The quickest way needs
+only [uv](https://docs.astral.sh/uv/), which fetches complydoc the first time:
+
+```bash
+uvx complydoc mcp --folder ~/Documents/Contracts
+```
+
+`--folder` is optional: without it, the person chooses folders from the conversation. It is
+listed in the official [MCP Registry](https://registry.modelcontextprotocol.io) as
+`io.github.complydoc/complydoc`, so clients and directories that read the registry find it
+there too.
+
+### One click
+
+[![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_complydoc-0098FF?logo=visualstudiocode&logoColor=white)](https://insiders.vscode.dev/redirect/mcp/install?name=complydoc&config=%7B%22name%22%3A%22complydoc%22%2C%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22complydoc%22%2C%22mcp%22%5D%7D)
+[![Install in Cursor](https://img.shields.io/badge/Cursor-Install_complydoc-000000?logo=cursor&logoColor=white)](https://cursor.com/en/install-mcp?name=complydoc&config=eyJjb21tYW5kIjoidXZ4IiwiYXJncyI6WyJjb21wbHlkb2MiLCJtY3AiXX0=)
+
+Both install `uvx complydoc mcp` with no folder; the person chooses one from the chat.
+
+### Claude Desktop
+
+The easiest way is the extension, on the
+[releases page](https://github.com/complydoc/complydoc/releases/latest). `make mcpb` builds
+the same two editions:
 
 | Edition | Masks | Size |
 | --- | --- | --- |
@@ -30,71 +54,108 @@ download fails, readings say so too. Started by hand, the same is
 `complydoc mcp --fetch-name-model --folder <dir>`, with the `multilingual-names` extra
 installed.
 
-## Set it up by hand in Claude Desktop
+### The JSON most clients take
 
-Install complydoc, then add it to Claude Desktop's configuration (Settings, Developer,
-Edit Config), with the folder people keep their documents in:
+Claude Desktop (Settings, Developer, Edit Config), Cursor (`~/.cursor/mcp.json`),
+Windsurf (`~/.codeium/windsurf/mcp_config.json`), Cline, Roo Code, LM Studio and others
+read the same block:
 
 ```json
 {
   "mcpServers": {
     "complydoc": {
-      "command": "complydoc",
-      "args": ["mcp", "--folder", "/Users/ana/Documents/Contracts"]
+      "command": "uvx",
+      "args": ["complydoc", "mcp", "--folder", "/Users/ana/Documents/Contracts"]
     }
   }
 }
 ```
 
-Restart Claude Desktop. Desktop apps do not see your shell's `PATH`, so if it does not
-start, give the full path that `which complydoc` prints as `command`.
+Restart the app. Desktop apps do not see your shell's `PATH`, so if it does not start,
+give the full path that `which uvx` prints as `command`. With complydoc installed by
+`pip`, the command is `complydoc` and the arguments start at `mcp`.
 
-## Other assistants
-
-Any assistant that runs a local MCP server works the same way: the command is
-`complydoc mcp --folder <dir>`.
-
-### Claude Code
-
-```bash
-claude mcp add complydoc -- complydoc mcp --folder ~/Documents/Contracts
-```
-
-### Codex
-
-In `~/.codex/config.toml`:
-
-```toml
-[mcp_servers.complydoc]
-command = "complydoc"
-args = ["mcp", "--folder", "/Users/ana/Documents/Contracts"]
-```
-
-### Cursor and Windsurf
-
-The same JSON as Claude Desktop, in `~/.cursor/mcp.json` or
-`~/.codeium/windsurf/mcp_config.json`.
-
-### GitHub Copilot in VS Code
+### VS Code (GitHub Copilot)
 
 In `.vscode/mcp.json`:
 
 ```json
 {
   "servers": {
-    "complydoc": { "command": "complydoc", "args": ["mcp", "--folder", "${workspaceFolder}/documents"] }
+    "complydoc": {
+      "command": "uvx",
+      "args": ["complydoc", "mcp", "--folder", "${workspaceFolder}/documents"]
+    }
   }
 }
 ```
 
-### Gemini CLI
+### Command-line agents
 
 ```bash
-gemini mcp add complydoc complydoc mcp --folder ~/Documents/Contracts
+# Claude Code
+claude mcp add complydoc -- uvx complydoc mcp --folder ~/Documents/Contracts
+# Gemini CLI
+gemini mcp add complydoc uvx complydoc mcp --folder ~/Documents/Contracts
 ```
+
+Codex reads `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.complydoc]
+command = "uvx"
+args = ["complydoc", "mcp", "--folder", "/Users/ana/Documents/Contracts"]
+```
+
+Claude Code can also install it as a plugin, which pins the version:
+`/plugin install complydoc --marketplace complydoc/complydoc`.
+
+### In a container
+
+The image on every release runs the same server, with no Python on the machine. Give the
+folder as a volume, read-only, and keep stdin open with `-i`:
+
+```json
+{
+  "mcpServers": {
+    "complydoc": {
+      "command": "docker",
+      "args": [
+        "run", "--rm", "-i",
+        "-v", "/Users/ana/Documents/Contracts:/documents:ro",
+        "ghcr.io/complydoc/complydoc", "mcp", "--folder", "/documents"
+      ]
+    }
+  }
+}
+```
+
+In a container the server sees only the folders given as volumes, so `choose_folder` has
+no dialog to open there. `ghcr.io/complydoc/complydoc:names` also masks names, with its
+English model in the image.
 
 Assistants that only reach MCP servers over the network, such as ChatGPT's connectors or
 Microsoft 365 Copilot, are not served by `complydoc mcp` yet.
+
+## Detection engines, such as Veil
+
+complydoc finds personal details with the patterns and models in its own configuration,
+`sensitive.yaml` (see [Name detection models](name-detection-models.md)). A package can
+bring its own, such as better name models, by declaring an entry point in the
+`complydoc.engines` group:
+
+```toml
+[project.entry-points."complydoc.engines"]
+veil = "veil.complydoc:engine"
+```
+
+The entry point loads to an object with a `name` and a `config_dir()` that returns a
+configuration directory. When one is installed next to complydoc, `complydoc mcp` reads
+documents with it and tells the assistant which engine found the details. `--engine
+<name>` picks one when several are installed, `--engine none` reads with complydoc's own
+configuration, and `--config-dir <dir>` reads with a directory of your own instead of any
+engine's. An engine that fails to load is said on stderr and passed over, so the server
+always starts.
 
 ## Choosing folders from the conversation
 

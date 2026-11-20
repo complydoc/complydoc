@@ -25,6 +25,10 @@ masking:
     # Masked even with --reveal.
     - card_number
     - ni_number
+    - api_key
+    - access_token
+    - private_key
+    - password
 
 checks:
   # Check digits declared as data, named in a category's `validators` like those
@@ -39,6 +43,15 @@ checks:
     weights: [29, 23, 19, 17, 13, 11, 7, 5, 3, 2]
     modulus: 10
     subtract_from: 9
+
+  uk_nhs_number:
+    length: 10
+    method: weighted
+    weights: [10, 9, 8, 7, 6, 5, 4, 3, 2]
+    modulus: 11
+    subtract_from: 11
+    replace: {11: 0}
+    invalid: [10]
 
 categories:
 
@@ -55,6 +68,21 @@ categories:
     gdpr_note: >
       A direct identifier under UK data protection law. Uniquely identifies an
       individual and is routinely treated as high risk in a breach assessment.
+
+  uk_nhs_number:
+    enabled: true
+    label: NHS number
+    region: UK
+    detector: regex
+    severity: high
+    context_patterns:
+      - '\b\d{3}[ -]?\d{3}[ -]?\d{4}\b'
+    validators: [uk_nhs_number]
+    context_terms: ["nhs number", "nhs no"]
+    gdpr_note: >
+      A patient identifier, and health data where it is attached to care, so it
+      is personal data and usually special-category data under data-protection
+      law. Treat a breach as high risk.
 
   sort_code:
     enabled: true
@@ -376,7 +404,7 @@ categories:
     context_patterns:
       - '\b\d{9}\b'
     validators: [pt_nif]
-    context_terms: ["nif", "contribuinte", "número fiscal", "numero fiscal"]
+    context_terms: ["nif", "nipc", "contribuinte", "número fiscal", "numero fiscal"]
     gdpr_note: >
       Tax identifier for individuals and companies, validated with its mod-11
       check digit.
@@ -726,3 +754,77 @@ categories:
     context_terms: ["tfn", "tax file number"]
     gdpr_note: >
       Tax identifier, validated with its weighted mod-11 check.
+
+  # ---------------------------------------------------------------------
+  # Credentials. Not personal data, and worse to leak: a key pasted into a
+  # spec, an email or a slide works for whoever reads it, a model included.
+  # Never revealed, even with --reveal.
+  # ---------------------------------------------------------------------
+
+  api_key:
+    enabled: true
+    label: API key
+    region: international
+    detector: regex
+    severity: high
+    patterns:
+      # Keys whose prefix says which service issued them.
+      - '\b(?-i:(?:AKIA|ASIA)[A-Z0-9]{16})\b'  # AWS access key ID
+      - '\b(?-i:gh[pousr]_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{60,90})\b'  # GitHub
+      - '\b(?-i:xox[abpors]-[A-Za-z0-9-]{10,})'  # Slack
+      - '\b(?-i:(?:sk|rk)_live_[A-Za-z0-9]{20,})\b'  # Stripe
+      - '\b(?-i:sk-ant-[a-z]+\d{2}-[A-Za-z0-9_-]{40,})'  # Anthropic
+      - '\b(?-i:sk-(?:proj-|svcacct-|admin-)?[A-Za-z0-9_-]{32,})'  # OpenAI
+      - '\b(?-i:AIza[0-9A-Za-z_-]{35})'  # Google
+      # A key written after its label, in configuration or in prose. A JWT after
+      # "Bearer" is left to access_token, which can confirm it.
+      - '(?P<label>\b(?:api[_ -]?key|api[_ -]?secret|client[_ -]?secret|secret[_ -]?key|access[_ -]?key(?:[_ -]?id)?|auth[_ -]?token|access[_ -]?token|bearer))\b["'']?[ \t]*(?:[:=]|=>)?[ \t]*["'']?(?P<value>(?-i:(?!eyJ)[A-Za-z0-9_+/=.-]{16,200}))'
+    validators: [real_secret]
+    gdpr_note: >
+      A credential, not personal data, but whoever reads it can use it, a model
+      included. Known services are recognised by their key's prefix; any other key
+      only beside a label such as api_key, and only when it reads as a real key
+      rather than a placeholder. Revoke it at the service rather than only deleting
+      the document.
+
+  access_token:
+    enabled: true
+    label: Access token (JWT)
+    region: international
+    detector: regex
+    severity: high
+    patterns:
+      - '\b(?-i:eyJ[A-Za-z0-9_-]{8,}\.eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,})'
+    validators: [jwt_header]
+    gdpr_note: >
+      A signed token, confirmed by its header. Until it expires it acts for the user
+      it was issued to, and its payload often carries their identity in plain text.
+
+  private_key:
+    enabled: true
+    label: Private key
+    region: international
+    detector: regex
+    severity: high
+    patterns:
+      - '-----BEGIN (?:RSA |EC |DSA |OPENSSH |ENCRYPTED |PGP )?PRIVATE KEY(?: BLOCK)?-----'
+    gdpr_note: >
+      The opening line of a private key. The key that follows signs or decrypts as
+      its owner.
+
+  password:
+    enabled: true
+    label: Password
+    region: international
+    detector: regex
+    severity: high
+    patterns:
+      # The password in a connection string: postgres://user:password@host
+      - '\b[a-z][a-z0-9+.-]{1,20}://[^\s:/@]{1,64}:(?P<value>[^\s@/]{3,128})@[\w.-]+'
+      # A password written after its label.
+      - '(?P<label>\b(?:password|passwd|pwd|palavra[- ]passe|senha|contrase[ñn]a|mot de passe|passwort|kennwort|wachtwoord))\b["'']?[ \t]*(?:[:=]|=>)[ \t]*["'']?(?P<value>[^\s"'',;()\[\]{}]{6,128})(?=[\s"'',;]|$)'
+    validators: [real_secret]
+    gdpr_note: >
+      A password in a connection string or after its label, when it reads as a real
+      one rather than a placeholder. Change it rather than only deleting the document.
+
