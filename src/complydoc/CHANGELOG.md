@@ -15,6 +15,14 @@ separately.
   value confirmed by its check digit or a credential, and a company's identifiers stay
   masked unless the policy says `business: pass`. `src/scripts/train_judge.py` trains
   one from labelled findings. See Decision model.
+- A security policy (`SECURITY.md`): which versions get fixes, how to report a
+  vulnerability privately and what happens next, and how to verify a release. Also a
+  support page, a code of conduct, issue forms and a pull request template.
+- The Claude Desktop extensions, `complydoc.mcpb` and `complydoc-names.mcpb`, are built
+  and attached to each release by its workflow, with signed build provenance like the
+  wheel, instead of by hand. The container images are signed with Sigstore as well.
+- Every GitHub Action the workflows use is pinned to a commit, Dependabot proposes
+  updates each week, and an OpenSSF Scorecard runs on `main`.
 - Portuguese civil ID numbers, on the Cartão de Cidadão and the old BI, beside their label
   and checked with their mod-11 digit (`pt_civil_id`). The card's version, `ZZ4`, is left
   as it is.
