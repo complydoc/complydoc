@@ -1,0 +1,34 @@
+# OpenSSF Scorecard: how the repository scores on supply-chain practice (pinned actions,
+# branch protection, signed releases and so on). The results show in the Security tab
+# and on https://scorecard.dev/viewer/?uri=github.com/complydoc/complydoc.
+name: scorecard
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+permissions: read-all
+
+jobs:
+  analysis:
+    name: scorecard
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      # Publishing the results to scorecard.dev, signed with this workflow's identity.
+      id-token: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: ossf/scorecard-action@23f22cd43608bae7a1f1fa2603d7314dee9538a5 # v2.6.0
+        with:
+          results_file: results.sarif
+          results_format: sarif
+          publish_results: true
+      - uses: github/codeql-action/upload-sarif@d2aacf54c2fbc910db8d7ec338fdb54ea48c692d # v3
+        with:
+          sarif_file: results.sarif

@@ -88,7 +88,7 @@ runs:
   using: composite
   steps:
     - name: Set up uv
-      uses: astral-sh/setup-uv@v10.3.0
+      uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
 
     - name: Install complydoc
       shell: bash
@@ -166,14 +166,14 @@ runs:
 
     - name: Upload SARIF
       if: inputs.sarif == 'true' && steps.check.outputs.exit-code != '2'
-      uses: github/codeql-action/upload-sarif@v3
+      uses: github/codeql-action/upload-sarif@d2aacf54c2fbc910db8d7ec338fdb54ea48c692d # v3
       with:
         sarif_file: ${{ steps.check.outputs.sarif }}
         category: complydoc
 
     - name: Upload the report
       if: inputs.upload-report == 'true' && steps.check.outputs.exit-code != '2'
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
       with:
         name: complydoc-report
         path: ${{ runner.temp }}/complydoc/report

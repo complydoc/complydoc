@@ -119,6 +119,7 @@ when you ask for it. Questions go to the
 - Optional extras for scans and names: `complydoc doctor` says what is installed and how to
   add the rest
 - [Changelog](https://github.com/complydoc/complydoc/blob/main/src/complydoc/CHANGELOG.md) ·
-  [Contributing](https://github.com/complydoc/complydoc/blob/main/CONTRIBUTING.md) · MIT
+  [Contributing](https://github.com/complydoc/complydoc/blob/main/CONTRIBUTING.md) ·
+  [Security](https://github.com/complydoc/complydoc/blob/main/SECURITY.md) · MIT
 
 If complydoc is useful to you, a star helps other engineers find it.
