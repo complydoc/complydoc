@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 
 /**
- * The footer's backdrop: a field of monospaced characters on deep blue, the way a loader sees a
+ * The footer's backdrop: a field of monospaced characters on black, the way a loader sees a
  * page before anyone reads it. Brighter, denser characters gather into a wave that rises from the
  * bottom left and breaks towards the right. Drawn once per size, not animated.
  */
@@ -54,7 +54,7 @@ function draw(canvas: HTMLCanvasElement) {
       // A faint scatter everywhere, so the whole block has texture.
       if (level < 0.07) {
         if (grain > 0.965) {
-          ctx.fillStyle = "rgba(120, 196, 232, 0.16)";
+          ctx.fillStyle = "rgba(255, 255, 255, 0.12)";
           ctx.fillText(".", x, y);
         }
         continue;
@@ -65,8 +65,10 @@ function draw(canvas: HTMLCanvasElement) {
         glyph = WORDS[word++ % WORDS.length] ?? " ";
         if (glyph === " ") continue;
       }
-      const alpha = (0.1 + level * 0.7) * quiet * (v > 0.8 ? 0.45 : 1);
-      ctx.fillStyle = level > 0.72 ? `rgba(226, 245, 252, ${alpha})` : `rgba(110, 192, 232, ${alpha})`;
+      const alpha = (0.08 + level * 0.6) * quiet * (v > 0.8 ? 0.45 : 1);
+      // Greys and white, as the rest of the site; only the words on the crest take the brand's blue.
+      const isWord = !RAMP.includes(glyph);
+      ctx.fillStyle = isWord ? `rgba(163, 220, 241, ${alpha + 0.1})` : `rgba(255, 255, 255, ${alpha})`;
       ctx.fillText(glyph, x, y);
     }
   }

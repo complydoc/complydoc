@@ -9,10 +9,10 @@ export const CONTACT_EMAIL = "hi@complydoc.io";
 export const LINKEDIN = "";
 
 /**
- * PostHog project key (EU cloud) for the analytics that run after a visitor accepts cookies.
- * It is public by design. Empty: nothing loads; visits are still counted by GoatCounter.
+ * Google Analytics 4 measurement ID, shared by complydoc.io and veil.complydoc.io. It loads only
+ * after a visitor accepts cookies. Empty: nothing loads; visits are still counted by GoatCounter.
  */
-export const POSTHOG_KEY = "";
+export const GA_ID = "";
 
 export const VERSION = "0.8.2";
 
