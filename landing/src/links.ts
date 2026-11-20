@@ -12,7 +12,7 @@ export const LINKEDIN = "";
  * Google Analytics 4 measurement ID, shared by complydoc.io and veil.complydoc.io. It loads only
  * after a visitor accepts cookies. Empty: nothing loads; visits are still counted by GoatCounter.
  */
-export const GA_ID = "";
+export const GA_ID = "G-Y736EB7TXC";
 
 export const VERSION = "0.8.2";
 
