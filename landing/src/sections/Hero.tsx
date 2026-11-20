@@ -36,7 +36,7 @@ export function Hero() {
                   <span className="text-muted-foreground select-none">$</span>
                   {INSTALL}
                 </ButtonGroupText>
-                <CopyButton text={INSTALL} label="Copy the install command" variant="outline" size="icon" />
+                <CopyButton text={INSTALL} label="Copy the install command" variant="outline" size="icon-lg" />
               </ButtonGroup>
             </div>
           </div>
