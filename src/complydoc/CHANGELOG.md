@@ -17,6 +17,10 @@ separately.
   wrong names go from 257 to 30 with 31 of 33 right ones kept; on the nine-country
   synthetic benchmark wrong names fall by three quarters and wrong organisations by
   over 40%, at one point less recall.
+- A label OCR ran into the next word, `NIFdo cliente: 168567954` on a scanned invoice, counts
+  again. 0.8.2 matched labels as whole words only, so the NIF on 10 of 12 scanned invoices in
+  a test folder went unmasked. A label in capitals running into a lower-case letter now ends
+  there; `Nifty` and `NIFTY` still do not hold `nif`, nor `Machado` `ach`.
 
 ## [0.8.2] — 2026-11-20
 

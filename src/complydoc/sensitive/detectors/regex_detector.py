@@ -50,11 +50,28 @@ def _nearby_term(
     if line_start > 0 and not _WORDS.search(before):
         above = text.rfind("\n", 0, line_start - 1) + 1
         before = text[max(above, start - window) : line_start - 1] + " " + before
-    haystack = before.lower() + " " + text[end : min(line_end, end + window)].lower()
+    haystack = before + " " + text[end : min(line_end, end + window)]
     for term in terms:
-        if _term_pattern(term.lower()).search(haystack):
+        if _has_term(term, haystack):
             return term
     return None
+
+
+def _has_term(term: str, haystack: str) -> bool:
+    """Whether `term` is in `haystack` as whole words, any case.
+
+    OCR often drops the space after a label written in capitals, `NIFdo cliente:`: a
+    capitalised label running into a lower-case letter still ends there, while `Nifty` or
+    `NIFTY` do not hold `nif`.
+    """
+    core = term.strip()
+    for found in _term_pattern(core.lower()).finditer(haystack):
+        after = haystack[found.end() : found.end() + 1]
+        if not core[-1:].isalnum() or not after.isalnum():
+            return True
+        if found.group().isupper() and len(found.group()) > 1 and after.islower():
+            return True
+    return False
 
 
 _WORDS = re.compile(r"[^\W\d_]{2,}")
@@ -62,11 +79,10 @@ _WORDS = re.compile(r"[^\W\d_]{2,}")
 
 @lru_cache(maxsize=1024)
 def _term_pattern(term: str) -> re.Pattern[str]:
-    """A context term as whole words. A term that ends in punctuation, `zip:`, ends there."""
+    """A context term starting at a word's start, any case; `_has_term` checks its end."""
     core = term.strip()
-    tail = r"(?![^\W_])" if core[-1:].isalnum() else ""
     head = r"(?<![^\W_])" if core[:1].isalnum() else ""
-    return re.compile(head + re.escape(core) + tail)
+    return re.compile(head + re.escape(core), re.IGNORECASE)
 
 
 def _inside_a_number(text: str, start: int, end: int) -> bool:
