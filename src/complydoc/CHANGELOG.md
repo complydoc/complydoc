@@ -23,9 +23,19 @@ separately.
   wheel, instead of by hand. The container images are signed with Sigstore as well.
 - Every GitHub Action the workflows use is pinned to a commit, Dependabot proposes
   updates each week, and an OpenSSF Scorecard runs on `main`.
+- Portuguese civil ID numbers, on the Cartão de Cidadão and the old BI, beside their label
+  and checked with their mod-11 digit (`pt_civil_id`). The card's version, `ZZ4`, is left
+  as it is.
+- Portuguese phone numbers written without +351, beside a phone label such as `Telemóvel`,
+  `Tel.` or `Contacto` (`pt_phone`). Nine digits alone stay an order or a tax number.
+- `N.º Seg. Social` counts as a social security label for the NISS.
 
 ### Fixed
 
+- `complydoc mcp` no longer says "Ready to send" about a document it read only in part. A
+  contract whose scanned page holds a NIF and an IBAN was "Ready to send" from an install
+  without OCR, such as the Claude Desktop extension, because that page was never read. Pages
+  the reader leaves unread now make it "Send with care", and the check names them.
 - Fewer wrong names. What a name model reads as a person is held to the shape of a name:
   no digits, no lower-case words but particles, no street, clause or form word first
   (`Rua Augusta`, `Cláusula Terceira`), no company word (`Ribeira Software`). The English
@@ -34,6 +44,10 @@ separately.
   wrong names go from 257 to 30 with 31 of 33 right ones kept; on the nine-country
   synthetic benchmark wrong names fall by three quarters and wrong organisations by
   over 40%, at one point less recall.
+- A label OCR ran into the next word, `NIFdo cliente: 168567954` on a scanned invoice, counts
+  again. 0.8.2 matched labels as whole words only, so the NIF on 10 of 12 scanned invoices in
+  a test folder went unmasked. A label in capitals running into a lower-case letter now ends
+  there; `Nifty` and `NIFTY` still do not hold `nif`, nor `Machado` `ach`.
 
 ## [0.8.2] — 2026-11-20
 

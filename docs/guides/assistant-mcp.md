@@ -197,7 +197,7 @@ open_document gives a copy with these masked or taken out, which is safe to use.
 | Verdict | When |
 | --- | --- |
 | Ready to send | No identifiers and no hidden text |
-| Send with care | Identifiers that are not sensitive, such as an email address or a phone number |
+| Send with care | Identifiers that are not sensitive, such as an email address or a phone number, or pages that were not read: the scanned pages of a document when OCR is not installed |
 | Do not send as it is | A sensitive identifier, or any text hidden from a reader: a model reads it whether or not it is worded as an instruction |
 | Could not be read | Nothing in the file could be checked: it is empty, damaged, password protected, of a type complydoc does not read, or a scan with no text OCR could find |
 

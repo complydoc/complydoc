@@ -33,6 +33,9 @@ class Findings:
     """The full length of each hidden passage, whose excerpt may be cut short."""
     unread: str | None = None
     """Why nothing in the document could be checked, when nothing could."""
+    unread_parts: list[str] = field(default_factory=list)
+    """What the reader said it left unread in a document it otherwise read: the scanned
+    pages of a contract, when OCR is not installed."""
 
     @property
     def verdict(self) -> str:
@@ -43,7 +46,8 @@ class Findings:
             return UNREAD
         if self.hidden or any(severity == "high" for _, severity in self.identifiers):
             return STOP
-        if self.identifiers:
+        # A page nobody read may hold anything, so the rest being clean does not make it ready.
+        if self.identifiers or self.unread_parts:
             return CAREFUL
         return READY
 
@@ -65,6 +69,8 @@ class Findings:
             )
             how = f" ({', '.join(reasons)})" if reasons else ""
             said.append(f"- {what} on {where}{how}: “{short(excerpt)}”")
+        for part in self.unread_parts:
+            said.append(f"- not checked: {part}")
         return said
 
     def summary(self) -> str:
@@ -74,6 +80,8 @@ class Findings:
         parts = [f"{label} {count}" for (label, _), count in sorted(self.identifiers.items())]
         if self.hidden:
             parts.append("hidden instruction" if self.instructed else "hidden text")
+        if self.unread_parts:
+            parts.append("part not read")
         return ", ".join(parts) if parts else "nothing found"
 
 
@@ -162,6 +170,9 @@ def _read(path: Path, config: Config) -> Reading:
             found.lengths.append(passage.characters)
         if any("password" in warning for warning in document.load_warnings):
             found.unread = "it is password protected"
+        found.unread_parts.extend(
+            _unread_part(warning) for warning in document.load_warnings if _NOT_READ in warning
+        )
     if found.unread and not report.documents:
         return Reading(findings=found, pages=[], masked=0, removed=0)
     result = cd.extract_text(path, mask=True, config=config)
@@ -176,6 +187,26 @@ def _read(path: Path, config: Config) -> Reading:
     if not found.unread and not any(text.strip() for _, text in pages):
         found.unread = "no text could be read from it"
     return Reading(findings=found, pages=pages, masked=result.masked_count, removed=removed)
+
+
+_NOT_READ = "content was not read"
+
+
+def _unread_part(warning: str) -> str:
+    """The loader's warning about what it could not read, said for the person.
+
+    "2 pages carry little or no text layer and OCR is unavailable (…), so their content was
+    not read: 3, 4." becomes "pages 3, 4 have no text layer and were not read (…)".
+    """
+    why = re.search(r"\(([^)]*)\)", warning)
+    reason = f" ({why.group(1)})" if why else " (OCR was not requested)"
+    pages = re.search(r"not read: ([\d, ]+)", warning)
+    if pages is None:
+        return f"it has no text layer and was not read{reason}"
+    numbers = pages.group(1).strip(" ,")
+    if "," in numbers:
+        return f"pages {numbers} have no text layer and were not read{reason}"
+    return f"page {numbers} has no text layer and was not read{reason}"
 
 
 def _unread(reason: str) -> str:
