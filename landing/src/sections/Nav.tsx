@@ -38,7 +38,7 @@ export function Nav({ home = "" }: { home?: string }) {
         <div className="ml-auto flex items-center gap-1">
           <a
             href={links.changelog}
-            className="hidden px-2 font-mono text-xs text-muted-foreground hover:text-foreground md:inline"
+            className="hidden px-2 text-sm text-muted-foreground tabular-nums hover:text-foreground md:inline"
           >
             v{VERSION}
           </a>
