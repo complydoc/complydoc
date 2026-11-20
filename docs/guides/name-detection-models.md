@@ -47,6 +47,9 @@ it was found by, so in `Name: Jane Doe` only the name is masked.
 | `drop_short_acronyms` | Drop single all-caps tokens of up to five characters | `true` |
 | `drop_multiline` | Drop entities that span a line break | `true` |
 | `drop_numbered_headings` | Drop an all-capitals entity that ends in a bare number, such as `CONDITIONS 4` | `true` |
+| `drop_non_names` | Drop a "person" that cannot be a name by its shape: digits, a lower-case word that is not a particle, a street, clause or form word first (`Rua Augusta`, `Cláusula Terceira`), a company word (`Ribeira Software`), or capitals that are not two to four words | `false`; `true` in the shipped `person_name` |
+| `drop_non_organisations` | Drop an "organisation" that cannot be one by its shape: lower case first, more than six words, a code of three or more digits, or a heading in capitals with no company word | `false`; `true` in the shipped `organisation_name` |
+| `min_words` | Drop a name of fewer words | `1`; `2` for the shipped English fallback |
 
 Label names depend on the model: spaCy's English pipelines use `PERSON` and `ORG`;
 most other spaCy language pipelines and the multilingual `xx_ent_wiki_sm` use `PER`
@@ -74,6 +77,13 @@ organisations; `drop_multiline` removes entities that join the end of one line t
 the start of the next; `drop_numbered_headings` removes a heading run into the
 number of the clause after it, such as `CONDITIONS 4`. Turn them off for models
 that do not make those mistakes.
+
+`drop_non_names` and `drop_non_organisations` hold what a model reads to the shape of
+a name. On the pilot corpus (Portuguese contracts, invoices, CVs and HR files),
+`en_core_web_sm` reported 257 wrong names against 33 right ones; with them on, and
+`min_words: 2` for the English fallback, 30 wrong against 31 right. On the synthetic
+benchmark of nine countries, wrong names went from 6,814 to 1,717 and wrong
+organisations from 3,121 to 1,786, at one point less recall.
 
 ## The multilingual model, which ships as the preferred one
 
