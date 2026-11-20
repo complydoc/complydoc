@@ -5,6 +5,19 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
+## Unreleased
+
+### Fixed
+
+- Fewer wrong names. What a name model reads as a person is held to the shape of a name:
+  no digits, no lower-case words but particles, no street, clause or form word first
+  (`Rua Augusta`, `Cláusula Terceira`), no company word (`Ribeira Software`). The English
+  fallback also needs two words. An organisation is held to its own shape: not a phrase
+  from a sentence, not a code, not a heading in capitals. On Portuguese pilot documents
+  wrong names go from 257 to 30 with 31 of 33 right ones kept; on the nine-country
+  synthetic benchmark wrong names fall by three quarters and wrong organisations by
+  over 40%, at one point less recall.
+
 ## [0.8.2] — 2026-11-20
 
 complydoc finds credentials: API keys, access tokens, private keys and passwords, which are
@@ -35,15 +48,6 @@ Thanks to jay23606 for the Kreuzberg preset and hari for UK NHS numbers.
   `NIPC`.
 
 ### Fixed
-
-- Fewer wrong names. What a name model reads as a person is held to the shape of a name:
-  no digits, no lower-case words but particles, no street, clause or form word first
-  (`Rua Augusta`, `Cláusula Terceira`), no company word (`Ribeira Software`). The English
-  fallback also needs two words. An organisation is held to its own shape: not a phrase
-  from a sentence, not a code, not a heading in capitals. On Portuguese pilot documents
-  wrong names go from 257 to 30 with 31 of 33 right ones kept; on the nine-country
-  synthetic benchmark wrong names fall by three quarters and wrong organisations by
-  over 40%, at one point less recall.
 
 - Fewer wrong identifier flags in business documents. A context label counts only on the
   value's own line, or the line above when that line has no words before the value, and
