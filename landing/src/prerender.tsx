@@ -2,6 +2,7 @@ import { StrictMode, type ReactNode } from "react";
 import { renderToString } from "react-dom/server";
 import { App } from "@/App";
 import { ContributorsPage } from "@/pages/ContributorsPage";
+import { CookiesPage } from "@/pages/CookiesPage";
 import { GatewayPage } from "@/pages/GatewayPage";
 import { RouterPage } from "@/pages/RouterPage";
 
@@ -14,6 +15,7 @@ const PAGES: Record<string, () => ReactNode> = {
   "contributors/index.html": () => <ContributorsPage />,
   "router/index.html": () => <RouterPage />,
   "gateway/index.html": () => <GatewayPage />,
+  "cookies/index.html": () => <CookiesPage />,
 };
 
 export function render(file: string): string {

@@ -15,6 +15,7 @@ export default defineConfig(({ isSsrBuild }) => ({
         contributors: path.resolve(import.meta.dirname, "contributors/index.html"),
         router: path.resolve(import.meta.dirname, "router/index.html"),
         gateway: path.resolve(import.meta.dirname, "gateway/index.html"),
+        cookies: path.resolve(import.meta.dirname, "cookies/index.html"),
       },
     },
   },
