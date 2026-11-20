@@ -66,7 +66,7 @@ const WORKS_WITH: { brand: Brand; name: string }[] = [
 ];
 
 /**
- * The bottom of every page: a deep blue block with a field of characters behind it, the site's
+ * The bottom of every page: a black block with a field of characters behind it, the site's
  * links in columns, what it works with, and the legal line. It always uses the dark tokens, in
  * either theme, so it reads the same on a light and a dark page.
  *
@@ -75,7 +75,7 @@ const WORKS_WITH: { brand: Brand; name: string }[] = [
 export function Footer({ home = "" }: { home?: string }) {
   return (
     <>
-    <footer className="dark relative isolate overflow-hidden bg-[#08324b] text-foreground">
+    <footer className="dark relative isolate overflow-hidden border-t border-white/10 bg-[#0a0a0a] text-foreground">
       <GlyphField />
       <div className="relative mx-auto flex max-w-6xl flex-col gap-16 px-6 pt-20 pb-10">
         <div className="grid gap-14 lg:grid-cols-[5fr_7fr]">

@@ -3,8 +3,8 @@ import { Button } from "@/components/ui/button";
 import { onConsentOpen, startAnalytics, useConsent, writeConsent } from "@/lib/consent";
 
 /**
- * Asks once, in a small card at the bottom of the screen, whether analytics may set cookies.
- * Accept and Decline weigh the same. "Cookie settings" in the footer brings it back.
+ * Asks once, in one slim line at the bottom of the screen, whether analytics may set cookies.
+ * Accept and Decline sit side by side. "Cookie settings" in the footer brings it back.
  */
 export function CookieBanner({ policy }: { policy: string }) {
   const consent = useConsent();
@@ -12,7 +12,7 @@ export function CookieBanner({ policy }: { policy: string }) {
 
   useEffect(() => onConsentOpen(() => setReopened(true)), []);
   useEffect(() => {
-    if (consent === "granted") void startAnalytics();
+    if (consent === "granted") startAnalytics();
   }, [consent]);
 
   if (!reopened && consent !== null) return null;
@@ -24,24 +24,23 @@ export function CookieBanner({ policy }: { policy: string }) {
 
   return (
     <div
-      role="dialog"
+      role="region"
       aria-label="Cookies"
-      className="fixed inset-x-4 bottom-4 z-50 flex flex-col gap-4 rounded-2xl border bg-card p-5 text-card-foreground shadow-lg sm:right-auto sm:max-w-sm"
+      className="fixed inset-x-4 bottom-4 z-50 mx-auto flex max-w-xl flex-col gap-3 rounded-2xl border bg-background/95 p-3 pl-5 text-sm shadow-sm backdrop-blur sm:flex-row sm:items-center sm:rounded-full"
     >
-      <div className="flex flex-col gap-1.5">
-        <p className="text-sm font-medium">Cookies</p>
-        <p className="text-sm text-pretty text-muted-foreground">
-          We'd like to use analytics cookies to learn how the site is used. They are set only if you accept.{" "}
-          <a href={policy} className="text-foreground underline underline-offset-4">
-            Cookie policy
-          </a>
-        </p>
-      </div>
-      <div className="grid grid-cols-2 gap-2">
-        <Button variant="outline" onClick={() => choose("denied")}>
+      <p className="flex-1 text-pretty text-muted-foreground">
+        We use cookies for analytics, only if you accept.{" "}
+        <a href={policy} className="text-foreground underline-offset-4 hover:underline">
+          Learn more
+        </a>
+      </p>
+      <div className="flex gap-2">
+        <Button size="sm" variant="outline" className="flex-1 sm:flex-none" onClick={() => choose("denied")}>
           Decline
         </Button>
-        <Button onClick={() => choose("granted")}>Accept</Button>
+        <Button size="sm" className="flex-1 sm:flex-none" onClick={() => choose("granted")}>
+          Accept
+        </Button>
       </div>
     </div>
   );

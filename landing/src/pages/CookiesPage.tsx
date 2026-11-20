@@ -20,12 +20,13 @@ const STORED = [
     kept: "Until you clear it",
   },
   {
-    name: "ph_*",
-    kind: "Analytics cookie, only after Accept",
+    name: "_ga, _ga_*",
+    kind: "Analytics cookies, only after Accept",
     purpose:
-      "Tells visits apart, so we can see which pages are read, where visitors come from and whether they come back. Set by PostHog, EU cloud.",
-    kept: "12 months",
+      "Tell visits apart, so we can see which pages are read, where visitors come from and whether they come back. Set by Google Analytics.",
+    kept: "13 months",
   },
+
 ];
 
 const CHOICE: Record<Consent | "none", string> = {
@@ -91,9 +92,9 @@ export function CookiesPage() {
 
         <Block title="Analytics after you accept">
           <p>
-            If you accept, PostHog (EU cloud) sets cookies that tell one visit from another. That shows us how people
-            move through the site and which pages help, so we can make it better. We don't sell this data or use it
-            for advertising.
+            If you accept, Google Analytics sets cookies that tell one visit from another. That shows us how people
+            move through the site and which pages help, so we can make it better. Advertising features and data
+            sharing with other Google products are turned off, and we don't sell this data.
           </p>
         </Block>
 
