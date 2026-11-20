@@ -5,7 +5,16 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
-## Unreleased
+## [0.8.2] — 2026-11-20
+
+complydoc finds credentials: API keys, access tokens, private keys and passwords, which are
+never revealed. It flags far fewer identifiers that are not there in business documents
+and fewer hidden passages that are not hidden in PDFs. `complydoc mcp` can read with a
+detection engine another package installs, such as Veil, and the container image is in the
+MCP Registry. UK NHS numbers are found, and Kreuzberg joins the parser presets. The report
+stays at schema 27.
+
+Thanks to jay23606 for the Kreuzberg preset and hari for UK NHS numbers.
 
 ### Added
 
