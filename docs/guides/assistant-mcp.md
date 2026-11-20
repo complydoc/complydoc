@@ -11,6 +11,8 @@ taken out. The file itself never does.
 
 ## Install it
 
+One short page per client: [Claude Desktop](mcp/claude-desktop.md), [Claude Code](mcp/claude-code.md), [Codex](mcp/codex.md), [Cursor](mcp/cursor.md), [VS Code with Copilot](mcp/vscode-copilot.md).
+
 `complydoc mcp` is a local MCP server: it runs on the person's computer and speaks over
 stdio, so any assistant that runs local MCP servers can use it. The quickest way needs
 only [uv](https://docs.astral.sh/uv/), which fetches complydoc the first time:
