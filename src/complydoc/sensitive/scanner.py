@@ -23,6 +23,7 @@ from complydoc.sensitive.base import (
     SensitiveMatch,
     evidence_of,
 )
+from complydoc.sensitive.judge import load_judge
 from complydoc.sensitive.masking import render
 from complydoc.sensitive.registry import DetectorUnavailableError, detector_by_id
 from complydoc.sensitive.validators import validate
@@ -372,6 +373,26 @@ def _scan_page(
     # ones were not there; a silent find is kept only where nothing reported covers it.
     def is_silent(c: Candidate) -> bool:
         return c.silent or c.category.silent
+
+    judge = load_judge(config)
+    if judge is not None:
+        candidates = [
+            c
+            for c in candidates
+            if is_silent(c)
+            or not judge.drops(
+                text,
+                c.category_id,
+                c.finding.start,
+                c.finding.end,
+                evidence_of(
+                    c.category.model_backed and not c.by_pattern,
+                    c.validators_passed,
+                    c.finding.context_term,
+                    _label_near(text, c.finding, c.category),
+                ),
+            )
+        ]
 
     reported = _resolve_overlaps([c for c in candidates if not is_silent(c)])
     taken = [(c.finding.start, c.finding.end) for c in reported]

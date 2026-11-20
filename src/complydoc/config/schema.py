@@ -597,9 +597,26 @@ class CheckConfig(_Base):
         return self
 
 
+class JudgeConfig(_Base):
+    """The decision model that takes a second look at each finding before it is reported.
+
+    Off unless enabled. It never takes away what a check digit confirmed, nor a category
+    kept masked even with `--reveal`."""
+
+    enabled: bool = False
+    model: str | None = None
+    """A JSON judge model, as `src/scripts/train_judge.py` writes one."""
+    threshold: float = Field(default=0.5, ge=0.0, le=1.0)
+    """A finding is dropped when the judge is at least this sure it is not an identifier."""
+    business: Literal["mask", "pass"] = "mask"
+    """What becomes of an identifier the judge reads as a business's (a company's tax
+    number, IBAN or switchboard): reported and masked, or let through."""
+
+
 class SensitiveConfig(_Base):
     schema_version: int
     masking: MaskingConfig
+    judge: JudgeConfig = Field(default_factory=JudgeConfig)
     checks: dict[str, CheckConfig] = Field(default_factory=dict)
     """Check digits declared as data, by name."""
     categories: dict[str, CategoryConfig]
