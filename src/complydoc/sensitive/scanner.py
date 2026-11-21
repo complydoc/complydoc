@@ -27,6 +27,7 @@ from complydoc.sensitive.judge import load_judge
 from complydoc.sensitive.masking import render
 from complydoc.sensitive.registry import DetectorUnavailableError, detector_by_id
 from complydoc.sensitive.validators import validate
+from complydoc.utils.text import line_starts
 
 __all__ = ["ScanResult", "UnscannedCategory", "scan", "scan_text"]
 
@@ -228,14 +229,6 @@ def _another_fields_value(text: str, start: int, end: int, category_id: str) -> 
     return not (category_id in _PHONES and _PHONE_WORDS.search(label.group(0)))
 
 
-def _line_starts(text: str) -> list[int]:
-    starts = [0]
-    for index, char in enumerate(text):
-        if char == "\n":
-            starts.append(index + 1)
-    return starts
-
-
 def _locate(starts: list[int], offset: int) -> tuple[int, int]:
     """(1-indexed line, 0-indexed column) for a character offset."""
     line_index = bisect_right(starts, offset) - 1
@@ -403,7 +396,7 @@ def _scan_page(
         for c in _resolve_overlaps([c for c in candidates if is_silent(c)])
         if not any(c.finding.start < end and start < c.finding.end for start, end in taken)
     ]
-    starts = _line_starts(text)
+    starts = line_starts(text)
     matches = _matches(reported, page_number, text, starts, config, reveal)
     if silent is not None:
         silent.extend(_matches(quiet, page_number, text, starts, config, reveal))

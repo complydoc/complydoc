@@ -222,7 +222,7 @@ def compare_loaders(
     }
     seconds = [source.seconds if isinstance(source, FolderSource) else None for source in sources]
 
-    owners = _take_unreturned_documents(baseline, inspections, by_path, files)
+    owners = _take_unreturned_documents(baseline, by_path, files)
     for entry in baseline.entries:
         owner = owners[str(entry.path)]
         entry.extractions = _readings(
@@ -506,7 +506,6 @@ def _whole(pages: dict[int, str]) -> str:
 
 def _take_unreturned_documents(
     baseline: Inspection,
-    inspections: list[Inspection],
     by_path: list[dict[str, DocumentReport]],
     files: list[Path] | None,
 ) -> dict[str, int]:
@@ -541,7 +540,7 @@ def _readings(
     """
     own = _pages(entry)
     readings = [_reading(baseline.loader.name, entry, 1.0, False, _file_seconds(seconds, entry))]
-    found = _found(baseline, entry, baseline.page_text.get(str(entry.path)) or own)
+    found = _found(entry, baseline.page_text.get(str(entry.path)) or own)
     for inspection, entries, their_seconds in others:
         other = entries.get(str(entry.path))
         if other is None:
@@ -568,14 +567,12 @@ def _readings(
         readings.append(
             _reading(name, other, similarity, reordered, _file_seconds(their_seconds, other))
         )
-        found.extend(_found(inspection, other, theirs_raw))
+        found.extend(_found(other, theirs_raw))
     _cover_found_elsewhere(entry, found)
     return readings
 
 
-def _found(
-    inspection: Inspection, entry: DocumentReport, raw: dict[int, str]
-) -> list[tuple[int, str, SensitiveMatch]]:
+def _found(entry: DocumentReport, raw: dict[int, str]) -> list[tuple[int, str, SensitiveMatch]]:
     """Each value a loader's reading of a document was found to hold, by page."""
     matches = entry.sensitive.matches if entry.sensitive else []
     return [
