@@ -42,6 +42,7 @@ from complydoc.hidden.office import docx_hidden_runs, xlsx_hidden_runs
 from complydoc.hidden.unicode import find_smuggled, strip_invisible
 from complydoc.hidden.visibility import HiddenRun, pdf_hidden_runs
 from complydoc.report.models import ContentFinding
+from complydoc.utils.text import alnum_count
 
 __all__ = ["ContentCheck", "check_content", "instruction_spans", "severity_of"]
 
@@ -184,7 +185,7 @@ def _smuggled_in(number: int, text: str, reading: _Reading) -> list[ContentFindi
 
     for smuggled in find_smuggled(text, reading.config.hidden.visibility.zero_width_run):
         if smuggled.kind == "tag_characters":
-            if _letters(smuggled.text) < reading.minimum:
+            if alnum_count(smuggled.text) < reading.minimum:
                 continue
             findings.append(
                 _finding(
@@ -294,7 +295,7 @@ def _scored_by_classifier(
         if any(start < right and left < end for left, right in covered):
             continue
         paragraph = stripped[start:end]
-        if _letters(paragraph) < reading.minimum or reading.seen_already(paragraph):
+        if alnum_count(paragraph) < reading.minimum or reading.seen_already(paragraph):
             continue
         score = classifier_score(paragraph)
         if score is None or score < reading.threshold:
@@ -363,10 +364,6 @@ def _file_runs(
         return [], [f"the hidden-text check failed ({type(exc).__name__}: {exc})"], False, set()
     kind = f"{suffix} files" if suffix else "files without an extension"
     return [], [f"hidden text is not checked in {kind}"], False, set()
-
-
-def _letters(text: str) -> int:
-    return sum(c.isalnum() for c in text)
 
 
 def _compact(text: str) -> str:

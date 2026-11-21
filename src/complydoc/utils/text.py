@@ -13,8 +13,10 @@ import re
 
 __all__ = [
     "MAX_WORDS",
+    "alnum_count",
     "count",
     "detect_language",
+    "line_starts",
     "plural",
     "reading_similarity",
     "same_words",
@@ -101,3 +103,15 @@ def detect_language(text: str) -> str | None:
     except Exception:
         return None
     return str(language)
+
+
+def line_starts(text: str) -> list[int]:
+    """The offset each line of `text` starts at, a line ending at each `\\n`."""
+    starts = [0]
+    starts.extend(index + 1 for index, char in enumerate(text) if char == "\n")
+    return starts
+
+
+def alnum_count(text: str) -> int:
+    """How many letters and digits `text` holds."""
+    return sum(char.isalnum() for char in text)

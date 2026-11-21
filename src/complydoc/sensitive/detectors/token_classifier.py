@@ -42,9 +42,7 @@ from complydoc.config.schema import SensitiveConfig
 from complydoc.sensitive.base import (
     DetectorContext,
     Finding,
-    not_a_name,
-    not_an_organisation,
-    numbered_heading,
+    drop_entity,
 )
 from complydoc.sensitive.detectors.model_server import Classify, Entity
 from complydoc.sensitive.registry import DetectorUnavailableError, detector, models_for_detector
@@ -57,12 +55,6 @@ __all__ = [
     "model_available",
     "use_server",
 ]
-
-_MIN_ALPHA = 2
-"""Entities with fewer letters than this are discarded."""
-
-_ACRONYM_MAX = 5
-"""Single all-caps tokens up to this length are treated as field labels."""
 
 _WINDOW_CHARS = 1200
 """Characters read at a time. Comfortably inside the usual 512-token ceiling."""
@@ -265,23 +257,7 @@ class TokenClassifierDetector:
         for label, start, end, score in _page_entities(spec.name, text):
             if label.upper() not in wanted:
                 continue
-            span = text[start:end]
-            if spec.drop_multiline and ("\n" in span or "\r" in span):
-                continue
-            if spec.drop_numbered_headings and numbered_heading(span):
-                continue
-            if spec.drop_non_names and not_a_name(span, spec.min_words):
-                continue
-            if spec.drop_non_organisations and not_an_organisation(span):
-                continue
-            if sum(1 for character in span if character.isalpha()) < _MIN_ALPHA:
-                continue
-            if (
-                spec.drop_short_acronyms
-                and len(span) <= _ACRONYM_MAX
-                and span.isupper()
-                and " " not in span.strip()
-            ):
+            if drop_entity(text[start:end], spec):
                 continue
             findings.append(Finding(start=start, end=end, confidence=score))
         return findings
