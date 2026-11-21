@@ -82,7 +82,7 @@ export default defineConfig({
         },
         {
           label: "Security",
-          items: ["guides/assistant-mcp", "guides/ignore-findings", "guides/categories", "guides/custom-concepts", "guides/name-detection-models", "guides/decision-model", "guides/assist"],
+          items: ["guides/assistant-mcp", "guides/gateway", "guides/ignore-findings", "guides/categories", "guides/custom-concepts", "guides/name-detection-models", "guides/decision-model", "guides/assist"],
         },
         {
           label: "CI and code",

@@ -121,31 +121,27 @@ class Reading:
 
 
 class Reader:
-    """Reads documents once each, and again only when the file changes."""
+    """Reads documents once each, and again only when the file changes.
+
+    The MCP server's side of `complydoc.Gateway`: the same reading, kept by the gateway,
+    so a document opened by an assistant and one read with `cd.Gateway().read` agree.
+    """
 
     def __init__(self, config_dir: Path | None = None) -> None:
-        self._kept: dict[Path, tuple[tuple[float, int], Reading]] = {}
+        from complydoc.gateway import Gateway
+
         self.config_dir = config_dir
         """Read with this configuration directory, such as an engine's; complydoc's own
         when None."""
-        self._config: Config | None = None
+        # The server has chosen its engine already and passes its folder here.
+        self.gateway = Gateway(config_dir=config_dir, engine="none")
 
     def read(self, path: Path) -> Reading:
-        stat = path.stat()
-        stamp = (stat.st_mtime, stat.st_size)
-        kept = self._kept.get(path)
-        if kept and kept[0] == stamp:
-            return kept[1]
-        if self._config is None:
-            from complydoc.config.loader import load_config
-
-            self._config = load_config(self.config_dir)
-        reading = _read(path, self._config)
-        self._kept[path] = (stamp, reading)
-        return reading
+        return self.gateway.reading(path)
 
 
-def _read(path: Path, config: Config) -> Reading:
+def read_document(path: Path, config: Config) -> Reading:
+    """A document audited, its identifiers masked and its hidden passages taken out."""
     import complydoc as cd
 
     # OCR on, as open_document reads the document: a scan's identifiers are found by the
