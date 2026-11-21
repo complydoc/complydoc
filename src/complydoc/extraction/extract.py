@@ -48,6 +48,7 @@ from complydoc.ingest.registry import load_document
 from complydoc.sensitive.base import EVIDENCE_ORDER, SensitiveMatch
 from complydoc.sensitive.scanner import ScanResult, scan
 from complydoc.utils.files import relative_to_root
+from complydoc.utils.text import line_starts
 
 __all__ = ["Chunk", "ExtractionWarning", "TextResult", "extract_text"]
 
@@ -196,7 +197,7 @@ def mask_matches(text: str, matches: list[SensitiveMatch]) -> tuple[str, int, in
     # A match is placed by line and column, and may run on past its line: an IBAN a
     # narrow column wrapped is one value over two lines. It is covered where it lies in
     # the whole text, and the line breaks inside it stay, so the lines are as they were.
-    starts = _line_starts(text)
+    starts = line_starts(text)
     chars = list(text)
     covered: set[int] = set()
     replaced = 0
@@ -229,13 +230,6 @@ def mask_matches(text: str, matches: list[SensitiveMatch]) -> tuple[str, int, in
             confirmed += 1
 
     return "".join(chars), replaced, confirmed
-
-
-def _line_starts(text: str) -> list[int]:
-    """Where each line of `text` starts, lines ending at `\\n` as a match counts them."""
-    starts = [0]
-    starts.extend(index + 1 for index, char in enumerate(text) if char == "\n")
-    return starts
 
 
 def _strength(match: SensitiveMatch) -> tuple[int, int, int]:

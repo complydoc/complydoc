@@ -32,6 +32,7 @@ from complydoc.config.schema import VisibilityConfig
 from complydoc.hidden.visibility import HiddenRun
 from complydoc.ingest.base import LoaderError
 from complydoc.ingest.html import SKIPPED_TAGS, html_text, parse_html
+from complydoc.utils.text import alnum_count
 
 __all__ = [
     "eml_hidden_runs",
@@ -63,10 +64,6 @@ _TAG = re.compile(r"<[a-zA-Z][^>]*>")
 Rule = tuple[str | None, str | None, dict[str, str]]
 
 
-def _letters(text: str) -> int:
-    return sum(c.isalnum() for c in text)
-
-
 def _add(
     runs: list[HiddenRun],
     text: str,
@@ -77,7 +74,7 @@ def _add(
     routine: bool = False,
 ) -> None:
     text = " ".join(text.split())
-    if _letters(text) >= config.min_characters:
+    if alnum_count(text) >= config.min_characters:
         runs.append(
             HiddenRun(
                 page, text[:_MAX_TEXT], visibility, list(reasons), only_if_instruction=routine

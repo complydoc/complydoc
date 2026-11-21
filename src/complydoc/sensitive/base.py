@@ -9,7 +9,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Final, Literal, Protocol, runtime_checkable
 
-from complydoc.config.schema import CategoryConfig
+from complydoc.config.schema import CategoryConfig, NerModelSpec
 
 __all__ = [
     "EVIDENCE_ORDER",
@@ -19,6 +19,7 @@ __all__ = [
     "Evidence",
     "Finding",
     "SensitiveMatch",
+    "drop_entity",
     "evidence_of",
     "not_a_name",
     "not_an_organisation",
@@ -231,3 +232,37 @@ class Detector(Protocol):
     id: str
 
     def find(self, text: str, context: DetectorContext) -> list[Finding]: ...
+
+
+_MIN_ALPHA = 2
+"""Entities with fewer letters than this are discarded."""
+
+_ACRONYM_MAX = 5
+"""Single all-caps tokens up to this length are treated as field labels."""
+
+
+def drop_entity(span: str, spec: NerModelSpec) -> bool:
+    """Whether a model's entity is left out, by the filters its model spec turns on.
+
+    Shared by the spaCy and token-classifier detectors, which read the same spec.
+    """
+    # An entity straddling a line break is usually an artefact of reading a
+    # laid-out page as flat text: the end of one line run into the next.
+    if spec.drop_multiline and ("\n" in span or "\r" in span):
+        return True
+    if spec.drop_numbered_headings and numbered_heading(span):
+        return True
+    if spec.drop_non_names and not_a_name(span, spec.min_words):
+        return True
+    if spec.drop_non_organisations and not_an_organisation(span):
+        return True
+    if sum(1 for character in span if character.isalpha()) < _MIN_ALPHA:
+        return True
+    # Forms are full of short upper-case field labels, such as IBAN, VAT and
+    # UTR, which the small English model mistakes for organisation names.
+    return (
+        spec.drop_short_acronyms
+        and len(span) <= _ACRONYM_MAX
+        and span.isupper()
+        and " " not in span.strip()
+    )

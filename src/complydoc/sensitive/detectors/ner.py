@@ -20,9 +20,7 @@ from complydoc.config.schema import NerModelSpec, SensitiveConfig
 from complydoc.sensitive.base import (
     DetectorContext,
     Finding,
-    not_a_name,
-    not_an_organisation,
-    numbered_heading,
+    drop_entity,
 )
 from complydoc.sensitive.registry import DetectorUnavailableError, detector, models_for_detector
 from complydoc.utils.install import spacy_model_hint
@@ -32,12 +30,6 @@ __all__ = ["NerDetector", "configured_models", "model_available"]
 
 _MAX_CHARS = 400_000
 """spaCy's default parser ceiling; longer pages are truncated and the scan says so."""
-
-_MIN_ALPHA = 2
-"""Entities with fewer letters than this are discarded."""
-
-_ACRONYM_MAX = 5
-"""Single all-caps tokens up to this length are treated as field labels."""
 
 
 @lru_cache(maxsize=4)
@@ -132,27 +124,7 @@ class NerDetector:
         for label, start, end, score in _entities(document, spec):
             if label.upper() not in wanted:
                 continue
-            span = text[start:end]
-            # An entity straddling a line break is usually an artefact of reading a
-            # laid-out page as flat text: the end of one line run into the next.
-            if spec.drop_multiline and ("\n" in span or "\r" in span):
-                continue
-            if spec.drop_numbered_headings and numbered_heading(span):
-                continue
-            if spec.drop_non_names and not_a_name(span, spec.min_words):
-                continue
-            if spec.drop_non_organisations and not_an_organisation(span):
-                continue
-            if sum(1 for c in span if c.isalpha()) < _MIN_ALPHA:
-                continue
-            # Forms are full of short upper-case field labels, such as IBAN, VAT and
-            # UTR, which the small English model mistakes for organisation names.
-            if (
-                spec.drop_short_acronyms
-                and len(span) <= _ACRONYM_MAX
-                and span.isupper()
-                and " " not in span.strip()
-            ):
+            if drop_entity(text[start:end], spec):
                 continue
             # `doc.ents` carries no score, so confidence is None unless a span group
             # with scores was configured.
