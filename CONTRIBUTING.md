@@ -127,6 +127,7 @@ Ofcom drama-range phone number, and invented names.
 | `build_price_table.py` | `make prices` | Refresh the vendored model catalogue |
 | `build_sbom.py` | `make sbom` | CycloneDX SBOM from the lockfile |
 | `build_diagram.py` | `make diagrams` | Rebuild the architecture diagram |
+| `unslop.py` | `make unslop` | Flag what a branch adds that reads as hurried or generated |
 
 Entries written by `make prices` are marked `imported`. To mark one verified, check it at the
 source and replace `price_source`/`imported_on` with `last_verified`.
