@@ -88,6 +88,10 @@ types: ## Type check with mypy
 .PHONY: check
 check: lint types test ## Everything CI would run
 
+.PHONY: unslop
+unslop: ## Flag attribution, sales copy and leftovers in what this branch adds
+	$(PYTHON) python src/scripts/unslop.py
+
 # ------------------------------------------------------------------ run ----
 
 .PHONY: audit
@@ -125,7 +129,7 @@ diagrams: ## Re-export the README architecture diagrams to SVG
 # ----------------------------------------------------------------- misc ----
 
 .PHONY: mcpb
-mcpb: ## Pack the Claude Desktop extension, light and with names, into dist/
+mcpb: ## Pack the Claude Desktop extension into dist/
 	$(PYTHON) python src/scripts/pack_mcpb.py dist
 
 .PHONY: viewer-bundle
