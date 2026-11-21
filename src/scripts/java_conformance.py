@@ -11,8 +11,8 @@ give the same answers on the same input, so this writes, into one folder:
   loads as they are.
 - `validators.json`: every validator's verdict on every value in the Python validator
   tests, and on a few thousand generated ones.
-- `texts/<fixture>.json`: what `scan_text`, `mask_text` and `find_hidden` make of each
-  fixture, and of each of its paragraphs.
+- `texts/<fixture>.json`: what `scan_text`, `mask_text`, `find_hidden` and
+  `Gateway.filter` make of each fixture, and of each of its paragraphs.
 - `reports/<fixture>.json`: the report `cd.observe` writes for the fixture run through
   the pipeline both versions build the same way: split at blank lines, embedded by a
   fixed local model, kept in an in-memory store.
@@ -40,6 +40,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from complydoc.config.schema import Config
+    from complydoc.gateway import GatewayResult
     from complydoc.report.models import ContentFinding
     from complydoc.sensitive.base import SensitiveMatch
 
@@ -132,6 +133,21 @@ def _finding(finding: ContentFinding) -> dict[str, object]:
     }
 
 
+def _gateway(result: GatewayResult) -> dict[str, object]:
+    return {
+        "text": result.text,
+        "verdict": result.verdict,
+        "masked": result.masked,
+        "removed": result.removed,
+        "invisible": result.invisible,
+        "identifiers": result.identifiers,
+        "sensitive": list(result.sensitive),
+        "hidden": result.hidden,
+        "instruction": result.instruction,
+        "unscanned": list(result.unscanned),
+    }
+
+
 def _texts(text: str, config: Config) -> list[dict[str, object]]:
     import complydoc as cd
     from complydoc.observe.trace import _patterns_only
@@ -140,6 +156,7 @@ def _texts(text: str, config: Config) -> list[dict[str, object]]:
     # The Java version reads no names, so it is checked against the patterns alone, as a
     # trace scans every stage but the documents loaded and what was sent or stored.
     patterns = _patterns_only(config)
+    gateway = cd.Gateway(config=patterns, engine="none")
     pieces = [text, *[p for p in re.split(r"\n\s*\n", text) if p.strip()]]
     answers = []
     for piece in pieces:
@@ -150,6 +167,7 @@ def _texts(text: str, config: Config) -> list[dict[str, object]]:
                 "matches": [_match(m) for m in matches],
                 "masked": cd.mask_text(piece, config=patterns).text,
                 "hidden": [_finding(f) for f in cd.find_hidden(piece, config=patterns)],
+                "gateway": _gateway(gateway.filter(piece)),
             }
         )
     return answers
