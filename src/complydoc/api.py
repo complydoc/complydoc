@@ -89,6 +89,7 @@ from complydoc.extraction.strings import (
     mask_text,
     scan_text,
 )
+from complydoc.gateway import Gateway, GatewayBlockedError, GatewayResult, Verdict
 from complydoc.hidden.instructions import register_instruction_classifier
 from complydoc.ingest.base import (
     Document,
@@ -179,6 +180,9 @@ __all__ = [
     "FactCheck",
     "FactLocation",
     "Finding",
+    "Gateway",
+    "GatewayBlockedError",
+    "GatewayResult",
     "IdentifierDifference",
     "IngestOptions",
     "InspectedChunk",
@@ -214,6 +218,7 @@ __all__ = [
     "TraceStage",
     "Trail",
     "UnknownModelError",
+    "Verdict",
     "VisionModel",
     "VisionPage",
     "VisionReading",

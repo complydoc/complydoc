@@ -142,6 +142,11 @@ def test_the_public_surface_is_exactly_what_was_promised():
         "Rect",
         "TextBlock",
         "sha256_of",
+        # the gateway between documents and any model or tool
+        "Gateway",
+        "GatewayBlockedError",
+        "GatewayResult",
+        "Verdict",
         # safe copies
         "clean_document",
         "CleanResult",

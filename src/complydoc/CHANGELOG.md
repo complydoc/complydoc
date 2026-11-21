@@ -9,6 +9,12 @@ separately.
 
 ### Added
 
+- `cd.Gateway`: the document gateway as an object you make in code. `gateway.read(path)`
+  and `gateway.filter(text)` mask identifiers and take out hidden passages and text
+  written as instructions to a model, and say what they did (`verdict`, `summary()`);
+  `@gateway.guard` does it to every answer of a function, and `block=True` raises
+  `GatewayBlockedError` instead of passing a planted instruction on. The MCP server reads
+  documents through it, so both give the same text.
 - A decision model can take a second look at each finding before it is reported
   (`sensitive.judge`, off by default): it reads the words around a value and says
   whether it is a person's identifier, a business's, or noise. It never takes away a
