@@ -268,3 +268,19 @@ print(sorted(m.category for m in found.matches))
     found = result.stdout.strip().splitlines()[-1]
     assert "person_name" in found, "Jane Doe"
     assert "organisation_name" in found, "Acme Holdings Ltd"
+
+
+def test_a_name_starting_a_line_loses_the_line_break_before_it(monkeypatch):
+    # A SentencePiece tokenizer hands a word's token the line break before it.
+    page = "Invoice to:\nMaria Santos\n"
+    start = page.index("\nMaria")
+
+    def classify(windows, batch_size):
+        return [
+            [{"entity_group": "PER", "start": start, "end": start + 13, "score": 0.99}]
+            for _ in windows
+        ]
+
+    monkeypatch.setattr(token_classifier, "_load", lambda _name: classify)
+    [[(label, begin, end, _score)]] = token_classifier.classify_windows("any", [page])
+    assert (label, page[begin:end]) == ("PER", "Maria Santos")
