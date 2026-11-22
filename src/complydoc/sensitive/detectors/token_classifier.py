@@ -167,11 +167,29 @@ def classify_windows(model_name: str, windows: Sequence[str]) -> list[list[Entit
     results = classify(list(windows), batch_size=_BATCH)
     return [
         [
-            (str(e.get("entity_group", "")), int(e["start"]), int(e["end"]), float(e["score"]))
+            (
+                str(e.get("entity_group", "")),
+                *_trimmed(window, int(e["start"]), int(e["end"])),
+                float(e["score"]),
+            )
             for e in entities
         ]
-        for entities in results
+        for window, entities in zip(windows, results, strict=True)
     ]
+
+
+def _trimmed(text: str, start: int, end: int) -> tuple[int, int]:
+    """The span without the whitespace at its edges.
+
+    A SentencePiece tokenizer (mDeBERTa, XLM-R) gives a word's token the space
+    or line break before it, so a name at the start of a line comes back as
+    "\nMaria Santos" and `drop_multiline` threw it away.
+    """
+    while start < end and text[start].isspace():
+        start += 1
+    while end > start and text[end - 1].isspace():
+        end -= 1
+    return start, end
 
 
 def _read(model_name: str, windows: Sequence[str]) -> list[list[Entity]]:
