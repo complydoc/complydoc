@@ -42,6 +42,10 @@ feature keeps working, is in [Versions and deprecations](https://complydoc.io/do
 
 ### Fixed
 
+- A name at the start of a line was dropped by a multilingual name model such as
+  mDeBERTa or XLM-R. Its tokenizer gives a word the line break before it, so the name came
+  back as "\nMaria Santos" and the filter for names that run across lines threw it away.
+  The token classifier now trims whitespace from each name's edges.
 - `complydoc mcp` no longer says "Ready to send" about a document it read only in part. A
   contract whose scanned page holds a NIF and an IBAN was "Ready to send" from an install
   without OCR, such as the Claude Desktop extension, because that page was never read. Pages
