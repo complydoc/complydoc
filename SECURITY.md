@@ -5,7 +5,9 @@ model. A flaw in it can let that data through, so we treat security reports firs
 
 ## Supported versions
 
-Until 1.0, fixes go into the latest minor release only. Upgrade to it to get a fix.
+Until 1.0, fixes go into the latest minor release only. Upgrade to it to get a fix: by
+the [versioning policy](https://complydoc.io/docs/explanation/versioning/), an upgrade
+within a minor version changes nothing you rely on.
 
 | Version | Fixes |
 | --- | --- |
