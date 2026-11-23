@@ -14,6 +14,9 @@ export const LINKEDIN = "";
  */
 export const GA_ID = "G-Y736EB7TXC";
 
+/** Veil, the hosted product built on complydoc, with a site of its own. */
+export const VEIL = "https://veil.complydoc.io/";
+
 export const VERSION = "0.8.2";
 
 export const links = {
