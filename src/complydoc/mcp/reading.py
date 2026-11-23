@@ -12,8 +12,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from complydoc.unmask import Stretch, Values, moved, number, stretches
+
 if TYPE_CHECKING:
     from complydoc.config.schema import Config
+    from complydoc.extraction.extract import Placed
 
 READY, CAREFUL, STOP = "Ready to send", "Send with care", "Do not send as it is"
 UNREAD = "Could not be read"
@@ -94,6 +97,8 @@ class Reading:
     """(page number, text) with identifiers masked and hidden passages taken out."""
     masked: int
     removed: int
+    values: Values = field(default_factory=Values)
+    """The masked values by number, kept in memory for a request a person allows."""
 
     def note(self, name: str) -> str:
         """What complydoc did to the document, to tell the person."""
@@ -116,8 +121,16 @@ class Reading:
             said.append("No text could be read from it.")
         return " ".join(said)
 
-    def text(self) -> str:
-        return "\n\n".join(f"--- page {page} ---\n{text}" for page, text in self.pages)
+    def text(self, numbered: bool = False) -> str:
+        """The pages joined; `numbered` shows each masked value as `[#n LABEL •••]`."""
+        return "\n\n".join(
+            f"--- page {page} ---\n{text}" for page, text in self.numbered_pages(numbered)
+        )
+
+    def numbered_pages(self, numbered: bool = True) -> list[tuple[int, str]]:
+        if not numbered:
+            return list(self.pages)
+        return [(page, self.values.marked(page, text)) for page, text in self.pages]
 
 
 class Reader:
@@ -171,18 +184,28 @@ def read_document(path: Path, config: Config) -> Reading:
         )
     if found.unread and not report.documents:
         return Reading(findings=found, pages=[], masked=0, removed=0)
-    result = cd.extract_text(path, mask=True, config=config)
+    placed: dict[int, tuple[str, list[Placed]]] = {}
+    result = cd.extract_text(path, mask=True, config=config, _placed=placed)
     removed = 0
     pages: list[tuple[int, str]] = []
+    kept: list[Stretch] = []
     for chunk in result.chunks:
         text = chunk.text
+        original, covered = placed.get(chunk.page, ("", []))
+        here = stretches(chunk.page, original, covered)
         for (_, excerpt, _, _), length in zip(found.hidden, found.lengths, strict=True):
-            text, n = remove_passage(text, excerpt, length)
+            edits: list[tuple[int, int, int]] = []
+            text, n = remove_passage(text, excerpt, length, edits)
+            here = moved(here, edits)
             removed += n
         pages.append((chunk.page, text))
+        kept.extend(here)
     if not found.unread and not any(text.strip() for _, text in pages):
         found.unread = "no text could be read from it"
-    return Reading(findings=found, pages=pages, masked=result.masked_count, removed=removed)
+    values = number(pages, kept, config.sensitive.masking)
+    return Reading(
+        findings=found, pages=pages, masked=result.masked_count, removed=removed, values=values
+    )
 
 
 _NOT_READ = "content was not read"
@@ -213,12 +236,20 @@ def _unread(reason: str) -> str:
     }.get(reason, reason)
 
 
-def remove_passage(text: str, excerpt: str, length: int | None = None) -> tuple[str, int]:
+def remove_passage(
+    text: str,
+    excerpt: str,
+    length: int | None = None,
+    edits: list[tuple[int, int, int]] | None = None,
+) -> tuple[str, int]:
     """Take a hidden passage out of the text, however the reader broke its lines.
 
     The excerpt and the text are masked separately, so any character of the excerpt may be
     a mask in the text and the reverse. An excerpt cut short ends with "…": the rest of the
     passage, `length` characters in all, is taken out with it, to the end of its last word.
+
+    Given `edits`, each passage taken out is added to it as (start, end, length of what
+    stands in its place), placed in `text` as it was given.
     """
     cut = excerpt.endswith("…")
     words = excerpt.rstrip("…").split()
@@ -251,6 +282,8 @@ def remove_passage(text: str, excerpt: str, length: int | None = None) -> tuple[
         out.append(text[position : match.start()])
         out.append(taken(match))
         position = holder.pop() if holder else match.end()
+        if edits is not None:
+            edits.append((match.start(), position, len(REMOVED)))
         count += 1
     out.append(text[position:])
     return "".join(out), count

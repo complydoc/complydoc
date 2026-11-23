@@ -161,6 +161,7 @@ def test_it_introduces_itself_with_its_icon_and_tools(folder: Path, tmp_path: Pa
         "check_document",
         "check_folder",
         "open_document",
+        "request_unmask",
         "save_clean_copy",
         "list_folders",
         "choose_folder",

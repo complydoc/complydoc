@@ -20,23 +20,54 @@ complydoc's own configuration.
 With `block=True`, text that held an instruction to a model, and a file nothing could be
 read from, raise `GatewayBlockedError` instead of being returned cleaned: for pipelines where
 such a document should stop, not pass.
+
+With `numbered=True`, each masked value carries a number, `[#12 IBAN ••••4521]`, so a model
+can ask for one by it. `reveal` puts that request to a person, through a function of yours
+that asks them, and gives the one value only if they allow it (see `complydoc.unmask`):
+
+    gateway = cd.Gateway(numbered=True)
+    safe = gateway.read("contracts/acme.pdf")
+    value = gateway.reveal(safe, 12, reason="to fill in the payment", approve=ask_the_user)
 """
 
 from __future__ import annotations
 
 import os
-from collections import Counter
+import uuid
+from collections import Counter, OrderedDict
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from functools import wraps
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, ParamSpec
 
+from complydoc.unmask import (
+    REVEAL_LOG,
+    Approve,
+    MaskedSpan,
+    RevealLog,
+    RevealRequest,
+    UnmaskError,
+    Values,
+)
+
 if TYPE_CHECKING:
     from complydoc.config.schema import Config
+    from complydoc.extraction.extract import Placed
     from complydoc.mcp.reading import Findings, Reading
 
-__all__ = ["Gateway", "GatewayBlockedError", "GatewayResult", "Verdict"]
+__all__ = [
+    "Gateway",
+    "GatewayBlockedError",
+    "GatewayResult",
+    "MaskedSpan",
+    "RevealRequest",
+    "UnmaskError",
+    "Verdict",
+]
+
+KEPT_VALUES = 256
+"""Results whose masked values a gateway keeps for `reveal`, the oldest let go first."""
 
 Verdict = Literal["ready", "careful", "stop", "unread"]
 """How far the original could be trusted.
@@ -85,6 +116,10 @@ class GatewayResult:
     """For a file, (page number, text) for each page; `text` is them joined."""
     source: str | None = None
     """The file read, when one was."""
+    spans: tuple[MaskedSpan, ...] = ()
+    """With `numbered=True`, each masked value's number, kind and the text around it."""
+    key: str = field(default="", repr=False)
+    """Which reading this is, for `Gateway.reveal`."""
 
     @property
     def clean(self) -> bool:
@@ -146,8 +181,15 @@ class Gateway:
         config_dir: str | os.PathLike[str] | None = None,
         engine: str | None = "auto",
         block: bool = False,
+        numbered: bool = False,
+        reveal_log: str | os.PathLike[str] | None = REVEAL_LOG,
     ) -> None:
         self.block = block
+        self.numbered = numbered
+        """Whether masked values carry a number, `[#12 IBAN ••••]`, a model can ask for."""
+        self.log = RevealLog(reveal_log)
+        """Every request to `reveal`, without the values; None as the path keeps no log."""
+        self._values: OrderedDict[str, tuple[Values, str | None]] = OrderedDict()
         self.engine: str | None = None
         """The engine the gateway reads with, such as "Veil"; None for complydoc's own."""
         self.config_dir: Path | None = Path(config_dir).expanduser() if config_dir else None
@@ -174,6 +216,7 @@ class Gateway:
         from complydoc.extraction.strings import find_hidden, mask_text, scan_text
         from complydoc.hidden.check import instruction_spans
         from complydoc.hidden.unicode import strip_invisible
+        from complydoc.unmask import number, stretches
 
         config = self.config
         with offline.guarded():
@@ -184,7 +227,10 @@ class Gateway:
             for start, end in reversed(spans):
                 clean = clean[:start] + REMOVED + clean[end:]
             matches = scan_text(clean, config=config).matches
-            masked = mask_text(clean, config=config)
+            placed: list[Placed] = []
+            masked = mask_text(clean, config=config, _placed=placed)
+        found = stretches(None, clean, sorted(placed, key=lambda p: p.start))
+        values = number([(None, masked.text)], found, config.sensitive.masking)
         identifiers = Counter(match.label for match in matches)
         sensitive = {match.label for match in matches if match.severity == "high"}
         instruction = any(finding.instruction != "none" for finding in hidden)
@@ -195,17 +241,20 @@ class Gateway:
         else:
             verdict = "ready"
         return self._passed(
-            GatewayResult(
-                text=masked.text,
-                verdict=verdict,
-                masked=masked.masked,
-                removed=len(spans),
-                invisible=len(text) - len(strip_invisible(text)),
-                identifiers=dict(sorted(identifiers.items())),
-                sensitive=tuple(sorted(sensitive)),
-                hidden=len(hidden),
-                instruction=instruction,
-                unscanned=tuple(sorted(masked.unscanned)),
+            self._kept_values(
+                GatewayResult(
+                    text=values.marked(None, masked.text) if self.numbered else masked.text,
+                    verdict=verdict,
+                    masked=masked.masked,
+                    removed=len(spans),
+                    invisible=len(text) - len(strip_invisible(text)),
+                    identifiers=dict(sorted(identifiers.items())),
+                    sensitive=tuple(sorted(sensitive)),
+                    hidden=len(hidden),
+                    instruction=instruction,
+                    unscanned=tuple(sorted(masked.unscanned)),
+                ),
+                values,
             )
         )
 
@@ -213,7 +262,8 @@ class Gateway:
         """A document's text, read the way an assistant reads it through `complydoc mcp`."""
         target = Path(path).expanduser()
         reading = self.reading(target)
-        return self._passed(_result(reading, str(target)))
+        result = _result(reading, str(target), self.numbered)
+        return self._passed(self._kept_values(result, reading.values))
 
     def __call__(self, text: str) -> str:
         """The filtered text alone: `gateway(text)` where a function of text is wanted."""
@@ -245,6 +295,41 @@ class Gateway:
         self._kept[path] = (stamp, reading)
         return reading
 
+    def reveal(
+        self, result: GatewayResult, id: int, *, approve: Approve, reason: str = ""
+    ) -> str | None:
+        """One masked value of `result`, if the person allows it; None if they decline.
+
+        `approve` is given a `RevealRequest`, whose `question()` says what is asked in plain
+        words, and returns whether the person allowed it. It must ask the person: the model
+        that wants the value cannot allow it. A category never revealed raises
+        `UnmaskError` without asking. Every request is logged, without the value.
+        """
+        kept = self._values.get(result.key)
+        if kept is None:
+            raise UnmaskError(
+                "That result was not made by this gateway, or is too old to reveal from."
+            )
+        values, source = kept
+        span = values.span(id)
+        request = RevealRequest(span=span, reason=reason, source=source)
+        if not span.revealable:
+            self.log.record(request, "refused", asker="gateway")
+            raise UnmaskError(f"{span.label} values are never revealed.")
+        allowed = bool(approve(request))
+        self.log.record(request, "allowed" if allowed else "declined", asker="gateway")
+        return values.value(id) if allowed else None
+
+    def _kept_values(self, result: GatewayResult, values: Values) -> GatewayResult:
+        if not len(values):
+            return result
+        key = uuid.uuid4().hex
+        self._values[key] = (values, result.source)
+        while len(self._values) > KEPT_VALUES:
+            self._values.popitem(last=False)
+        spans = values.spans if self.numbered else ()
+        return replace(result, key=key, spans=spans)
+
     def _passed(self, result: GatewayResult) -> GatewayResult:
         if self.block and (result.instruction or result.verdict == "unread"):
             raise GatewayBlockedError(result)
@@ -252,7 +337,7 @@ class Gateway:
 
     def __repr__(self) -> str:
         engine = self.engine or "complydoc"
-        return f"Gateway(engine={engine!r}, block={self.block})"
+        return f"Gateway(engine={engine!r}, block={self.block}, numbered={self.numbered})"
 
 
 def _verdict(findings: Findings) -> Verdict:
@@ -268,7 +353,7 @@ def _verdict(findings: Findings) -> Verdict:
     )
 
 
-def _result(reading: Reading, source: str) -> GatewayResult:
+def _result(reading: Reading, source: str, numbered: bool) -> GatewayResult:
     found = reading.findings
     identifiers: Counter[str] = Counter()
     for (label, _), count in found.identifiers.items():
@@ -276,7 +361,7 @@ def _result(reading: Reading, source: str) -> GatewayResult:
     sensitive = {label for label, severity in found.identifiers if severity == "high"}
     unread = found.unread or ("; ".join(found.unread_parts) if found.unread_parts else None)
     return GatewayResult(
-        text=reading.text(),
+        text=reading.text(numbered),
         verdict=_verdict(found),
         masked=reading.masked,
         removed=reading.removed,
@@ -285,6 +370,6 @@ def _result(reading: Reading, source: str) -> GatewayResult:
         hidden=len(found.hidden),
         instruction=found.instructed,
         unread=unread,
-        pages=tuple(reading.pages),
+        pages=tuple(reading.numbered_pages(numbered)),
         source=source,
     )
