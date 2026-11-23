@@ -82,7 +82,7 @@ export default defineConfig({
         },
         {
           label: "Security",
-          items: ["guides/assistant-mcp", "guides/mcp/claude-desktop", "guides/mcp/claude-code", "guides/mcp/codex", "guides/mcp/cursor", "guides/mcp/vscode-copilot", "guides/gateway", "guides/ignore-findings", "guides/categories", "guides/custom-concepts", "guides/name-detection-models", "guides/decision-model", "guides/assist"],
+          items: ["guides/assistant-mcp", "guides/mcp/claude-desktop", "guides/mcp/claude-code", "guides/mcp/codex", "guides/mcp/cursor", "guides/mcp/vscode-copilot", "guides/gateway", "guides/ignore-findings", "guides/categories", "guides/custom-concepts", "guides/name-detection-models", "guides/assist"],
         },
         {
           label: "CI and code",
