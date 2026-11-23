@@ -16,12 +16,6 @@ feature keeps working, is in [Versions and deprecations](https://complydoc.io/do
   `@gateway.guard` does it to every answer of a function, and `block=True` raises
   `GatewayBlockedError` instead of passing a planted instruction on. The MCP server reads
   documents through it, so both give the same text.
-- A decision model can take a second look at each finding before it is reported
-  (`sensitive.judge`, off by default): it reads the words around a value and says
-  whether it is a person's identifier, a business's, or noise. It never takes away a
-  value confirmed by its check digit or a credential, and a company's identifiers stay
-  masked unless the policy says `business: pass`. `src/scripts/train_judge.py` trains
-  one from labelled findings. See Decision model.
 - A security policy (`SECURITY.md`): which versions get fixes, how to report a
   vulnerability privately and what happens next, and how to verify a release. Also a
   support page, a code of conduct, issue forms and a pull request template.
