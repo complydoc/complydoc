@@ -147,6 +147,10 @@ def test_the_public_surface_is_exactly_what_was_promised():
         "GatewayBlockedError",
         "GatewayResult",
         "Verdict",
+        # a masked value a person allows a model to see
+        "MaskedSpan",
+        "RevealRequest",
+        "UnmaskError",
         # safe copies
         "clean_document",
         "CleanResult",

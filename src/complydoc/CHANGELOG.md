@@ -10,6 +10,14 @@ feature keeps working, is in [Versions and deprecations](https://complydoc.io/do
 
 ### Added
 
+- A model can ask the person to see one masked value. The MCP server numbers each masked
+  value in the text it returns, as `[#12 IBAN ••••4521]`, and the new `request_unmask` tool
+  asks for one by its number and a reason. The person allows or declines it in their
+  app's own prompt (MCP elicitation); a client that cannot show one reveals nothing.
+  Categories under `masking.never_reveal` are never revealed. Every request is recorded in
+  `~/.complydoc/reveals.jsonl`, without the value. In code, `cd.Gateway(numbered=True)`
+  numbers the values and gives `result.spans`, and `gateway.reveal(result, 12,
+  approve=...)` asks through a function of yours.
 - `cd.Gateway`: the document gateway as an object you make in code. `gateway.read(path)`
   and `gateway.filter(text)` mask identifiers and take out hidden passages and text
   written as instructions to a model, and say what they did (`verdict`, `summary()`);

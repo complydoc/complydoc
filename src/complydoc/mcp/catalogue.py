@@ -68,6 +68,22 @@ TOOLS: list[dict[str, Any]] = [
         ["path"],
     ),
     _tool(
+        "request_unmask",
+        "Ask the person to see one masked value, by the number it carries in the text, such as "
+        "12 for [#12 IBAN ••••4521]. Use it only when the task cannot be done without the value, "
+        "and say why. The person sees the sentence around it and your reason, and allows or "
+        "declines in their app; only that one value is given. Never ask for many at once.",
+        {
+            **_PATH,
+            "id": {"type": "integer", "minimum": 1, "description": "The number after #."},
+            "reason": {
+                "type": "string",
+                "description": "Why the task needs this value, in one sentence for the person.",
+            },
+        },
+        ["path", "id", "reason"],
+    ),
+    _tool(
         "save_clean_copy",
         "Save a clean copy of a document as a text file, with personal and financial details "
         "masked and hidden passages taken out, for the person to send to someone or upload "
@@ -154,6 +170,7 @@ _HINTS: dict[str, tuple[str, bool, bool]] = {
     "check_document": ("Check a document before sharing it", True, False),
     "check_folder": ("Check a whole folder", True, False),
     "open_document": ("Open a document, cleaned", True, False),
+    "request_unmask": ("Ask to see one masked value", True, False),
     "save_clean_copy": ("Save a clean copy", False, False),
     "list_folders": ("List shared folders", True, False),
     "choose_folder": ("Choose a folder to share", False, False),

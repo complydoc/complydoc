@@ -170,7 +170,9 @@ class TextResult:
         return [c for c in self.chunks if c.masked and c.masked == c.masked_confirmed]
 
 
-def mask_matches(text: str, matches: list[SensitiveMatch]) -> tuple[str, int, int]:
+def mask_matches(
+    text: str, matches: list[SensitiveMatch], placed: list[Placed] | None = None
+) -> tuple[str, int, int]:
     """Replace each found identifier with its masked form.
 
     Returns the text, how many were replaced, and how many of those passed a
@@ -190,6 +192,10 @@ def mask_matches(text: str, matches: list[SensitiveMatch]) -> tuple[str, int, in
     masked string index-aligned with the characters it covers, so taking part
     of one is exact. A masked string of some other length would break that, so
     it takes the whole span instead.
+
+    Given `placed`, each stretch of text covered is added to it: where it starts and ends,
+    and the matches that cover it, strongest first. Matches that overlap are one stretch,
+    so a value revealed later never brings a stronger one's characters with it unseen.
     """
     if not matches:
         return text, 0, 0
@@ -225,11 +231,37 @@ def mask_matches(text: str, matches: list[SensitiveMatch]) -> tuple[str, int, in
         else:  # pragma: no cover - masking preserves length today
             chars[start:end] = list(match.masked)
         covered.update(range(start, end))
+        if placed is not None:
+            _place(placed, start, end, match)
         replaced += 1
         if match.evidence == "confirmed":
             confirmed += 1
 
     return "".join(chars), replaced, confirmed
+
+
+@dataclass(slots=True)
+class Placed:
+    """A stretch of a page's text that was masked, and what was found there."""
+
+    start: int
+    end: int
+    matches: list[SensitiveMatch]
+
+
+def _place(placed: list[Placed], start: int, end: int, match: SensitiveMatch) -> None:
+    """Add a covered stretch, joined with every stretch it overlaps."""
+    overlapping = [p for p in placed if p.start < end and start < p.end]
+    if not overlapping:
+        placed.append(Placed(start, end, [match]))
+        return
+    first = overlapping[0]
+    for other in overlapping[1:]:
+        first.matches.extend(other.matches)
+        placed.remove(other)
+    first.start = min(start, *(p.start for p in overlapping))
+    first.end = max(end, *(p.end for p in overlapping))
+    first.matches.append(match)
 
 
 def _strength(match: SensitiveMatch) -> tuple[int, int, int]:
@@ -328,8 +360,13 @@ def _document_chunks(
     mask: bool,
     ocr: bool,
     max_tokens: int | None,
+    placed: dict[int, tuple[str, list[Placed]]] | None = None,
 ) -> tuple[list[Chunk], list[ExtractionWarning]]:
-    """One document's pages as chunks, and what could not be read off them."""
+    """One document's pages as chunks, and what could not be read off them.
+
+    Given `placed`, each page's original text and the stretches masked in it are kept
+    there by page number, for a value a person later allows to be read.
+    """
     by_page: dict[int, list[SensitiveMatch]] = {}
     for match in found.matches if found is not None else []:
         by_page.setdefault(match.page, []).append(match)
@@ -351,9 +388,12 @@ def _document_chunks(
             )
             continue
 
+        stretches: list[Placed] | None = [] if placed is not None else None
         body, replaced, confirmed = (
-            mask_matches(text, by_page.get(page.number, [])) if mask else (text, 0, 0)
+            mask_matches(text, by_page.get(page.number, []), stretches) if mask else (text, 0, 0)
         )
+        if placed is not None and stretches is not None:
+            placed[page.number] = (text, sorted(stretches, key=lambda p: p.start))
         parts = _split(body, spec, max_tokens) if max_tokens else [body]
         for index, part in enumerate(parts, start=1):
             counted = count_tokens(part, spec)
@@ -425,6 +465,7 @@ def extract_text(
     extractor: str | None = None,
     model: str | None = None,
     max_tokens: int | None = None,
+    _placed: dict[int, tuple[str, list[Placed]]] | None = None,
 ) -> TextResult:
     """Read a folder's text, masked, with token counts and what went wrong.
 
@@ -433,6 +474,8 @@ def extract_text(
     `mask=False` returns the text as the page says it, with no scan run at all.
     `reveal=True` runs the scan and reports the counts while leaving the values
     in place.
+
+    `_placed` is for complydoc's own reading of one file, which numbers what it masked.
     """
     from complydoc.config.loader import load_config
 
@@ -470,7 +513,14 @@ def extract_text(
         if found is not None:
             warnings += _unscanned_warnings(found, said_unscanned)
         page_chunks, page_warnings = _document_chunks(
-            document, relative, found, spec, mask=mask, ocr=ocr, max_tokens=max_tokens
+            document,
+            relative,
+            found,
+            spec,
+            mask=mask,
+            ocr=ocr,
+            max_tokens=max_tokens,
+            placed=_placed,
         )
         chunks += page_chunks
         warnings += page_warnings

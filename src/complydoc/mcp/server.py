@@ -4,7 +4,8 @@ It offers an agent three kinds of thing, all worded for people who do not read r
 
 - **Tools** (`catalogue.py`): find, search, check and open documents, check a whole folder,
   save a clean copy, and say or change which folders are shared. A folder is only added
-  through the system's own folder dialog, clicked by the person.
+  through the system's own folder dialog, clicked by the person. A masked value is shown
+  only when the person allows it, in the client's own prompt (`request_unmask`).
 - **Resources**: every shared document, which a client can offer in its attach menu; what
   is attached is the clean text, never the file.
 - **Prompts** (`prompts.py`): ready-made requests such as "check before sharing".
@@ -20,7 +21,8 @@ import json
 import subprocess
 import sys
 import unicodedata
-from collections.abc import Iterable
+from collections import deque
+from collections.abc import Callable, Iterable, Iterator
 from functools import cache
 from importlib.resources import files
 from pathlib import Path
@@ -35,6 +37,7 @@ from complydoc.mcp.folders import STORE, FolderError, Folders, Picker, pick_fold
 from complydoc.mcp.prompts import PROMPTS, get_prompt
 from complydoc.mcp.reading import CAREFUL, READY, STOP, UNREAD, Findings, Reader, short
 from complydoc.mcp.runs import RunError, Runs
+from complydoc.unmask import REVEAL_LOG, RevealLog, RevealRequest, UnmaskError
 
 __all__ = ["CAREFUL", "READY", "STOP", "UNREAD", "Findings", "Server", "serve"]
 
@@ -74,7 +77,9 @@ READS_DOCUMENTS = frozenset(
 INSTRUCTIONS = (
     "Open documents with open_document, never by asking for the file: it masks "
     "personal details and removes hidden instructions before you read it. If a "
-    "document is not in a shared folder, offer to choose its folder with choose_folder."
+    "document is not in a shared folder, offer to choose its folder with choose_folder. "
+    "Masked values are numbered, as [#12 IBAN ••••4521]. Only if the task cannot be done "
+    "without one, call request_unmask with its number and why: the person decides."
 )
 RUN_INSTRUCTIONS = (
     " For questions about ingestion pipelines, loaders, load times or evals, read the runs "
@@ -84,6 +89,17 @@ RUN_INSTRUCTIONS = (
 
 class ToolError(Exception):
     """Something the person can act on, returned to the client as the tool's answer."""
+
+
+Ask = Callable[[str, dict[str, Any]], dict[str, Any] | None]
+"""Puts a question to the person through the client (MCP elicitation) and gives its answer,
+or None when there was none."""
+
+NO_PROMPT = (
+    "This app cannot show complydoc's approval prompt, so no masked value can be revealed "
+    "here, and you cannot approve it on the person's behalf. Carry on without the value, or "
+    "tell the person they can read it in the document themselves."
+)
 
 
 class Server:
@@ -96,8 +112,13 @@ class Server:
         runs: Runs | None = None,
         engine: Engine | None = None,
         config_dir: Path | None = None,
+        reveals: Path | None = REVEAL_LOG,
     ) -> None:
         self.folders = folders
+        self.log = RevealLog(reveals)
+        """Every request to see a masked value, and the answer; never the value."""
+        self.ask: Ask | None = None
+        """How to ask the person, when the client said it can (elicitation)."""
         self.engine = engine
         """The engine documents are read with, when another package installed one."""
         self.config_dir = config_dir or (engine.config_dir if engine else None)
@@ -289,7 +310,7 @@ class Server:
                 reading = self.reader.read(self.resolve(name))
             except Exception:
                 continue
-            for page, text in reading.pages:
+            for page, text in reading.numbered_pages():
                 lowered = text.lower()
                 if all(word in lowered for word in words):
                     at = lowered.index(words[0])
@@ -306,7 +327,7 @@ class Server:
     def open_document(self, name: str) -> str:
         path = self.resolve(name)
         reading = self.reader.read(path)
-        body = reading.text()
+        body = reading.text(numbered=True)
         cut = f" Only the first {MAX_TEXT:,} characters are shown." if len(body) > MAX_TEXT else ""
         return reading.note(path.name) + cut + "\n\n" + body[:MAX_TEXT]
 
@@ -323,6 +344,39 @@ class Server:
         target.write_text(reading.text() + "\n", encoding="utf-8")
         return f"Saved a clean copy of {path.name} to {target}. " + reading.note(path.name).replace(
             f"complydoc read {path.name} for you. ", ""
+        )
+
+    def request_unmask(self, name: str, number: object, reason: str) -> str:
+        """One masked value, if the person allows it in the client's prompt."""
+        path = self.resolve(name)
+        reading = self.reader.read(path)
+        try:
+            wanted = int(str(number).lstrip("#"))
+            span = reading.values.span(wanted)
+        except ValueError as error:
+            raise ToolError("Give the number of a masked value, such as 12 for [#12 …].") from error
+        except UnmaskError as error:
+            raise ToolError(str(error)) from error
+        request = RevealRequest(span=span, reason=reason, source=str(path))
+        if not span.revealable:
+            self.log.record(request, "refused")
+            raise ToolError(
+                f"#{wanted} is a {span.label}, which complydoc never reveals. Carry on without it."
+            )
+        if self.ask is None:
+            self.log.record(request, "unavailable")
+            raise ToolError(NO_PROMPT)
+        answer = self.ask(request.question(), {"type": "object", "properties": {}})
+        allowed = answer is not None and answer.get("action") == "accept"
+        self.log.record(request, "allowed" if allowed else "declined")
+        if not allowed:
+            return (
+                f"The person declined to show #{wanted}. Carry on without it, and do not ask "
+                "for it again unless they say so."
+            )
+        return (
+            f"The person allowed you to see #{wanted} ({span.label}) in {path.name}: "
+            f"{reading.values.value(wanted)}\nOnly this value was revealed."
         )
 
     # The resources.
@@ -351,7 +405,7 @@ class Server:
             raise ToolError(f"Not a complydoc document: {uri}")
         path = self.resolve(unquote(parsed.path.lstrip("/")))
         reading = self.reader.read(path)
-        text = reading.note(path.name) + "\n\n" + reading.text()[:MAX_TEXT]
+        text = reading.note(path.name) + "\n\n" + reading.text(numbered=True)[:MAX_TEXT]
         return {"contents": [{"uri": uri, "mimeType": "text/plain", "text": text}]}
 
     def call(self, name: str, arguments: dict[str, Any]) -> str:
@@ -398,6 +452,8 @@ class Server:
             return self.open_document(argument("path"))
         if name == "save_clean_copy":
             return self.save_clean_copy(argument("path"))
+        if name == "request_unmask":
+            return self.request_unmask(argument("path"), arguments.get("id"), argument("reason"))
         if name == "list_folders":
             labels = folders.labels()
             if not labels:
@@ -445,12 +501,17 @@ class _RequestError(Exception):
         self.code = code
 
 
-def _handle(server: Server, request: dict[str, Any]) -> dict[str, Any]:
+def _handle(
+    server: Server, request: dict[str, Any], client: _Client | None = None
+) -> dict[str, Any]:
     method = request.get("method")
     params = request.get("params") or {}
     if not isinstance(params, dict):
         raise _RequestError(-32602, "params must be an object")
     if method == "initialize":
+        capabilities = params.get("capabilities") or {}
+        if client is not None and isinstance(capabilities, dict) and "elicitation" in capabilities:
+            server.ask = client.ask
         return {
             "protocolVersion": params.get("protocolVersion") or PROTOCOL,
             "capabilities": {"tools": {}, "resources": {}, "prompts": {}},
@@ -524,6 +585,7 @@ def serve(
     runs: Iterable[str | Path] = (),
     engine: str | None = None,
     config_dir: Path | None = None,
+    reveals: Path | None = REVEAL_LOG,
 ) -> None:
     """Answer MCP requests on stdin until it closes. Logs go to stderr, never stdout.
 
@@ -534,7 +596,8 @@ def serve(
     reports complydoc wrote; given them, the server offers an engineer's tools on them too.
     `engine` names the detection engine to read with (see `complydoc.mcp.engines`): the
     first installed when None, complydoc's own configuration with "none". `config_dir`,
-    when given, is read instead of any engine's.
+    when given, is read instead of any engine's. Each request to see a masked value is
+    recorded in `reveals`, without the value.
     """
     from complydoc.mcp.models import fetch_name_model as start_fetch
 
@@ -552,6 +615,7 @@ def serve(
         runs=Runs([Path(r) for r in runs]) if runs else None,
         engine=chosen,
         config_dir=config_dir,
+        reveals=reveals,
     )
     # The guard holds for the whole session, and lets go when the client hangs up.
     with offline.guarded(True):
@@ -563,8 +627,53 @@ def _reply(out: IO[str], message: dict[str, Any]) -> None:
     out.flush()
 
 
+class _Client:
+    """The other end of stdio: lines read from it, and questions put to it mid-call.
+
+    A question (elicitation) is a request from server to client, answered on the same
+    stdin; anything else that arrives before the answer waits its turn.
+    """
+
+    def __init__(self, source: IO[str], out: IO[str]) -> None:
+        self.source = source
+        self.out = out
+        self.waiting: deque[str] = deque()
+        self.asked = 0
+
+    def lines(self) -> Iterator[str]:
+        while True:
+            line = self.waiting.popleft() if self.waiting else self.source.readline()
+            if not line:
+                return
+            yield line
+
+    def ask(self, message: str, schema: dict[str, Any]) -> dict[str, Any] | None:
+        self.asked += 1
+        asked = f"complydoc-ask-{self.asked}"
+        params = {"message": message, "requestedSchema": schema}
+        _reply(
+            self.out,
+            {"jsonrpc": "2.0", "id": asked, "method": "elicitation/create", "params": params},
+        )
+        while line := self.source.readline():
+            try:
+                message_in = json.loads(line)
+            except json.JSONDecodeError:
+                message_in = None
+            if (
+                isinstance(message_in, dict)
+                and message_in.get("id") == asked
+                and "method" not in message_in
+            ):
+                result = message_in.get("result")
+                return result if isinstance(result, dict) else None
+            self.waiting.append(line)
+        return None
+
+
 def _loop(server: Server, source: IO[str], out: IO[str]) -> None:
-    for line in source:
+    client = _Client(source, out)
+    for line in client.lines():
         if not line.strip():
             continue
         try:
@@ -577,10 +686,11 @@ def _loop(server: Server, source: IO[str], out: IO[str]) -> None:
             error = {"code": -32600, "message": "Invalid Request"}
             _reply(out, {"jsonrpc": "2.0", "id": None, "error": error})
             continue
-        if "id" not in request:  # A notification, such as notifications/initialized.
+        if "id" not in request or "method" not in request:
+            # A notification, such as notifications/initialized, or a stray answer.
             continue
         try:
-            result = _handle(server, request)
+            result = _handle(server, request, client)
             _reply(out, {"jsonrpc": "2.0", "id": request["id"], "result": result})
         except _RequestError as invalid:
             error = {"code": invalid.code, "message": str(invalid)}

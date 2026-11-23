@@ -138,7 +138,7 @@ def test_the_mcp_server_opens_a_document_as_the_gateway_reads_it(tmp_path):
     )
     answer = json.loads(out.getvalue().splitlines()[-1])
     said = "".join(part.get("text", "") for part in answer["result"]["content"])
-    for _, text in cd.Gateway(engine="none").read(docs / "invoice_de.pdf").pages:
+    for _, text in cd.Gateway(engine="none", numbered=True).read(docs / "invoice_de.pdf").pages:
         assert text.strip()[:200] in said
 
 
