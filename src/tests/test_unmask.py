@@ -51,7 +51,7 @@ def test_the_numbers_are_the_same_each_time_a_file_is_read(tmp_path):
     again = cd.Gateway(engine="none", numbered=True).read(FIXTURES / "invoice_de.pdf")
     assert first.text == again.text
     assert [span.label for span in first.spans] == [span.label for span in again.spans]
-    assert "[#2 IBAN " in first.text
+    assert f"[#{_iban()} IBAN " in first.text
 
 
 def test_a_value_the_person_allows_is_given_and_logged_without_it(gateway):
@@ -177,6 +177,14 @@ def docs(tmp_path: Path) -> Path:
     return folder
 
 
+def _iban() -> int:
+    """The number the invoice's IBAN carries: with a name model, names come first."""
+    read = cd.Gateway(engine="none", numbered=True, reveal_log=None).read(
+        FIXTURES / "invoice_de.pdf"
+    )
+    return next(span.id for span in read.spans if span.label == "IBAN")
+
+
 def _log(tmp_path: Path) -> list[dict[str, Any]]:
     path = tmp_path / "reveals.jsonl"
     return [json.loads(line) for line in path.read_text().splitlines()]
@@ -186,7 +194,7 @@ def test_an_opened_document_shows_the_numbers(docs, tmp_path):
     _, opened = _session(
         docs, tmp_path, [_initialize(False), _call(1, "open_document", path="invoice_de.pdf")]
     )
-    assert "[#2 IBAN " in _said(opened)
+    assert f"[#{_iban()} IBAN " in _said(opened)
 
 
 def test_the_person_allows_one_value_in_the_clients_prompt(docs, tmp_path):
@@ -196,15 +204,17 @@ def test_the_person_allows_one_value_in_the_clients_prompt(docs, tmp_path):
         tmp_path,
         [
             _initialize(True),
-            _call(1, "request_unmask", path="invoice_de.pdf", id=2, reason="to pay the invoice"),
+            _call(
+                1, "request_unmask", path="invoice_de.pdf", id=_iban(), reason="to pay the invoice"
+            ),
             answer,
         ],
     )
     _, question, given = replies
     assert question["method"] == "elicitation/create"
-    assert "see #2 (IBAN, page 1) in invoice_de.pdf?" in question["params"]["message"]
+    assert f"see #{_iban()} (IBAN, page 1) in invoice_de.pdf?" in question["params"]["message"]
     assert "to pay the invoice" in question["params"]["message"]
-    assert "The person allowed you to see #2 (IBAN)" in _said(given)
+    assert f"The person allowed you to see #{_iban()} (IBAN)" in _said(given)
     assert not given["result"]["isError"]
     assert "•" not in _said(given).split(": ", 1)[1].splitlines()[0]
     assert [e["decision"] for e in _log(tmp_path)] == ["allowed"]
@@ -217,7 +227,7 @@ def test_a_request_that_arrives_while_the_person_is_asked_waits_its_turn(docs, t
         tmp_path,
         [
             _initialize(True),
-            _call(1, "request_unmask", path="invoice_de.pdf", id=2, reason="to pay it"),
+            _call(1, "request_unmask", path="invoice_de.pdf", id=_iban(), reason="to pay it"),
             {"jsonrpc": "2.0", "id": 2, "method": "ping"},
             answer,
         ],
@@ -234,7 +244,10 @@ def test_a_client_that_cannot_ask_the_person_reveals_nothing(docs, tmp_path):
     _, refused = _session(
         docs,
         tmp_path,
-        [_initialize(False), _call(1, "request_unmask", path="invoice_de.pdf", id=2, reason="x")],
+        [
+            _initialize(False),
+            _call(1, "request_unmask", path="invoice_de.pdf", id=_iban(), reason="x"),
+        ],
     )
     assert refused["result"]["isError"]
     assert "cannot show complydoc's approval prompt" in _said(refused)
