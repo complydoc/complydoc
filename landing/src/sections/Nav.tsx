@@ -2,7 +2,8 @@ import { Logo } from "@/components/Logo";
 import { ModeToggle } from "@/components/ModeToggle";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/useTheme";
-import { links, VERSION } from "@/links";
+import { ArrowUpRight } from "lucide-react";
+import { links, VEIL, VERSION } from "@/links";
 
 /** The pages besides this one, each in a folder of its own. */
 const PAGES = [
@@ -43,9 +44,15 @@ export function Nav({ home = "" }: { home?: string }) {
             v{VERSION}
           </a>
           <Button variant="ghost" size="sm" asChild>
-            <a href={links.docs}>Docs</a>
+            <a href={VEIL}>
+              Meet Veil
+              <ArrowUpRight aria-hidden="true" className="text-muted-foreground" />
+            </a>
           </Button>
           <Button variant="ghost" size="sm" asChild>
+            <a href={links.docs}>Docs</a>
+          </Button>
+          <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
             <a href={links.github}>GitHub</a>
           </Button>
           <ModeToggle dark={dark} onToggle={toggle} />
