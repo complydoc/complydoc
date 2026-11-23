@@ -6,7 +6,7 @@ import { GITHUB_PATH, LINKEDIN_PATH, MAIL_PATH, SocialLink } from "@/components/
 import { Button } from "@/components/ui/button";
 import { openConsent } from "@/lib/consent";
 import type { Brand } from "@/lib/logos";
-import { CONTACT_EMAIL, LINKEDIN, links } from "@/links";
+import { CONTACT_EMAIL, LINKEDIN, links, VEIL } from "@/links";
 
 const columns = (home: string) => [
   {
@@ -44,6 +44,7 @@ const columns = (home: string) => [
     title: "Project",
     items: [
       { label: "GitHub", href: links.github },
+      { label: "Veil", href: VEIL },
       { label: "Contact", href: `mailto:${CONTACT_EMAIL}` },
       { label: "MIT licence", href: links.license },
       { label: "Cookies", href: `${home}cookies/` },
