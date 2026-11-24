@@ -1,8 +1,8 @@
 [project]
 name = "complydoc-claude-extension"
-version = "0.8.2"
+version = "0.8.3"
 description = "complydoc as a Claude Desktop extension: documents opened through it are masked and cleaned."
 requires-python = ">=3.11"
 dependencies = [
-    "complydoc==0.8.2",
+    "complydoc==0.8.3",
 ]
