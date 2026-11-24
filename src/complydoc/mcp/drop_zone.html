@@ -38,6 +38,7 @@
   #log li { padding: 2px 0; }
   #log .ok { color: var(--ok); }
   #log .bad { color: var(--bad); }
+  #log .hint { color: var(--muted); }
   input { display: none; }
 </style>
 </head>
@@ -143,7 +144,12 @@
       Promise.all(list.map(upload)).then(function (names) {
         var saved = names.filter(Boolean);
         if (!saved.length) return;
-        // Tell the assistant, so it carries on without the person typing.
+        line("Now tell the assistant to open it, for example “open it”.", "hint");
+        // Some hosts let the assistant carry on by itself; the others take it from the context
+        // the next time the person writes.
+        request("ui/update-model-context", {
+          content: [{ type: "text", text: "The person dropped " + saved.join(", ") + " in the Inbox. Open it with open_latest." }]
+        }).catch(function () { /* optional */ });
         request("ui/message", {
           role: "user",
           content: { type: "text", text: "I dropped " + saved.join(", ") + " in the box. Please open it." }
