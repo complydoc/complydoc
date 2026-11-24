@@ -11,6 +11,7 @@ import io
 import json
 import os
 import shutil
+import time
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -632,8 +633,10 @@ def test_the_inbox_is_shared_and_its_newest_file_opens_by_itself(
     (empty,) = talk([], call(1, "open_latest"), store=store, inbox=inbox)
     assert inbox.is_dir() and "empty" in text(empty)
     shutil.copy(FIXTURES / "native_text.pdf", inbox / "older.pdf")
+    time.sleep(0.05)
+    # Dragged in from elsewhere, the copy keeps its old modification time.
     shutil.copy(FIXTURES / "native_text.pdf", inbox / "newer.pdf")
-    os.utime(inbox / "older.pdf", (1, 1))
+    os.utime(inbox / "newer.pdf", (1, 1))
     listed, latest = talk(
         [], call(1, "list_documents"), call(2, "open_latest"), store=store, inbox=inbox
     )

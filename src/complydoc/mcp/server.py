@@ -388,7 +388,8 @@ class Server:
                 f"The Inbox folder is empty. Ask the person to drop a file in {inbox}, "
                 "or to choose one with choose_file."
             )
-        newest = max(found, key=lambda path: path.stat().st_mtime)
+        # A file dragged in keeps its old modification time, so when it arrived counts too.
+        newest = max(found, key=lambda path: max(path.stat().st_mtime, path.stat().st_ctime))
         return self.open_document(f"{inbox.name}/{newest.relative_to(inbox)}")
 
     def request_unmask(self, name: str, number: object, reason: str) -> str:
