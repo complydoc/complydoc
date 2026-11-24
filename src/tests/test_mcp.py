@@ -173,6 +173,8 @@ def test_it_introduces_itself_with_its_icon_and_tools(folder: Path, tmp_path: Pa
         "choose_folder",
         "choose_file",
         "open_latest",
+        "show_drop_zone",
+        "receive_document",
         "remove_folder",
     ]
 
@@ -559,6 +561,7 @@ def test_every_tool_says_what_it_does_to_the_machine() -> None:
             "save_clean_copy",
             "choose_folder",
             "choose_file",
+            "receive_document",
             "remove_folder",
         }
         assert hints["readOnlyHint"] is not writes, tool["name"]
@@ -653,3 +656,72 @@ def test_the_extension_manifest_lists_every_tool_the_server_has():
     manifest = Path(__file__).resolve().parents[2] / "mcpb" / "manifest.json"
     listed = {tool["name"] for tool in json.loads(manifest.read_text())["tools"]}
     assert listed == {tool["name"] for tool in TOOLS}
+
+
+def test_the_drop_zone_is_a_page_the_chat_can_show_and_only_it_can_upload(tmp_path: Path) -> None:
+    inbox = tmp_path / "Inbox"
+    listing, shown, page = talk(
+        [],
+        {"jsonrpc": "2.0", "id": 1, "method": "tools/list"},
+        call(2, "show_drop_zone"),
+        {
+            "jsonrpc": "2.0",
+            "id": 3,
+            "method": "resources/read",
+            "params": {"uri": "ui://complydoc/drop-zone"},
+        },
+        store=tmp_path / "store.json",
+        inbox=inbox,
+    )
+    tools = {tool["name"]: tool for tool in listing["result"]["tools"]}
+    assert tools["show_drop_zone"]["_meta"]["ui"]["resourceUri"] == "ui://complydoc/drop-zone"
+    assert tools["receive_document"]["_meta"]["ui"]["visibility"] == ["app"]
+    assert shown["result"]["_meta"]["ui"]["resourceUri"] == "ui://complydoc/drop-zone"
+    (content,) = page["result"]["contents"]
+    assert content["mimeType"] == "text/html;profile=mcp-app"
+    assert "receive_document" in content["text"] and "ui/initialize" in content["text"]
+
+
+def test_a_dropped_file_lands_in_the_inbox_under_a_safe_unique_name(tmp_path: Path) -> None:
+    import base64
+
+    inbox = tmp_path / "Inbox"
+    data = base64.b64encode((FIXTURES / "native_text.pdf").read_bytes()).decode()
+    replies = talk(
+        [],
+        call(1, "receive_document", name="invoice.pdf", content=data),
+        call(2, "receive_document", name="invoice.pdf", content=data),
+        call(3, "receive_document", name="../../escape.pdf", content=data),
+        call(4, "receive_document", name="bad.pdf", content="not base64!!"),
+        call(5, "receive_document", name="", content=data),
+        call(6, "open_latest"),
+        store=tmp_path / "store.json",
+        inbox=inbox,
+    )
+    assert sorted(path.name for path in inbox.iterdir()) == [
+        "escape.pdf",
+        "invoice (2).pdf",
+        "invoice.pdf",
+    ]
+    assert not (tmp_path / "escape.pdf").exists()
+    assert replies[3]["result"]["isError"] and replies[4]["result"]["isError"]
+    assert "complydoc read escape.pdf" in text(replies[5])
+
+
+def test_a_dropped_file_that_is_too_big_is_refused(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import base64
+
+    from complydoc.mcp import server
+
+    monkeypatch.setattr(server, "MAX_UPLOAD", 10)
+    inbox = tmp_path / "Inbox"
+    big = base64.b64encode(b"x" * 11).decode()
+    (reply,) = talk(
+        [],
+        call(1, "receive_document", name="big.pdf", content=big),
+        store=tmp_path / "s.json",
+        inbox=inbox,
+    )
+    assert reply["result"]["isError"] and not any(inbox.iterdir())

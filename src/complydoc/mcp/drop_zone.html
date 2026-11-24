@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Drop a document</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #ffffff;
+    --fg: #1a1a1a;
+    --muted: #6b6b6b;
+    --line: #c9c9c9;
+    --hover: #f3f3f3;
+    --ok: #1a7f37;
+    --bad: #b42318;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1f1f1f;
+      --fg: #ececec;
+      --muted: #a0a0a0;
+      --line: #4a4a4a;
+      --hover: #2a2a2a;
+      --ok: #4ac26b;
+      --bad: #f97066;
+    }
+  }
+  html, body { margin: 0; padding: 0; background: transparent; color: var(--fg);
+    font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  #zone { display: block; box-sizing: border-box; margin: 4px; padding: 28px 16px; text-align: center;
+    border: 2px dashed var(--line); border-radius: 12px; background: var(--bg);
+    cursor: pointer; transition: background .15s, border-color .15s; }
+  #zone.over, #zone:hover { background: var(--hover); border-color: var(--fg); }
+  #zone strong { display: block; font-size: 15px; margin-bottom: 4px; }
+  #zone span { color: var(--muted); }
+  #log { margin: 8px 6px 4px; padding: 0; list-style: none; }
+  #log li { padding: 2px 0; }
+  #log .ok { color: var(--ok); }
+  #log .bad { color: var(--bad); }
+  #log .hint { color: var(--muted); }
+  input { display: none; }
+</style>
+</head>
+<body>
+<label id="zone" for="pick">
+  <strong>Drop a document here</strong>
+  <span>or click to choose one. It goes to complydoc on your computer, not to the assistant.</span>
+</label>
+<input id="pick" type="file" multiple>
+<ul id="log"></ul>
+<script>
+(function () {
+  "use strict";
+  var zone = document.getElementById("zone");
+  var pick = document.getElementById("pick");
+  var log = document.getElementById("log");
+  var nextId = 1;
+  var pending = {};
+  var ready = false;
+  var queue = [];
+
+  function send(message) { window.parent.postMessage(message, "*"); }
+
+  function request(method, params) {
+    return new Promise(function (resolve, reject) {
+      var id = nextId++;
+      pending[id] = { resolve: resolve, reject: reject };
+      send({ jsonrpc: "2.0", id: id, method: method, params: params });
+    });
+  }
+
+  window.addEventListener("message", function (event) {
+    var message = event.data;
+    if (!message || message.jsonrpc !== "2.0") return;
+    if (message.id !== undefined && pending[message.id] && !message.method) {
+      var entry = pending[message.id];
+      delete pending[message.id];
+      if (message.error) entry.reject(new Error(message.error.message || "Failed"));
+      else entry.resolve(message.result);
+      return;
+    }
+    // The host asking to tear down, or pinging: answer so it never waits on us.
+    if (message.method && message.id !== undefined) {
+      send({ jsonrpc: "2.0", id: message.id, result: {} });
+    }
+  });
+
+  function line(text, kind) {
+    var item = document.createElement("li");
+    item.className = kind || "";
+    item.textContent = text;
+    log.appendChild(item);
+    resize();
+    return item;
+  }
+
+  var lastHeight = 0;
+  function resize() {
+    // The height of what is drawn, not of the frame the host gave us.
+    var height = Math.ceil(document.body.getBoundingClientRect().height) + 8;
+    if (height === lastHeight) return;
+    lastHeight = height;
+    send({ jsonrpc: "2.0", method: "ui/notifications/size-changed", params: { height: height } });
+  }
+  if (window.ResizeObserver) new ResizeObserver(resize).observe(document.body);
+
+  function toBase64(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onerror = function () { reject(new Error("Could not read the file")); };
+      reader.onload = function () {
+        var url = String(reader.result);
+        resolve(url.slice(url.indexOf(",") + 1));
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function upload(file) {
+    var item = line("Sending " + file.name + "…");
+    return toBase64(file)
+      .then(function (content) {
+        return request("tools/call", { name: "receive_document", arguments: { name: file.name, content: content } });
+      })
+      .then(function (result) {
+        var text = result && result.content && result.content[0] ? result.content[0].text : "Saved.";
+        if (result && result.isError) throw new Error(text);
+        item.textContent = "✓ " + text;
+        item.className = "ok";
+        return file.name;
+      })
+      .catch(function (error) {
+        item.textContent = "✗ " + file.name + ": " + error.message;
+        item.className = "bad";
+        return null;
+      });
+  }
+
+  function handle(files) {
+    var list = Array.prototype.slice.call(files);
+    if (!list.length) return;
+    var run = function () {
+      Promise.all(list.map(upload)).then(function (names) {
+        var saved = names.filter(Boolean);
+        if (!saved.length) return;
+        line("Now tell the assistant to open it, for example “open it”.", "hint");
+        // Some hosts let the assistant carry on by itself; the others take it from the context
+        // the next time the person writes.
+        request("ui/update-model-context", {
+          content: [{ type: "text", text: "The person dropped " + saved.join(", ") + " in the Inbox. Open it with open_latest." }]
+        }).catch(function () { /* optional */ });
+        request("ui/message", {
+          role: "user",
+          content: { type: "text", text: "I dropped " + saved.join(", ") + " in the box. Please open it." }
+        }).catch(function () { /* the host may not allow it: the person can say so themselves */ });
+      });
+    };
+    if (ready) run(); else queue.push(run);
+  }
+
+  ["dragenter", "dragover"].forEach(function (name) {
+    zone.addEventListener(name, function (event) { event.preventDefault(); zone.classList.add("over"); });
+  });
+  ["dragleave", "drop"].forEach(function (name) {
+    zone.addEventListener(name, function (event) { event.preventDefault(); zone.classList.remove("over"); });
+  });
+  zone.addEventListener("drop", function (event) { handle(event.dataTransfer.files); });
+  pick.addEventListener("change", function () { handle(pick.files); pick.value = ""; });
+  // A file dropped beside the box must not make the host open it.
+  window.addEventListener("dragover", function (event) { event.preventDefault(); });
+  window.addEventListener("drop", function (event) { event.preventDefault(); });
+
+  function start() {
+    ready = true;
+    queue.splice(0).forEach(function (run) { run(); });
+  }
+
+  request("ui/initialize", {
+    protocolVersion: "2026-01-26",
+    appInfo: { name: "complydoc drop box", version: "1" },
+    appCapabilities: {}
+  }).then(function () {
+    send({ jsonrpc: "2.0", method: "ui/notifications/initialized", params: {} });
+    start();
+  }).catch(function () {
+    // An older host: try anyway, so a dropped file is not lost.
+    start();
+  });
+  resize();
+})();
+</script>
+</body>
+</html>

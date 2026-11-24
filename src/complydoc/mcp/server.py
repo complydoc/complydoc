@@ -31,7 +31,7 @@ from urllib.parse import quote, unquote, urlparse
 
 from complydoc import __version__, offline
 from complydoc.mcp import engines
-from complydoc.mcp.catalogue import RUN_TOOLS, TOOLS
+from complydoc.mcp.catalogue import DROP_ZONE_URI, RUN_TOOLS, TOOLS
 from complydoc.mcp.engines import Engine
 from complydoc.mcp.folders import (
     INBOX,
@@ -75,6 +75,8 @@ NO_FOLDER = (
 )
 
 SCHEME = "complydoc"
+MAX_UPLOAD = 25 * 1024 * 1024
+"""Bytes of one dropped file at most."""
 CHOSEN = "Chosen files"
 """The label of the files the person picked one by one."""
 
@@ -392,6 +394,36 @@ class Server:
         newest = max(found, key=lambda path: max(path.stat().st_mtime, path.stat().st_ctime))
         return self.open_document(f"{inbox.name}/{newest.relative_to(inbox)}")
 
+    def show_drop_zone(self) -> str:
+        if self.folders.inbox is None:
+            raise ToolError("There is no Inbox folder in this session; use choose_file instead.")
+        return (
+            "A box to drop a file in is showing in the chat. Tell the person to drop the file "
+            "there, then open it with open_latest. If they cannot see the box, offer "
+            "choose_file instead."
+        )
+
+    def receive_document(self, name: str, content: str) -> str:
+        inbox = self.folders.inbox
+        if inbox is None:
+            raise ToolError("There is no Inbox folder in this session.")
+        clean = Path(name.replace("\\", "/")).name.strip().lstrip(".")
+        if not clean:
+            raise ToolError("The dropped file has no name.")
+        try:
+            data = base64.b64decode(content, validate=True)
+        except ValueError as error:
+            raise ToolError("The dropped file did not arrive whole.") from error
+        if len(data) > MAX_UPLOAD:
+            raise ToolError(f"{clean} is larger than {MAX_UPLOAD // (1024 * 1024)} MB.")
+        target = inbox / clean
+        number = 1
+        while target.exists():
+            number += 1
+            target = inbox / f"{Path(clean).stem} ({number}){Path(clean).suffix}"
+        target.write_bytes(data)
+        return f"Saved {target.name} in the Inbox."
+
     def request_unmask(self, name: str, number: object, reason: str) -> str:
         """One masked value, if the person allows it in the client's prompt."""
         path = self.resolve(name)
@@ -446,6 +478,18 @@ class Server:
         return result
 
     def read_resource(self, uri: str) -> dict[str, Any]:
+        if uri == DROP_ZONE_URI:
+            page = files("complydoc.mcp").joinpath("drop_zone.html").read_text(encoding="utf-8")
+            return {
+                "contents": [
+                    {
+                        "uri": uri,
+                        "mimeType": "text/html;profile=mcp-app",
+                        "text": page,
+                        "_meta": {"ui": {"csp": {"connectDomains": [], "resourceDomains": []}}},
+                    }
+                ]
+            }
         parsed = urlparse(uri)
         if parsed.scheme != SCHEME:
             raise ToolError(f"Not a complydoc document: {uri}")
@@ -517,6 +561,10 @@ class Server:
             return self.choose_file()
         if name == "open_latest":
             return self.open_latest()
+        if name == "show_drop_zone":
+            return self.show_drop_zone()
+        if name == "receive_document":
+            return self.receive_document(argument("name"), argument("content"))
         if name == "remove_folder":
             removed = folders.remove(argument("name"))
             return f"complydoc no longer opens documents from {removed}."
@@ -614,7 +662,10 @@ def _call_tool(
         return {"content": [{"type": "text", "text": refused}], "isError": True}
     try:
         text = server.call(name, arguments)
-        return {"content": [{"type": "text", "text": text}], "isError": False}
+        result: dict[str, Any] = {"content": [{"type": "text", "text": text}], "isError": False}
+        if name == "show_drop_zone":
+            result["_meta"] = {"ui": {"resourceUri": DROP_ZONE_URI}}
+        return result
     except (ToolError, FolderError, RunError) as error:
         return {"content": [{"type": "text", "text": str(error)}], "isError": True}
     except Exception as error:  # A document that cannot be read is an answer, not a crash.
