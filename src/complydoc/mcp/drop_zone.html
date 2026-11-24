@@ -26,9 +26,9 @@
       --bad: #f97066;
     }
   }
-  html, body { margin: 0; background: transparent; color: var(--fg);
+  html, body { margin: 0; padding: 0; background: transparent; color: var(--fg);
     font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
-  #zone { box-sizing: border-box; margin: 4px; padding: 28px 16px; text-align: center;
+  #zone { display: block; box-sizing: border-box; margin: 4px; padding: 28px 16px; text-align: center;
     border: 2px dashed var(--line); border-radius: 12px; background: var(--bg);
     cursor: pointer; transition: background .15s, border-color .15s; }
   #zone.over, #zone:hover { background: var(--hover); border-color: var(--fg); }
@@ -94,13 +94,15 @@
     return item;
   }
 
+  var lastHeight = 0;
   function resize() {
-    send({
-      jsonrpc: "2.0",
-      method: "ui/notifications/size-changed",
-      params: { width: document.documentElement.scrollWidth, height: document.documentElement.scrollHeight }
-    });
+    // The height of what is drawn, not of the frame the host gave us.
+    var height = Math.ceil(document.body.getBoundingClientRect().height) + 8;
+    if (height === lastHeight) return;
+    lastHeight = height;
+    send({ jsonrpc: "2.0", method: "ui/notifications/size-changed", params: { height: height } });
   }
+  if (window.ResizeObserver) new ResizeObserver(resize).observe(document.body);
 
   function toBase64(file) {
     return new Promise(function (resolve, reject) {
