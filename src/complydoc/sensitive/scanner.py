@@ -11,12 +11,13 @@ from __future__ import annotations
 import re
 from bisect import bisect_right
 from collections import Counter
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 from complydoc.config.schema import CategoryConfig, SensitiveConfig
 from complydoc.fingerprint import identifier_fingerprint
 from complydoc.ingest.base import Document
+from complydoc.sensitive import review
 from complydoc.sensitive.base import (
     DetectorContext,
     Finding,
@@ -86,6 +87,8 @@ class Candidate:
     validators_passed: list[str]
     by_pattern: bool = False
     """Found by one of the category's patterns, in a category a model reads."""
+    by_reviewer: bool = False
+    """Added by the configuration's reviewer, which read it with a model of its own."""
     silent: bool = False
     """For covering the text only: a pattern's find in a category whose model could not
     run. Reporting it would put a count on a category that was not scanned."""
@@ -264,6 +267,52 @@ def _resolve_overlaps(
     return accepted + independent
 
 
+def _reviewed(text: str, candidates: list[Candidate], config: SensitiveConfig) -> list[Candidate]:
+    """The candidates the configuration's reviewer keeps, with its scores, and those it adds.
+
+    Silent finds are not shown to it: they only cover the text. A reviewer that fails leaves
+    the page as the detectors found it.
+    """
+    assert config.review is not None
+    shown = [c for c in candidates if not (c.silent or c.category.silent)]
+    by_span = {(c.finding.start, c.finding.end, c.category_id): c for c in shown}
+    found = [
+        review.Reviewed(
+            c.finding.start,
+            c.finding.end,
+            c.category_id,
+            c.finding.confidence,
+            evidence_of(
+                c.category.model_backed and not c.by_pattern,
+                c.validators_passed,
+                c.finding.context_term,
+                _label_near(text, c.finding, c.category),
+            ),
+            c.finding.context_term,
+        )
+        for c in shown
+    ]
+    try:
+        kept = review.load(config.review)(text, found)
+    except Exception as failure:
+        review.said(config.review, failure)
+        return candidates
+
+    out = [c for c in candidates if c.silent or c.category.silent]
+    for item in kept:
+        category = config.categories.get(item.category)
+        if category is None or not 0 <= item.start < item.end <= len(text):
+            continue
+        old = by_span.get((item.start, item.end, item.category))
+        if old is not None:
+            finding = replace(old.finding, confidence=item.confidence)
+            out.append(replace(old, finding=finding))
+        else:
+            finding = Finding(item.start, item.end, item.confidence, item.context_term)
+            out.append(Candidate(item.category, category, finding, [], by_reviewer=True))
+    return out
+
+
 def _scan_page(
     page_number: int,
     text: str,
@@ -363,6 +412,9 @@ def _scan_page(
                 continue
             candidates.append(Candidate(category_id, category, finding, names))
 
+    if config.review:
+        candidates = _reviewed(text, candidates, config)
+
     # What is reported is settled among the reported categories alone, as if the silent
     # ones were not there; a silent find is kept only where nothing reported covers it.
     def is_silent(c: Candidate) -> bool:
@@ -409,7 +461,8 @@ def _matches(
                 revealed=revealed,
                 confidence=finding.confidence,
                 evidence=evidence_of(
-                    candidate.category.model_backed and not candidate.by_pattern,
+                    candidate.by_reviewer
+                    or (candidate.category.model_backed and not candidate.by_pattern),
                     candidate.validators_passed,
                     finding.context_term,
                     _label_near(text, finding, candidate.category),

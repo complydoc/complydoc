@@ -161,6 +161,13 @@ configuration, and `--config-dir <dir>` reads with a directory of your own inste
 engine's. An engine that fails to load is said on stderr and passed over, so the server
 always starts.
 
+An engine's configuration can also name a reviewer, as `sensitive.review:
+"module:attribute"`. The reviewer sees each page's findings together and returns the ones
+to report: it can drop a find, give it a score of its own, or add one the detectors
+missed. Veil's reviewer combines complydoc's checks with its model's reading of the page,
+so its addresses, IDs, contacts and secrets are reported too, not only its names. A
+reviewer that fails is said on stderr, and the page is reported as complydoc found it.
+
 ## Choosing folders from the conversation
 
 The person does not need the settings to share another folder. They ask: *"Use my

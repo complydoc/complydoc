@@ -614,6 +614,10 @@ class SensitiveConfig(_Base):
     checks: dict[str, CheckConfig] = Field(default_factory=dict)
     """Check digits declared as data, by name."""
     categories: dict[str, CategoryConfig]
+    review: str | None = None
+    """A reviewer, as "module:attribute", that sees each page's findings together and
+    returns the ones to report (complydoc.sensitive.review). None reports what the
+    detectors found."""
 
     @model_validator(mode="after")
     def _checks_do_not_shadow_code(self) -> SensitiveConfig:
