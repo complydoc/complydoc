@@ -33,7 +33,16 @@ from complydoc import __version__, offline
 from complydoc.mcp import engines
 from complydoc.mcp.catalogue import RUN_TOOLS, TOOLS
 from complydoc.mcp.engines import Engine
-from complydoc.mcp.folders import STORE, FolderError, Folders, Picker, pick_folder
+from complydoc.mcp.folders import (
+    INBOX,
+    STORE,
+    FilePicker,
+    FolderError,
+    Folders,
+    Picker,
+    pick_files,
+    pick_folder,
+)
 from complydoc.mcp.prompts import PROMPTS, get_prompt
 from complydoc.mcp.reading import CAREFUL, READY, STOP, UNREAD, Findings, Reader, short
 from complydoc.mcp.runs import RunError, Runs
@@ -66,6 +75,8 @@ NO_FOLDER = (
 )
 
 SCHEME = "complydoc"
+CHOSEN = "Chosen files"
+"""The label of the files the person picked one by one."""
 
 
 READS_DOCUMENTS = frozenset(
@@ -77,7 +88,8 @@ READS_DOCUMENTS = frozenset(
 INSTRUCTIONS = (
     "Open documents with open_document, never by asking for the file: it masks "
     "personal details and removes hidden instructions before you read it. If a "
-    "document is not in a shared folder, offer to choose its folder with choose_folder. "
+    "document is not in a shared folder, offer choose_file for one file, or choose_folder "
+    "for its folder; open_latest opens the newest file in the Inbox folder. "
     "Masked values are numbered, as [#12 IBAN ••••4521]. Only if the task cannot be done "
     "without one, call request_unmask with its number and why: the person decides."
 )
@@ -108,6 +120,7 @@ class Server:
         folders: Folders,
         picker: Picker = pick_folder,
         clean_copies: Path = CLEAN_COPIES,
+        file_picker: FilePicker = pick_files,
         fetching: subprocess.Popen[bytes] | None = None,
         runs: Runs | None = None,
         engine: Engine | None = None,
@@ -125,6 +138,7 @@ class Server:
         self.runs = runs
         """The folders of recorded runs an engineer's tools read, when given."""
         self.picker = picker
+        self.file_picker = file_picker
         self.clean_copies = clean_copies
         self.reader = Reader(self.config_dir)
         self.fetching = fetching
@@ -171,7 +185,7 @@ class Server:
     def _resolve(self, name: str) -> Path:
         if not name:
             raise ToolError("Say which document: give its name as list_documents shows it.")
-        if not self.folders.all:
+        if not self.folders.all and not self.folders.files:
             raise ToolError(NO_FOLDER)
         candidates: list[Path] = []
         given = Path(name).expanduser()
@@ -183,6 +197,9 @@ class Server:
             if rest and label in labels:
                 candidates.append((labels[label] / rest).resolve())
             candidates += [(folder / name).resolve() for folder in self.folders.all]
+            candidates += [
+                file for file in self.folders.files if name in (file.name, f"{CHOSEN}/{file.name}")
+            ]
         for path in candidates:
             if path.is_file() and self.folders.contains(path):
                 return path
@@ -220,6 +237,8 @@ class Server:
                 for path in found
                 if not SKIPPED_FOLDERS & set(path.relative_to(root).parts[:-1])
             )
+        if not folder:
+            names += sorted(f"{CHOSEN}/{file.name}" for file in self.folders.files)
         query = query.lower().strip()
         return [name for name in names if query in name.lower()] if query else names
 
@@ -346,6 +365,32 @@ class Server:
             f"complydoc read {path.name} for you. ", ""
         )
 
+    def choose_file(self) -> str:
+        files = self.file_picker("Choose the file or files complydoc may read")
+        if not files:
+            return "No file was chosen; nothing changed."
+        added = [self.folders.add_file(file) for file in files]
+        names = ", ".join(file.name for file in added)
+        return (
+            f"complydoc can read {names} for this conversation only. "
+            "Open each with open_document, using its name."
+        )
+
+    def open_latest(self) -> str:
+        from complydoc.audit.discovery import discover
+
+        inbox = self.folders.inbox
+        if inbox is None:
+            raise ToolError("There is no Inbox folder in this session.")
+        found, _ = discover(inbox, recurse=True)
+        if not found:
+            return (
+                f"The Inbox folder is empty. Ask the person to drop a file in {inbox}, "
+                "or to choose one with choose_file."
+            )
+        newest = max(found, key=lambda path: path.stat().st_mtime)
+        return self.open_document(f"{inbox.name}/{newest.relative_to(inbox)}")
+
     def request_unmask(self, name: str, number: object, reason: str) -> str:
         """One masked value, if the person allows it in the client's prompt."""
         path = self.resolve(name)
@@ -467,6 +512,10 @@ class Server:
                 return "No folder was chosen; nothing changed."
             label = folders.add(chosen)
             return f"complydoc can now open documents from {label} ({chosen})."
+        if name == "choose_file":
+            return self.choose_file()
+        if name == "open_latest":
+            return self.open_latest()
         if name == "remove_folder":
             removed = folders.remove(argument("name"))
             return f"complydoc no longer opens documents from {removed}."
@@ -580,6 +629,8 @@ def serve(
     *,
     store: Path | None = STORE,
     picker: Picker = pick_folder,
+    file_picker: FilePicker = pick_files,
+    inbox: Path | None = INBOX,
     clean_copies: Path = CLEAN_COPIES,
     fetch_name_model: bool = False,
     runs: Iterable[str | Path] = (),
@@ -590,9 +641,11 @@ def serve(
     """Answer MCP requests on stdin until it closes. Logs go to stderr, never stdout.
 
     `folders` are the ones given at start; those chosen in a conversation are kept in
-    `store` and added to them. Clean copies are written to `clean_copies`. With
-    `fetch_name_model`, the model that finds names is downloaded once if it is missing, by a
-    process of its own, before this one's network guard is armed. `runs` are folders of
+    `store` and added to them. `inbox`, a folder made at start, is always shared, so a file
+    dropped in it opens without choosing anything; `None` leaves it out. Clean copies are
+    written to `clean_copies`. With `fetch_name_model`, the model that finds names is
+    downloaded once if it is missing, by a process of its own, before this one's network
+    guard is armed. `runs` are folders of
     reports complydoc wrote; given them, the server offers an engineer's tools on them too.
     `engine` names the detection engine to read with (see `complydoc.mcp.engines`): the
     first installed when None, complydoc's own configuration with "none". `config_dir`,
@@ -608,8 +661,9 @@ def serve(
     if chosen is not None:
         print(f"complydoc mcp: reading with {chosen.name}", file=sys.stderr)
     server = Server(
-        Folders(given, store=store),
+        Folders(given, store=store, inbox=inbox),
         picker=picker,
+        file_picker=file_picker,
         clean_copies=clean_copies,
         fetching=fetching,
         runs=Runs([Path(r) for r in runs]) if runs else None,

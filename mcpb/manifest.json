@@ -66,6 +66,14 @@
       "description": "Pick another folder to share, in your computer's folder dialog."
     },
     {
+      "name": "choose_file",
+      "description": "Pick one or more files in your computer's file dialog, to share for this conversation."
+    },
+    {
+      "name": "open_latest",
+      "description": "Open the newest file in the Inbox folder, cleaned."
+    },
+    {
       "name": "remove_folder",
       "description": "Stop sharing a folder."
     }

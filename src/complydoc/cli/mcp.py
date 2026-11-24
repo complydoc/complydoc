@@ -67,7 +67,9 @@ def mcp(
 
     The assistant gets list_documents, check_document and open_document, and what it reads
     has personal and financial details masked and hidden passages taken out. choose_folder
-    lets the person add a folder from the conversation, through the system's folder dialog.
+    lets the person add a folder from the conversation, through the system's folder dialog,
+    and choose_file shares single files the same way. Files dropped in ~/complydoc/Inbox open
+    without choosing anything.
 
     With `--runs .complydoc`, an engineer can also ask about recorded runs: step times of a
     pipeline, loaders compared, evals, and where a value went.
