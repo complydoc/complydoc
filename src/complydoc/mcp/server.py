@@ -75,6 +75,10 @@ NO_FOLDER = (
 )
 
 SCHEME = "complydoc"
+CHOSEN_SHOWN = 3
+"""How many chosen files choose_file opens at once."""
+UI_EXTENSION = "io.modelcontextprotocol/ui"
+DROP_ZONE_TOOLS = frozenset({"show_drop_zone", "receive_document"})
 MAX_UPLOAD = 25 * 1024 * 1024
 """Bytes of one dropped file at most."""
 CHOSEN = "Chosen files"
@@ -82,7 +86,14 @@ CHOSEN = "Chosen files"
 
 
 READS_DOCUMENTS = frozenset(
-    {"check_document", "check_folder", "open_document", "save_clean_copy", "search_documents"}
+    {
+        "check_document",
+        "check_folder",
+        "choose_file",
+        "open_document",
+        "save_clean_copy",
+        "search_documents",
+    }
 )
 """The tools whose answer depends on names being masked."""
 
@@ -146,6 +157,8 @@ class Server:
         self.fetching = fetching
         """The name model being downloaded, until it is on disk."""
         self.fetch_failed = False
+        self.apps = False
+        """Whether the client can show a page inside the chat (MCP Apps)."""
 
     def _names_pending(self) -> str | None:
         """What to say while the name model is not there yet; None once it is, or was never
@@ -373,9 +386,23 @@ class Server:
             return "No file was chosen; nothing changed."
         added = [self.folders.add_file(file) for file in files]
         names = ", ".join(file.name for file in added)
+        shown = [self.open_document(file.name) for file in added[:CHOSEN_SHOWN]]
+        left = added[CHOSEN_SHOWN:]
+        more = (
+            " Open the others with open_document, using their names: "
+            + ", ".join(file.name for file in left)
+            + "."
+            if left
+            else ""
+        )
         return (
             f"complydoc can read {names} for this conversation only. "
-            "Open each with open_document, using its name."
+            "The person chose them to be read now, so here is "
+            + ("the first" if len(shown) == 1 else f"each of the first {len(shown)}")
+            + ", cleaned."
+            + more
+            + "\n\n"
+            + "\n\n---\n\n".join(shown)
         )
 
     def open_latest(self) -> str:
@@ -512,7 +539,9 @@ class Server:
         return said + (RUN_INSTRUCTIONS if self.runs is not None else "")
 
     def tools(self) -> list[dict[str, Any]]:
-        return TOOLS + RUN_TOOLS if self.runs is not None else TOOLS
+        """The tools to offer: the drop box only to a client that can show it."""
+        tools = [tool for tool in TOOLS if self.apps or tool["name"] not in DROP_ZONE_TOOLS]
+        return tools + RUN_TOOLS if self.runs is not None else tools
 
     def _dispatch(self, name: str, arguments: dict[str, Any]) -> str:
         def argument(key: str) -> str:
@@ -599,6 +628,15 @@ class _RequestError(Exception):
         self.code = code
 
 
+def _shows_apps(capabilities: dict[str, Any]) -> bool:
+    """Whether the client said it renders MCP Apps (`io.modelcontextprotocol/ui`)."""
+    for key in ("extensions", "experimental"):
+        found = capabilities.get(key)
+        if isinstance(found, dict) and UI_EXTENSION in found:
+            return True
+    return False
+
+
 def _handle(
     server: Server, request: dict[str, Any], client: _Client | None = None
 ) -> dict[str, Any]:
@@ -610,6 +648,8 @@ def _handle(
         capabilities = params.get("capabilities") or {}
         if client is not None and isinstance(capabilities, dict) and "elicitation" in capabilities:
             server.ask = client.ask
+        if isinstance(capabilities, dict) and _shows_apps(capabilities):
+            server.apps = True
         return {
             "protocolVersion": params.get("protocolVersion") or PROTOCOL,
             "capabilities": {"tools": {}, "resources": {}, "prompts": {}},
