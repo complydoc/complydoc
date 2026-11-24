@@ -10,6 +10,12 @@ feature keeps working, is in [Versions and deprecations](https://complydoc.io/do
 
 ### Added
 
+- `sensitive.review` names a reviewer, as `"module:attribute"`, that sees each page's
+  findings together and returns the ones to report: it can drop a find, give it a score of
+  its own, or add one in any category the configuration has. A reviewer that fails is said
+  on stderr and the page is reported as found. Veil's engine uses it so complydoc reports
+  what Veil's model finds beyond names (addresses, IDs, contacts, secrets), scored with
+  complydoc's checks. Off unless a configuration names one.
 - A model can ask the person to see one masked value. The MCP server numbers each masked
   value in the text it returns, as `[#12 IBAN ••••4521]`, and the new `request_unmask` tool
   asks for one by its number and a reason. The person allows or declines it in their
