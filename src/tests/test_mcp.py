@@ -577,3 +577,14 @@ def test_a_document_with_pages_left_unread_is_never_ready(
     assert "page 2 has no text layer and was not read" in text(checked)
     assert "part not read" in text(folder)
     assert "Ready to send" not in text(folder)
+
+
+def test_the_extension_manifest_lists_every_tool_the_server_has():
+    import json
+    from pathlib import Path
+
+    from complydoc.mcp.catalogue import TOOLS
+
+    manifest = Path(__file__).resolve().parents[2] / "mcpb" / "manifest.json"
+    listed = {tool["name"] for tool in json.loads(manifest.read_text())["tools"]}
+    assert listed == {tool["name"] for tool in TOOLS}
