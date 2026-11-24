@@ -121,6 +121,23 @@ TOOLS: list[dict[str, Any]] = [
         [],
     ),
     _tool(
+        "show_drop_zone",
+        "Show a box in the chat where the person can drop a file to send you, cleaned. Use it when "
+        "they want to share a file. The file goes to complydoc, never to you; once they have "
+        "dropped it, open it with open_latest. If no box appears, offer choose_file instead.",
+        {},
+        [],
+    ),
+    _tool(
+        "receive_document",
+        "Used by the drop box itself, never by you: it saves the dropped file in the Inbox.",
+        {
+            "name": {"type": "string", "description": "The file's name."},
+            "content": {"type": "string", "description": "The file's bytes, in base64."},
+        },
+        ["name", "content"],
+    ),
+    _tool(
         "remove_folder",
         "Stop sharing a folder chosen earlier, by the name list_folders gives it.",
         {"name": {"type": "string", "description": "As list_folders gives it."}},
@@ -191,12 +208,24 @@ _HINTS: dict[str, tuple[str, bool, bool]] = {
     "choose_folder": ("Choose a folder to share", False, False),
     "choose_file": ("Choose a file to share", False, False),
     "open_latest": ("Open the newest file in the Inbox", True, False),
+    "show_drop_zone": ("Show a box to drop a file in", True, False),
+    "receive_document": ("Save a dropped file in the Inbox", False, False),
     "remove_folder": ("Stop sharing a folder", False, True),
     "list_runs": ("List recorded runs", True, False),
     "show_run": ("Show a run", True, False),
     "compare_runs": ("Compare two runs", True, False),
     "find_value": ("Find where a value went", True, False),
 }
+
+DROP_ZONE_URI = "ui://complydoc/drop-zone"
+"""The page `show_drop_zone` shows in the chat, for clients that run MCP Apps."""
+
+for _entry in TOOLS:
+    if _entry["name"] == "show_drop_zone":
+        _entry["_meta"] = {"ui": {"resourceUri": DROP_ZONE_URI, "visibility": ["model", "app"]}}
+    elif _entry["name"] == "receive_document":
+        # Only the page may call it: the model never carries a file's bytes.
+        _entry["_meta"] = {"ui": {"visibility": ["app"]}}
 
 for _entry in [*TOOLS, *RUN_TOOLS]:
     _title, _read_only, _destructive = _HINTS[_entry["name"]]
