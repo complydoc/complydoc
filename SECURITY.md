@@ -66,16 +66,16 @@ you install was built from this repository by its release workflow. From 0.8.3 t
 Claude Desktop extension (`complydoc.mcpb`) carries it too:
 
 ```bash
-gh attestation verify complydoc-0.8.2-py3-none-any.whl --repo complydoc/complydoc
+gh attestation verify complydoc-0.9.0-py3-none-any.whl --repo complydoc/complydoc
 gh attestation verify complydoc.mcpb --repo complydoc/complydoc         # from 0.8.3
-gh attestation verify oci://ghcr.io/complydoc/complydoc:0.8.2 --repo complydoc/complydoc
+gh attestation verify oci://ghcr.io/complydoc/complydoc:0.9.0 --repo complydoc/complydoc
 ```
 
 From 0.8.3 the container images are also signed with Sigstore, with no stored key. To check a
 signature with cosign:
 
 ```bash
-cosign verify ghcr.io/complydoc/complydoc:0.8.2 \
+cosign verify ghcr.io/complydoc/complydoc:0.9.0 \
   --certificate-identity-regexp '^https://github.com/complydoc/complydoc/\.github/workflows/publish\.yml@' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```

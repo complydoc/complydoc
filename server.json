@@ -3,7 +3,7 @@
   "name": "io.github.complydoc/complydoc",
   "title": "complydoc",
   "description": "Open documents with personal details masked and hidden instructions taken out, on your machine.",
-  "version": "0.8.2",
+  "version": "0.9.0",
   "websiteUrl": "https://complydoc.io/",
   "repository": {
     "url": "https://github.com/complydoc/complydoc",
@@ -20,7 +20,7 @@
       "registryType": "pypi",
       "registryBaseUrl": "https://pypi.org",
       "identifier": "complydoc",
-      "version": "0.8.2",
+      "version": "0.9.0",
       "runtimeHint": "uvx",
       "transport": {
         "type": "stdio"
@@ -50,7 +50,7 @@
     },
     {
       "registryType": "oci",
-      "identifier": "ghcr.io/complydoc/complydoc:0.8.2",
+      "identifier": "ghcr.io/complydoc/complydoc:0.9.0",
       "runtimeHint": "docker",
       "transport": {
         "type": "stdio"
