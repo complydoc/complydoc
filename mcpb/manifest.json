@@ -94,8 +94,8 @@
     "folders": {
       "type": "directory",
       "title": "Folders with your documents",
-      "description": "The folders the assistant may open documents from. You can add more later by asking it to choose a folder.",
-      "required": true,
+      "description": "Optional. Files you drop or choose in the chat need no folder. The folders the assistant may open documents from; you can add more later by asking it to choose a folder.",
+      "required": false,
       "multiple": true
     }
   },

@@ -173,8 +173,6 @@ def test_it_introduces_itself_with_its_icon_and_tools(folder: Path, tmp_path: Pa
         "choose_folder",
         "choose_file",
         "open_latest",
-        "show_drop_zone",
-        "receive_document",
         "remove_folder",
     ]
 
@@ -617,6 +615,7 @@ def test_a_chosen_file_opens_for_the_session_without_sharing_its_folder(
     before, picked, opened, sibling, listed = replies
     assert "no document called" in text(before).lower() or before["result"].get("isError")
     assert "invoice.pdf" in text(picked) and "this conversation only" in text(picked)
+    assert "complydoc read invoice.pdf" in text(picked)  # it comes back already opened
     assert "complydoc read invoice.pdf" in text(opened)
     assert sibling["result"].get("isError")
     assert "Chosen files/invoice.pdf" in text(listed)
@@ -660,8 +659,14 @@ def test_the_extension_manifest_lists_every_tool_the_server_has():
 
 def test_the_drop_zone_is_a_page_the_chat_can_show_and_only_it_can_upload(tmp_path: Path) -> None:
     inbox = tmp_path / "Inbox"
-    listing, shown, page = talk(
+    _, listing, shown, page = talk(
         [],
+        {
+            "jsonrpc": "2.0",
+            "id": 0,
+            "method": "initialize",
+            "params": {"capabilities": {"extensions": {"io.modelcontextprotocol/ui": {}}}},
+        },
         {"jsonrpc": "2.0", "id": 1, "method": "tools/list"},
         call(2, "show_drop_zone"),
         {
@@ -725,3 +730,37 @@ def test_a_dropped_file_that_is_too_big_is_refused(
         inbox=inbox,
     )
     assert reply["result"]["isError"] and not any(inbox.iterdir())
+
+
+def test_the_drop_box_is_only_offered_to_a_client_that_can_show_it(tmp_path: Path) -> None:
+    def names(capabilities: dict[str, Any]) -> set[str]:
+        _, listing = talk(
+            [],
+            {
+                "jsonrpc": "2.0",
+                "id": 0,
+                "method": "initialize",
+                "params": {"capabilities": capabilities},
+            },
+            {"jsonrpc": "2.0", "id": 1, "method": "tools/list"},
+            store=tmp_path / "store.json",
+        )
+        return {tool["name"] for tool in listing["result"]["tools"]}
+
+    drop = {"show_drop_zone", "receive_document"}
+    assert not drop & names({})
+    assert not drop & names({"extensions": {"other/thing": {}}})
+    assert drop <= names({"extensions": {"io.modelcontextprotocol/ui": {}}})
+
+
+def test_choose_file_opens_the_first_files_and_names_the_rest(tmp_path: Path) -> None:
+    files = []
+    for name in ("a.pdf", "b.pdf", "c.pdf", "d.pdf"):
+        shutil.copy(FIXTURES / "native_text.pdf", tmp_path / name)
+        files.append(tmp_path / name)
+    (reply,) = talk(
+        [], call(1, "choose_file"), store=tmp_path / "s.json", file_picker=lambda prompt: files
+    )
+    body = text(reply)
+    assert body.count("complydoc read") == 3
+    assert "Open the others with open_document" in body and "d.pdf" in body
