@@ -18,7 +18,7 @@
 
 # The React viewer, which `complydoc ui` serves from inside the package.
 # Built on the machine doing the build whatever the image is for: its output is the same.
-FROM --platform=$BUILDPLATFORM node:22-slim AS viewer
+FROM --platform=$BUILDPLATFORM node:25-slim AS viewer
 WORKDIR /viewer
 COPY viewer/package.json viewer/package-lock.json ./
 RUN npm ci
