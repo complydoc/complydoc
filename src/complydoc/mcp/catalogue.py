@@ -106,6 +106,21 @@ TOOLS: list[dict[str, Any]] = [
         [],
     ),
     _tool(
+        "choose_file",
+        "Open the computer's file dialog so the person can pick one or more files to send you, "
+        "cleaned. Use it when they want to share a file that is not in a shared folder. The "
+        "person picks; you cannot. The files are shared for this conversation only.",
+        {},
+        [],
+    ),
+    _tool(
+        "open_latest",
+        "Open the newest file in the Inbox folder, cleaned, as open_document does. Use it when "
+        "the person says they just dropped a file there.",
+        {},
+        [],
+    ),
+    _tool(
         "remove_folder",
         "Stop sharing a folder chosen earlier, by the name list_folders gives it.",
         {"name": {"type": "string", "description": "As list_folders gives it."}},
@@ -174,6 +189,8 @@ _HINTS: dict[str, tuple[str, bool, bool]] = {
     "save_clean_copy": ("Save a clean copy", False, False),
     "list_folders": ("List shared folders", True, False),
     "choose_folder": ("Choose a folder to share", False, False),
+    "choose_file": ("Choose a file to share", False, False),
+    "open_latest": ("Open the newest file in the Inbox", True, False),
     "remove_folder": ("Stop sharing a folder", False, True),
     "list_runs": ("List recorded runs", True, False),
     "show_run": ("Show a run", True, False),

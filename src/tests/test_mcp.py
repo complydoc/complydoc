@@ -9,7 +9,9 @@ from __future__ import annotations
 
 import io
 import json
+import os
 import shutil
+import time
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -43,6 +45,8 @@ def talk(
     *messages: dict[str, Any],
     store: Path,
     picker: Callable[[str], Path | None] = lambda prompt: None,
+    file_picker: Callable[[str], list[Path]] = lambda prompt: [],
+    inbox: Path | None = None,
     clean_copies: Path | None = None,
 ) -> list[dict[str, Any]]:
     lines = "".join(json.dumps(message) + "\n" for message in messages)
@@ -53,6 +57,8 @@ def talk(
         stdout=out,
         store=store,
         picker=picker,
+        file_picker=file_picker,
+        inbox=inbox,
         clean_copies=clean_copies or store.parent / "clean copies",
     )
     return [json.loads(line) for line in out.getvalue().splitlines()]
@@ -165,6 +171,8 @@ def test_it_introduces_itself_with_its_icon_and_tools(folder: Path, tmp_path: Pa
         "save_clean_copy",
         "list_folders",
         "choose_folder",
+        "choose_file",
+        "open_latest",
         "remove_folder",
     ]
 
@@ -547,7 +555,12 @@ def test_every_tool_says_what_it_does_to_the_machine() -> None:
             hints["destructiveHint"], bool
         )
         assert hints["openWorldHint"] is False
-        writes = tool["name"] in {"save_clean_copy", "choose_folder", "remove_folder"}
+        writes = tool["name"] in {
+            "save_clean_copy",
+            "choose_folder",
+            "choose_file",
+            "remove_folder",
+        }
         assert hints["readOnlyHint"] is not writes, tool["name"]
 
 
@@ -577,6 +590,58 @@ def test_a_document_with_pages_left_unread_is_never_ready(
     assert "page 2 has no text layer and was not read" in text(checked)
     assert "part not read" in text(folder)
     assert "Ready to send" not in text(folder)
+
+
+def test_a_chosen_file_opens_for_the_session_without_sharing_its_folder(
+    tmp_path: Path, folder: Path
+) -> None:
+    elsewhere = tmp_path / "downloads"
+    elsewhere.mkdir()
+    shutil.copy(FIXTURES / "native_text.pdf", elsewhere / "invoice.pdf")
+    shutil.copy(FIXTURES / "native_text.pdf", elsewhere / "other.pdf")
+    store = tmp_path / "store.json"
+    chosen = elsewhere / "invoice.pdf"
+    replies = talk(
+        [folder],
+        call(1, "open_document", path="invoice.pdf"),
+        call(2, "choose_file"),
+        call(3, "open_document", path="invoice.pdf"),
+        call(4, "open_document", path=str(elsewhere / "other.pdf")),
+        call(5, "list_documents"),
+        store=store,
+        file_picker=lambda prompt: [chosen],
+    )
+    before, picked, opened, sibling, listed = replies
+    assert "no document called" in text(before).lower() or before["result"].get("isError")
+    assert "invoice.pdf" in text(picked) and "this conversation only" in text(picked)
+    assert "complydoc read invoice.pdf" in text(opened)
+    assert sibling["result"].get("isError")
+    assert "Chosen files/invoice.pdf" in text(listed)
+    assert not store.exists() or "invoice" not in store.read_text()
+
+
+def test_cancelling_the_file_dialog_changes_nothing(folder: Path, tmp_path: Path) -> None:
+    (reply,) = talk([folder], call(1, "choose_file"), store=tmp_path / "s.json")
+    assert "No file was chosen" in text(reply)
+
+
+def test_the_inbox_is_shared_and_its_newest_file_opens_by_itself(
+    tmp_path: Path,
+) -> None:
+    inbox = tmp_path / "Inbox"
+    store = tmp_path / "store.json"
+    (empty,) = talk([], call(1, "open_latest"), store=store, inbox=inbox)
+    assert inbox.is_dir() and "empty" in text(empty)
+    shutil.copy(FIXTURES / "native_text.pdf", inbox / "older.pdf")
+    time.sleep(0.05)
+    # Dragged in from elsewhere, the copy keeps its old modification time.
+    shutil.copy(FIXTURES / "native_text.pdf", inbox / "newer.pdf")
+    os.utime(inbox / "newer.pdf", (1, 1))
+    listed, latest = talk(
+        [], call(1, "list_documents"), call(2, "open_latest"), store=store, inbox=inbox
+    )
+    assert "Inbox/newer.pdf" in text(listed)
+    assert "complydoc read newer.pdf" in text(latest)
 
 
 def test_the_extension_manifest_lists_every_tool_the_server_has():
