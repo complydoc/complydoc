@@ -71,4 +71,5 @@ def load(path: str) -> Reviewer:
         found = getattr(found, part)
     if not callable(found):
         raise TypeError(f"{path} is not callable")
-    return found
+    reviewer: Reviewer = found
+    return reviewer
