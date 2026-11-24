@@ -6,13 +6,14 @@ a config key, which the release then says. `schema_version` in the JSON is versi
 separately. What counts as breaking, and how long a deprecated
 feature keeps working, is in [Versions and deprecations](https://complydoc.io/docs/explanation/versioning/).
 
-## [0.9.0] — 2026-11-24
+## [0.8.3] — 2026-11-24
 
 ### Added
 
 - Handing a file to the assistant over MCP no longer needs a folder. `choose_file` opens
-  the system's file dialog (several files at once) and shares only the files chosen, for
-  that conversation. An Inbox folder, `~/complydoc/Inbox`, is always shared, and
+  the system's file dialog (several files at once), shares only the files chosen, for
+  that conversation, and returns the first three already cleaned. The Claude Desktop
+  extension no longer needs a folder set. An Inbox folder, `~/complydoc/Inbox`, is always shared, and
   `open_latest` opens the newest file in it, cleaned.
 - A drop box in the chat for clients that show MCP Apps, such as Claude Desktop: the
   `show_drop_zone` tool draws a box, a file dropped in it is saved in the Inbox and never

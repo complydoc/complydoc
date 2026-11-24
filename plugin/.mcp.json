@@ -2,7 +2,7 @@
   "mcpServers": {
     "complydoc": {
       "command": "uvx",
-      "args": ["complydoc@0.9.0", "mcp"]
+      "args": ["complydoc@0.8.3", "mcp"]
     }
   }
 }
