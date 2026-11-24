@@ -53,6 +53,7 @@ __all__ = [
     "classify_windows",
     "configured_models",
     "model_available",
+    "page_entities",
     "use_server",
 ]
 
@@ -219,6 +220,15 @@ def _read_pages(model_name: str, texts: Sequence[str]) -> None:
         )
     for text, entities in zip(pages, found, strict=True):
         _remember((model_name, text), entities)
+
+
+def page_entities(model_name: str, text: str) -> list[Entity]:
+    """Every entity the model found on the page, of any label, as (label, start, end, score).
+
+    The page is read once whichever category asks: a reviewer that wants the labels no
+    category reads (complydoc.sensitive.review) gets the same reading, not a second one.
+    """
+    return list(_page_entities(model_name, text))
 
 
 def _page_entities(model_name: str, text: str) -> list[Entity]:
