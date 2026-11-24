@@ -12,8 +12,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from complydoc.unmask import Stretch, Values, moved, number, stretches
+
 if TYPE_CHECKING:
     from complydoc.config.schema import Config
+    from complydoc.extraction.extract import Placed
 
 READY, CAREFUL, STOP = "Ready to send", "Send with care", "Do not send as it is"
 UNREAD = "Could not be read"
@@ -33,6 +36,9 @@ class Findings:
     """The full length of each hidden passage, whose excerpt may be cut short."""
     unread: str | None = None
     """Why nothing in the document could be checked, when nothing could."""
+    unread_parts: list[str] = field(default_factory=list)
+    """What the reader said it left unread in a document it otherwise read: the scanned
+    pages of a contract, when OCR is not installed."""
 
     @property
     def verdict(self) -> str:
@@ -43,7 +49,8 @@ class Findings:
             return UNREAD
         if self.hidden or any(severity == "high" for _, severity in self.identifiers):
             return STOP
-        if self.identifiers:
+        # A page nobody read may hold anything, so the rest being clean does not make it ready.
+        if self.identifiers or self.unread_parts:
             return CAREFUL
         return READY
 
@@ -65,6 +72,8 @@ class Findings:
             )
             how = f" ({', '.join(reasons)})" if reasons else ""
             said.append(f"- {what} on {where}{how}: “{short(excerpt)}”")
+        for part in self.unread_parts:
+            said.append(f"- not checked: {part}")
         return said
 
     def summary(self) -> str:
@@ -74,6 +83,8 @@ class Findings:
         parts = [f"{label} {count}" for (label, _), count in sorted(self.identifiers.items())]
         if self.hidden:
             parts.append("hidden instruction" if self.instructed else "hidden text")
+        if self.unread_parts:
+            parts.append("part not read")
         return ", ".join(parts) if parts else "nothing found"
 
 
@@ -86,6 +97,8 @@ class Reading:
     """(page number, text) with identifiers masked and hidden passages taken out."""
     masked: int
     removed: int
+    values: Values = field(default_factory=Values)
+    """The masked values by number, kept in memory for a request a person allows."""
 
     def note(self, name: str) -> str:
         """What complydoc did to the document, to tell the person."""
@@ -108,36 +121,40 @@ class Reading:
             said.append("No text could be read from it.")
         return " ".join(said)
 
-    def text(self) -> str:
-        return "\n\n".join(f"--- page {page} ---\n{text}" for page, text in self.pages)
+    def text(self, numbered: bool = False) -> str:
+        """The pages joined; `numbered` shows each masked value as `[#n LABEL •••]`."""
+        return "\n\n".join(
+            f"--- page {page} ---\n{text}" for page, text in self.numbered_pages(numbered)
+        )
+
+    def numbered_pages(self, numbered: bool = True) -> list[tuple[int, str]]:
+        if not numbered:
+            return list(self.pages)
+        return [(page, self.values.marked(page, text)) for page, text in self.pages]
 
 
 class Reader:
-    """Reads documents once each, and again only when the file changes."""
+    """Reads documents once each, and again only when the file changes.
+
+    The MCP server's side of `complydoc.Gateway`: the same reading, kept by the gateway,
+    so a document opened by an assistant and one read with `cd.Gateway().read` agree.
+    """
 
     def __init__(self, config_dir: Path | None = None) -> None:
-        self._kept: dict[Path, tuple[tuple[float, int], Reading]] = {}
+        from complydoc.gateway import Gateway
+
         self.config_dir = config_dir
         """Read with this configuration directory, such as an engine's; complydoc's own
         when None."""
-        self._config: Config | None = None
+        # The server has chosen its engine already and passes its folder here.
+        self.gateway = Gateway(config_dir=config_dir, engine="none")
 
     def read(self, path: Path) -> Reading:
-        stat = path.stat()
-        stamp = (stat.st_mtime, stat.st_size)
-        kept = self._kept.get(path)
-        if kept and kept[0] == stamp:
-            return kept[1]
-        if self._config is None:
-            from complydoc.config.loader import load_config
-
-            self._config = load_config(self.config_dir)
-        reading = _read(path, self._config)
-        self._kept[path] = (stamp, reading)
-        return reading
+        return self.gateway.reading(path)
 
 
-def _read(path: Path, config: Config) -> Reading:
+def read_document(path: Path, config: Config) -> Reading:
+    """A document audited, its identifiers masked and its hidden passages taken out."""
     import complydoc as cd
 
     # OCR on, as open_document reads the document: a scan's identifiers are found by the
@@ -162,20 +179,53 @@ def _read(path: Path, config: Config) -> Reading:
             found.lengths.append(passage.characters)
         if any("password" in warning for warning in document.load_warnings):
             found.unread = "it is password protected"
+        found.unread_parts.extend(
+            _unread_part(warning) for warning in document.load_warnings if _NOT_READ in warning
+        )
     if found.unread and not report.documents:
         return Reading(findings=found, pages=[], masked=0, removed=0)
-    result = cd.extract_text(path, mask=True, config=config)
+    placed: dict[int, tuple[str, list[Placed]]] = {}
+    result = cd.extract_text(path, mask=True, config=config, _placed=placed)
     removed = 0
     pages: list[tuple[int, str]] = []
+    kept: list[Stretch] = []
     for chunk in result.chunks:
         text = chunk.text
+        original, covered = placed.get(chunk.page, ("", []))
+        here = stretches(chunk.page, original, covered)
         for (_, excerpt, _, _), length in zip(found.hidden, found.lengths, strict=True):
-            text, n = remove_passage(text, excerpt, length)
+            edits: list[tuple[int, int, int]] = []
+            text, n = remove_passage(text, excerpt, length, edits)
+            here = moved(here, edits)
             removed += n
         pages.append((chunk.page, text))
+        kept.extend(here)
     if not found.unread and not any(text.strip() for _, text in pages):
         found.unread = "no text could be read from it"
-    return Reading(findings=found, pages=pages, masked=result.masked_count, removed=removed)
+    values = number(pages, kept, config.sensitive.masking)
+    return Reading(
+        findings=found, pages=pages, masked=result.masked_count, removed=removed, values=values
+    )
+
+
+_NOT_READ = "content was not read"
+
+
+def _unread_part(warning: str) -> str:
+    """The loader's warning about what it could not read, said for the person.
+
+    "2 pages carry little or no text layer and OCR is unavailable (…), so their content was
+    not read: 3, 4." becomes "pages 3, 4 have no text layer and were not read (…)".
+    """
+    why = re.search(r"\(([^)]*)\)", warning)
+    reason = f" ({why.group(1)})" if why else " (OCR was not requested)"
+    pages = re.search(r"not read: ([\d, ]+)", warning)
+    if pages is None:
+        return f"it has no text layer and was not read{reason}"
+    numbers = pages.group(1).strip(" ,")
+    if "," in numbers:
+        return f"pages {numbers} have no text layer and were not read{reason}"
+    return f"page {numbers} has no text layer and was not read{reason}"
 
 
 def _unread(reason: str) -> str:
@@ -186,12 +236,20 @@ def _unread(reason: str) -> str:
     }.get(reason, reason)
 
 
-def remove_passage(text: str, excerpt: str, length: int | None = None) -> tuple[str, int]:
+def remove_passage(
+    text: str,
+    excerpt: str,
+    length: int | None = None,
+    edits: list[tuple[int, int, int]] | None = None,
+) -> tuple[str, int]:
     """Take a hidden passage out of the text, however the reader broke its lines.
 
     The excerpt and the text are masked separately, so any character of the excerpt may be
     a mask in the text and the reverse. An excerpt cut short ends with "…": the rest of the
     passage, `length` characters in all, is taken out with it, to the end of its last word.
+
+    Given `edits`, each passage taken out is added to it as (start, end, length of what
+    stands in its place), placed in `text` as it was given.
     """
     cut = excerpt.endswith("…")
     words = excerpt.rstrip("…").split()
@@ -224,6 +282,8 @@ def remove_passage(text: str, excerpt: str, length: int | None = None) -> tuple[
         out.append(text[position : match.start()])
         out.append(taken(match))
         position = holder.pop() if holder else match.end()
+        if edits is not None:
+            edits.append((match.start(), position, len(REMOVED)))
         count += 1
     out.append(text[position:])
     return "".join(out), count

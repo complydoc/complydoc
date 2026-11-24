@@ -5,10 +5,11 @@ Detectors return spans. Only `masking.render` turns a span into readable text.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from typing import Final, Literal, Protocol, runtime_checkable
 
-from complydoc.config.schema import CategoryConfig
+from complydoc.config.schema import CategoryConfig, NerModelSpec
 
 __all__ = [
     "EVIDENCE_ORDER",
@@ -18,7 +19,10 @@ __all__ = [
     "Evidence",
     "Finding",
     "SensitiveMatch",
+    "drop_entity",
     "evidence_of",
+    "not_a_name",
+    "not_an_organisation",
     "numbered_heading",
 ]
 
@@ -120,6 +124,72 @@ def numbered_heading(span: str) -> bool:
     return bool(letters) and all(c.isupper() for c in letters)
 
 
+# Words a person's name does not start with: the street, clause or form label a model
+# reads as the first name of a two-word "name" (`Rua Augusta`, `Cláusula Terceira`,
+# `Fatura Simplificada`). Seven languages, as the identifier labels.
+_NOT_A_FIRST_NAME = re.compile(
+    r"(?i)^(?:rua|avenida|av|largo|travessa|pra[cç]a|estrada|alameda|calle|avenue|via|rue|"
+    r"street|road|strasse|straße|weg|straat|cl[áa]usula|artigo|art|tribunal|entre|contrato|"
+    r"fatura|factura|facture|rechnung|fattura|factuur|refer[êe]ncia|morada|qualquer|section|"
+    r"clause|article|artikel|invoice|total|valor|data|nome|name|nombre|nom|dear|caro|cara|"
+    r"estimado|estimada|exmo|exma)$"
+)
+# Words that make a run of capitals an organisation rather than a person, wherever they
+# stand in it: `Ribeira Software`, `Tribunal da Comarca`, `Bluefin Retail Ltd`.
+_ORGANISATION_WORD = re.compile(
+    r"(?i)^(?:lda|ltd|limited|llc|inc|corp|plc|gmbh|ag|sa|sl|srl|bv|nv|spa|sarl|software|"
+    r"solutions|consulting|group|grupo|holding|bank|banco|banque|tribunal|comarca|"
+    r"universidade|university|associa[cç][ãa]o|cooperativa|seguros|insurance|services|"
+    r"servi[cç]os|retail|technologies|tecnologia)$"
+)
+_NAME_PARTICLES = frozenset(
+    {"da", "de", "do", "dos", "das", "e", "van", "von", "der", "den", "la", "le", "del",
+     "di", "du", "y", "dei", "ten", "ter", "bin", "al"}
+)  # fmt: skip
+
+
+def not_a_name(span: str, min_words: int = 1) -> bool:
+    """Whether a span a model read as a person's name cannot be one by its shape.
+
+    A name has no digits, every word but a particle (`da`, `van`) starts with a capital,
+    it does not start with a street, clause or form word, and it holds no company word.
+    In capitals, it has two to four words. The small English model reads Portuguese and Spanish
+    text badly, and most of its wrong names fail one of these: "transferência para",
+    "Rua Augusta", "Ribeira Software", "CONTRATO".
+    """
+    name = span.strip(" \t,.;:")
+    words = name.split()
+    if len(words) < max(min_words, 1) or any(c.isdigit() for c in name):
+        return True
+    if _NOT_A_FIRST_NAME.match(words[0].rstrip(".")):
+        return True
+    if any(_ORGANISATION_WORD.match(word.strip(".,")) for word in words):
+        return True
+    if name.isupper():
+        # A name in capitals heads a CV or a signature block: `RITA ALMEIDA SOUSA`. A
+        # heading in capitals is one word, or longer than a name, or starts with its
+        # form's word, which the checks above already caught.
+        return not 2 <= len(words) <= 4
+    return not all(word[:1].isupper() or word.lower() in _NAME_PARTICLES for word in words)
+
+
+def not_an_organisation(span: str) -> bool:
+    """Whether a span a model read as an organisation cannot be one by its shape.
+
+    It starts in lower case or runs past six words (a phrase from a sentence: "aprovada em
+    conselho de administração"), it holds a code of three or more digits ("Ticket
+    OPS-21674", "CAE 89692"), or it is a heading in capitals with no company word in it
+    ("MEDICAL LETTER", "FORMAÇÃO"). "ACME LTD" stays.
+    """
+    name = span.strip(" \t,.;:")
+    words = name.split()
+    if not words or not words[0][:1].isupper() or len(words) > 6:
+        return True
+    if any(sum(c.isdigit() for c in word) >= 3 for word in words):
+        return True
+    return name.isupper() and not any(_ORGANISATION_WORD.match(word.strip(".,")) for word in words)
+
+
 def evidence_of(
     model_backed: bool,
     validators_passed: list[str],
@@ -162,3 +232,37 @@ class Detector(Protocol):
     id: str
 
     def find(self, text: str, context: DetectorContext) -> list[Finding]: ...
+
+
+_MIN_ALPHA = 2
+"""Entities with fewer letters than this are discarded."""
+
+_ACRONYM_MAX = 5
+"""Single all-caps tokens up to this length are treated as field labels."""
+
+
+def drop_entity(span: str, spec: NerModelSpec) -> bool:
+    """Whether a model's entity is left out, by the filters its model spec turns on.
+
+    Shared by the spaCy and token-classifier detectors, which read the same spec.
+    """
+    # An entity straddling a line break is usually an artefact of reading a
+    # laid-out page as flat text: the end of one line run into the next.
+    if spec.drop_multiline and ("\n" in span or "\r" in span):
+        return True
+    if spec.drop_numbered_headings and numbered_heading(span):
+        return True
+    if spec.drop_non_names and not_a_name(span, spec.min_words):
+        return True
+    if spec.drop_non_organisations and not_an_organisation(span):
+        return True
+    if sum(1 for character in span if character.isalpha()) < _MIN_ALPHA:
+        return True
+    # Forms are full of short upper-case field labels, such as IBAN, VAT and
+    # UTR, which the small English model mistakes for organisation names.
+    return (
+        spec.drop_short_acronyms
+        and len(span) <= _ACRONYM_MAX
+        and span.isupper()
+        and " " not in span.strip()
+    )

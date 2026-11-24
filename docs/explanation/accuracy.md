@@ -118,6 +118,11 @@ multilingual model finds every name, and all 5 of its wrong flags are
 organisations: it found all 8 people with none. Setting `min_confidence` to 0.9
 drops two of those five, for 83.3% precision at the same recall.
 
+The table was measured before names were held to their shape (`drop_non_names` and
+`drop_non_organisations`, now in the shipped configuration). With them,
+`en_core_web_sm` finds the same 11 of 15 names on this machine's run of the corpus with
+15 wrong flags instead of 34.
+
 The multilingual row is measured through the `token_classifier` detector, which
 drops entities spanning a line break and short all-caps tokens before they are
 reported. The same model read without those filters scores 53.6%, so most of

@@ -15,6 +15,7 @@ from collections.abc import Iterable
 from typing import TYPE_CHECKING
 
 from complydoc.config.schema import MaskingConfig
+from complydoc.utils.text import line_starts
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
     from complydoc.sensitive.base import SensitiveMatch
@@ -75,7 +76,7 @@ def found_values(text: str, matches: Iterable[SensitiveMatch]) -> list[tuple[str
 
     A value may run on past its line, so it is read from the whole text.
     """
-    starts = _line_starts(text)
+    starts = line_starts(text)
     found: list[tuple[str, SensitiveMatch]] = []
     for match in matches:
         if not 0 < match.line <= len(starts):
@@ -94,7 +95,7 @@ def carried_matches(text: str, found: Iterable[tuple[str, SensitiveMatch]]) -> l
     reading's wording and not the other's. The value is then an identifier complydoc
     knows about, and is covered wherever it appears, not only where it was found.
     """
-    starts = _line_starts(text)
+    starts = line_starts(text)
     carried: list[SensitiveMatch] = []
     for value, match in found:
         at = text.find(value)
@@ -104,9 +105,3 @@ def carried_matches(text: str, found: Iterable[tuple[str, SensitiveMatch]]) -> l
             carried.append(dataclasses.replace(here, length=len(value)))
             at = text.find(value, at + 1)
     return carried
-
-
-def _line_starts(text: str) -> list[int]:
-    starts = [0]
-    starts.extend(index + 1 for index, char in enumerate(text) if char == "\n")
-    return starts

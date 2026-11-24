@@ -89,6 +89,15 @@ from complydoc.extraction.strings import (
     mask_text,
     scan_text,
 )
+from complydoc.gateway import (
+    Gateway,
+    GatewayBlockedError,
+    GatewayResult,
+    MaskedSpan,
+    RevealRequest,
+    UnmaskError,
+    Verdict,
+)
 from complydoc.hidden.instructions import register_instruction_classifier
 from complydoc.ingest.base import (
     Document,
@@ -179,6 +188,9 @@ __all__ = [
     "FactCheck",
     "FactLocation",
     "Finding",
+    "Gateway",
+    "GatewayBlockedError",
+    "GatewayResult",
     "IdentifierDifference",
     "IngestOptions",
     "InspectedChunk",
@@ -189,6 +201,7 @@ __all__ = [
     "LoaderSpec",
     "LoaderSummary",
     "MaskIdentifiers",
+    "MaskedSpan",
     "MaskedText",
     "Measurement",
     "MetadataFinding",
@@ -201,6 +214,7 @@ __all__ = [
     "Recognised",
     "Rect",
     "ReportDiff",
+    "RevealRequest",
     "Signal",
     "SkipRecord",
     "StageIdentifier",
@@ -214,6 +228,8 @@ __all__ = [
     "TraceStage",
     "Trail",
     "UnknownModelError",
+    "UnmaskError",
+    "Verdict",
     "VisionModel",
     "VisionPage",
     "VisionReading",

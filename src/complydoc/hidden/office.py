@@ -19,14 +19,11 @@ from typing import Any
 
 from complydoc.config.schema import VisibilityConfig
 from complydoc.hidden.visibility import HiddenRun
+from complydoc.utils.text import alnum_count
 
 __all__ = ["docx_hidden_runs", "xlsx_hidden_runs"]
 
 _MAX_TEXT = 2000
-
-
-def _letters(text: str) -> int:
-    return sum(c.isalnum() for c in text)
 
 
 def _is_white(value: str | None, config: VisibilityConfig) -> bool:
@@ -102,7 +99,7 @@ def _flush(
     runs: list[HiddenRun], reasons: tuple[str, ...], parts: list[str], config: VisibilityConfig
 ) -> None:
     text = " ".join("".join(parts).split())
-    if reasons and _letters(text) >= config.min_characters:
+    if reasons and alnum_count(text) >= config.min_characters:
         runs.append(HiddenRun(None, text[:_MAX_TEXT], "confirmed", list(reasons)))
 
 
@@ -275,7 +272,7 @@ def _add(
     runs: list[HiddenRun], page: int, values: list[str], reason: str, config: VisibilityConfig
 ) -> None:
     text = " | ".join(" ".join(value.split()) for value in values)
-    if _letters(text) >= config.min_characters:
+    if alnum_count(text) >= config.min_characters:
         runs.append(HiddenRun(page, text[:_MAX_TEXT], "confirmed", [reason]))
 
 

@@ -39,7 +39,11 @@ from multiprocessing import parent_process
 from typing import Any
 
 from complydoc.config.schema import SensitiveConfig
-from complydoc.sensitive.base import DetectorContext, Finding, numbered_heading
+from complydoc.sensitive.base import (
+    DetectorContext,
+    Finding,
+    drop_entity,
+)
 from complydoc.sensitive.detectors.model_server import Classify, Entity
 from complydoc.sensitive.registry import DetectorUnavailableError, detector, models_for_detector
 from complydoc.utils.install import extra_hint, hf_model_hint
@@ -49,14 +53,9 @@ __all__ = [
     "classify_windows",
     "configured_models",
     "model_available",
+    "page_entities",
     "use_server",
 ]
-
-_MIN_ALPHA = 2
-"""Entities with fewer letters than this are discarded."""
-
-_ACRONYM_MAX = 5
-"""Single all-caps tokens up to this length are treated as field labels."""
 
 _WINDOW_CHARS = 1200
 """Characters read at a time. Comfortably inside the usual 512-token ceiling."""
@@ -169,11 +168,29 @@ def classify_windows(model_name: str, windows: Sequence[str]) -> list[list[Entit
     results = classify(list(windows), batch_size=_BATCH)
     return [
         [
-            (str(e.get("entity_group", "")), int(e["start"]), int(e["end"]), float(e["score"]))
+            (
+                str(e.get("entity_group", "")),
+                *_trimmed(window, int(e["start"]), int(e["end"])),
+                float(e["score"]),
+            )
             for e in entities
         ]
-        for entities in results
+        for window, entities in zip(windows, results, strict=True)
     ]
+
+
+def _trimmed(text: str, start: int, end: int) -> tuple[int, int]:
+    """The span without the whitespace at its edges.
+
+    A SentencePiece tokenizer (mDeBERTa, XLM-R) gives a word's token the space
+    or line break before it, so a name at the start of a line comes back as
+    "\nMaria Santos" and `drop_multiline` threw it away.
+    """
+    while start < end and text[start].isspace():
+        start += 1
+    while end > start and text[end - 1].isspace():
+        end -= 1
+    return start, end
 
 
 def _read(model_name: str, windows: Sequence[str]) -> list[list[Entity]]:
@@ -203,6 +220,15 @@ def _read_pages(model_name: str, texts: Sequence[str]) -> None:
         )
     for text, entities in zip(pages, found, strict=True):
         _remember((model_name, text), entities)
+
+
+def page_entities(model_name: str, text: str) -> list[Entity]:
+    """Every entity the model found on the page, of any label, as (label, start, end, score).
+
+    The page is read once whichever category asks: a reviewer that wants the labels no
+    category reads (complydoc.sensitive.review) gets the same reading, not a second one.
+    """
+    return list(_page_entities(model_name, text))
 
 
 def _page_entities(model_name: str, text: str) -> list[Entity]:
@@ -259,19 +285,7 @@ class TokenClassifierDetector:
         for label, start, end, score in _page_entities(spec.name, text):
             if label.upper() not in wanted:
                 continue
-            span = text[start:end]
-            if spec.drop_multiline and ("\n" in span or "\r" in span):
-                continue
-            if spec.drop_numbered_headings and numbered_heading(span):
-                continue
-            if sum(1 for character in span if character.isalpha()) < _MIN_ALPHA:
-                continue
-            if (
-                spec.drop_short_acronyms
-                and len(span) <= _ACRONYM_MAX
-                and span.isupper()
-                and " " not in span.strip()
-            ):
+            if drop_entity(text[start:end], spec):
                 continue
             findings.append(Finding(start=start, end=end, confidence=score))
         return findings

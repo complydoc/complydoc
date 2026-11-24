@@ -25,8 +25,8 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
-      - uses: actions/checkout@v5
-      - uses: astral-sh/setup-uv@v10.3.0
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           enable-cache: true
       # A tag that disagrees with the version the tool reports would put the
@@ -51,8 +51,8 @@ jobs:
     name: full check suite
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: astral-sh/setup-uv@v10.3.0
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           enable-cache: true
       - run: uv sync --extra ocr --extra ner --group dev --group spacy-model
@@ -73,12 +73,12 @@ jobs:
       id-token: write
       attestations: write
     steps:
-      - uses: actions/checkout@v5
-      - uses: astral-sh/setup-uv@v10.3.0
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           enable-cache: true
       - run: uv sync --group dev
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
           node-version: 22
           cache: npm
@@ -100,6 +100,18 @@ jobs:
       - name: build the SBOM
         run: uv run python src/scripts/build_sbom.py --out dist/complydoc-sbom.json
 
+      # The Claude Desktop extensions install complydoc from PyPI at the version in
+      # their manifest, so an extension built for another version would install that one.
+      - name: the Claude Desktop extensions are for this version
+        run: |
+          said=$(python3 -c "import json; print(json.load(open('mcpb/manifest.json'))['version'])")
+          if [ "${said}" != "${{ needs.verify.outputs.version }}" ]; then
+            echo "::error::mcpb/manifest.json says ${said}, the package is ${{ needs.verify.outputs.version }}"; exit 1
+          fi
+
+      - name: pack the Claude Desktop extensions
+        run: uv run python src/scripts/pack_mcpb.py dist
+
       - name: checksums
         working-directory: dist
         run: sha256sum * > SHA256SUMS && cat SHA256SUMS
@@ -112,14 +124,15 @@ jobs:
       # notes say which it was.
       - id: attest
         if: ${{ !github.event.repository.private }}
-        uses: actions/attest-build-provenance@v3
+        uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3
         with:
           subject-path: |
             dist/*.whl
             dist/*.tar.gz
             dist/complydoc-sbom.json
+            dist/*.mcpb
 
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
           name: complydoc-${{ needs.verify.outputs.version }}
           path: dist/
@@ -141,6 +154,8 @@ jobs:
             --notes "See the changelog for what changed.
 
           ${provenance}
+
+          \`complydoc.mcpb\` is the Claude Desktop extension: open it to install it. It also masks names, and downloads its model (about 700 MB) the first time it starts.
 
           \`complydoc-sbom.json\` is a CycloneDX bill of materials for a full install, built from the lockfile." \
             --draft

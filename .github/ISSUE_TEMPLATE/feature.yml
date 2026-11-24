@@ -1,0 +1,20 @@
+name: Feature request
+description: Something complydoc should do that it does not yet.
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What you are trying to do, and what gets in the way today.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would solve it
+      description: How you would like it to work. A sketch of the command or the output helps.
+  - type: textarea
+    id: else
+    attributes:
+      label: What you do instead today

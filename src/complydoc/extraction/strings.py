@@ -23,7 +23,7 @@ from complydoc.config.loader import load_config
 from complydoc.config.schema import Config
 from complydoc.cost.tokenizer import TokenCount
 from complydoc.cost.tokenizer import count_tokens as _count_tokens
-from complydoc.extraction.extract import mask_matches, tokenizer_for
+from complydoc.extraction.extract import Placed, mask_matches, tokenizer_for
 from complydoc.hidden.check import check_content
 from complydoc.report.models import ContentFinding
 from complydoc.sensitive.base import SensitiveMatch
@@ -88,14 +88,19 @@ def scan_text(text: str, *, config: Config | None = None, reveal: bool = False) 
     return TextScan(matches=matches, unscanned=unscanned)
 
 
-def mask_text(text: str, *, config: Config | None = None) -> MaskedText:
-    """`text` with each identifier replaced, strongest evidence first."""
+def mask_text(
+    text: str, *, config: Config | None = None, _placed: list[Placed] | None = None
+) -> MaskedText:
+    """`text` with each identifier replaced, strongest evidence first.
+
+    `_placed` is for the gateway, which numbers what it masked.
+    """
     settings = resolve_config(config)
     with offline.guarded():
         # For covering the text, so with what is found and reported nowhere: a silent
         # category's values, and a rule's names where no name model ran.
         matches, unscanned = _scan_text(text, settings.sensitive, False, masking=True)
-    masked, replaced, confirmed = mask_matches(text, matches)
+    masked, replaced, confirmed = mask_matches(text, matches, _placed)
     return MaskedText(text=masked, masked=replaced, masked_confirmed=confirmed, unscanned=unscanned)
 
 

@@ -4,7 +4,8 @@ It offers an agent three kinds of thing, all worded for people who do not read r
 
 - **Tools** (`catalogue.py`): find, search, check and open documents, check a whole folder,
   save a clean copy, and say or change which folders are shared. A folder is only added
-  through the system's own folder dialog, clicked by the person.
+  through the system's own folder dialog, clicked by the person. A masked value is shown
+  only when the person allows it, in the client's own prompt (`request_unmask`).
 - **Resources**: every shared document, which a client can offer in its attach menu; what
   is attached is the clean text, never the file.
 - **Prompts** (`prompts.py`): ready-made requests such as "check before sharing".
@@ -20,7 +21,8 @@ import json
 import subprocess
 import sys
 import unicodedata
-from collections.abc import Iterable
+from collections import deque
+from collections.abc import Callable, Iterable, Iterator
 from functools import cache
 from importlib.resources import files
 from pathlib import Path
@@ -29,12 +31,22 @@ from urllib.parse import quote, unquote, urlparse
 
 from complydoc import __version__, offline
 from complydoc.mcp import engines
-from complydoc.mcp.catalogue import RUN_TOOLS, TOOLS
+from complydoc.mcp.catalogue import DROP_ZONE_URI, RUN_TOOLS, TOOLS
 from complydoc.mcp.engines import Engine
-from complydoc.mcp.folders import STORE, FolderError, Folders, Picker, pick_folder
+from complydoc.mcp.folders import (
+    INBOX,
+    STORE,
+    FilePicker,
+    FolderError,
+    Folders,
+    Picker,
+    pick_files,
+    pick_folder,
+)
 from complydoc.mcp.prompts import PROMPTS, get_prompt
 from complydoc.mcp.reading import CAREFUL, READY, STOP, UNREAD, Findings, Reader, short
 from complydoc.mcp.runs import RunError, Runs
+from complydoc.unmask import REVEAL_LOG, RevealLog, RevealRequest, UnmaskError
 
 __all__ = ["CAREFUL", "READY", "STOP", "UNREAD", "Findings", "Server", "serve"]
 
@@ -63,10 +75,25 @@ NO_FOLDER = (
 )
 
 SCHEME = "complydoc"
+CHOSEN_SHOWN = 3
+"""How many chosen files choose_file opens at once."""
+UI_EXTENSION = "io.modelcontextprotocol/ui"
+DROP_ZONE_TOOLS = frozenset({"show_drop_zone", "receive_document"})
+MAX_UPLOAD = 25 * 1024 * 1024
+"""Bytes of one dropped file at most."""
+CHOSEN = "Chosen files"
+"""The label of the files the person picked one by one."""
 
 
 READS_DOCUMENTS = frozenset(
-    {"check_document", "check_folder", "open_document", "save_clean_copy", "search_documents"}
+    {
+        "check_document",
+        "check_folder",
+        "choose_file",
+        "open_document",
+        "save_clean_copy",
+        "search_documents",
+    }
 )
 """The tools whose answer depends on names being masked."""
 
@@ -74,7 +101,10 @@ READS_DOCUMENTS = frozenset(
 INSTRUCTIONS = (
     "Open documents with open_document, never by asking for the file: it masks "
     "personal details and removes hidden instructions before you read it. If a "
-    "document is not in a shared folder, offer to choose its folder with choose_folder."
+    "document is not in a shared folder, offer choose_file for one file, or choose_folder "
+    "for its folder; open_latest opens the newest file in the Inbox folder. "
+    "Masked values are numbered, as [#12 IBAN ••••4521]. Only if the task cannot be done "
+    "without one, call request_unmask with its number and why: the person decides."
 )
 RUN_INSTRUCTIONS = (
     " For questions about ingestion pipelines, loaders, load times or evals, read the runs "
@@ -86,29 +116,49 @@ class ToolError(Exception):
     """Something the person can act on, returned to the client as the tool's answer."""
 
 
+Ask = Callable[[str, dict[str, Any]], dict[str, Any] | None]
+"""Puts a question to the person through the client (MCP elicitation) and gives its answer,
+or None when there was none."""
+
+NO_PROMPT = (
+    "This app cannot show complydoc's approval prompt, so no masked value can be revealed "
+    "here, and you cannot approve it on the person's behalf. Carry on without the value, or "
+    "tell the person they can read it in the document themselves."
+)
+
+
 class Server:
     def __init__(
         self,
         folders: Folders,
         picker: Picker = pick_folder,
         clean_copies: Path = CLEAN_COPIES,
+        file_picker: FilePicker = pick_files,
         fetching: subprocess.Popen[bytes] | None = None,
         runs: Runs | None = None,
         engine: Engine | None = None,
         config_dir: Path | None = None,
+        reveals: Path | None = REVEAL_LOG,
     ) -> None:
         self.folders = folders
+        self.log = RevealLog(reveals)
+        """Every request to see a masked value, and the answer; never the value."""
+        self.ask: Ask | None = None
+        """How to ask the person, when the client said it can (elicitation)."""
         self.engine = engine
         """The engine documents are read with, when another package installed one."""
         self.config_dir = config_dir or (engine.config_dir if engine else None)
         self.runs = runs
         """The folders of recorded runs an engineer's tools read, when given."""
         self.picker = picker
+        self.file_picker = file_picker
         self.clean_copies = clean_copies
         self.reader = Reader(self.config_dir)
         self.fetching = fetching
         """The name model being downloaded, until it is on disk."""
         self.fetch_failed = False
+        self.apps = False
+        """Whether the client can show a page inside the chat (MCP Apps)."""
 
     def _names_pending(self) -> str | None:
         """What to say while the name model is not there yet; None once it is, or was never
@@ -150,7 +200,7 @@ class Server:
     def _resolve(self, name: str) -> Path:
         if not name:
             raise ToolError("Say which document: give its name as list_documents shows it.")
-        if not self.folders.all:
+        if not self.folders.all and not self.folders.files:
             raise ToolError(NO_FOLDER)
         candidates: list[Path] = []
         given = Path(name).expanduser()
@@ -162,6 +212,9 @@ class Server:
             if rest and label in labels:
                 candidates.append((labels[label] / rest).resolve())
             candidates += [(folder / name).resolve() for folder in self.folders.all]
+            candidates += [
+                file for file in self.folders.files if name in (file.name, f"{CHOSEN}/{file.name}")
+            ]
         for path in candidates:
             if path.is_file() and self.folders.contains(path):
                 return path
@@ -199,6 +252,8 @@ class Server:
                 for path in found
                 if not SKIPPED_FOLDERS & set(path.relative_to(root).parts[:-1])
             )
+        if not folder:
+            names += sorted(f"{CHOSEN}/{file.name}" for file in self.folders.files)
         query = query.lower().strip()
         return [name for name in names if query in name.lower()] if query else names
 
@@ -289,7 +344,7 @@ class Server:
                 reading = self.reader.read(self.resolve(name))
             except Exception:
                 continue
-            for page, text in reading.pages:
+            for page, text in reading.numbered_pages():
                 lowered = text.lower()
                 if all(word in lowered for word in words):
                     at = lowered.index(words[0])
@@ -306,7 +361,7 @@ class Server:
     def open_document(self, name: str) -> str:
         path = self.resolve(name)
         reading = self.reader.read(path)
-        body = reading.text()
+        body = reading.text(numbered=True)
         cut = f" Only the first {MAX_TEXT:,} characters are shown." if len(body) > MAX_TEXT else ""
         return reading.note(path.name) + cut + "\n\n" + body[:MAX_TEXT]
 
@@ -323,6 +378,110 @@ class Server:
         target.write_text(reading.text() + "\n", encoding="utf-8")
         return f"Saved a clean copy of {path.name} to {target}. " + reading.note(path.name).replace(
             f"complydoc read {path.name} for you. ", ""
+        )
+
+    def choose_file(self) -> str:
+        files = self.file_picker("Choose the file or files complydoc may read")
+        if not files:
+            return "No file was chosen; nothing changed."
+        added = [self.folders.add_file(file) for file in files]
+        names = ", ".join(file.name for file in added)
+        shown = [self.open_document(file.name) for file in added[:CHOSEN_SHOWN]]
+        left = added[CHOSEN_SHOWN:]
+        more = (
+            " Open the others with open_document, using their names: "
+            + ", ".join(file.name for file in left)
+            + "."
+            if left
+            else ""
+        )
+        return (
+            f"complydoc can read {names} for this conversation only. "
+            "The person chose them to be read now, so here is "
+            + ("the first" if len(shown) == 1 else f"each of the first {len(shown)}")
+            + ", cleaned."
+            + more
+            + "\n\n"
+            + "\n\n---\n\n".join(shown)
+        )
+
+    def open_latest(self) -> str:
+        from complydoc.audit.discovery import discover
+
+        inbox = self.folders.inbox
+        if inbox is None:
+            raise ToolError("There is no Inbox folder in this session.")
+        found, _ = discover(inbox, recurse=True)
+        if not found:
+            return (
+                f"The Inbox folder is empty. Ask the person to drop a file in {inbox}, "
+                "or to choose one with choose_file."
+            )
+        # A file dragged in keeps its old modification time, so when it arrived counts too.
+        newest = max(found, key=lambda path: max(path.stat().st_mtime, path.stat().st_ctime))
+        return self.open_document(f"{inbox.name}/{newest.relative_to(inbox)}")
+
+    def show_drop_zone(self) -> str:
+        if self.folders.inbox is None:
+            raise ToolError("There is no Inbox folder in this session; use choose_file instead.")
+        return (
+            "A box to drop a file in is showing in the chat. Tell the person to drop the file "
+            "there, then open it with open_latest. If they cannot see the box, offer "
+            "choose_file instead."
+        )
+
+    def receive_document(self, name: str, content: str) -> str:
+        inbox = self.folders.inbox
+        if inbox is None:
+            raise ToolError("There is no Inbox folder in this session.")
+        clean = Path(name.replace("\\", "/")).name.strip().lstrip(".")
+        if not clean:
+            raise ToolError("The dropped file has no name.")
+        try:
+            data = base64.b64decode(content, validate=True)
+        except ValueError as error:
+            raise ToolError("The dropped file did not arrive whole.") from error
+        if len(data) > MAX_UPLOAD:
+            raise ToolError(f"{clean} is larger than {MAX_UPLOAD // (1024 * 1024)} MB.")
+        target = inbox / clean
+        number = 1
+        while target.exists():
+            number += 1
+            target = inbox / f"{Path(clean).stem} ({number}){Path(clean).suffix}"
+        target.write_bytes(data)
+        return f"Saved {target.name} in the Inbox."
+
+    def request_unmask(self, name: str, number: object, reason: str) -> str:
+        """One masked value, if the person allows it in the client's prompt."""
+        path = self.resolve(name)
+        reading = self.reader.read(path)
+        try:
+            wanted = int(str(number).lstrip("#"))
+            span = reading.values.span(wanted)
+        except ValueError as error:
+            raise ToolError("Give the number of a masked value, such as 12 for [#12 …].") from error
+        except UnmaskError as error:
+            raise ToolError(str(error)) from error
+        request = RevealRequest(span=span, reason=reason, source=str(path))
+        if not span.revealable:
+            self.log.record(request, "refused")
+            raise ToolError(
+                f"#{wanted} is a {span.label}, which complydoc never reveals. Carry on without it."
+            )
+        if self.ask is None:
+            self.log.record(request, "unavailable")
+            raise ToolError(NO_PROMPT)
+        answer = self.ask(request.question(), {"type": "object", "properties": {}})
+        allowed = answer is not None and answer.get("action") == "accept"
+        self.log.record(request, "allowed" if allowed else "declined")
+        if not allowed:
+            return (
+                f"The person declined to show #{wanted}. Carry on without it, and do not ask "
+                "for it again unless they say so."
+            )
+        return (
+            f"The person allowed you to see #{wanted} ({span.label}) in {path.name}: "
+            f"{reading.values.value(wanted)}\nOnly this value was revealed."
         )
 
     # The resources.
@@ -346,12 +505,24 @@ class Server:
         return result
 
     def read_resource(self, uri: str) -> dict[str, Any]:
+        if uri == DROP_ZONE_URI:
+            page = files("complydoc.mcp").joinpath("drop_zone.html").read_text(encoding="utf-8")
+            return {
+                "contents": [
+                    {
+                        "uri": uri,
+                        "mimeType": "text/html;profile=mcp-app",
+                        "text": page,
+                        "_meta": {"ui": {"csp": {"connectDomains": [], "resourceDomains": []}}},
+                    }
+                ]
+            }
         parsed = urlparse(uri)
         if parsed.scheme != SCHEME:
             raise ToolError(f"Not a complydoc document: {uri}")
         path = self.resolve(unquote(parsed.path.lstrip("/")))
         reading = self.reader.read(path)
-        text = reading.note(path.name) + "\n\n" + reading.text()[:MAX_TEXT]
+        text = reading.note(path.name) + "\n\n" + reading.text(numbered=True)[:MAX_TEXT]
         return {"contents": [{"uri": uri, "mimeType": "text/plain", "text": text}]}
 
     def call(self, name: str, arguments: dict[str, Any]) -> str:
@@ -368,7 +539,9 @@ class Server:
         return said + (RUN_INSTRUCTIONS if self.runs is not None else "")
 
     def tools(self) -> list[dict[str, Any]]:
-        return TOOLS + RUN_TOOLS if self.runs is not None else TOOLS
+        """The tools to offer: the drop box only to a client that can show it."""
+        tools = [tool for tool in TOOLS if self.apps or tool["name"] not in DROP_ZONE_TOOLS]
+        return tools + RUN_TOOLS if self.runs is not None else tools
 
     def _dispatch(self, name: str, arguments: dict[str, Any]) -> str:
         def argument(key: str) -> str:
@@ -398,6 +571,8 @@ class Server:
             return self.open_document(argument("path"))
         if name == "save_clean_copy":
             return self.save_clean_copy(argument("path"))
+        if name == "request_unmask":
+            return self.request_unmask(argument("path"), arguments.get("id"), argument("reason"))
         if name == "list_folders":
             labels = folders.labels()
             if not labels:
@@ -411,6 +586,14 @@ class Server:
                 return "No folder was chosen; nothing changed."
             label = folders.add(chosen)
             return f"complydoc can now open documents from {label} ({chosen})."
+        if name == "choose_file":
+            return self.choose_file()
+        if name == "open_latest":
+            return self.open_latest()
+        if name == "show_drop_zone":
+            return self.show_drop_zone()
+        if name == "receive_document":
+            return self.receive_document(argument("name"), argument("content"))
         if name == "remove_folder":
             removed = folders.remove(argument("name"))
             return f"complydoc no longer opens documents from {removed}."
@@ -445,12 +628,28 @@ class _RequestError(Exception):
         self.code = code
 
 
-def _handle(server: Server, request: dict[str, Any]) -> dict[str, Any]:
+def _shows_apps(capabilities: dict[str, Any]) -> bool:
+    """Whether the client said it renders MCP Apps (`io.modelcontextprotocol/ui`)."""
+    for key in ("extensions", "experimental"):
+        found = capabilities.get(key)
+        if isinstance(found, dict) and UI_EXTENSION in found:
+            return True
+    return False
+
+
+def _handle(
+    server: Server, request: dict[str, Any], client: _Client | None = None
+) -> dict[str, Any]:
     method = request.get("method")
     params = request.get("params") or {}
     if not isinstance(params, dict):
         raise _RequestError(-32602, "params must be an object")
     if method == "initialize":
+        capabilities = params.get("capabilities") or {}
+        if client is not None and isinstance(capabilities, dict) and "elicitation" in capabilities:
+            server.ask = client.ask
+        if isinstance(capabilities, dict) and _shows_apps(capabilities):
+            server.apps = True
         return {
             "protocolVersion": params.get("protocolVersion") or PROTOCOL,
             "capabilities": {"tools": {}, "resources": {}, "prompts": {}},
@@ -503,7 +702,10 @@ def _call_tool(
         return {"content": [{"type": "text", "text": refused}], "isError": True}
     try:
         text = server.call(name, arguments)
-        return {"content": [{"type": "text", "text": text}], "isError": False}
+        result: dict[str, Any] = {"content": [{"type": "text", "text": text}], "isError": False}
+        if name == "show_drop_zone":
+            result["_meta"] = {"ui": {"resourceUri": DROP_ZONE_URI}}
+        return result
     except (ToolError, FolderError, RunError) as error:
         return {"content": [{"type": "text", "text": str(error)}], "isError": True}
     except Exception as error:  # A document that cannot be read is an answer, not a crash.
@@ -519,22 +721,28 @@ def serve(
     *,
     store: Path | None = STORE,
     picker: Picker = pick_folder,
+    file_picker: FilePicker = pick_files,
+    inbox: Path | None = INBOX,
     clean_copies: Path = CLEAN_COPIES,
     fetch_name_model: bool = False,
     runs: Iterable[str | Path] = (),
     engine: str | None = None,
     config_dir: Path | None = None,
+    reveals: Path | None = REVEAL_LOG,
 ) -> None:
     """Answer MCP requests on stdin until it closes. Logs go to stderr, never stdout.
 
     `folders` are the ones given at start; those chosen in a conversation are kept in
-    `store` and added to them. Clean copies are written to `clean_copies`. With
-    `fetch_name_model`, the model that finds names is downloaded once if it is missing, by a
-    process of its own, before this one's network guard is armed. `runs` are folders of
+    `store` and added to them. `inbox`, a folder made at start, is always shared, so a file
+    dropped in it opens without choosing anything; `None` leaves it out. Clean copies are
+    written to `clean_copies`. With `fetch_name_model`, the model that finds names is
+    downloaded once if it is missing, by a process of its own, before this one's network
+    guard is armed. `runs` are folders of
     reports complydoc wrote; given them, the server offers an engineer's tools on them too.
     `engine` names the detection engine to read with (see `complydoc.mcp.engines`): the
     first installed when None, complydoc's own configuration with "none". `config_dir`,
-    when given, is read instead of any engine's.
+    when given, is read instead of any engine's. Each request to see a masked value is
+    recorded in `reveals`, without the value.
     """
     from complydoc.mcp.models import fetch_name_model as start_fetch
 
@@ -545,13 +753,15 @@ def serve(
     if chosen is not None:
         print(f"complydoc mcp: reading with {chosen.name}", file=sys.stderr)
     server = Server(
-        Folders(given, store=store),
+        Folders(given, store=store, inbox=inbox),
         picker=picker,
+        file_picker=file_picker,
         clean_copies=clean_copies,
         fetching=fetching,
         runs=Runs([Path(r) for r in runs]) if runs else None,
         engine=chosen,
         config_dir=config_dir,
+        reveals=reveals,
     )
     # The guard holds for the whole session, and lets go when the client hangs up.
     with offline.guarded(True):
@@ -563,8 +773,53 @@ def _reply(out: IO[str], message: dict[str, Any]) -> None:
     out.flush()
 
 
+class _Client:
+    """The other end of stdio: lines read from it, and questions put to it mid-call.
+
+    A question (elicitation) is a request from server to client, answered on the same
+    stdin; anything else that arrives before the answer waits its turn.
+    """
+
+    def __init__(self, source: IO[str], out: IO[str]) -> None:
+        self.source = source
+        self.out = out
+        self.waiting: deque[str] = deque()
+        self.asked = 0
+
+    def lines(self) -> Iterator[str]:
+        while True:
+            line = self.waiting.popleft() if self.waiting else self.source.readline()
+            if not line:
+                return
+            yield line
+
+    def ask(self, message: str, schema: dict[str, Any]) -> dict[str, Any] | None:
+        self.asked += 1
+        asked = f"complydoc-ask-{self.asked}"
+        params = {"message": message, "requestedSchema": schema}
+        _reply(
+            self.out,
+            {"jsonrpc": "2.0", "id": asked, "method": "elicitation/create", "params": params},
+        )
+        while line := self.source.readline():
+            try:
+                message_in = json.loads(line)
+            except json.JSONDecodeError:
+                message_in = None
+            if (
+                isinstance(message_in, dict)
+                and message_in.get("id") == asked
+                and "method" not in message_in
+            ):
+                result = message_in.get("result")
+                return result if isinstance(result, dict) else None
+            self.waiting.append(line)
+        return None
+
+
 def _loop(server: Server, source: IO[str], out: IO[str]) -> None:
-    for line in source:
+    client = _Client(source, out)
+    for line in client.lines():
         if not line.strip():
             continue
         try:
@@ -577,10 +832,11 @@ def _loop(server: Server, source: IO[str], out: IO[str]) -> None:
             error = {"code": -32600, "message": "Invalid Request"}
             _reply(out, {"jsonrpc": "2.0", "id": None, "error": error})
             continue
-        if "id" not in request:  # A notification, such as notifications/initialized.
+        if "id" not in request or "method" not in request:
+            # A notification, such as notifications/initialized, or a stray answer.
             continue
         try:
-            result = _handle(server, request)
+            result = _handle(server, request, client)
             _reply(out, {"jsonrpc": "2.0", "id": request["id"], "result": result})
         except _RequestError as invalid:
             error = {"code": invalid.code, "message": str(invalid)}

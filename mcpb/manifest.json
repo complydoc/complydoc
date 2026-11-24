@@ -2,7 +2,7 @@
   "manifest_version": "0.4",
   "name": "complydoc",
   "display_name": "complydoc",
-  "version": "0.8.2",
+  "version": "0.8.3",
   "description": "Open your documents in Claude with personal details masked and hidden instructions taken out.",
   "long_description": "complydoc reads a document on your computer before the assistant does. Bank accounts, tax numbers, card numbers, emails and phone numbers come back masked, and text hidden from a reader, such as a white sentence telling the model what to conclude, is taken out. The file itself never leaves your computer: only the cleaned text joins the conversation, and complydoc makes no network connection while it reads.\n\nAsk for a document instead of attaching it: *Open the Acme proposal and summarise it*, or *Can I share the Nordwind contract?*",
   "author": {
@@ -54,6 +54,10 @@
       "description": "Read a document with personal details masked and hidden passages taken out."
     },
     {
+      "name": "request_unmask",
+      "description": "Ask you to see one masked value, which you allow or decline."
+    },
+    {
       "name": "save_clean_copy",
       "description": "Save a clean copy as a text file, to send or upload elsewhere."
     },
@@ -66,6 +70,22 @@
       "description": "Pick another folder to share, in your computer's folder dialog."
     },
     {
+      "name": "choose_file",
+      "description": "Pick one or more files in your computer's file dialog, to share for this conversation."
+    },
+    {
+      "name": "open_latest",
+      "description": "Open the newest file in the Inbox folder, cleaned."
+    },
+    {
+      "name": "show_drop_zone",
+      "description": "Show a box in the chat to drop a file in, where the app supports it."
+    },
+    {
+      "name": "receive_document",
+      "description": "Used by the drop box: saves the dropped file in the Inbox."
+    },
+    {
       "name": "remove_folder",
       "description": "Stop sharing a folder."
     }
@@ -74,8 +94,8 @@
     "folders": {
       "type": "directory",
       "title": "Folders with your documents",
-      "description": "The folders the assistant may open documents from. You can add more later by asking it to choose a folder.",
-      "required": true,
+      "description": "Optional. Files you drop or choose in the chat need no folder. The folders the assistant may open documents from; you can add more later by asking it to choose a folder.",
+      "required": false,
       "multiple": true
     }
   },

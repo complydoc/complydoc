@@ -36,6 +36,14 @@ def test_a_context_term_with_its_own_word_still_counts(config):
     assert "us_routing_number" in _categories("ACH routing: 021000021", config)
 
 
+def test_a_capitalised_label_ocr_ran_into_the_next_word_still_counts(config):
+    # OCR of a scanned invoice drops the space after the capitals: "NIF do cliente".
+    assert "pt_nif" in _categories("NIFdocliente: 168567954", config)
+    # A word that only starts like the label is not the label.
+    assert "pt_nif" not in _categories("Nifty order 168567954", config)
+    assert "pt_nif" not in _categories("NIFTY order 168567954", config)
+
+
 def test_a_label_on_the_next_line_belongs_to_the_next_field(config):
     text = "Meter reading 727611 kWh, 08/08/1996\nData de nascimento: 14/03/1985"
     found = _found(text, config)
@@ -109,3 +117,43 @@ def test_a_spaced_french_nir_is_not_also_a_phone_number(config):
     found = _patterns_only(_categories(text, config))
     assert "fr_nir" in found
     assert not found & {"phone_number", "international_phone"}
+
+
+def _civil_id(first_eight: str) -> str:
+    total = sum(int(d) * w for d, w in zip(first_eight, range(9, 1, -1), strict=True))
+    check = 11 - total % 11
+    return first_eight + str(0 if check >= 10 else check)
+
+
+def test_a_portuguese_civil_id_is_found_by_its_card_label(config):
+    number = _civil_id("14325879")
+    assert ("pt_civil_id", f"{number[:8]} {number[8]}") in _found(
+        f"Cartão de Cidadão: {number[:8]} {number[8]} ZZ4", config
+    )
+    assert ("pt_civil_id", number) in _found(f"BI n.º {number}", config)
+    wrong = number[:8] + str((int(number[8]) + 1) % 10)
+    assert "pt_civil_id" not in _categories(f"Cartão de Cidadão: {wrong}", config)
+
+
+def test_an_abbreviated_social_security_label_counts(config):
+    assert "pt_niss" in _categories("N.º Seg. Social: 19458073020", config)
+
+
+@pytest.mark.parametrize(
+    ("line", "value"),
+    [
+        ("Telemóvel: 912 345 678", "912 345 678"),
+        ("Ligar ao cliente: 935 840 923", "935 840 923"),
+        ("Tel. 22 123 4567", "22 123 4567"),
+        ("Contacto: 222880546", "222880546"),
+    ],
+)
+def test_a_portuguese_number_without_its_country_code_is_found_beside_a_phone_label(
+    config, line, value
+):
+    assert ("pt_phone", value) in _found(line, config)
+
+
+@pytest.mark.parametrize("line", ["Encomenda: 912345678", "Lote 935840923", "Total 22 123 4567"])
+def test_nine_digits_without_a_phone_label_are_not_a_portuguese_phone(config, line):
+    assert "pt_phone" not in _categories(line, config)

@@ -44,6 +44,16 @@ checks:
     modulus: 10
     subtract_from: 9
 
+  pt_civil_id:
+    # Portuguese civil identification number, on the Cartão de Cidadão and the old
+    # BI: eight digits and a mod-11 check digit, then the card's version, "ZZ4".
+    length: 9
+    method: weighted
+    weights: [9, 8, 7, 6, 5, 4, 3, 2]
+    modulus: 11
+    subtract_from: 11
+    replace: {10: 0, 11: 0}
+
   uk_nhs_number:
     length: 10
     method: weighted
@@ -270,14 +280,19 @@ categories:
     model:
       name: Babelscape/wikineural-multilingual-ner
       entity_labels: [PER]
+      drop_non_names: true
     # Tried when the model above is not installed, so a plain install
-    # still finds names. It reads English only: see Detection accuracy.
+    # still finds names. It reads English only: see Detection accuracy. On other
+    # languages it reads a lone capitalised word (a city, a heading) as a name, so a
+    # name it finds needs two words.
     fallback:
       - detector: ner
         min_confidence: 0.0
         model:
           name: en_core_web_sm
           entity_labels: [PERSON]
+          drop_non_names: true
+          min_words: 2
     # Names a rule can find without the model, and whether or not the model agrees:
     # the name after its label at the start of a line, and the one after "signed by".
     # `value` is the name; `label` is what it was found by. The name itself is read
@@ -299,6 +314,7 @@ categories:
     model:
       name: Babelscape/wikineural-multilingual-ner
       entity_labels: [ORG]
+      drop_non_organisations: true
     # Tried when the model above is not installed, so a plain install
     # still finds names. It reads English only: see Detection accuracy.
     fallback:
@@ -307,6 +323,7 @@ categories:
         model:
           name: en_core_web_sm
           entity_labels: [ORG]
+          drop_non_organisations: true
     # Names a rule can find without the model: one that ends in a company form, such
     # as "Acme Holdings Ltd" or "HARBOUR LOGISTICS LTD". The form is read with its
     # capitals, so "the limited edition" is no company; a name does not start with a
@@ -418,10 +435,74 @@ categories:
     context_patterns:
       - '\b[12]\d{10}\b'
     validators: [pt_niss]
-    context_terms: ["niss", "segurança social", "seguranca social", "beneficiário", "beneficiario"]
+    context_terms:
+      - "niss"
+      - "segurança social"
+      - "seguranca social"
+      - "seg. social"
+      - "seg social"
+      - "beneficiário"
+      - "beneficiario"
     gdpr_note: >
       Social security identifier for people and companies, validated with its
       weighted check digit.
+
+  pt_civil_id:
+    enabled: true
+    label: Portuguese civil ID (Cartão de Cidadão)
+    region: PT
+    detector: regex
+    severity: high
+    context_patterns:
+      # 12345678 9 ZZ1, as the card prints it, or the nine digits alone. The card's
+      # version, ZZ1, identifies no one and is left as it is.
+      - '\b\d{8}[ -]?\d(?=(?:[ -]?[A-Z0-9]{2}\d)?\b)'
+    validators: [pt_civil_id]
+    context_terms:
+      - "cartão de cidadão"
+      - "cartao de cidadao"
+      - "c.c."
+      - "cc"
+      - "bi"
+      - "identificação civil"
+      - "identificacao civil"
+      - "doc. identificação"
+      - "documento de identificação"
+      - "documento de identificacao"
+    gdpr_note: >
+      National identity number on the Cartão de Cidadão and the older Bilhete de
+      Identidade, validated with its mod-11 check digit. Its check is the NIF's, so
+      the label says which of the two it is.
+
+  pt_phone:
+    enabled: true
+    label: Portuguese phone number
+    region: PT
+    detector: regex
+    severity: medium
+    context_patterns:
+      # Mobiles 91, 92, 93 and 96, and landlines from 2, as 912 345 678 or 22 123 4567.
+      - '(?<![\d+])(?:9[1236]\d|2\d\d)(?:[ .]?\d{3}){2}(?!\d)'
+      - '(?<![\d+])2\d[ .]\d{3}[ .]?\d{4}(?!\d)'
+    context_terms:
+      - "tel"
+      - "telefone"
+      - "telemóvel"
+      - "telemovel"
+      - "tlm"
+      - "tlf"
+      - "móvel"
+      - "movel"
+      - "contacto"
+      - "contato"
+      - "ligar"
+      - "fax"
+      - "phone"
+      - "mobile"
+    gdpr_note: >
+      Personal data when tied to an individual. Written without +351, nine digits
+      are as often an order or a tax number, so a phone label must be beside them;
+      with +351 the number is found as an international phone number.
 
   es_dni:
     enabled: true

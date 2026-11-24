@@ -68,6 +68,22 @@ TOOLS: list[dict[str, Any]] = [
         ["path"],
     ),
     _tool(
+        "request_unmask",
+        "Ask the person to see one masked value, by the number it carries in the text, such as "
+        "12 for [#12 IBAN ••••4521]. Use it only when the task cannot be done without the value, "
+        "and say why. The person sees the sentence around it and your reason, and allows or "
+        "declines in their app; only that one value is given. Never ask for many at once.",
+        {
+            **_PATH,
+            "id": {"type": "integer", "minimum": 1, "description": "The number after #."},
+            "reason": {
+                "type": "string",
+                "description": "Why the task needs this value, in one sentence for the person.",
+            },
+        },
+        ["path", "id", "reason"],
+    ),
+    _tool(
         "save_clean_copy",
         "Save a clean copy of a document as a text file, with personal and financial details "
         "masked and hidden passages taken out, for the person to send to someone or upload "
@@ -88,6 +104,38 @@ TOOLS: list[dict[str, Any]] = [
         "agree to choose where it is. The person picks; you cannot.",
         {},
         [],
+    ),
+    _tool(
+        "choose_file",
+        "Open the computer's file dialog so the person can pick one or more files to send you, "
+        "cleaned. Use it when they want to share a file that is not in a shared folder. The "
+        "person picks; you cannot. The files are shared for this conversation only.",
+        {},
+        [],
+    ),
+    _tool(
+        "open_latest",
+        "Open the newest file in the Inbox folder, cleaned, as open_document does. Use it when "
+        "the person says they just dropped a file there.",
+        {},
+        [],
+    ),
+    _tool(
+        "show_drop_zone",
+        "Show a box in the chat where the person can drop a file to send you, cleaned. Use it when "
+        "they want to share a file. The file goes to complydoc, never to you; once they have "
+        "dropped it, open it with open_latest. If no box appears, offer choose_file instead.",
+        {},
+        [],
+    ),
+    _tool(
+        "receive_document",
+        "Used by the drop box itself, never by you: it saves the dropped file in the Inbox.",
+        {
+            "name": {"type": "string", "description": "The file's name."},
+            "content": {"type": "string", "description": "The file's bytes, in base64."},
+        },
+        ["name", "content"],
     ),
     _tool(
         "remove_folder",
@@ -154,15 +202,30 @@ _HINTS: dict[str, tuple[str, bool, bool]] = {
     "check_document": ("Check a document before sharing it", True, False),
     "check_folder": ("Check a whole folder", True, False),
     "open_document": ("Open a document, cleaned", True, False),
+    "request_unmask": ("Ask to see one masked value", True, False),
     "save_clean_copy": ("Save a clean copy", False, False),
     "list_folders": ("List shared folders", True, False),
     "choose_folder": ("Choose a folder to share", False, False),
+    "choose_file": ("Choose a file to share", False, False),
+    "open_latest": ("Open the newest file in the Inbox", True, False),
+    "show_drop_zone": ("Show a box to drop a file in", True, False),
+    "receive_document": ("Save a dropped file in the Inbox", False, False),
     "remove_folder": ("Stop sharing a folder", False, True),
     "list_runs": ("List recorded runs", True, False),
     "show_run": ("Show a run", True, False),
     "compare_runs": ("Compare two runs", True, False),
     "find_value": ("Find where a value went", True, False),
 }
+
+DROP_ZONE_URI = "ui://complydoc/drop-zone"
+"""The page `show_drop_zone` shows in the chat, for clients that run MCP Apps."""
+
+for _entry in TOOLS:
+    if _entry["name"] == "show_drop_zone":
+        _entry["_meta"] = {"ui": {"resourceUri": DROP_ZONE_URI, "visibility": ["model", "app"]}}
+    elif _entry["name"] == "receive_document":
+        # Only the page may call it: the model never carries a file's bytes.
+        _entry["_meta"] = {"ui": {"visibility": ["app"]}}
 
 for _entry in [*TOOLS, *RUN_TOOLS]:
     _title, _read_only, _destructive = _HINTS[_entry["name"]]

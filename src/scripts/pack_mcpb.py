@@ -1,13 +1,13 @@
-"""Pack complydoc's Claude Desktop extension, in its two editions, from `mcpb/`.
+"""Pack complydoc's Claude Desktop extension from `mcpb/`.
 
     python src/scripts/pack_mcpb.py dist [--ref BRANCH]
 
 `--ref` builds a test copy that installs complydoc from a branch instead of the release.
 
-- `complydoc.mcpb`, the light edition: identifiers found by pattern and hidden text.
-- `complydoc-names.mcpb`, which also masks names of people and companies in the European
-  languages: it installs the `multilingual-names` extra and fetches the model (about
-  700 MB) once, the first time it starts.
+There is one extension, `complydoc.mcpb`: identifiers found by pattern, hidden text, and
+names of people and companies in the European languages. It installs the
+`multilingual-names` extra and fetches the model (about 700 MB) once, the first time it
+starts; until then every reading says names are not masked yet.
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ SOURCE = ROOT / "mcpb"
 FILES = ("manifest.json", "pyproject.toml", "icon.png", "src/server.py")
 
 
-def pack(out: Path, *, names: bool, ref: str | None = None) -> Path:
+def pack(out: Path, *, ref: str | None = None) -> Path:
     manifest = json.loads((SOURCE / "manifest.json").read_text(encoding="utf-8"))
     pyproject = (SOURCE / "pyproject.toml").read_text(encoding="utf-8")
     released = f'"complydoc=={manifest["version"]}"'
@@ -30,28 +30,22 @@ def pack(out: Path, *, names: bool, ref: str | None = None) -> Path:
         # A test copy, installing complydoc from a branch rather than the release.
         branch = f'"complydoc @ git+https://github.com/complydoc/complydoc@{ref}"'
         pyproject = pyproject.replace(released, branch)
-    target = out / ("complydoc-names.mcpb" if names else "complydoc.mcpb")
-    if names:
-        manifest["name"] = "complydoc-names"
-        manifest["display_name"] = "complydoc (with names)"
-        manifest["description"] = (
-            "Open your documents in Claude with personal details and names masked, and hidden "
-            "instructions taken out."
-        )
-        manifest["long_description"] += (
-            "\n\nThis edition also masks names of people and companies, in English, Portuguese, "
-            "German, Spanish, French, Italian and other European languages. The model that "
-            "finds them, about 700 MB, is downloaded once the first time it starts; until then "
-            "the assistant is told that names are not masked yet."
-        )
-        args = manifest["server"]["mcp_config"]["args"]
-        # Before --folder, whose folders the client expands into several arguments.
-        args.insert(args.index("--folder"), "--fetch-name-model")
-        pyproject = pyproject.replace('"complydoc @ git+', '"complydoc[multilingual-names] @ git+')
-        pyproject = pyproject.replace('"complydoc==', '"complydoc[multilingual-names]==')
-        pyproject = pyproject.replace(
-            'name = "complydoc-claude-extension"', 'name = "complydoc-claude-extension-names"'
-        )
+    target = out / "complydoc.mcpb"
+    manifest["description"] = (
+        "Open your documents in Claude with personal details and names masked, and hidden "
+        "instructions taken out."
+    )
+    manifest["long_description"] += (
+        "\n\nNames of people and companies are masked too, in English, Portuguese, German, "
+        "Spanish, French, Italian and other European languages. The model that finds them, "
+        "about 700 MB, is downloaded once the first time the extension starts; until then "
+        "the assistant is told that names are not masked yet."
+    )
+    args = manifest["server"]["mcp_config"]["args"]
+    # Before --folder, whose folders the client expands into several arguments.
+    args.insert(args.index("--folder"), "--fetch-name-model")
+    pyproject = pyproject.replace('"complydoc @ git+', '"complydoc[multilingual-names] @ git+')
+    pyproject = pyproject.replace('"complydoc==', '"complydoc[multilingual-names]==')
     out.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as archive:
         for name in FILES:
@@ -72,5 +66,4 @@ if __name__ == "__main__":
         ref = arguments[at + 1]
         del arguments[at : at + 2]
     out = Path(arguments[0] if arguments else "dist")
-    for edition in (False, True):
-        print(pack(out, names=edition, ref=ref))
+    print(pack(out, ref=ref))

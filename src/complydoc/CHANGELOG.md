@@ -3,7 +3,82 @@
 Newest first. Releases increment the patch number; the minor number changes for a new
 way of using complydoc, such as a command, or for a breaking change to the report JSON or
 a config key, which the release then says. `schema_version` in the JSON is versioned
-separately.
+separately. What counts as breaking, and how long a deprecated
+feature keeps working, is in [Versions and deprecations](https://complydoc.io/docs/explanation/versioning/).
+
+## [0.8.3] — 2026-11-24
+
+### Added
+
+- Handing a file to the assistant over MCP no longer needs a folder. `choose_file` opens
+  the system's file dialog (several files at once), shares only the files chosen, for
+  that conversation, and returns the first three already cleaned. The Claude Desktop
+  extension no longer needs a folder set. An Inbox folder, `~/complydoc/Inbox`, is always shared, and
+  `open_latest` opens the newest file in it, cleaned.
+- A drop box in the chat for clients that show MCP Apps, such as Claude Desktop: the
+  `show_drop_zone` tool draws a box, a file dropped in it is saved in the Inbox and never
+  passes through the model, and the assistant opens it with `open_latest`. A client that
+  cannot show it is not offered the box and uses `choose_file`.
+- `sensitive.review` names a reviewer, as `"module:attribute"`, that sees each page's
+  findings together and returns the ones to report: it can drop a find, give it a score of
+  its own, or add one in any category the configuration has. A reviewer that fails is said
+  on stderr and the page is reported as found. Veil's engine uses it so complydoc reports
+  what Veil's model finds beyond names (addresses, IDs, contacts, secrets), scored with
+  complydoc's checks. Off unless a configuration names one.
+- A model can ask the person to see one masked value. The MCP server numbers each masked
+  value in the text it returns, as `[#12 IBAN ••••4521]`, and the new `request_unmask` tool
+  asks for one by its number and a reason. The person allows or declines it in their
+  app's own prompt (MCP elicitation); a client that cannot show one reveals nothing.
+  Categories under `masking.never_reveal` are never revealed. Every request is recorded in
+  `~/.complydoc/reveals.jsonl`, without the value. In code, `cd.Gateway(numbered=True)`
+  numbers the values and gives `result.spans`, and `gateway.reveal(result, 12,
+  approve=...)` asks through a function of yours.
+- `cd.Gateway`: the document gateway as an object you make in code. `gateway.read(path)`
+  and `gateway.filter(text)` mask identifiers and take out hidden passages and text
+  written as instructions to a model, and say what they did (`verdict`, `summary()`);
+  `@gateway.guard` does it to every answer of a function, and `block=True` raises
+  `GatewayBlockedError` instead of passing a planted instruction on. The MCP server reads
+  documents through it, so both give the same text.
+- A security policy (`SECURITY.md`): which versions get fixes, how to report a
+  vulnerability privately and what happens next, and how to verify a release. Also a
+  support page, a code of conduct, issue forms and a pull request template.
+- The Claude Desktop extensions, `complydoc.mcpb` and `complydoc-names.mcpb`, are built
+  and attached to each release by its workflow, with signed build provenance like the
+  wheel, instead of by hand. The container images are signed with Sigstore as well.
+- Every GitHub Action the workflows use is pinned to a commit, Dependabot proposes
+  updates each week, and an OpenSSF Scorecard runs on `main`.
+- Portuguese civil ID numbers, on the Cartão de Cidadão and the old BI, beside their label
+  and checked with their mod-11 digit (`pt_civil_id`). The card's version, `ZZ4`, is left
+  as it is.
+- Portuguese phone numbers written without +351, beside a phone label such as `Telemóvel`,
+  `Tel.` or `Contacto` (`pt_phone`). Nine digits alone stay an order or a tax number.
+- `N.º Seg. Social` counts as a social security label for the NISS.
+- A versioning policy, Versions and deprecations: what a patch and a minor release may
+  change, which parts are covered, and that something deprecated keeps working for two
+  minor releases before it can go.
+
+### Fixed
+
+- A name at the start of a line was dropped by a multilingual name model such as
+  mDeBERTa or XLM-R. Its tokenizer gives a word the line break before it, so the name came
+  back as "\nMaria Santos" and the filter for names that run across lines threw it away.
+  The token classifier now trims whitespace from each name's edges.
+- `complydoc mcp` no longer says "Ready to send" about a document it read only in part. A
+  contract whose scanned page holds a NIF and an IBAN was "Ready to send" from an install
+  without OCR, such as the Claude Desktop extension, because that page was never read. Pages
+  the reader leaves unread now make it "Send with care", and the check names them.
+- Fewer wrong names. What a name model reads as a person is held to the shape of a name:
+  no digits, no lower-case words but particles, no street, clause or form word first
+  (`Rua Augusta`, `Cláusula Terceira`), no company word (`Ribeira Software`). The English
+  fallback also needs two words. An organisation is held to its own shape: not a phrase
+  from a sentence, not a code, not a heading in capitals. On Portuguese pilot documents
+  wrong names go from 257 to 30 with 31 of 33 right ones kept; on the nine-country
+  synthetic benchmark wrong names fall by three quarters and wrong organisations by
+  over 40%, at one point less recall.
+- A label OCR ran into the next word, `NIFdo cliente: 168567954` on a scanned invoice, counts
+  again. 0.8.2 matched labels as whole words only, so the NIF on 10 of 12 scanned invoices in
+  a test folder went unmasked. A label in capitals running into a lower-case letter now ends
+  there; `Nifty` and `NIFTY` still do not hold `nif`, nor `Machado` `ach`.
 
 ## [0.8.2] — 2026-11-20
 

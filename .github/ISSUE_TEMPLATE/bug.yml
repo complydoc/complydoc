@@ -1,0 +1,49 @@
+name: Bug
+description: Something complydoc does wrong, or a value it misses or flags wrongly.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not paste real personal data. If a document shows the problem, make one up that shows the same thing.
+        A security vulnerability goes to SECURITY.md, not here.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you ran, what you expected, and what you got instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce it
+      description: The command or code, and a small document or the text that shows it.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The output of `complydoc --version`.
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: How it is installed
+      options:
+        - pip or uv (PyPI)
+        - Container image
+        - Claude Desktop extension
+        - Claude Code plugin
+        - Another MCP client
+        - From source
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: complydoc doctor
+      description: The output of `complydoc doctor`, if you can run it.
+      render: text
