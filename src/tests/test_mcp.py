@@ -639,3 +639,14 @@ def test_the_inbox_is_shared_and_its_newest_file_opens_by_itself(
     )
     assert "Inbox/newer.pdf" in text(listed)
     assert "complydoc read newer.pdf" in text(latest)
+
+
+def test_the_extension_manifest_lists_every_tool_the_server_has():
+    import json
+    from pathlib import Path
+
+    from complydoc.mcp.catalogue import TOOLS
+
+    manifest = Path(__file__).resolve().parents[2] / "mcpb" / "manifest.json"
+    listed = {tool["name"] for tool in json.loads(manifest.read_text())["tools"]}
+    assert listed == {tool["name"] for tool in TOOLS}

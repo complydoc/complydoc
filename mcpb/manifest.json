@@ -54,6 +54,10 @@
       "description": "Read a document with personal details masked and hidden passages taken out."
     },
     {
+      "name": "request_unmask",
+      "description": "Ask you to see one masked value, which you allow or decline."
+    },
+    {
       "name": "save_clean_copy",
       "description": "Save a clean copy as a text file, to send or upload elsewhere."
     },
