@@ -145,7 +145,8 @@ export function ReportView({
       <SidebarProvider {...sidebar}>
         <AppSidebar report={null} page={page} switcher={switcher} />
         <SidebarInset className="min-w-0">
-          <header className="sticky top-0 z-10 flex h-12 shrink-0 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur">
+          {/* The sidebar button's icon and the last button line up with the page's 24px edges. */}
+          <header className="sticky top-0 z-10 flex h-12 shrink-0 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur md:pr-6 md:pl-[22px]">
             <Hint label="Collapse or expand the sidebar" keys={[shortcut("").trim(), "B"]}>
               <SidebarTrigger className="-ml-1" />
             </Hint>
@@ -202,7 +203,8 @@ export function ReportView({
             />
             {/* min-w-0 lets the page shrink to the space beside the sidebar instead of widening to its widest chart. */}
             <SidebarInset className="min-w-0">
-              <header className="sticky top-0 z-10 flex h-12 shrink-0 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur">
+              {/* The sidebar button's icon and the last button line up with the page's 24px edges. */}
+              <header className="sticky top-0 z-10 flex h-12 shrink-0 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur md:pr-6 md:pl-[22px]">
                 <Hint label="Collapse or expand the sidebar" keys={[shortcut("").trim(), "B"]}>
                   <SidebarTrigger className="-ml-1" />
                 </Hint>

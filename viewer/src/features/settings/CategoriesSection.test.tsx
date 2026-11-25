@@ -22,6 +22,7 @@ const row = (id: string, label: string, over: Partial<CategoryRow> = {}): Catego
 function state(over: Partial<CategoriesState> = {}): CategoriesState {
   return {
     editable: true,
+    loading: false,
     file: "/work/.complydoc-categories.yaml",
     categories: [
       row("iban", "IBAN", { severity: "high", shipped_severity: "high" }),
@@ -36,6 +37,12 @@ function state(over: Partial<CategoriesState> = {}): CategoriesState {
 }
 
 describe("CategoriesSection", () => {
+  it("holds the list's place while it loads, rather than saying the run changed nothing", () => {
+    render(<CategoriesSection state={state({ editable: false, loading: true, categories: [] })} lastRun={null} />);
+    expect(screen.getByLabelText("Loading the categories")).toBeInTheDocument();
+    expect(screen.queryByText(/every category as shipped/)).not.toBeInTheDocument();
+  });
+
   it("lists every category and says which were changed", () => {
     render(<CategoriesSection state={state()} lastRun={null} />);
     const list = screen.getByRole("list", { name: "Categories" });

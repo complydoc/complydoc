@@ -49,7 +49,7 @@ export function RunCard({ run, open: startsOpen, onOpen }: RunCardProps) {
   const [open, setOpen] = useState(startsOpen);
   const traced = run.steps.length > 0;
   return (
-    <li className="overflow-hidden rounded-lg border">
+    <li className="overflow-hidden rounded-xl border">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 p-3">
         <button
           type="button"

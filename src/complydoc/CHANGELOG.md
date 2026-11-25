@@ -22,6 +22,13 @@ feature keeps working, is in [Versions and deprecations](https://complydoc.io/do
   finding, and Escape closes it, then goes back to the list. The shortcuts dialog (`?`) lists them.
 - The Documents list has a Hidden text column, so a document with an instruction to an AI
   stands out without opening it. An untimed document shows a dash instead of "not timed".
+- The viewer's corners follow one rule (panels and tables 8px, controls 6px, badges 4px),
+  the top bar's first and last controls line up with the page's edges, a document's page
+  header is as tall as the findings panel beside it, bar charts start their labels on one
+  edge, hidden-text badges sit under the name they belong to, and Settings is one column.
+- Settings no longer shows "looked for every category as shipped" while the categories are
+  on their way: placeholder rows hold their place, and coming back to Settings shows the
+  last list at once while it is asked for again.
 
 ## [0.8.3] — 2026-11-24
 
