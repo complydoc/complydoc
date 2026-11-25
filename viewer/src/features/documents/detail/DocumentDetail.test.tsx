@@ -307,3 +307,32 @@ describe("FindingPopover", () => {
     expect(card).toHaveTextContent(/Kept while this page is open/);
   });
 });
+
+describe("DocumentDetail's keys and steps", () => {
+  afterEach(() => {
+    window.location.hash = "";
+  });
+
+  it("says where the document sits in the list and steps to the next, with ] or the arrow", async () => {
+    const report = sampleAudit();
+    open(report, "master-services-agreement.pdf");
+    const steps = screen.getByRole("group", { name: "Documents" });
+    expect(steps).toHaveTextContent(`/ ${report.documents.length}`);
+    const next = within(steps).getByRole("button", { name: "Next document" });
+    if (next.hasAttribute("disabled")) return;
+    await userEvent.keyboard("]");
+    expect(window.location.hash).toMatch(/^#documents\/\d+$/);
+  });
+
+  it("opens the next finding with J, and closes it with Escape", async () => {
+    const report = sampleAudit();
+    open(report, "master-services-agreement.pdf");
+    await userEvent.click(screen.getByRole("radio", { name: "Text" }));
+    const list = () => screen.getByRole("complementary", { name: "Findings" });
+    expect(within(list()).queryByRole("button", { expanded: true })).not.toBeInTheDocument();
+    await userEvent.keyboard("j");
+    expect(within(list()).getByRole("button", { expanded: true })).toBeInTheDocument();
+    await userEvent.keyboard("{Escape}");
+    expect(within(list()).queryByRole("button", { expanded: true })).not.toBeInTheDocument();
+  });
+});

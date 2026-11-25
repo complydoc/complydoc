@@ -1,5 +1,5 @@
 import { createColumnHelper } from "@tanstack/react-table";
-import { ArrowDownUpIcon, ChevronRightIcon, CopyIcon, FileTextIcon, FolderIcon, FolderOpenIcon } from "lucide-react";
+import { ArrowDownUpIcon, ChevronRightIcon, CopyIcon, FileTextIcon, FolderIcon, FolderOpenIcon, ShieldAlertIcon } from "lucide-react";
 import { DataTable, type Columns } from "@/components/DataTable";
 import { Hint } from "@/components/Hint";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,7 @@ const numeric = { meta: { numeric: true }, sortUndefined: "last" } as const;
 const ROWS_PER_PAGE = 50;
 
 function Time({ totals }: { totals: Totals }) {
-  if (totals.seconds === null) return <span className="text-muted-foreground">not timed</span>;
+  if (totals.seconds === null) return <span title="Not timed">–</span>;
   const notes = [
     totals.untimed > 0 && `${totals.untimed} of ${totals.pages} pages not timed`,
     totals.averaged && "a loader's time, spread over its pages",
@@ -39,6 +39,7 @@ function Time({ totals }: { totals: Totals }) {
 interface Filled {
   agreement: boolean;
   timed: boolean;
+  hidden: boolean;
 }
 
 function filled(nodes: TreeNode[]): Filled {
@@ -51,6 +52,7 @@ function filled(nodes: TreeNode[]): Filled {
   return {
     agreement: all.some((n) => n.document?.agreement !== undefined && n.document?.agreement !== null),
     timed: all.some((n) => n.totals.seconds !== null),
+    hidden: all.some((n) => n.hidden > 0),
   };
 }
 
@@ -158,6 +160,22 @@ function columnsFor(vision: boolean, thresholds: Thresholds, has: Filled): Colum
       ...numeric,
     }),
   ];
+  if (has.hidden)
+    columns.push(
+      column.accessor("hidden", {
+        header: "Hidden text",
+        cell: ({ getValue }) =>
+          getValue() > 0 ? (
+            <span className="inline-flex items-center gap-1.5 text-destructive tabular-nums">
+              <ShieldAlertIcon className="size-3.5" aria-hidden="true" />
+              {formatCount(getValue())}
+            </span>
+          ) : (
+            "–"
+          ),
+        ...numeric,
+      }),
+    );
   if (vision) {
     columns.push(
       column.accessor((node) => node.document?.vision?.disagree, {

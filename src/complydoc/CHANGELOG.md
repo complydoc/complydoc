@@ -17,6 +17,11 @@ feature keeps working, is in [Versions and deprecations](https://complydoc.io/do
   tokens per chunk, share cut badly, identifiers spread over several chunks) and marks the
   one that cut the folder least badly. Picking a row shows that splitter's sizes, each kind
   of bad cut explained, and the documents it cut worst.
+- A document in the viewer says where it sits in the list ("4 / 12") and steps to the one
+  before or after with the arrows or `[` and `]`. `J` and `K` open the next and previous
+  finding, and Escape closes it, then goes back to the list. The shortcuts dialog (`?`) lists them.
+- The Documents list has a Hidden text column, so a document with an instruction to an AI
+  stands out without opening it. An untimed document shows a dash instead of "not timed".
 
 ## [0.8.3] — 2026-11-24
 

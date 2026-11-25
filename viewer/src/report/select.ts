@@ -110,6 +110,8 @@ export interface DocumentRow {
   score: number | null;
   findings: number;
   highest: Severity | null;
+  /** Passages hidden from a reader, such as instructions to an AI. */
+  hidden: number;
   /** The least any other reader agreed with the kept one, 0 to 1; null when no other read it. */
   agreement: number | null;
   /** Whether another reader told a different story, on the report's own line. */
@@ -212,6 +214,7 @@ export function documentRows(report: Report): DocumentRow[] {
       score: documentScore(report, document),
       findings: document.sensitive.matches.length,
       highest: highestSeverity(document),
+      hidden: document.content_findings.length,
       ...agreement(report.thresholds, document),
       vision: documentVision(document),
     }))

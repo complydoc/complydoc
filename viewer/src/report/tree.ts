@@ -18,6 +18,8 @@ export interface TreeNode {
   score: number | null;
   findings: number;
   highest: Severity | null;
+  /** Hidden passages, summed over a folder. */
+  hidden: number;
   children?: TreeNode[];
 }
 
@@ -37,6 +39,7 @@ function folder(id: string, name: string, children: TreeNode[]): TreeNode {
     score: scored.length ? scored.reduce((sum, d) => sum + (d.score ?? 0), 0) / scored.length : null,
     findings: children.reduce((sum, child) => sum + child.findings, 0),
     highest: children.reduce<Severity | null>((w, child) => worst(w, child.highest), null),
+    hidden: children.reduce((sum, child) => sum + child.hidden, 0),
     children,
   };
 }
@@ -71,6 +74,7 @@ export function documentTree(report: Report, plan: Plan): TreeNode[] {
       score: row.score,
       findings: row.findings,
       highest: row.highest,
+      hidden: row.hidden,
     };
     level.set(file.name, file);
   }
