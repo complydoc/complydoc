@@ -44,27 +44,34 @@ describe("ChunksPage", () => {
     expect(screen.getByText(/^complydoc chunks .* -s langchain_text_splitters:RecursiveCharacterTextSplitter$/)).toBeInTheDocument();
   });
 
-  it("shows a splitter's size, its cuts, and the documents it cut worst", () => {
+  it("says what the page is for, and shows a splitter's sizes, its cuts in words and the documents it cut worst", () => {
     renderPage(<ChunksPage report={chunksRun(splitter("recursive chunk_size=400", true))} />);
-    const card = screen.getByRole("group", { name: "recursive chunk_size=400" });
-    expect(card).toHaveTextContent("chunk_size 400");
-    expect(card).toHaveTextContent("cut mid-sentence1");
-    expect(card).toHaveTextContent("100%");
+    expect(screen.getByText(/a text splitter cuts them into chunks/)).toBeInTheDocument();
+    const table = screen.getByRole("table", { name: "Splitters compared" });
+    expect(table).toHaveTextContent("chunk_size 400");
+    expect(table).toHaveTextContent("100%");
+    const detail = screen.getByRole("group", { name: "recursive chunk_size=400" });
+    expect(detail).toHaveTextContent("Cut mid-sentence1");
+    expect(detail).toHaveTextContent("stops halfway through a sentence");
     const documents = screen.getByRole("list", { name: "Documents, the worst cut first" });
     expect(within(documents).getByText("msa.pdf")).toBeInTheDocument();
     expect(documents).toHaveTextContent("1 of 1 chunk cut badly");
   });
 
-  it("sets each splitter beside the others, and each expected fact against each", async () => {
+  it("compares the splitters, opens on the one that cuts least badly, and shows another when picked", async () => {
     renderPage(<ChunksPage report={chunksRun(splitter("recursive", true), splitter("character", false))} />);
-    expect(screen.getByRole("group", { name: "recursive" })).toBeInTheDocument();
+    const table = screen.getByRole("table", { name: "Splitters compared" });
+    const [, recursive, character] = within(table).getAllByRole("row");
+    expect(character).toHaveTextContent("Cuts least badly");
+    expect(recursive).not.toHaveTextContent("Cuts least badly");
     expect(screen.getByRole("group", { name: "character" })).toBeInTheDocument();
     const checks = screen.getByRole("table", { name: "Checks" });
     const [, fact] = within(checks).getAllByRole("row");
     expect(fact).toHaveTextContent("split");
     expect(fact).toHaveTextContent("whole");
-    await userEvent.click(screen.getByRole("radio", { name: "character" }));
-    expect(screen.getByRole("list", { name: "Documents, the worst cut first" })).toHaveTextContent("0 of 1 chunk");
+    await userEvent.click(screen.getByRole("button", { name: "recursive" }));
+    expect(screen.getByRole("group", { name: "recursive" })).toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "Documents, the worst cut first" })).toHaveTextContent("1 of 1 chunk");
   });
 
   it("leaves out the flags no chunk carries", () => {
