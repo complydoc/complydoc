@@ -11,6 +11,7 @@
   <a href="https://github.com/complydoc/complydoc/actions/workflows/checks.yml"><img src="https://github.com/complydoc/complydoc/actions/workflows/checks.yml/badge.svg?branch=main" alt="Tests"></a>
   <a href="https://complydoc.io/docs/"><img src="https://img.shields.io/badge/docs-complydoc-56b4e0" alt="Documentation"></a>
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-56b4e0" alt="License"></a>
+  <a href="https://glama.ai/mcp/servers/complydoc/complydoc"><img src="https://glama.ai/mcp/servers/complydoc/complydoc/badges/score.svg" alt="complydoc/complydoc MCP server"></a>
 </div>
 
 <!-- mcp-name: io.github.complydoc/complydoc -->
