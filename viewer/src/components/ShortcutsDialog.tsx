@@ -33,6 +33,14 @@ const GROUPS: Group[] = [
     ],
   },
   {
+    title: "Document",
+    rows: [
+      { label: "Next or previous finding", keys: ["J", "K"] },
+      { label: "Previous or next document", keys: ["[", "]"] },
+      { label: "Close the finding, then back to the list", keys: ["Esc"] },
+    ],
+  },
+  {
     title: "Review",
     rows: [{ label: "Next or previous finding", keys: ["J", "K"] }],
   },

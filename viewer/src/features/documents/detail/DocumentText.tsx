@@ -87,7 +87,8 @@ export function DocumentText({ pages, inline, chunks, jump, onVisiblePage }: Doc
       <div ref={scroller} onScroll={onScroll} className="min-h-0 flex-1 overflow-y-auto" data-testid="page-reading">
         {pages.map((page) => (
           <section key={page.number} data-page={page.number} aria-label={`Page ${page.number}`}>
-            <header className="sticky top-0 z-10 flex items-center gap-3 border-b bg-muted/85 px-4 py-1.5 font-mono text-xs text-muted-foreground backdrop-blur-sm">
+            {/* As tall as the findings panel's header beside it, so their rules meet in one line. */}
+            <header className="sticky top-0 z-10 flex h-10 items-center gap-3 border-b bg-card/95 px-4 font-mono text-xs text-muted-foreground backdrop-blur-sm">
               <span className="font-medium text-foreground">Page {page.number}</span>
               {page.note && <span>{page.note}</span>}
               {chunks && <span className="ml-auto">{chunkNote(chunks.get(page.number))}</span>}

@@ -31,14 +31,14 @@ interface TickProps {
   payload?: { value: string; index: number };
 }
 
-const LABEL_WIDTH = 200;
+const LABEL_WIDTH = 190;
 /** Rows are this tall, so a chart of any length reads the same. */
 const BAR_ROW = 26;
 
 // Short enough for one line in the label column; the tooltip names the bar in full.
 /** A label that fits its column on one line, cut at the last whole word that fits. */
 function shorten(text: string) {
-  const fits = 26;
+  const fits = 28;
   if (text.length <= fits) return text;
   const cut = text.slice(0, fits - 1);
   const space = cut.lastIndexOf(" ");
@@ -55,8 +55,15 @@ export function BarList<T>({ series, data, category, format, colour, onSelect, l
     const row = payload ? data[payload.index] : undefined;
     return (
       <g transform={`translate(${Number(x)},${Number(y)})`}>
-        <foreignObject x={-LABEL_WIDTH} y={-10} width={LABEL_WIDTH - 6} height={20}>
-          <div className="flex h-5 items-center justify-end gap-1.5 text-xs text-muted-foreground">
+        {/* From the chart's left edge to just short of the bar: the tick sits at the bar's end of the column. */}
+        <foreignObject x={-Number(x)} y={-10} width={Math.max(0, Number(x) - 8)} height={20}>
+          {/* Labels start on one edge, as a list's do, rather than ending ragged against the bars. */}
+          <div className="flex h-5 items-center justify-start gap-1.5 text-xs text-muted-foreground">
+            {row && logo && (
+              <span className="inline-flex" style={{ color: colour?.(row) }}>
+                <ProviderLogo provider={logo(row)} className="size-3.5" />
+              </span>
+            )}
             {row && onSelect ? (
               // A label opens what its bar stands for, as the bar does.
               <button
@@ -68,11 +75,8 @@ export function BarList<T>({ series, data, category, format, colour, onSelect, l
                 {shorten(payload?.value ?? "")}
               </button>
             ) : (
-              <span className="truncate">{shorten(payload?.value ?? "")}</span>
-            )}
-            {row && logo && (
-              <span className="inline-flex" style={{ color: colour?.(row) }}>
-                <ProviderLogo provider={logo(row)} className="size-3.5" />
+              <span className="truncate" title={payload?.value}>
+                {shorten(payload?.value ?? "")}
               </span>
             )}
           </div>
@@ -94,7 +98,7 @@ export function BarList<T>({ series, data, category, format, colour, onSelect, l
           tickLine={false}
           axisLine={false}
           width={LABEL_WIDTH}
-          {...(logo || onSelect ? { tick } : { tickFormatter: shorten })}
+          tick={tick}
           interval={0}
         />
         <XAxis type="number" hide />

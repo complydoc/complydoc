@@ -80,7 +80,7 @@ export function FactList({ facts, evals, onRemove }: FactListProps) {
     gridTemplateColumns: `minmax(0,1fr) repeat(${readers.length}, minmax(4.5rem, max-content))${onRemove ? " 2rem" : ""}`,
   };
   return (
-    <div className="overflow-hidden rounded-lg border bg-card">
+    <div className="overflow-hidden rounded-xl border bg-card">
       <div style={columns} className="grid items-center gap-x-4 border-b bg-panel-header px-4 py-2">
         <span className="caps">Expected</span>
         {readers.map((reader) => (

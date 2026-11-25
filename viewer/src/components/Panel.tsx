@@ -16,7 +16,7 @@ interface PanelProps {
 /** One block of a dashboard: a hairline frame, a header strip naming it, and its content. */
 export function Panel({ title, description, action, className, bodyClassName, children }: PanelProps) {
   return (
-    <section aria-label={title} className={cn("flex min-w-0 flex-col overflow-hidden rounded-md border bg-card", className)}>
+    <section aria-label={title} className={cn("flex min-w-0 flex-col overflow-hidden rounded-xl border bg-card", className)}>
       <header className="flex min-h-10 items-center gap-3 border-b bg-panel-header px-4 py-2">
         <h2 className="shrink-0 text-[0.8125rem] font-semibold">{title}</h2>
         {description && <p className="min-w-0 flex-1 truncate text-xs text-muted-foreground">{description}</p>}

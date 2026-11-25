@@ -14,9 +14,12 @@ import { measured } from "@/report/measured";
 import { findingHighlight } from "@/report/highlight";
 import { documentFindings, findingContext, findingFor } from "@/report/pageFindings";
 import { hasPicture } from "@/report/picture";
+import { neighbours } from "@/report/documentOrder";
 import { documentTotals, pageEstimate } from "@/report/planEstimate";
 import type { FindingRef } from "@/report/route";
 import type { DocumentEntry, Report } from "@/report/types";
+import { DocumentStepper } from "./DocumentStepper";
+import { useDocumentKeys } from "@/hooks/useDocumentKeys";
 import { ChunkPicker, EyeToggle, LayerToggles, ModeToggle, type Layer } from "./DocumentControls";
 import { DocumentHeader } from "./DocumentHeader";
 import { DocumentText } from "./DocumentText";
@@ -86,11 +89,22 @@ export function DocumentDetail({
   const findings = useMemo(() => documentFindings(document, unmasked), [document, unmasked]);
   // The kinds of finding switched off are left out of the text and the list, not ignored.
   const [hiddenKinds, setHiddenKinds] = useState<Layer[]>([]);
-  const visible = findings.filter((f) => !hiddenKinds.includes(f.kind));
+  const visible = useMemo(() => findings.filter((f) => !hiddenKinds.includes(f.kind)), [findings, hiddenKinds]);
   const linked = finding ? findingFor(findings, document, finding) : undefined;
   const [active, setActive] = useState<string | null>(() => linked?.key ?? null);
   const [focus, setFocus] = useState<{ key: string } | null>(() => (linked ? { key: linked.key } : null));
   const [picked, setPicked] = useState<{ key: string; rect: DOMRect } | null>(null);
+  const around = neighbours(report, plan, index);
+  useDocumentKeys({
+    ...around,
+    findings: visible,
+    active,
+    onFinding: (key) => {
+      setPicked(null);
+      setActive(key);
+      if (key) setFocus({ key });
+    },
+  });
   // Leaving a mark closes its card after a moment, so the pointer can cross into the card to tick it.
   const closing = useRef(0);
   const cancelClose = () => window.clearTimeout(closing.current);
@@ -224,6 +238,7 @@ export function DocumentDetail({
         hidden={open.filter((f) => f.kind === "hidden").length}
         controls={
           <>
+            <DocumentStepper {...around} />
             {readers.length > 1 && (
               <ModeToggle
                 value={compared ? "diff" : "text"}

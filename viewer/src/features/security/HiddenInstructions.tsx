@@ -8,7 +8,6 @@ import {
   ItemActions,
   ItemContent,
   ItemDescription,
-  ItemFooter,
   ItemGroup,
   ItemMedia,
   ItemTitle,
@@ -41,24 +40,25 @@ export function HiddenInstructions({ found }: { found: HiddenInstruction[] }) {
                 {finding.page !== null && <span className="text-muted-foreground">page {finding.page}</span>}
               </ItemTitle>
               <ItemDescription className="line-clamp-none">“{finding.excerpt}”</ItemDescription>
+              {/* Inside the content, so the badges line up under the name and the quote, not under the icon. */}
+              <div className="mt-1 flex flex-wrap gap-1.5">
+                <Badge variant={finding.instruction ? "destructive" : "secondary"}>{finding.label}</Badge>
+                {finding.hiddenBy.map((reason) => (
+                  <Badge key={reason} variant="destructive">
+                    {reason}
+                  </Badge>
+                ))}
+                {finding.reasons.map((reason) => (
+                  <Badge key={reason} variant="outline">
+                    {reason}
+                  </Badge>
+                ))}
+              </div>
             </ItemContent>
-            <ItemActions>
+            <ItemActions className="self-start">
               <ToneBadge tone={severityTone(finding.severity)}>{finding.severity}</ToneBadge>
               <IgnoreButton fingerprint={finding.fingerprint} what="this passage" />
             </ItemActions>
-            <ItemFooter className="flex-wrap justify-start gap-1.5">
-              <Badge variant={finding.instruction ? "destructive" : "secondary"}>{finding.label}</Badge>
-              {finding.hiddenBy.map((reason) => (
-                <Badge key={reason} variant="destructive">
-                  {reason}
-                </Badge>
-              ))}
-              {finding.reasons.map((reason) => (
-                <Badge key={reason} variant="outline">
-                  {reason}
-                </Badge>
-              ))}
-            </ItemFooter>
           </Item>
         ))}
       </ItemGroup>

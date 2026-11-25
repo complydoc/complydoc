@@ -104,7 +104,7 @@ export function SecurityPage({ report }: { report: Report }) {
 
       <Section title="What and where">
         {kinds.length === 0 ? (
-          <div className="rounded-md border">
+          <div className="rounded-xl border">
             <EmptyState
               icon={ShieldCheckIcon}
               title="No identifiers found"
@@ -113,15 +113,26 @@ export function SecurityPage({ report }: { report: Report }) {
           </div>
         ) : (
           <div className="grid gap-4 lg:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>By kind</CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-2">
-                <BarList series={BY_KIND} data={kinds.slice(0, TOP)} category="label" />
-                <More count={kinds.length - TOP} noun="kind" />
-              </CardContent>
-            </Card>
+            {/* Two columns of about the same height: what was found and how sure, then where. */}
+            <div className="flex flex-col gap-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>By kind</CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-2">
+                  <BarList series={BY_KIND} data={kinds.slice(0, TOP)} category="label" />
+                  <More count={kinds.length - TOP} noun="kind" />
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>How sure</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <BarList series={BY_EVIDENCE} data={evidenceCounts(report)} category="label" />
+                </CardContent>
+              </Card>
+            </div>
             <div className="flex flex-col gap-4">
               <Card>
                 <CardHeader>
@@ -135,14 +146,6 @@ export function SecurityPage({ report }: { report: Report }) {
                     onSelect={(row) => window.location.assign(documentHref(row.index))}
                   />
                   <More count={byDocument.length - TOP} noun="document" />
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader>
-                  <CardTitle>How sure</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <BarList series={BY_EVIDENCE} data={evidenceCounts(report)} category="label" />
                 </CardContent>
               </Card>
             </div>

@@ -22,22 +22,25 @@ export function SettingsPage({ report, source }: { report: Report; source?: stri
   const categories = useCategories(report, source);
 
   return (
-    <SectionStack>
-      <Section title="Your concepts" aside={concepts.file ? fileName(concepts.file) : "No concepts file"}>
-        <ConceptsSection state={concepts} lastRun={report.concepts?.concepts ?? null} />
-      </Section>
+    // Settings read as a form: one column of a comfortable width, each file named close by.
+    <div className="max-w-3xl">
+      <SectionStack>
+        <Section title="Your concepts" aside={concepts.file ? fileName(concepts.file) : "No concepts file"}>
+          <ConceptsSection state={concepts} lastRun={report.concepts?.concepts ?? null} />
+        </Section>
 
-      <Section title="Categories" aside={categories.file ? fileName(categories.file) : "No categories file"}>
-        <CategoriesSection state={categories} lastRun={report.categories ?? null} />
-      </Section>
+        <Section title="Categories" aside={categories.file ? fileName(categories.file) : "No categories file"}>
+          <CategoriesSection state={categories} lastRun={report.categories ?? null} />
+        </Section>
 
-      <Section title="Preferred models" aside="This browser">
-        <PreferredModels />
-      </Section>
+        <Section title="Preferred models" aside="This browser">
+          <PreferredModels />
+        </Section>
 
-      <Section title="Ignored findings" aside={ignores.file ? fileName(ignores.file) : "No ignore file"}>
-        <IgnoredSection lastRun={report.ignores?.rules ?? null} />
-      </Section>
-    </SectionStack>
+        <Section title="Ignored findings" aside={ignores.file ? fileName(ignores.file) : "No ignore file"}>
+          <IgnoredSection lastRun={report.ignores?.rules ?? null} />
+        </Section>
+      </SectionStack>
+    </div>
   );
 }

@@ -72,7 +72,7 @@ export function UploadPanel({ upload, onStart }: UploadPanelProps) {
       )}
       <div
         className={cn(
-          "flex flex-col items-center gap-3 rounded-lg border border-dashed px-4 py-8 text-center transition-colors",
+          "flex flex-col items-center gap-3 rounded-xl border border-dashed px-4 py-8 text-center transition-colors",
           dragging && "border-primary bg-success-soft",
         )}
         onDragOver={(event) => {
