@@ -30,9 +30,17 @@ updates:
     groups:
       npm:
         patterns: ["*"]
+    ignore:
+      # typescript-eslint does not accept TypeScript 7 yet; move it with typescript-eslint.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: docker
     directory: /
     target-branch: development
     schedule:
       interval: weekly
+    ignore:
+      # Node majors move by hand, to the next LTS line: Dependabot offers odd, short-lived ones too.
+      - dependency-name: node
+        update-types: ["version-update:semver-major"]
