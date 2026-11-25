@@ -1,3 +1,4 @@
+import { Skeleton } from "@/components/ui/skeleton";
 import { RotateCcwIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { SeverityIcon } from "@/components/LevelIcons";
@@ -63,6 +64,26 @@ function Row({ row, state }: { row: CategoryRow; state: CategoriesState }) {
   );
 }
 
+function CategoriesLoading() {
+  return (
+    <div className="flex flex-col gap-3" aria-busy="true" aria-label="Loading the categories">
+      <div className="flex gap-2">
+        <Skeleton className="h-8 w-80" />
+        <Skeleton className="h-8 w-48" />
+      </div>
+      <ul className="divide-y rounded-xl border bg-card">
+        {Array.from({ length: 8 }, (_, index) => (
+          <li key={index} className="flex h-11 items-center gap-3 px-3">
+            <Skeleton className="size-4" />
+            <Skeleton className="h-4 w-48" />
+            <Skeleton className="ml-auto h-7 w-32" />
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 /** What the run on screen changed, where the categories cannot be edited from here. */
 function LastRun({ summary }: { summary: CategorySummary | null }) {
   if (!summary || summary.changes.length === 0)
@@ -103,6 +124,9 @@ export function CategoriesSection({ state, lastRun }: { state: CategoriesState; 
     );
   }, [state.categories, query, only]);
 
+  // While the list is on its way, rows of the same height hold its place, so neither the
+  // read-only summary nor an empty gap shows first and the page does not jump when it lands.
+  if (state.loading) return <CategoriesLoading />;
   if (!state.editable) return <LastRun summary={lastRun} />;
   return (
     <div className="flex flex-col gap-3">
