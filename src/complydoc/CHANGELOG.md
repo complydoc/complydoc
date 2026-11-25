@@ -6,6 +6,17 @@ a config key, which the release then says. `schema_version` in the JSON is versi
 separately. What counts as breaking, and how long a deprecated
 feature keeps working, is in [Versions and deprecations](https://complydoc.io/docs/explanation/versioning/).
 
+## Unreleased
+
+### Added
+
+- The MCP checks say how well a model can read a document. `check_document` adds a
+  "Ready for AI" line, the readiness score out of 100 with its band, and names the weakest
+  signals of a document that is not ready (no text layer, a scan, deep table headers).
+  `check_folder` adds the folder's average and lists the documents that are not ready,
+  lowest first. So one check gives the whole assessment: what a document exposes, what it
+  hides and whether a model can read it.
+
 ## [0.8.3] — 2026-11-24
 
 ### Added

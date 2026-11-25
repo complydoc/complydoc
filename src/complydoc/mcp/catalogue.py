@@ -48,14 +48,18 @@ TOOLS: list[dict[str, Any]] = [
         "check_document",
         "Say whether a document is safe to share with an AI assistant: the personal and "
         "financial details in it, and any text hidden from a reader or written as instructions "
-        "to a model. Nothing of the document's content is returned.",
+        "to a model, and how well a model can read it (a score out of 100, from its text "
+        "layer, scans, tables, columns and fonts). Nothing of the document's content is "
+        "returned.",
         _PATH,
         ["path"],
     ),
     _tool(
         "check_folder",
         "Say which documents in a folder are safe to share, the ones that are not first, each "
-        "with what it holds. Use it before a folder is shared or uploaded anywhere.",
+        "with what it holds, and how well a model can read them: the average score out of 100 "
+        "and the documents that need work first. Use it before a folder is shared, uploaded "
+        "anywhere or connected to an assistant.",
         _FOLDER,
         [],
     ),

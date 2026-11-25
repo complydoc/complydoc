@@ -10,6 +10,7 @@ from __future__ import annotations
 import io
 import json
 import os
+import re
 import shutil
 import time
 from collections.abc import Callable
@@ -326,6 +327,30 @@ def test_a_folder_is_checked_the_worst_first(folder: Path, tmp_path: Path) -> No
     assert said.startswith("Checked 3 documents")
     assert said.index("Do not send as it is") < said.index("docs/native_text.pdf")
     assert "docs/hidden_instructions.pdf" in said
+
+
+def test_a_check_says_how_well_a_model_can_read_the_documents(folder: Path, tmp_path: Path) -> None:
+    checked, folder_checked = talk(
+        [folder],
+        call(1, "check_document", path="native_text.pdf"),
+        call(2, "check_folder"),
+        store=tmp_path / "store.json",
+    )
+    assert re.search(
+        r"^Ready for AI: \d+/100 \((ready|workable|needs work|not ready)\)\.",
+        text(checked).splitlines()[1],
+    )
+    assert re.search(r"^Ready for AI: \d+/100 on average\.$", text(folder_checked).splitlines()[1])
+
+
+def test_a_document_that_is_not_ready_says_what_holds_it_back() -> None:
+    from complydoc.mcp.server import Findings
+
+    found = Findings(readiness=47, band="needs work", harder=["text layer present: no"])
+    assert found.readable() == (
+        "Ready for AI: 47/100 (needs work). Harder for a model to read: text layer present: no."
+    )
+    assert Findings().readable() is None
 
 
 def test_a_search_finds_the_page_and_never_a_masked_value(folder: Path, tmp_path: Path) -> None:
