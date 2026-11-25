@@ -17,7 +17,8 @@ export function FindingBody({ finding, context = null }: { finding: PageFinding;
   return (
     <div className="flex flex-col gap-3 text-sm">
       {context ? (
-        <p className="rounded-md bg-muted/60 px-2 py-1.5 font-mono text-xs leading-relaxed break-words text-muted-foreground">
+        // The box reaches into the gutter, so its text starts where the label and badges do.
+        <p className="-mx-2 rounded-md bg-muted px-2 py-1.5 font-mono text-xs leading-relaxed break-words text-muted-foreground">
           {context.before}
           <mark className="rounded-sm bg-destructive/20 px-0.5 text-foreground">{context.hit}</mark>
           {context.after}

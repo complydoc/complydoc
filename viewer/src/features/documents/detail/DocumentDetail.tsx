@@ -17,7 +17,7 @@ import { hasPicture } from "@/report/picture";
 import { documentTotals, pageEstimate } from "@/report/planEstimate";
 import type { FindingRef } from "@/report/route";
 import type { DocumentEntry, Report } from "@/report/types";
-import { ChunkPicker, EyeToggle, ModeToggle } from "./DocumentControls";
+import { ChunkPicker, EyeToggle, LayerToggles, ModeToggle, type Layer } from "./DocumentControls";
 import { DocumentHeader } from "./DocumentHeader";
 import { DocumentText } from "./DocumentText";
 import { FindingsPanel, type PanelView } from "./FindingsPanel";
@@ -84,6 +84,9 @@ export function DocumentDetail({
   const [mode, setMode] = useState<"text" | "diff">(() => (finding || chunkBy ? "text" : "diff"));
 
   const findings = useMemo(() => documentFindings(document, unmasked), [document, unmasked]);
+  // The kinds of finding switched off are left out of the text and the list, not ignored.
+  const [hiddenKinds, setHiddenKinds] = useState<Layer[]>([]);
+  const visible = findings.filter((f) => !hiddenKinds.includes(f.kind));
   const linked = finding ? findingFor(findings, document, finding) : undefined;
   const [active, setActive] = useState<string | null>(() => linked?.key ?? null);
   const [focus, setFocus] = useState<{ key: string } | null>(() => (linked ? { key: linked.key } : null));
@@ -114,8 +117,8 @@ export function DocumentDetail({
   // The diff marks each value where it sits in both readings, so a loader that dropped or
   // split one shows; the list of findings stays with a single reading. Ignored ones stay in
   // the text, struck through, to be brought back.
-  const shown = compared ? [] : findings;
-  const marks: InlineMark[] = findings.map((f) => ({
+  const shown = compared ? [] : visible;
+  const marks: InlineMark[] = visible.map((f) => ({
     key: f.key,
     needle: f.needle,
     tone: isIgnored(f) ? "ignored" : f.severity,
@@ -171,7 +174,7 @@ export function DocumentDetail({
       setPicked(null);
     },
     label: (key) => {
-      const found = findings.find((f) => f.key === key);
+      const found = visible.find((f) => f.key === key);
       return found ? `${found.label}, ${found.severity}${found.page !== null ? `, page ${found.page}` : ""}` : key;
     },
   };
@@ -230,7 +233,26 @@ export function DocumentDetail({
                 }}
               />
             )}
-            {layers.length > 0 && <ChunkPicker layers={layers} value={chunkBy} onChange={setChunkBy} />}
+            <LayerToggles
+              available={[
+                ...(["identifier", "hidden"] as const).filter((kind) => findings.some((f) => f.kind === kind)),
+                ...(layers.length > 0 ? (["chunks"] as const) : []),
+              ]}
+              on={[
+                ...(["identifier", "hidden"] as const).filter((kind) => !hiddenKinds.includes(kind)),
+                ...(layer ? (["chunks"] as const) : []),
+              ]}
+              onChange={(next) => {
+                setHiddenKinds((["identifier", "hidden"] as const).filter((kind) => !next.includes(kind)));
+                const chunks = next.includes("chunks");
+                if (chunks && !layer) {
+                  setChunkBy(layers[0]?.splitter ?? null);
+                  setMode("text");
+                } else if (!chunks && layer) setChunkBy(null);
+              }}
+            />
+            {/* With more than one splitter, which one's chunks are drawn. */}
+            {layer && layers.length > 1 && <ChunkPicker layers={layers} value={chunkBy} onChange={setChunkBy} />}
             <WholeDocument report={report} document={document} />
             {eyeToggle}
           </>
@@ -238,7 +260,7 @@ export function DocumentDetail({
       />
 
       <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row">
-        <PageNav pages={pages.map((p) => p.number)} current={page.number} findings={open} onPick={goTo} />
+        <PageNav pages={pages.map((p) => p.number)} current={page.number} findings={open.filter((f) => !hiddenKinds.includes(f.kind))} onPick={goTo} />
         <ExpectSelection document={document.relative_path} />
         <div className="flex h-[80svh] min-h-0 min-w-0 flex-col lg:h-auto lg:flex-1">
           {compared ? (
@@ -286,7 +308,7 @@ export function DocumentDetail({
       </div>
 
       <FindingPopover
-        finding={findings.find((f) => f.key === picked?.key) ?? null}
+        finding={visible.find((f) => f.key === picked?.key) ?? null}
         rect={picked?.rect ?? null}
         onClose={() => setPicked(null)}
         onPointerEnter={cancelClose}

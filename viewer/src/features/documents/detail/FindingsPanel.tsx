@@ -59,7 +59,7 @@ function FindingItem({
         onClick={onToggle}
         aria-expanded={expanded}
         className={cn(
-          "flex w-full items-start gap-2.5 px-3 py-2 text-left transition-colors hover:bg-muted/60",
+          "flex w-full items-start gap-3 px-3 py-2 text-left transition-colors hover:bg-muted/60",
           expanded && "hover:bg-primary/10",
           ignored && "opacity-55",
         )}
@@ -82,8 +82,9 @@ function FindingItem({
           className={cn("mt-0.5 size-4 shrink-0 text-muted-foreground transition-transform", expanded && "rotate-180")}
         />
       </button>
+      {/* Indented by the row's padding, the icon and the gap, so the body lines up under the label. */}
       {expanded && (
-        <div className="px-3 pt-1 pb-3 pl-9">
+        <div className="pt-1 pr-3 pb-3 pl-10">
           <FindingBody finding={finding} context={context} />
         </div>
       )}
