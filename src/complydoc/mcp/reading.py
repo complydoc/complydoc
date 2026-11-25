@@ -12,11 +12,14 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from complydoc import offline
+from complydoc.audit.run import run_audit
 from complydoc.unmask import Stretch, Values, moved, number, stretches
 
 if TYPE_CHECKING:
     from complydoc.config.schema import Config
     from complydoc.extraction.extract import Placed
+    from complydoc.readiness.analyser import ReadinessReport
 
 READY, CAREFUL, STOP = "Ready to send", "Send with care", "Do not send as it is"
 UNREAD = "Could not be read"
@@ -39,6 +42,13 @@ class Findings:
     unread_parts: list[str] = field(default_factory=list)
     """What the reader said it left unread in a document it otherwise read: the scanned
     pages of a contract, when OCR is not installed."""
+    readiness: int | None = None
+    """How well a model can read it, 0 to 100: complydoc's readiness score (text layer,
+    scans, tables, columns, fonts). None when no signal could be measured."""
+    band: str = ""
+    """The readiness band: ready, workable, needs work or not ready."""
+    harder: list[str] = field(default_factory=list)
+    """The weakest signals of a document that is not ready, worst weighted first."""
 
     @property
     def verdict(self) -> str:
@@ -74,6 +84,15 @@ class Findings:
             said.append(f"- {what} on {where}{how}: “{short(excerpt)}”")
         for part in self.unread_parts:
             said.append(f"- not checked: {part}")
+        return said
+
+    def readable(self) -> str | None:
+        """The readiness score in one line, with what holds it back when it is not ready."""
+        if self.readiness is None:
+            return None
+        said = f"Ready for AI: {self.readiness}/100 ({self.band})."
+        if self.harder:
+            said += f" Harder for a model to read: {'; '.join(self.harder)}."
         return said
 
     def summary(self) -> str:
@@ -159,7 +178,8 @@ def read_document(path: Path, config: Config) -> Reading:
 
     # OCR on, as open_document reads the document: a scan's identifiers are found by the
     # same reading that masks them, so a check never says "ready" about text it never saw.
-    report = cd.security_audit(path, ocr=True, config=config)
+    with offline.guarded(True):
+        report = run_audit(path, config, ("sensitive", "readiness"), ocr=True)
     found = Findings()
     if not report.documents:
         skipped = [record.reason for record in report.skipped]
@@ -177,6 +197,7 @@ def read_document(path: Path, config: Config) -> Reading:
                 )
             )
             found.lengths.append(passage.characters)
+        _score(found, document.readiness)
         if any("password" in warning for warning in document.load_warnings):
             found.unread = "it is password protected"
         found.unread_parts.extend(
@@ -209,6 +230,23 @@ def read_document(path: Path, config: Config) -> Reading:
 
 
 _NOT_READ = "content was not read"
+HARDER_SHOWN = 3
+"""Weak signals named at most for a document that is not ready."""
+
+
+def _score(found: Findings, readiness: ReadinessReport | None) -> None:
+    score = readiness.score if readiness else None
+    if readiness is None or score is None:
+        return
+    found.readiness = round(score.value)
+    found.band = score.label
+    if found.band == "ready":
+        return
+    poor = sorted(
+        (signal for signal in readiness.signals if signal.rating == "poor"),
+        key=lambda signal: -signal.weight,
+    )
+    found.harder = [f"{signal.name.lower()}: {signal.display}" for signal in poor[:HARDER_SHOWN]]
 
 
 def _unread_part(warning: str) -> str:

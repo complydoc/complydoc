@@ -289,6 +289,9 @@ class Server:
         path = self.resolve(name)
         found = self.reader.read(path).findings
         head = f"{found.verdict}: {path.name}"
+        readable = found.readable()
+        if readable:
+            head += f"\n{readable}"
         if found.verdict == READY:
             return f"{head}\nNo personal or financial details and no hidden text were found."
         if found.verdict == UNREAD:
@@ -307,6 +310,8 @@ class Server:
             return "There are no documents to check."
         groups: dict[str, list[str]] = {STOP: [], CAREFUL: [], UNREAD: [], READY: []}
         unread: list[str] = []
+        scores: list[int] = []
+        harder: list[tuple[int, str]] = []
         for name in names[:MAX_FOLDER]:
             try:
                 found = self.reader.read(self.resolve(name)).findings
@@ -315,8 +320,15 @@ class Server:
                 continue
             line = name if found.verdict == READY else f"{name}: {found.summary()}"
             groups[found.verdict].append(line)
+            if found.readiness is not None:
+                scores.append(found.readiness)
+                if found.band != "ready":
+                    why = f": {'; '.join(found.harder)}" if found.harder else ""
+                    harder.append((found.readiness, f"{name}, {found.readiness}/100{why}"))
         where = f"in {folder}" if folder else "in the shared folders"
         said = [f"Checked {min(len(names), MAX_FOLDER)} documents {where}."]
+        if scores:
+            said.append(f"Ready for AI: {round(sum(scores) / len(scores))}/100 on average.")
         for verdict in (STOP, CAREFUL, UNREAD):
             if groups[verdict]:
                 said += [
@@ -327,6 +339,11 @@ class Server:
             said.append(f"\n{READY} ({len(groups[READY])}): {', '.join(groups[READY])}")
         if unread:
             said.append(f"\nCould not be read ({len(unread)}): {', '.join(unread)}")
+        if harder:
+            said += [
+                f"\nHarder for a model to read ({len(harder)}):",
+                *(f"- {line}" for _, line in sorted(harder)),
+            ]
         if len(names) > MAX_FOLDER:
             said.append(f"\nOnly the first {MAX_FOLDER} of {len(names)} were checked.")
         return "\n".join(said)

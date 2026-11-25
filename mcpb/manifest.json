@@ -43,11 +43,11 @@
     },
     {
       "name": "check_document",
-      "description": "Say whether a document is safe to share with an AI assistant, and why not."
+      "description": "Say whether a document is safe to share with an AI assistant, and why not, and how well a model can read it."
     },
     {
       "name": "check_folder",
-      "description": "Say which documents in a folder are safe to share."
+      "description": "Say which documents in a folder are safe to share, and how ready they are for AI."
     },
     {
       "name": "open_document",

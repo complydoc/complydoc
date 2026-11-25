@@ -193,11 +193,12 @@ such instruction.
 ```
 
 To know whether a document is fit to share before using it anywhere, they ask the
-assistant to check it. `check_document` returns a verdict and what it is based on, and
-none of the document's content:
+assistant to check it. `check_document` returns a verdict and what it is based on, how
+well a model can read the document, and none of the document's content:
 
 ```text
 Do not send as it is: rechnungen-2026-de.pdf
+Ready for AI: 86/100 (ready).
 Found:
 - German tax identification number: 3 (sensitive)
 - IBAN: 3 (sensitive)
@@ -212,6 +213,13 @@ open_document gives a copy with these masked or taken out, which is safe to use.
 | Do not send as it is | A sensitive identifier, or any text hidden from a reader: a model reads it whether or not it is worded as an instruction |
 | Could not be read | Nothing in the file could be checked: it is empty, damaged, password protected, of a type complydoc does not read, or a scan with no text OCR could find |
 
+"Ready for AI" is complydoc's readiness score, the one in the HTML report: 0 to 100 from
+the document's text layer, scans, tables, columns, fonts and the other readiness signals,
+banded ready (75 and up), workable, needs work and not ready (under 25). Below ready, the
+weakest signals are named, so the person knows what to fix before an assistant reads it.
+`check_folder` gives the folder's average and lists the documents that are not ready,
+lowest first.
+
 A scanned page is read with OCR for the check as it is for `open_document`, so the verdict
 rests on the same text the assistant would get.
 
@@ -222,7 +230,7 @@ rests on the same text the assistant would get.
 | `list_documents` | *Which documents do I have about Acme?* Optional `page`: 1 for the first 50 documents, 2 for the next, and so on. |
 | `search_documents` | *Which contracts mention penalties?* Words looked up in the masked, cleaned text, with the page and a short passage |
 | `check_document` | *Can I share the Nordwind contract?* |
-| `check_folder` | *Can I share the Proposals folder?* Every document's verdict, the ones not to share first |
+| `check_folder` | *Can I share the Proposals folder?* Every document's verdict, the ones not to share first, and how ready the folder is for AI |
 | `open_document` | *Open the Acme proposal and summarise it.* |
 | `save_clean_copy` | *Save me a clean copy to send to the client.* A text file in `Downloads/complydoc clean copies` |
 | `list_folders`, `choose_folder`, `remove_folder` | *Use my Contracts folder too.* |
