@@ -12,22 +12,22 @@
    "provider": "mistral"
   },
   "embed-english-light-v3.0": {
-   "dimensions": null,
+   "dimensions": 384,
    "input_per_mtok_usd": 0.1,
    "provider": "cohere"
   },
   "embed-english-v3.0": {
-   "dimensions": null,
+   "dimensions": 1024,
    "input_per_mtok_usd": 0.1,
    "provider": "cohere"
   },
   "embed-multilingual-light-v3.0": {
-   "dimensions": null,
+   "dimensions": 384,
    "input_per_mtok_usd": 100.0,
    "provider": "cohere"
   },
   "embed-multilingual-v3.0": {
-   "dimensions": null,
+   "dimensions": 1024,
    "input_per_mtok_usd": 0.1,
    "provider": "cohere"
   },
@@ -208,7 +208,7 @@
   }
  },
  "embeddings_source_url": "https://github.com/BerriAI/litellm",
- "imported": "2026-11-16",
+ "imported": "2026-11-23",
  "models": {
   "claude-fable-5": {
    "accepts_image": true,
@@ -809,6 +809,18 @@
    "output_per_mtok_usd": 7.5,
    "provider": "gemini",
    "release_date": "2026-11-12"
+  },
+  "gemini-4-neon": {
+   "accepts_image": true,
+   "accepts_pdf": true,
+   "batch_input_per_mtok_usd": 1.5,
+   "display_name": "Gemini 4 Neon",
+   "family": "gemini-4-neon",
+   "input_per_mtok_usd": 3.0,
+   "max_input_tokens": 1048576,
+   "output_per_mtok_usd": 15.0,
+   "provider": "gemini",
+   "release_date": "2026-11-18"
   },
   "gemini-flash-latest": {
    "accepts_image": true,
@@ -1470,6 +1482,30 @@
    "provider": "openai",
    "release_date": "2026-10-26"
   },
+  "gpt-6.2-astra": {
+   "accepts_image": true,
+   "accepts_pdf": true,
+   "batch_input_per_mtok_usd": 4.0,
+   "display_name": "GPT-6.2 Astra",
+   "family": "gpt-6.2-astra",
+   "input_per_mtok_usd": 8.0,
+   "max_input_tokens": 1050000,
+   "output_per_mtok_usd": 40.0,
+   "provider": "openai",
+   "release_date": "2026-11-17"
+  },
+  "gpt-6.2-sol": {
+   "accepts_image": true,
+   "accepts_pdf": true,
+   "batch_input_per_mtok_usd": 1.0,
+   "display_name": "GPT-6.2 Sol",
+   "family": "gpt-6.2-sol",
+   "input_per_mtok_usd": 2.0,
+   "max_input_tokens": 1050000,
+   "output_per_mtok_usd": 10.0,
+   "provider": "openai",
+   "release_date": "2026-11-17"
+  },
   "gpt-daybreak-blue-latest": {
    "accepts_image": true,
    "accepts_pdf": true,
@@ -1589,18 +1625,6 @@
    "output_per_mtok_usd": 6.0,
    "provider": "xai",
    "release_date": "2026-09-21"
-  },
-  "grok-build-0.1": {
-   "accepts_image": true,
-   "accepts_pdf": true,
-   "batch_input_per_mtok_usd": null,
-   "display_name": "Grok Build 0.1",
-   "family": "grok-build-0.1",
-   "input_per_mtok_usd": 1.0,
-   "max_input_tokens": 256000,
-   "output_per_mtok_usd": 2.0,
-   "provider": "xai",
-   "release_date": "2026-04-16"
   },
   "kimi-k2.6": {
    "accepts_image": true,
