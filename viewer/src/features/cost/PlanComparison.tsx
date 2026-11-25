@@ -126,7 +126,7 @@ export function PlanComparison({ report }: { report: Report }) {
         />
         <span>cores</span>
       </div>
-      <Card className="gap-0 overflow-hidden rounded-md border bg-card">
+      <Card className="gap-0 overflow-hidden rounded-xl border bg-card">
         <Table>
           <TableCaption className="sr-only">Ways to read this folder</TableCaption>
           <TableHeader>

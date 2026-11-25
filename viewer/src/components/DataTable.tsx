@@ -188,7 +188,7 @@ export function DataTable<T>({
         </div>
       )}
       <Card
-        className="group/table gap-0 overflow-hidden rounded-md border bg-card"
+        className="group/table gap-0 overflow-hidden rounded-xl border bg-card"
         data-picking={chosen.length > 0 || undefined}
       >
         <Table>

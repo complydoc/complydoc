@@ -139,7 +139,7 @@ export function CategoriesSection({ state, lastRun }: { state: CategoriesState; 
       {rows.length === 0 ? (
         <p className="text-sm text-muted-foreground">No category matches.</p>
       ) : (
-        <ul aria-label="Categories" className="divide-y rounded-lg border bg-card">
+        <ul aria-label="Categories" className="divide-y rounded-xl border bg-card">
           {rows.map((row) => (
             <Row key={row.id} row={row} state={state} />
           ))}

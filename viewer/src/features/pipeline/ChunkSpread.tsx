@@ -87,7 +87,7 @@ export function ChunkSpread({ run }: { run: ChunkRun }) {
       )}
       <div className="flex flex-col gap-1.5">
         <h4 className="text-xs text-muted-foreground">Smallest</h4>
-        <ul className="flex flex-col divide-y rounded-md border text-sm">
+        <ul className="flex flex-col divide-y rounded-lg border text-sm">
           {smallest.map((chunk) => (
             <li key={chunk.index} className="flex items-baseline gap-3 px-3 py-1.5">
               <span
