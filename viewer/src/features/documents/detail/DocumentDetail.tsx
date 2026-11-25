@@ -233,6 +233,9 @@ export function DocumentDetail({
                 }}
               />
             )}
+            {/* With more than one splitter, which one's chunks are drawn. It sits before the
+                switches, so appearing leaves them where they are under the pointer. */}
+            {layer && layers.length > 1 && <ChunkPicker layers={layers} value={chunkBy} onChange={setChunkBy} />}
             <LayerToggles
               available={[
                 ...(["identifier", "hidden"] as const).filter((kind) => findings.some((f) => f.kind === kind)),
@@ -251,8 +254,6 @@ export function DocumentDetail({
                 } else if (!chunks && layer) setChunkBy(null);
               }}
             />
-            {/* With more than one splitter, which one's chunks are drawn. */}
-            {layer && layers.length > 1 && <ChunkPicker layers={layers} value={chunkBy} onChange={setChunkBy} />}
             <WholeDocument report={report} document={document} />
             {eyeToggle}
           </>
