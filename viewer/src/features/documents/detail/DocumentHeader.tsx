@@ -44,9 +44,10 @@ export function DocumentHeader({
   ].filter(Boolean);
 
   return (
-    <header className="flex shrink-0 flex-wrap items-start justify-between gap-x-6 gap-y-3">
+    // On a wide screen the controls keep their row whatever appears among them: the name gives way.
+    <header className="flex shrink-0 flex-wrap items-start justify-between gap-x-6 gap-y-3 lg:flex-nowrap">
       {/* The name and what the document is stay together; the controls sit beside them, or under both. */}
-      <div className="flex min-w-0 flex-col gap-1.5">
+      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         <h2
           className="min-w-0 truncate font-heading text-xl font-semibold tracking-tight"
           title={document.relative_path}
@@ -54,10 +55,13 @@ export function DocumentHeader({
           {folder && <span className="font-normal text-muted-foreground">{folder}/</span>}
           {name}
         </h2>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-muted-foreground">
-          <span className="tabular-nums">{facts.join(" · ")}</span>
+        {/* One line on a wide screen, the facts cut short before the badges, so the header keeps its height. */}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-muted-foreground lg:flex-nowrap">
+          <span className="min-w-0 tabular-nums lg:truncate" title={facts.join(" · ")}>
+            {facts.join(" · ")}
+          </span>
           {scanned && (
-            <span className="flex flex-wrap items-center gap-1.5">
+            <span className="flex shrink-0 flex-wrap items-center gap-1.5">
               {identifiers === 0 && hidden === 0 ? (
                 <ToneBadge tone="good">Nothing found</ToneBadge>
               ) : (
@@ -75,7 +79,7 @@ export function DocumentHeader({
           )}
         </div>
       </div>
-      <div className="flex flex-wrap items-center gap-2">{controls}</div>
+      <div className="flex flex-wrap items-center justify-end gap-2 lg:shrink-0 lg:flex-nowrap">{controls}</div>
     </header>
   );
 }

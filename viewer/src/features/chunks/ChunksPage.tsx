@@ -3,13 +3,12 @@ import { useState } from "react";
 import { NotInRun } from "@/components/NotInRun";
 import { Section, SectionStack } from "@/components/Section";
 import { ToneBadge } from "@/components/ToneBadge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useDocumentLink } from "@/hooks/useFolderRuns";
-import { FACT_TONE, RETRIEVAL_TONE, factCounts, flaggedChunks, retrievalHitRate } from "@/report/chunks";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { cutsByDocument, flagSummary, sizeHistogram, splitterLabels, splitterName } from "@/report/chunkView";
+import { splitterShortName as shortName } from "@/report/chunkView";
+import { Comparison, SplitterDetail } from "./SplitterComparison";
+import { FACT_TONE, RETRIEVAL_TONE, factCounts, flaggedChunks } from "@/report/chunks";
+import { cutsByDocument, leastBad, splitterName } from "@/report/chunkView";
 import { fileName, formatCount, formatPercent, humanise, plural } from "@/report/format";
 import { measured } from "@/report/measured";
 import type { ChunkRun, Report } from "@/report/types";
@@ -17,90 +16,6 @@ import type { ChunkRun, Report } from "@/report/types";
 /** Documents listed by name under "where the cuts fall" before the rest are left to the document view. */
 const DOCUMENTS_SHOWN = 8;
 
-/** A splitter's settings as a short name, or its whole name where it gave none. */
-/** Splitters beyond which the one to show is picked from a list, not a row of buttons. */
-const PICKED_BY_BUTTON = 3;
-
-const shortName = (run: ChunkRun) => splitterName(run.chunker).settings.join(" · ") || run.chunker;
-
-/** How the chunks' sizes spread, smallest to largest, as a strip of bars. */
-function Sizes({ run }: { run: ChunkRun }) {
-  const counts = sizeHistogram(run);
-  const most = Math.max(1, ...counts);
-  return (
-    <div className="flex flex-col gap-1">
-      <div className="flex h-12 items-end gap-px" aria-hidden="true">
-        {counts.map((count, index) => (
-          <div
-            key={index}
-            className="flex-1 rounded-t-sm bg-primary/70"
-            style={{ height: `${count === 0 ? 0 : Math.max(6, (count / most) * 100)}%` }}
-          />
-        ))}
-      </div>
-      <div className="flex justify-between text-xs text-muted-foreground tabular-nums">
-        <span>{formatCount(run.stats.tokens_min)}</span>
-        <span>median {formatCount(run.stats.tokens_median)} tokens</span>
-        <span>{formatCount(run.stats.tokens_max)}</span>
-      </div>
-    </div>
-  );
-}
-
-function Line({ label, value }: { label: string; value: string }) {
-  return (
-    <li className="flex justify-between gap-3">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="tabular-nums">{value}</span>
-    </li>
-  );
-}
-
-function SplitterCard({ run }: { run: ChunkRun }) {
-  const name = splitterName(run.chunker);
-  const flagged = flaggedChunks(run);
-  const repeated = Object.keys(run.repeated_identifiers).length;
-  const facts = factCounts(run);
-  const hitRate = retrievalHitRate(run);
-  return (
-    <Card role="group" aria-label={run.chunker}>
-      <CardHeader>
-        <CardTitle className="font-mono text-sm">{shortName(run)}</CardTitle>
-        {name.settings.length > 0 && <CardDescription>{name.kind}</CardDescription>}
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <p className="text-2xl font-semibold tracking-tight tabular-nums">{formatCount(run.stats.count)}</p>
-            <p className="text-xs text-muted-foreground">chunks, {formatCount(run.stats.tokens_total)} tokens</p>
-          </div>
-          <div>
-            <p className="text-2xl font-semibold tracking-tight tabular-nums">
-              {run.stats.count ? formatPercent(flagged / run.stats.count) : "–"}
-            </p>
-            <p className="text-xs text-muted-foreground">cut badly, {plural(flagged, "chunk")}</p>
-          </div>
-        </div>
-        <Sizes run={run} />
-        <ul className="flex flex-col gap-1 text-sm">
-          {flagSummary(run).map((flag) => (
-            <Line key={flag.key} label={flag.words} value={formatCount(flag.count)} />
-          ))}
-          {repeated > 0 && <Line label="identifiers in several chunks" value={formatCount(repeated)} />}
-          {run.facts.length > 0 && (
-            <Line
-              label="expected facts kept whole"
-              value={`${formatCount(facts.whole)} of ${formatCount(run.facts.length)}`}
-            />
-          )}
-          {hitRate !== null && (
-            <Line label={`questions answered in the top ${run.top_k}`} value={formatPercent(hitRate)} />
-          )}
-        </ul>
-      </CardContent>
-    </Card>
-  );
-}
 
 /** The documents a splitter cut worst, each a way to the document with the cuts drawn over its text. */
 function WhereCutsFall({ run }: { run: ChunkRun }) {
@@ -203,69 +118,54 @@ function Checks({ runs }: { runs: ChunkRun[] }) {
 }
 
 /**
- * How each text splitter cut the folder's text, side by side: how many chunks, how big,
- * how many cut badly and how. Then, for the splitter picked, the documents it cut worst,
- * each opening on its text with the cuts drawn over it; and the expected facts and
- * questions the run was given, against every splitter.
+ * Which text splitter to use for this folder. A splitter cuts each document's text into the
+ * chunks a RAG pipeline stores, searches and hands to the model, so a bad cut is a fact
+ * that no search finds whole. The page says that first, compares every splitter the run
+ * tried in one table, marks the one that cut least badly, and then shows the one picked up
+ * close: its sizes, its bad cuts in words, and the documents it cut worst, each opening on
+ * its text with the cuts drawn over it.
  */
 export function ChunksPage({ report }: { report: Report }) {
   const runs = report.chunks ?? [];
-  const [chosen, setChosen] = useState(runs[0]?.chunker ?? "");
+  const best = leastBad(runs);
+  const [chosen, setChosen] = useState((best ?? runs[0])?.chunker ?? "");
   if (!measured(report, "chunks")) return <NotInRun report={report} content="chunks" />;
   const run = runs.find((r) => r.chunker === chosen) ?? runs[0];
   if (!run) return null;
   const checks = runs.some((r) => r.facts.length > 0 || r.retrieval.length > 0);
-  const labels = splitterLabels(runs.map((r) => r.chunker));
 
   return (
     <SectionStack>
-      <Section title="Splitters" aside={`Tokens counted with ${run.token_encoding}`}>
-        <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
-          {runs.map((r) => (
-            <SplitterCard key={r.chunker} run={r} />
-          ))}
-        </div>
+      <div className="flex max-w-3xl flex-col gap-2">
+        <h1 className="font-heading text-xl font-semibold tracking-tight">Chunks</h1>
+        <p className="text-sm text-muted-foreground">
+          Before a RAG pipeline stores documents, a text splitter cuts them into chunks. Each chunk is what search finds
+          and what the model reads, so a sentence or a table cut in two is an answer nobody gets whole. This run tried{" "}
+          {plural(runs.length, "splitter")} on the folder; pick the one that cuts it least badly.
+        </p>
+      </div>
+
+      <Section title="Splitters compared" aside={`Tokens counted with ${run.token_encoding}`}>
+        <Comparison runs={runs} chosen={run.chunker} best={best} onChoose={setChosen} />
+        {best && (
+          <p className="text-sm text-muted-foreground">
+            <span className="font-mono text-xs text-foreground">{shortName(best)}</span> cuts this folder least badly:{" "}
+            {formatPercent(best.stats.count ? flaggedChunks(best) / best.stats.count : 0)} of its chunks cut badly
+            {best.facts.length > 0 && `, ${formatCount(factCounts(best).whole)} of ${plural(best.facts.length, "fact")} kept whole`}
+            . Pick a row to see any splitter below.
+          </p>
+        )}
       </Section>
 
-      <Section
-        title="Where the cuts fall"
-        aside={
-          runs.length > PICKED_BY_BUTTON ? (
-            <Select value={run.chunker} onValueChange={setChosen}>
-              <SelectTrigger size="sm" aria-label="Splitter" className="max-w-full font-mono text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent align="end">
-                <SelectGroup>
-                  {runs.map((r) => (
-                    <SelectItem key={r.chunker} value={r.chunker} className="font-mono text-xs">
-                      {labels.get(r.chunker)}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          ) : (
-            runs.length > 1 && (
-              <ToggleGroup
-                type="single"
-                variant="outline"
-                size="sm"
-                value={run.chunker}
-                onValueChange={(value) => value && setChosen(value)}
-                aria-label="Splitter"
-              >
-                {runs.map((r) => (
-                  <ToggleGroupItem key={r.chunker} value={r.chunker} className="font-mono text-xs">
-                    {labels.get(r.chunker)}
-                  </ToggleGroupItem>
-                ))}
-              </ToggleGroup>
-            )
-          )
-        }
-      >
-        <WhereCutsFall run={run} />
+      <Section title={shortName(run)} aside={splitterName(run.chunker).kind}>
+        <SplitterDetail run={run} />
+        <div className="flex flex-col gap-2">
+          <h3 className="text-sm font-medium">
+            {flaggedChunks(run) > 0 ? "The documents it cut worst" : "The documents it cut"}
+          </h3>
+          <p className="text-xs text-muted-foreground">Open one to read it with this splitter&apos;s cuts drawn over the text.</p>
+          <WhereCutsFall run={run} />
+        </div>
       </Section>
 
       {checks && (

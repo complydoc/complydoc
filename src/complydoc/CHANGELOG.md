@@ -6,6 +6,18 @@ a config key, which the release then says. `schema_version` in the JSON is versi
 separately. What counts as breaking, and how long a deprecated
 feature keeps working, is in [Versions and deprecations](https://complydoc.io/docs/explanation/versioning/).
 
+## Unreleased
+
+### Changed
+
+- The viewer's document page has switches for what the text shows: identifiers, hidden
+  text and chunks, each on or off. Chunks were a menu; it now appears only to pick a
+  splitter when there is more than one. A finding opened in the list lines up under its label.
+- The viewer's Chunks page says what it is for, compares the splitters in one table (chunks,
+  tokens per chunk, share cut badly, identifiers spread over several chunks) and marks the
+  one that cut the folder least badly. Picking a row shows that splitter's sizes, each kind
+  of bad cut explained, and the documents it cut worst.
+
 ## [0.8.3] — 2026-11-24
 
 ### Added

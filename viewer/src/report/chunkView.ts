@@ -1,4 +1,5 @@
 /** A chunks run as the Chunks page shows it: each splitter's figures, and where it cut badly. */
+import { factCounts, flaggedChunks, retrievalHitRate } from "./chunks";
 import type { ChunkRun } from "./chunkTypes";
 
 /** Each flag in a few words, worded to follow a count of chunks. */
@@ -12,6 +13,41 @@ const FLAG_WORDS: Record<string, string> = {
   path_metadata: "carry a file path",
 };
 
+/** Why each flag matters, for a reader who has not chunked text before. */
+export const FLAG_HELP: Record<string, string> = {
+  split_sentence: "The chunk stops halfway through a sentence, so neither half says the whole thing.",
+  split_table: "A table is cut in two, so rows end up apart from their header.",
+  heading_at_end: "The chunk ends on a heading whose text is in the next chunk.",
+  tiny: "So small it carries little meaning on its own.",
+  oversized: "Larger than the limit asked for, so it may not fit the model or the index.",
+  duplicate: "The same text as another chunk, stored and searched twice.",
+  path_metadata: "Its metadata holds a file path, which can name a person or a client.",
+};
+
+/** What "identifiers in several chunks" means, said once where it is shown. */
+export const SPREAD_HELP =
+  "Identifiers that end up in more than one chunk. Each copy is a place to mask or delete, and overlap makes more of them.";
+
+/**
+ * The splitter that cut this folder least badly: the most facts kept whole and questions
+ * answered, where the run had them, then the smallest share of chunks cut badly, then the
+ * fewest identifiers spread over several chunks. Null with fewer than two to choose from.
+ */
+export function leastBad(runs: ChunkRun[]): ChunkRun | null {
+  if (runs.length < 2) return null;
+  const score = (run: ChunkRun) => [
+    -(run.facts.length ? factCounts(run).whole / run.facts.length : 0),
+    -(retrievalHitRate(run) ?? 0),
+    run.stats.count ? flaggedChunks(run) / run.stats.count : 1,
+    Object.keys(run.repeated_identifiers).length,
+  ];
+  return [...runs].sort((a, b) => {
+    const [x, y] = [score(a), score(b)];
+    for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return (x[i] ?? 0) - (y[i] ?? 0);
+    return 0;
+  })[0] ?? null;
+}
+
 /** A splitter's name as the run gave it, `Class key=value …`, as its class and its settings. */
 export function splitterName(chunker: string): { kind: string; settings: string[] } {
   const [kind = chunker, ...rest] = chunker.split(/\s+/);
@@ -20,6 +56,9 @@ export function splitterName(chunker: string): { kind: string; settings: string[
     ? { kind, settings: settings.map((s) => s.replace("=", " ")) }
     : { kind: chunker, settings: [] };
 }
+
+/** A splitter's settings as a short name, or its whole name where it gave none. */
+export const splitterShortName = (run: ChunkRun) => splitterName(run.chunker).settings.join(" · ") || run.chunker;
 
 /**
  * A short name for each splitter of a run, by its `chunker`: its settings, with its class

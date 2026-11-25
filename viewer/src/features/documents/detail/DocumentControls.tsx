@@ -1,4 +1,4 @@
-import { EyeIcon, EyeOffIcon, ScissorsIcon } from "lucide-react";
+import { EyeIcon, EyeOffIcon, ScissorsIcon, ShieldAlertIcon, TextSearchIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -80,6 +80,52 @@ export function ChunkPicker({
 }
 
 const NONE = "__none__";
+
+/** What can be drawn over the text: the identifiers found, the hidden passages, a splitter's chunks. */
+export type Layer = "identifier" | "hidden" | "chunks";
+
+const LAYERS: Record<Layer, { label: string; hint: string; icon: typeof EyeIcon }> = {
+  identifier: { label: "Identifiers", hint: "Mark the personal and financial identifiers found", icon: TextSearchIcon },
+  hidden: { label: "Hidden text", hint: "Mark the passages hidden from a reader, such as instructions to an AI", icon: ShieldAlertIcon },
+  chunks: { label: "Chunks", hint: "Draw where the text is cut into chunks", icon: ScissorsIcon },
+};
+
+/**
+ * Switches for what the text shows, each on its own: the identifiers and the hidden passages
+ * (on by default, listed beside the text too) and the chunks (off). Only what the document has
+ * gets a switch.
+ */
+export function LayerToggles({
+  available,
+  on,
+  onChange,
+}: {
+  available: Layer[];
+  on: Layer[];
+  onChange: (on: Layer[]) => void;
+}) {
+  if (available.length === 0) return null;
+  return (
+    <ToggleGroup
+      type="multiple"
+      variant="outline"
+      size="sm"
+      value={on.filter((layer) => available.includes(layer))}
+      onValueChange={(next) => onChange(next as Layer[])}
+      aria-label="Show in the text"
+    >
+      {available.map((layer) => {
+        const { label, hint, icon: Icon } = LAYERS[layer];
+        return (
+          <ToggleGroupItem key={layer} value={layer} title={hint} aria-label={label}>
+            <Icon />
+            {label}
+          </ToggleGroupItem>
+        );
+      })}
+    </ToggleGroup>
+  );
+}
 
 /** For a document read more than one way: its text, with what was found, or the diff of two readings. */
 export function ModeToggle({ value, onChange }: { value: "text" | "diff"; onChange: (mode: "text" | "diff") => void }) {

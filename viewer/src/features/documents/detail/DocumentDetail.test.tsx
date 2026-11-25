@@ -246,10 +246,33 @@ describe("DocumentDetail with the folder's chunks", () => {
     );
     // Read two ways, it opens as the diff, with no chunks drawn until asked.
     expect(screen.getByRole("combobox", { name: "Base reader" })).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("combobox", { name: "Chunks" }));
-    await userEvent.click(screen.getByRole("option", { name: "recursive 400" }));
+    await userEvent.click(screen.getByRole("button", { name: "Chunks" }));
     expect(screen.getByRole("region", { name: `Page ${page.number}` })).toHaveTextContent("2 chunks, 1 flagged");
     expect(screen.queryByRole("combobox", { name: "Base reader" })).not.toBeInTheDocument();
+  });
+});
+
+describe("DocumentDetail's switches for what the text shows", () => {
+  it("leaves the identifiers out of the list when switched off, and brings them back", async () => {
+    const report = sampleAudit();
+    const document = open(report, "master-services-agreement.pdf");
+    const label = required(documentFindings(document, false).find((f) => f.kind === "identifier")).label;
+    // Read two ways, it opens on the diff, which lists nothing beside it: the text does.
+    await userEvent.click(screen.getByRole("radio", { name: "Text" }));
+    const listed = () => screen.queryByRole("complementary", { name: "Findings" })?.textContent ?? "";
+    const identifiers = screen.getByRole("button", { name: "Identifiers" });
+    expect(identifiers).toHaveAttribute("aria-pressed", "true");
+    expect(listed()).toContain(label);
+    await userEvent.click(identifiers);
+    expect(identifiers).toHaveAttribute("aria-pressed", "false");
+    expect(listed()).not.toContain(label);
+    await userEvent.click(identifiers);
+    expect(listed()).toContain(label);
+  });
+
+  it("offers no chunks switch without a chunks run", () => {
+    open(sampleAudit(), "master-services-agreement.pdf");
+    expect(screen.queryByRole("button", { name: "Chunks" })).not.toBeInTheDocument();
   });
 });
 
