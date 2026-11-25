@@ -284,3 +284,154 @@ def test_a_name_starting_a_line_loses_the_line_break_before_it(monkeypatch):
     monkeypatch.setattr(token_classifier, "_load", lambda _name: classify)
     [[(label, begin, end, _score)]] = token_classifier.classify_windows("any", [page])
     assert (label, page[begin:end]) == ("PER", "Maria Santos")
+
+
+# A BIOES model, as Veil's are: O, then B, I, E and S for each label.
+BIOES = ["O"] + [f"{prefix}-{label}" for label in ("PERSON", "ADDRESS") for prefix in "BIES"]
+
+
+def _rows(page, tokens, tag_of):
+    """Log-probabilities that put almost all the weight on each token's tag."""
+    import math
+
+    rows, offsets = [], []
+    position = 0
+    for token in tokens:
+        start = page.index(token, position)
+        position = start + len(token)
+        offsets.append((start, position))
+        wanted = BIOES.index(tag_of.get(token, "O"))
+        rows.append(
+            [math.log(0.96 if k == wanted else 0.04 / (len(BIOES) - 1)) for k in range(len(BIOES))]
+        )
+    return rows, offsets
+
+
+def test_a_model_that_marks_last_and_single_tokens_is_read_as_bioes():
+    assert token_classifier._is_bioes(BIOES)
+    assert not token_classifier._is_bioes(["O", "B-PER", "I-PER", "B-ORG", "I-ORG"])
+    assert token_classifier._is_bioes(["O", "B-PER", "I-PER", "L-PER", "U-PER"]), "BILOU too"
+
+
+def test_a_name_ending_on_its_last_token_comes_back_whole():
+    """The leak this guards: E- was a group of its own, and "Gome|s" left the "s" on the page."""
+    page = "Senhorio: Helena Carvalho Gomes, NIF 211813427."
+    tokens = ["Senhorio", ":", "Helena", "Carvalho", "Go", "mes", ",", "NIF"]
+    tags = {"Helena": "B-PERSON", "Carvalho": "I-PERSON", "Go": "I-PERSON", "mes": "E-PERSON"}
+    rows, offsets = _rows(page, tokens, tags)
+
+    found = token_classifier._bioes_entities(page, rows, offsets, BIOES)
+
+    assert [(e["entity_group"], page[e["start"] : e["end"]]) for e in found] == [
+        ("PERSON", "Helena Carvalho Gomes")
+    ]
+    assert 0.9 < found[0]["score"] <= 1.0
+
+
+def test_a_one_token_name_is_found():
+    """S- was dropped as a label no category asks for, and "SOFIA" stayed visible."""
+    page = "SOFIA MARTINS PINTO\n"
+    tags = {"SOFIA": "S-PERSON"}
+    rows, offsets = _rows(page, ["SOFIA"], tags)
+
+    found = token_classifier._bioes_entities(page, rows, offsets, BIOES)
+    assert [page[e["start"] : e["end"]] for e in found] == ["SOFIA"]
+
+
+def test_a_tag_sequence_that_cannot_happen_is_read_as_the_likeliest_one_that_can():
+    """B, then O, then E is a name with a hole in it. The decoder takes the legal path instead."""
+    page = "Titular: Nelson Valente\n"
+    import math
+
+    tokens = ["Nelson", "Valent", "e"]
+    rows, offsets = _rows(page, tokens, {"Nelson": "B-PERSON", "e": "E-PERSON"})
+    # "Valent" leans O, but I-PERSON is close behind.
+    rows[1] = [math.log(0.04 / (len(BIOES) - 1))] * len(BIOES)
+    rows[1][BIOES.index("O")] = math.log(0.55)
+    rows[1][BIOES.index("I-PERSON")] = math.log(0.41)
+
+    found = token_classifier._bioes_entities(page, rows, offsets, BIOES)
+    assert [page[e["start"] : e["end"]] for e in found] == ["Nelson Valente"]
+
+
+def test_pieces_of_one_address_are_one_span_and_a_lone_comma_is_dropped():
+    page = "residente em Rua de Cedofeita, 360, 4100-130 Porto, email"
+    tokens = ["Rua", "de", "Cedofeita", ",", "360", ",", "4100-130", "Porto", ",", "email"]
+    tags = {
+        "Rua": "B-ADDRESS",
+        "de": "I-ADDRESS",
+        "Cedofeita": "I-ADDRESS",
+        "360": "E-ADDRESS",
+        "4100-130": "B-ADDRESS",
+        "Porto": "E-ADDRESS",
+    }
+    rows, offsets = _rows(page, tokens, tags)
+    # The first comma sits inside the address: a model that has it as I- keeps it.
+    rows[3] = rows[1]
+
+    found = token_classifier._bioes_entities(page, rows, offsets, BIOES)
+    assert [page[e["start"] : e["end"]] for e in found] == [
+        "Rua de Cedofeita, 360",
+        "4100-130 Porto",
+    ]
+
+
+def test_two_names_with_punctuation_between_them_stay_two():
+    page = "Maria Santos, Pedro Costa"
+    tokens = ["Maria", "Santos", ",", "Pedro", "Costa"]
+    tags = {"Maria": "B-PERSON", "Santos": "E-PERSON", "Pedro": "B-PERSON", "Costa": "E-PERSON"}
+    rows, offsets = _rows(page, tokens, tags)
+
+    found = token_classifier._bioes_entities(page, rows, offsets, BIOES)
+    assert [page[e["start"] : e["end"]] for e in found] == ["Maria Santos", "Pedro Costa"]
+
+
+def test_a_span_that_stops_inside_a_word_takes_the_whole_word():
+    """Whatever the model, a mask that ends mid-word leaves the rest of it readable."""
+    page = "Contact: Chloe Adeyemi, telephone"
+    start, end = page.index("Chloe"), page.index("mi,")
+    assert page[slice(*token_classifier._trimmed(page, start, end))] == "Chloe Adeyemi"
+    start = page.index("hloe")
+    assert page[slice(*token_classifier._trimmed(page, start, end))] == "Chloe Adeyemi"
+
+
+@pytest.mark.skipif(
+    importlib.util.find_spec("transformers") is None or importlib.util.find_spec("torch") is None,
+    reason="the multilingual-names extra is not installed",
+)
+def test_a_bioes_model_is_loaded_with_its_own_reader(tmp_path, monkeypatch):
+    """A tiny BIOES model on disk: the reader batches, pads a short window and maps offsets back."""
+    import torch
+    from transformers import BertConfig, BertForTokenClassification, BertTokenizerFast
+
+    words = ["[PAD]", "[UNK]", "[CLS]", "[SEP]", "maria", "santos", "lives", "in", "porto", "."]
+    (tmp_path / "vocab.txt").write_text("\n".join(words) + "\n")
+    BertTokenizerFast(vocab_file=str(tmp_path / "vocab.txt")).save_pretrained(tmp_path)
+    config = BertConfig(
+        vocab_size=len(words),
+        hidden_size=16,
+        num_hidden_layers=1,
+        num_attention_heads=2,
+        intermediate_size=16,
+        id2label=dict(enumerate(BIOES)),
+        label2id={tag: k for k, tag in enumerate(BIOES)},
+    )
+    torch.manual_seed(0)
+    model = BertForTokenClassification(config)
+    with torch.no_grad():  # whatever the input, every token reads as S-PERSON
+        model.classifier.weight.zero_()
+        model.classifier.bias.zero_()
+        model.classifier.bias[BIOES.index("S-PERSON")] = 5.0
+    model.save_pretrained(tmp_path)
+    token_classifier._load_once.cache_clear()
+
+    reader = token_classifier._load(str(tmp_path))
+    assert isinstance(reader, token_classifier._BioesReader)
+    pages = ["maria santos lives in porto.", "porto."]
+    entities = token_classifier.classify_windows(str(tmp_path), pages)
+
+    assert len(entities) == 2
+    # Every token is S-PERSON, and one-token entities a space apart are one span.
+    for page, found in zip(pages, entities, strict=True):
+        assert [(label, page[start:end]) for label, start, end, _ in found] == [("PERSON", page)]
+    token_classifier._load_once.cache_clear()

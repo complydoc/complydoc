@@ -17,6 +17,15 @@ feature keeps working, is in [Versions and deprecations](https://complydoc.io/do
   lowest first. So one check gives the whole assessment: what a document exposes, what it
   hides and whether a model can read it.
 
+### Fixed
+
+- A token-classification model that tags BIOES, as Veil's models do, no longer has its
+  names masked in pieces. The last token of a name and one-token names were each read as
+  an entity of their own, under a label no category asked for, so "Gomes" was masked as
+  "Gome" with the "s" left on the page and "SOFIA" was not masked at all. Such a model is
+  now decoded as BIOES, pieces of one entity are joined, and a span that stops inside a
+  word takes the whole word, whatever the model.
+
 ## [0.8.3] — 2026-11-24
 
 ### Added
